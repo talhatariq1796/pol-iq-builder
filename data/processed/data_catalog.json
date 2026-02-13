@@ -1,0 +1,152 @@
+{
+  "_metadata": {
+    "format_version": "1.0",
+    "generated_at": "2025-12-01T17:54:22.358471",
+    "generator": "scripts/political/add-data-metadata.py",
+    "project": "Political Landscape Analysis Platform",
+    "coverage": "Ingham County, Michigan",
+    "methodology_doc": "docs/METHODOLOGY.md",
+    "data_strategy_doc": "docs/DATA-ACQUISITION-STRATEGY.md",
+    "dataset": "Data Catalog",
+    "description": "Index of all processed datasets available for political analysis"
+  },
+  "datasets": [
+    {
+      "id": "election_results",
+      "name": "Election Results",
+      "file": "ingham_election_results.json",
+      "description": "Precinct-level results for 2020, 2022, 2024 elections",
+      "key_fields": [
+        "dem_pct",
+        "rep_pct",
+        "margin",
+        "turnout"
+      ],
+      "citation_id": "[ELECTIONS]"
+    },
+    {
+      "id": "political_scores",
+      "name": "Political Scores",
+      "file": "precinct_political_scores.json",
+      "description": "Partisan lean and swing potential for each precinct",
+      "key_fields": [
+        "partisan_lean",
+        "swing_potential",
+        "competitiveness"
+      ],
+      "citation_id": "[SCORES]"
+    },
+    {
+      "id": "targeting_scores",
+      "name": "Targeting Scores",
+      "file": "precinct_targeting_scores.json",
+      "description": "GOTV Priority and Persuasion Opportunity for voter targeting",
+      "key_fields": [
+        "gotv_priority",
+        "persuasion_opportunity",
+        "targeting_strategy"
+      ],
+      "citation_id": "[TARGETING]"
+    },
+    {
+      "id": "demographics",
+      "name": "Precinct Demographics",
+      "file": "precinct_ba_demographics.json",
+      "description": "ArcGIS BA demographics interpolated to precincts",
+      "key_fields": [
+        "total_population",
+        "party_affiliation",
+        "political_outlook"
+      ],
+      "citation_id": "[DEMOGRAPHICS]"
+    },
+    {
+      "id": "h3_aggregates",
+      "name": "H3 Hexagonal Aggregates",
+      "file": "h3_aggregates.json",
+      "description": "Metrics aggregated to H3 Level 7 grid for visualization",
+      "key_fields": [
+        "all metrics at H3 resolution"
+      ],
+      "citation_id": "[H3]"
+    },
+    {
+      "id": "crosswalk",
+      "name": "Precinct-Block Group Crosswalk",
+      "file": "precinct_blockgroup_crosswalk.json",
+      "description": "Spatial relationship between precincts and Census block groups",
+      "key_fields": [
+        "overlap_ratio"
+      ],
+      "citation_id": "[CROSSWALK]"
+    }
+  ],
+  "primary_sources": {
+    "michigan_gis": {
+      "name": "Michigan GIS Open Data",
+      "url": "https://gis-michigan.opendata.arcgis.com/",
+      "description": "Official Michigan geospatial data portal",
+      "license": "Public Domain"
+    },
+    "ingham_clerk": {
+      "name": "Ingham County Clerk",
+      "url": "https://clerk.ingham.org/",
+      "description": "Official election results and voter data",
+      "license": "Public Record"
+    },
+    "arcgis_ba": {
+      "name": "ArcGIS Business Analyst",
+      "url": "https://www.esri.com/en-us/arcgis/products/arcgis-business-analyst",
+      "description": "Esri demographic and consumer data",
+      "license": "Commercial (licensed)"
+    },
+    "census_acs": {
+      "name": "U.S. Census Bureau - American Community Survey",
+      "url": "https://www.census.gov/programs-surveys/acs",
+      "description": "5-year estimates (2019-2023)",
+      "license": "Public Domain"
+    },
+    "open_elections": {
+      "name": "OpenElections Project",
+      "url": "https://openelections.net/",
+      "description": "Standardized election results",
+      "license": "CC BY 4.0"
+    }
+  },
+  "methodology_references": {
+    "partisan_lean": {
+      "description": "Weighted average of DEM-REP margin across 3 elections",
+      "formula": "lean = (margin_2024 * 0.5) + (margin_2022 * 0.3) + (margin_2020 * 0.2)",
+      "scale": "-100 (Solid R) to +100 (Solid D)",
+      "doc_reference": "docs/METHODOLOGY.md#partisan-lean-calculation"
+    },
+    "swing_potential": {
+      "description": "Volatility score combining margin variance and ticket-splitting",
+      "formula": "swing = (stdev_margins * 0.4) + (avg_swing * 0.4) + (ticket_split * 0.2)",
+      "scale": "0 (Stable) to 100 (Highly Volatile)",
+      "doc_reference": "docs/METHODOLOGY.md#swing-potential-calculation"
+    },
+    "gotv_priority": {
+      "description": "Get-Out-The-Vote priority based on support strength and turnout gap",
+      "formula": "gotv = support_score * (1 - turnout_rate) * voter_pool_factor",
+      "scale": "0 to 100",
+      "doc_reference": "docs/DATA-ACQUISITION-STRATEGY.md#targeting-scores"
+    },
+    "persuasion_opportunity": {
+      "description": "Persuadable voter concentration based on margin closeness and moderate outlook",
+      "formula": "persuasion = f(margin_closeness, moderate_outlook_pct, independent_pct)",
+      "scale": "0 to 100",
+      "doc_reference": "docs/DATA-ACQUISITION-STRATEGY.md#targeting-scores"
+    },
+    "area_weighted_interpolation": {
+      "description": "Demographics estimated by overlapping block groups with precincts",
+      "formula": "precinct_value = \u03a3(overlap_ratio \u00d7 block_group_value)",
+      "doc_reference": "docs/METHODOLOGY.md#area-weighted-interpolation"
+    },
+    "h3_aggregation": {
+      "description": "Metrics aggregated to H3 hexagonal grid for uniform visualization",
+      "formula": "h3_value = \u03a3(overlap_ratio \u00d7 precinct_value) / \u03a3(overlap_ratio)",
+      "doc_reference": "docs/METHODOLOGY.md#h3-hexagonal-aggregation"
+    }
+  }
+}

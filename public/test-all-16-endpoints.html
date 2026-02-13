@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16 Endpoint Comprehensive Test Plan</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .endpoint-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .endpoint-section:nth-child(odd) { background-color: #f9f9f9; }
+        .endpoint-header { display: flex; justify-content: between; align-items: center; margin-bottom: 10px; }
+        .endpoint-id { font-weight: bold; color: #0066cc; font-family: monospace; }
+        .endpoint-name { font-size: 18px; font-weight: bold; color: #333; }
+        .category { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; }
+        .category.core { background-color: #28a745; }
+        .category.geographic { background-color: #17a2b8; }
+        .category.competitive { background-color: #dc3545; }
+        .category.demographic { background-color: #6f42c1; }
+        .category.temporal { background-color: #fd7e14; }
+        .category.detection { background-color: #e83e8c; }
+        .category.advanced { background-color: #6c757d; }
+        .category.comparative { background-color: #20c997; }
+        .category.predictive { background-color: #ffc107; color: black; }
+        .category.segmentation { background-color: #007bff; }
+        .category.strategic { background-color: #6610f2; }
+        .category.market { background-color: #198754; }
+        .category.brand { background-color: #0dcaf0; color: black; }
+        .category.real-estate { background-color: #495057; }
+        .test-query { font-family: monospace; background-color: #f8f9fa; padding: 8px; border-radius: 4px; margin: 5px 0; }
+        .expected-behavior { background-color: #e7f3ff; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .test-checklist { margin: 10px 0; }
+        .test-checklist li { margin: 5px 0; }
+        .status-box { display: inline-block; width: 20px; height: 20px; border: 2px solid #ccc; margin-right: 10px; }
+        .progress-bar { width: 100%; height: 20px; background-color: #e9ecef; border-radius: 10px; margin: 20px 0; }
+        .progress-fill { height: 100%; background-color: #007bff; border-radius: 10px; width: 0%; transition: width 0.3s; }
+        .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background-color: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Comprehensive Test Plan - All 16 Endpoints</h1>
+    
+    <div class="summary-stats">
+        <div class="stat-card">
+            <h3>16</h3>
+            <p>Total Endpoints</p>
+        </div>
+        <div class="stat-card">
+            <h3>9</h3>
+            <p>Categories</p>
+        </div>
+        <div class="stat-card">
+            <h3>3</h3>
+            <p>Visualization Types</p>
+        </div>
+        <div class="stat-card">
+            <h3>5</h3>
+            <p>Quintile Colors</p>
+        </div>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p id="progressText">0 of 16 endpoints tested (0%)</p>
+
+    <!-- Core Analysis -->
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/analyze</span>
+                <span class="endpoint-name">General Analysis</span>
+                <span class="category core">core</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Show me the top strategic markets for Nike expansion"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /analyze, uses choropleth with quintiles, references "strategic value scores"
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="analyze-routing"></span>Routes to /analyze endpoint</li>
+            <li><span class="status-box" data-test="analyze-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="analyze-quintiles"></span>Shows all 5 quintile colors</li>
+            <li><span class="status-box" data-test="analyze-claude"></span>Claude references "strategic value scores" (NOT competitive advantage)</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/correlation-analysis</span>
+                <span class="endpoint-name">Correlation Analysis</span>
+                <span class="category core">core</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "What factors are most correlated with Nike market share?"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /correlation-analysis, uses bivariate visualization
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="corr-routing"></span>Routes to /correlation-analysis endpoint</li>
+            <li><span class="status-box" data-test="corr-viz"></span>Uses bivariate visualization</li>
+            <li><span class="status-box" data-test="corr-data"></span>Shows correlation relationships</li>
+            <li><span class="status-box" data-test="corr-claude"></span>Claude explains correlations clearly</li>
+        </ul>
+    </div>
+
+    <!-- Geographic & Spatial -->
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/spatial-clusters</span>
+                <span class="endpoint-name">Geographic Clustering</span>
+                <span class="category geographic">geographic</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Group similar geographic areas for Nike expansion"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /spatial-clusters, uses cluster visualization
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="cluster-routing"></span>Routes to /spatial-clusters endpoint</li>
+            <li><span class="status-box" data-test="cluster-viz"></span>Uses cluster visualization</li>
+            <li><span class="status-box" data-test="cluster-groups"></span>Shows distinct cluster groups</li>
+            <li><span class="status-box" data-test="cluster-claude"></span>Claude explains cluster characteristics</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/demographic-insights</span>
+                <span class="endpoint-name">Demographic Analysis</span>
+                <span class="category demographic">demographic</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Analyze demographic patterns for athletic footwear markets"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /demographic-insights, uses choropleth with demographics
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="demo-routing"></span>Routes to /demographic-insights endpoint</li>
+            <li><span class="status-box" data-test="demo-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="demo-data"></span>Shows demographic breakdowns</li>
+            <li><span class="status-box" data-test="demo-claude"></span>Claude explains demographic insights</li>
+        </ul>
+    </div>
+
+    <!-- Competitive & Comparative -->
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/competitive-analysis</span>
+                <span class="endpoint-name">Brand Competition Analysis</span>
+                <span class="category competitive">competitive</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Nike vs Adidas competitive analysis across markets"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /competitive-analysis, uses multi-symbol, references "competitive advantage scores"
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="comp-routing"></span>Routes to /competitive-analysis endpoint</li>
+            <li><span class="status-box" data-test="comp-viz"></span>Uses multi-symbol visualization</li>
+            <li><span class="status-box" data-test="comp-brands"></span>Shows Nike vs Adidas comparison</li>
+            <li><span class="status-box" data-test="comp-claude"></span>Claude references "competitive advantage scores"</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/comparative-analysis</span>
+                <span class="endpoint-name">Comparative Analysis</span>
+                <span class="category comparative">comparative</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Compare Nike performance between urban vs rural markets"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /comparative-analysis, uses bivariate visualization
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="compara-routing"></span>Routes to /comparative-analysis endpoint</li>
+            <li><span class="status-box" data-test="compara-viz"></span>Uses bivariate visualization</li>
+            <li><span class="status-box" data-test="compara-data"></span>Shows urban vs rural comparison</li>
+            <li><span class="status-box" data-test="compara-claude"></span>Claude explains comparative insights</li>
+        </ul>
+    </div>
+
+    <!-- Detection & Advanced -->
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/trend-analysis</span>
+                <span class="endpoint-name">Trend Analysis</span>
+                <span class="category temporal">temporal</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Show me trending growth patterns in Nike markets"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /trend-analysis, uses choropleth with trend data
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="trend-routing"></span>Routes to /trend-analysis endpoint</li>
+            <li><span class="status-box" data-test="trend-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="trend-data"></span>Shows growth/decline patterns</li>
+            <li><span class="status-box" data-test="trend-claude"></span>Claude explains trend analysis</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/anomaly-detection</span>
+                <span class="endpoint-name">Anomaly Detection</span>
+                <span class="category detection">detection</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Detect unusual patterns in Nike sales data"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /anomaly-detection, uses multi-symbol to highlight anomalies
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="anom-routing"></span>Routes to /anomaly-detection endpoint</li>
+            <li><span class="status-box" data-test="anom-viz"></span>Uses multi-symbol visualization</li>
+            <li><span class="status-box" data-test="anom-data"></span>Highlights anomalous areas</li>
+            <li><span class="status-box" data-test="anom-claude"></span>Claude explains anomaly findings</li>
+        </ul>
+    </div>
+
+    <!-- Continue with remaining 8 endpoints... -->
+    
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/feature-interactions</span>
+                <span class="endpoint-name">Feature Interaction Analysis</span>
+                <span class="category advanced">advanced</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "How do income and age interact to affect Nike preference?"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /feature-interactions, uses bivariate visualization
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="feat-routing"></span>Routes to /feature-interactions endpoint</li>
+            <li><span class="status-box" data-test="feat-viz"></span>Uses bivariate visualization</li>
+            <li><span class="status-box" data-test="feat-data"></span>Shows interaction effects</li>
+            <li><span class="status-box" data-test="feat-claude"></span>Claude explains interactions</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/outlier-detection</span>
+                <span class="endpoint-name">Outlier Detection</span>
+                <span class="category detection">detection</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Find outlier markets with exceptional Nike performance"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /outlier-detection, uses multi-symbol to highlight outliers
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="out-routing"></span>Routes to /outlier-detection endpoint</li>
+            <li><span class="status-box" data-test="out-viz"></span>Uses multi-symbol visualization</li>
+            <li><span class="status-box" data-test="out-data"></span>Highlights outlier areas</li>
+            <li><span class="status-box" data-test="out-claude"></span>Claude explains outlier characteristics</li>
+        </ul>
+    </div>
+
+    <!-- Predictive & Strategic -->
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/predictive-modeling</span>
+                <span class="endpoint-name">Predictive Modeling</span>
+                <span class="category predictive">predictive</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Predict future Nike market performance by region"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /predictive-modeling, uses choropleth with predictions
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="pred-routing"></span>Routes to /predictive-modeling endpoint</li>
+            <li><span class="status-box" data-test="pred-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="pred-data"></span>Shows future predictions</li>
+            <li><span class="status-box" data-test="pred-claude"></span>Claude explains prediction methodology</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/segment-profiling</span>
+                <span class="endpoint-name">Market Segmentation</span>
+                <span class="category segmentation">segmentation</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Profile distinct Nike customer segments by geography"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /segment-profiling, uses cluster visualization
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="seg-routing"></span>Routes to /segment-profiling endpoint</li>
+            <li><span class="status-box" data-test="seg-viz"></span>Uses cluster visualization</li>
+            <li><span class="status-box" data-test="seg-data"></span>Shows distinct segments</li>
+            <li><span class="status-box" data-test="seg-claude"></span>Claude profiles each segment</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/scenario-analysis</span>
+                <span class="endpoint-name">Scenario Analysis</span>
+                <span class="category strategic">strategic</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "What-if analysis: Nike expands digital marketing budget 50%"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /scenario-analysis, uses choropleth with scenario impacts
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="scen-routing"></span>Routes to /scenario-analysis endpoint</li>
+            <li><span class="status-box" data-test="scen-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="scen-data"></span>Shows scenario impacts</li>
+            <li><span class="status-box" data-test="scen-claude"></span>Claude explains scenario outcomes</li>
+        </ul>
+    </div>
+
+    <!-- Market & Brand -->
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/market-sizing</span>
+                <span class="endpoint-name">Market Sizing Analysis</span>
+                <span class="category market">market</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Size the addressable market for Nike in each region"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /market-sizing, uses choropleth with market size data
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="mkt-routing"></span>Routes to /market-sizing endpoint</li>
+            <li><span class="status-box" data-test="mkt-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="mkt-data"></span>Shows market size estimates</li>
+            <li><span class="status-box" data-test="mkt-claude"></span>Claude explains market sizing methodology</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/brand-analysis</span>
+                <span class="endpoint-name">Brand Performance Analysis</span>
+                <span class="category brand">brand</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Analyze Nike brand awareness and perception by region"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /brand-analysis, uses multi-symbol with brand metrics
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="brand-routing"></span>Routes to /brand-analysis endpoint</li>
+            <li><span class="status-box" data-test="brand-viz"></span>Uses multi-symbol visualization</li>
+            <li><span class="status-box" data-test="brand-data"></span>Shows brand performance metrics</li>
+            <li><span class="status-box" data-test="brand-claude"></span>Claude explains brand insights</li>
+        </ul>
+    </div>
+
+    <div class="endpoint-section">
+        <div class="endpoint-header">
+            <div>
+                <span class="endpoint-id">/real-estate-analysis</span>
+                <span class="endpoint-name">Real Estate Market Analysis</span>
+                <span class="category real-estate">real-estate</span>
+            </div>
+        </div>
+        <div class="test-query">Test Query: "Analyze real estate markets for Nike retail store locations"</div>
+        <div class="expected-behavior">
+            <strong>Expected:</strong> Routes to /real-estate-analysis, uses choropleth with real estate data
+        </div>
+        <ul class="test-checklist">
+            <li><span class="status-box" data-test="re-routing"></span>Routes to /real-estate-analysis endpoint</li>
+            <li><span class="status-box" data-test="re-viz"></span>Uses choropleth visualization</li>
+            <li><span class="status-box" data-test="re-data"></span>Shows real estate market data</li>
+            <li><span class="status-box" data-test="re-claude"></span>Claude explains location insights</li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin: 40px 0;">
+        <button onclick="window.open('http://localhost:3000', '_blank')" style="padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
+            🚀 Start Testing All 16 Endpoints
+        </button>
+    </div>
+
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3>📋 Testing Instructions:</h3>
+        <ol>
+            <li>Click each test query in the application</li>
+            <li>Verify the endpoint routing is correct</li>
+            <li>Check visualization type and quintile colors</li>
+            <li>Confirm Claude analysis uses appropriate score terminology</li>
+            <li>Mark completed tests by clicking the status boxes</li>
+        </ol>
+    </div>
+
+    <script>
+        let completedTests = 0;
+        const totalTests = 16 * 4; // 16 endpoints × 4 tests each = 64 total tests
+
+        // Add click handlers to status boxes
+        document.querySelectorAll('.status-box').forEach(box => {
+            box.addEventListener('click', function() {
+                if (this.style.backgroundColor === 'green') {
+                    this.style.backgroundColor = '';
+                    completedTests--;
+                } else {
+                    this.style.backgroundColor = 'green';
+                    completedTests++;
+                }
+                updateProgress();
+            });
+        });
+
+        function updateProgress() {
+            const percentage = Math.round((completedTests / totalTests) * 100);
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = 
+                `${completedTests} of ${totalTests} tests completed (${percentage}%)`;
+        }
+
+        // Initialize
+        updateProgress();
+        console.log('🧪 16 Endpoint Test Plan Loaded');
+        console.log('Total tests to complete:', totalTests);
+    </script>
+</body>
+</html>

@@ -1,0 +1,2706 @@
+{
+  "metadata": {
+    "processedAt": "2025-12-04T13:50:39.681Z",
+    "source": "committee-contributions.json + independent-expenditures.json",
+    "candidateCount": 94,
+    "totalRaised": 230250582,
+    "totalIESpending": 325604194.03000015
+  },
+  "candidates": {
+    "H2MI05119": {
+      "candidateId": "H2MI05119",
+      "name": "IAO PROPERTY HOLDINGS LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "05",
+      "totalRaised": 884086,
+      "individualContributions": 0,
+      "committeeContributions": 884086,
+      "ieSupport": 2599353.42,
+      "ieOppose": 1719130.5,
+      "netIE": 880222.9199999999,
+      "totalInvestment": 3483439.42,
+      "committeeDonorCount": 356,
+      "topPACs": [
+        {
+          "name": "FRIENDS OF DAN KILDEE",
+          "amount": 10000
+        },
+        {
+          "name": "FRIENDS OF DAN KILDEE",
+          "amount": 10000
+        },
+        {
+          "name": "FRIENDS OF DAN KILDEE",
+          "amount": 7500
+        },
+        {
+          "name": "FRIENDS OF DAN KILDEE",
+          "amount": 7500
+        },
+        {
+          "name": "FRIENDS OF DAN KILDEE",
+          "amount": 7000
+        }
+      ]
+    },
+    "H0MI10287": {
+      "candidateId": "H0MI10287",
+      "name": "LISA MCCLAIN FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 957078,
+      "individualContributions": 0,
+      "committeeContributions": 957078,
+      "ieSupport": 2045.23,
+      "ieOppose": 0,
+      "netIE": 2045.23,
+      "totalInvestment": 959123.23,
+      "committeeDonorCount": 240,
+      "topPACs": [
+        {
+          "name": "LISA MCCLAIN FOR CONGRESS",
+          "amount": 10010
+        },
+        {
+          "name": "LISA MCCLAIN FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "LISA MCCLAIN FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "LISA MCCLAIN FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "LISA MCCLAIN FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H8MI13250": {
+      "candidateId": "H8MI13250",
+      "name": "RASHIDA TLAIB FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 112399,
+      "individualContributions": 0,
+      "committeeContributions": 112399,
+      "ieSupport": 47425.63000000001,
+      "ieOppose": 152585.34,
+      "netIE": -105159.70999999999,
+      "totalInvestment": 159824.63,
+      "committeeDonorCount": 37,
+      "topPACs": [
+        {
+          "name": "HARRIS MEDIA LLC",
+          "amount": 11752
+        },
+        {
+          "name": "RASHIDA TLAIB FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "RASHIDA TLAIB FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "RASHIDA TLAIB FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "RASHIDA TLAIB FOR CONGRESS",
+          "amount": 7500
+        }
+      ]
+    },
+    "H2MI03197": {
+      "candidateId": "H2MI03197",
+      "name": "JOHN GIBBS FOR CONGRESS INC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "03",
+      "totalRaised": -6000,
+      "individualContributions": 0,
+      "committeeContributions": -6000,
+      "ieSupport": 810817.77,
+      "ieOppose": 5455376.34,
+      "netIE": -4644558.57,
+      "totalInvestment": 804817.77,
+      "committeeDonorCount": 2,
+      "topPACs": [
+        {
+          "name": "JOHN GIBBS FOR CONGRESS INC",
+          "amount": -1000
+        },
+        {
+          "name": "JOHN GIBBS FOR CONGRESS INC.",
+          "amount": -5000
+        }
+      ]
+    },
+    "H8MI11254": {
+      "candidateId": "H8MI11254",
+      "name": "HALEY STEVENS FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "11",
+      "totalRaised": 1183651,
+      "individualContributions": 0,
+      "committeeContributions": 1183651,
+      "ieSupport": 9156865.790000001,
+      "ieOppose": 100000,
+      "netIE": 9056865.790000001,
+      "totalInvestment": 10340516.790000001,
+      "committeeDonorCount": 291,
+      "topPACs": [
+        {
+          "name": "HALEY STEVENS FOR CONGRESS",
+          "amount": 13603
+        },
+        {
+          "name": "HALEY STEVENS FOR CONGRESS",
+          "amount": 12000
+        },
+        {
+          "name": "HALEY STEVENS FOR CONGRESS",
+          "amount": 10500
+        },
+        {
+          "name": "HALEY STEVENS FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "HALEY STEVENS FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H8MI08102": {
+      "candidateId": "H8MI08102",
+      "name": "ELISSA SLOTKIN FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 317486,
+      "individualContributions": 0,
+      "committeeContributions": 317486,
+      "ieSupport": 2380421.7899999996,
+      "ieOppose": 6164077.819999998,
+      "netIE": -3783656.029999999,
+      "totalInvestment": 2697907.7899999996,
+      "committeeDonorCount": 56,
+      "topPACs": [
+        {
+          "name": "",
+          "amount": 110072
+        },
+        {
+          "name": "ALLSTAR COACHES",
+          "amount": 36414
+        },
+        {
+          "name": "ELISSA SLOTKIN FOR MICHIGAN",
+          "amount": 35000
+        },
+        {
+          "name": "ELISSA SLOTKIN FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "ELISSA SLOTKIN FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H6MI01226": {
+      "candidateId": "H6MI01226",
+      "name": "BERGMANFORCONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "01",
+      "totalRaised": 746210,
+      "individualContributions": 0,
+      "committeeContributions": 746210,
+      "ieSupport": 68176.18,
+      "ieOppose": 0,
+      "netIE": 68176.18,
+      "totalInvestment": 814386.1799999999,
+      "committeeDonorCount": 176,
+      "topPACs": [
+        {
+          "name": "VALENTINE GROUP, LLC",
+          "amount": 35000
+        },
+        {
+          "name": "BERGMAN FOR CONGRESS",
+          "amount": 15000
+        },
+        {
+          "name": "BERGMANFORCONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "BERGMAN FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "BERGMANFORCONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H4MI04126": {
+      "candidateId": "H4MI04126",
+      "name": "MOOLENAAR FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "04",
+      "totalRaised": 899727,
+      "individualContributions": 0,
+      "committeeContributions": 899727,
+      "ieSupport": 2047.94,
+      "ieOppose": 0,
+      "netIE": 2047.94,
+      "totalInvestment": 901774.94,
+      "committeeDonorCount": 254,
+      "topPACs": [
+        {
+          "name": "MOOLENAAR FOR CONGRESS",
+          "amount": 25900
+        },
+        {
+          "name": "MOOLENAAR FOR CONGRESS",
+          "amount": 10010
+        },
+        {
+          "name": "MOOLENAAR FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "JOHN MOOLENAAR FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "MOOLENAAR FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H0MI03316": {
+      "candidateId": "H0MI03316",
+      "name": "SCHOLTEN FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "03",
+      "totalRaised": 1669650,
+      "individualContributions": 0,
+      "committeeContributions": 1669650,
+      "ieSupport": 268697.55000000005,
+      "ieOppose": 662775.23,
+      "netIE": -394077.67999999993,
+      "totalInvestment": 1938347.55,
+      "committeeDonorCount": 380,
+      "topPACs": [
+        {
+          "name": "THE OUTREACH TEAM",
+          "amount": 113109
+        },
+        {
+          "name": "DCCC",
+          "amount": 103391
+        },
+        {
+          "name": "INVICTUS ADVERTISING",
+          "amount": 33000
+        },
+        {
+          "name": "SCHOLTEN FOR CONGRESS",
+          "amount": 21275
+        },
+        {
+          "name": "SCHOLTEN FOR CONGRESS",
+          "amount": 20000
+        }
+      ]
+    },
+    "H2MI10150": {
+      "candidateId": "H2MI10150",
+      "name": "JOHN JAMES FOR CONGRESS, INC.",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 10129660,
+      "individualContributions": 0,
+      "committeeContributions": 10129660,
+      "ieSupport": 1210524.8199999998,
+      "ieOppose": 8964690.120000001,
+      "netIE": -7754165.300000001,
+      "totalInvestment": 11340184.82,
+      "committeeDonorCount": 413,
+      "topPACs": [
+        {
+          "name": "WATERFRONT STRATEGIES",
+          "amount": 6290572
+        },
+        {
+          "name": "SEIFTER, ANDREW",
+          "amount": 686401
+        },
+        {
+          "name": "TARGETED VICTORY LLC",
+          "amount": 574150
+        },
+        {
+          "name": "OSCEOLA STRATEGIES LLC",
+          "amount": 432757
+        },
+        {
+          "name": "JOHN JAMES FOR CONGRESS INC.",
+          "amount": 356569
+        }
+      ]
+    },
+    "H0MI02094": {
+      "candidateId": "H0MI02094",
+      "name": "HUIZENGA FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "02",
+      "totalRaised": 1714515,
+      "individualContributions": 0,
+      "committeeContributions": 1714515,
+      "ieSupport": 208479.74999999997,
+      "ieOppose": 0,
+      "netIE": 208479.74999999997,
+      "totalInvestment": 1922994.75,
+      "committeeDonorCount": 311,
+      "topPACs": [
+        {
+          "name": "JAMESTOWN ASSOCIATES",
+          "amount": 107352
+        },
+        {
+          "name": "HUIZENGA FOR CONGRESS",
+          "amount": 23667
+        },
+        {
+          "name": "HUIZENGA FOR CONGRESS",
+          "amount": 21300
+        },
+        {
+          "name": "HUIZENGA FOR CONGRESS",
+          "amount": 15000
+        },
+        {
+          "name": "HUIZENGA FOR CONGRESS",
+          "amount": 15000
+        }
+      ]
+    },
+    "H4MI12079": {
+      "candidateId": "H4MI12079",
+      "name": "DEBBIE DINGELL FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "12",
+      "totalRaised": 965130,
+      "individualContributions": 0,
+      "committeeContributions": 965130,
+      "ieSupport": 6680.68,
+      "ieOppose": 0,
+      "netIE": 6680.68,
+      "totalInvestment": 971810.68,
+      "committeeDonorCount": 269,
+      "topPACs": [
+        {
+          "name": "DEBBIE DINGELL FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "DEBBIE DINGELL FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "DEBBIE DINGELL FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "DEBBIE DINGELL FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "DEBBIE DINGELL FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H4MI07103": {
+      "candidateId": "H4MI07103",
+      "name": "WALBERG FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "07",
+      "totalRaised": 812488,
+      "individualContributions": 0,
+      "committeeContributions": 812488,
+      "ieSupport": 1868.68,
+      "ieOppose": 0,
+      "netIE": 1868.68,
+      "totalInvestment": 814356.68,
+      "committeeDonorCount": 234,
+      "topPACs": [
+        {
+          "name": "WALBERG FOR CONGRESS",
+          "amount": 10362
+        },
+        {
+          "name": "WALBERG FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "WALBERG FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "WALBERG FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "WALBERG FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "S4MI00355": {
+      "candidateId": "S4MI00355",
+      "name": "PETERS FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 901064,
+      "individualContributions": 0,
+      "committeeContributions": 901064,
+      "ieSupport": 5595.7300000000005,
+      "ieOppose": 0,
+      "netIE": 5595.7300000000005,
+      "totalInvestment": 906659.73,
+      "committeeDonorCount": 313,
+      "topPACs": [
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 10000
+        },
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 10000
+        },
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 10000
+        },
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 10000
+        },
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 10000
+        }
+      ]
+    },
+    "H2MI13204": {
+      "candidateId": "H2MI13204",
+      "name": "SHRI FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 1287805,
+      "individualContributions": 0,
+      "committeeContributions": 1287805,
+      "ieSupport": 1012792.83,
+      "ieOppose": 2188284.0100000002,
+      "netIE": -1175491.1800000002,
+      "totalInvestment": 2300597.83,
+      "committeeDonorCount": 91,
+      "topPACs": [
+        {
+          "name": "TARGETED PLATFORM MEDIA LLC",
+          "amount": 1010142
+        },
+        {
+          "name": "SHRI FOR CONGRESS",
+          "amount": 28003
+        },
+        {
+          "name": "SHRI FOR CONGRESS",
+          "amount": 15000
+        },
+        {
+          "name": "SHRI FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "SHRI FOR CONGRESS",
+          "amount": 10000
+        }
+      ]
+    },
+    "H0MI03308": {
+      "candidateId": "H0MI03308",
+      "name": "PETER MEIJER FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "03",
+      "totalRaised": -1500,
+      "individualContributions": 0,
+      "committeeContributions": -1500,
+      "ieSupport": 1178031.1,
+      "ieOppose": 62000,
+      "netIE": 1116031.1,
+      "totalInvestment": 1176531.1,
+      "committeeDonorCount": 3,
+      "topPACs": [
+        {
+          "name": "PETER MEIJER FOR CONGRESS",
+          "amount": 2000
+        },
+        {
+          "name": "PETER MEIJER FOR CONGRESS",
+          "amount": -1000
+        },
+        {
+          "name": "PETER MEIJER FOR CONGRESS",
+          "amount": -2500
+        }
+      ]
+    },
+    "S8MI00281": {
+      "candidateId": "S8MI00281",
+      "name": "STABENOW FOR US SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": -79718,
+      "individualContributions": 0,
+      "committeeContributions": -79718,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -79718,
+      "committeeDonorCount": 35,
+      "topPACs": [
+        {
+          "name": "STABENOW FOR U.S. SENATE",
+          "amount": 5000
+        },
+        {
+          "name": "STABENOW FOR U.S. SENATE",
+          "amount": 5000
+        },
+        {
+          "name": "GREAT LAKES PAC",
+          "amount": 2500
+        },
+        {
+          "name": "STABENOW FOR US SENATE",
+          "amount": 2500
+        },
+        {
+          "name": "GREAT LAKES PAC",
+          "amount": 2500
+        }
+      ]
+    },
+    "H2MI07123": {
+      "candidateId": "H2MI07123",
+      "name": "WAVELENGTH STRATEGY LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "07",
+      "totalRaised": 14330806,
+      "individualContributions": 0,
+      "committeeContributions": 14330806,
+      "ieSupport": 3818806.51,
+      "ieOppose": 27525183.99000001,
+      "netIE": -23706377.48000001,
+      "totalInvestment": 18149612.509999998,
+      "committeeDonorCount": 224,
+      "topPACs": [
+        {
+          "name": "SKDKNICKERBOCKER LLC",
+          "amount": 7713184
+        },
+        {
+          "name": "MVAR MEDIA, LLC",
+          "amount": 2752913
+        },
+        {
+          "name": "SKDKNICKERBOCKER",
+          "amount": 832149
+        },
+        {
+          "name": "TARGETED VICTORY LLC",
+          "amount": 758130
+        },
+        {
+          "name": "OSCEOLA STRATEGIES LLC",
+          "amount": 434701
+        }
+      ]
+    },
+    "S4MI00470": {
+      "candidateId": "S4MI00470",
+      "name": "ELISSA SLOTKIN FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 82209538,
+      "individualContributions": 0,
+      "committeeContributions": 82209538,
+      "ieSupport": 24972631.270000007,
+      "ieOppose": 54260212.58999998,
+      "netIE": -29287581.319999974,
+      "totalInvestment": 107182169.27000001,
+      "committeeDonorCount": 266,
+      "topPACs": [
+        {
+          "name": "MAJORITY STRATEGIES LLC",
+          "amount": 32331382
+        },
+        {
+          "name": "ARENA LLC",
+          "amount": 10984391
+        },
+        {
+          "name": "TARGETED PLATFORM MEDIA LLC",
+          "amount": 10046680
+        },
+        {
+          "name": "TARGETED VICTORY LLC",
+          "amount": 6050543
+        },
+        {
+          "name": "NEBO MEDIA, INC",
+          "amount": 4488560
+        }
+      ]
+    },
+    "H0MI08042": {
+      "candidateId": "H0MI08042",
+      "name": "MIKE ROGERS FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 2000,
+      "individualContributions": 0,
+      "committeeContributions": 2000,
+      "ieSupport": 0,
+      "ieOppose": 1337.95,
+      "netIE": -1337.95,
+      "totalInvestment": 2000,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "MIKE ROGERS FOR CONGRESS",
+          "amount": 2000
+        }
+      ]
+    },
+    "H8MI09068": {
+      "candidateId": "H8MI09068",
+      "name": "PETERS FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "09",
+      "totalRaised": 3000,
+      "individualContributions": 0,
+      "committeeContributions": 3000,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 3000,
+      "committeeDonorCount": 3,
+      "topPACs": [
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 1000
+        },
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 1000
+        },
+        {
+          "name": "PETERS FOR MICHIGAN",
+          "amount": 1000
+        }
+      ]
+    },
+    "S8MI00372": {
+      "candidateId": "S8MI00372",
+      "name": "JOHN JAMES FOR CONGRESS, INC.",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 22734,
+      "individualContributions": 0,
+      "committeeContributions": 22734,
+      "ieSupport": 557977.56,
+      "ieOppose": 0,
+      "netIE": 557977.56,
+      "totalInvestment": 580711.56,
+      "committeeDonorCount": 11,
+      "topPACs": [
+        {
+          "name": "JOHN JAMES FOR CONGRESS, INC.",
+          "amount": 10000
+        },
+        {
+          "name": "JOHN JAMES FOR CONGRESS, INC.",
+          "amount": 5000
+        },
+        {
+          "name": "JOHN JAMES FOR CONGRESS, INC.",
+          "amount": 2000
+        },
+        {
+          "name": "JOHN JAMES FOR CONGRESS, INC.",
+          "amount": 2000
+        },
+        {
+          "name": "JOHN JAMES FOR SENATE INC.",
+          "amount": 2000
+        }
+      ]
+    },
+    "H2MI11240": {
+      "candidateId": "H2MI11240",
+      "name": "ESSHAKI, ERIC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "11",
+      "totalRaised": 2040,
+      "individualContributions": 0,
+      "committeeContributions": 2040,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 2040,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "ESSHAKI, ERIC",
+          "amount": 2040
+        }
+      ]
+    },
+    "H2MI17023": {
+      "candidateId": "H2MI17023",
+      "name": "LEVIN FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "17",
+      "totalRaised": 1000,
+      "individualContributions": 0,
+      "committeeContributions": 1000,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 1000,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "LEVIN FOR CONGRESS",
+          "amount": 1000
+        }
+      ]
+    },
+    "H4MI07210": {
+      "candidateId": "H4MI07210",
+      "name": "HERTEL FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "07",
+      "totalRaised": 15011557,
+      "individualContributions": 0,
+      "committeeContributions": 15011557,
+      "ieSupport": 1024386.6599999999,
+      "ieOppose": 2579786.62,
+      "netIE": -1555399.9600000002,
+      "totalInvestment": 16035943.66,
+      "committeeDonorCount": 231,
+      "topPACs": [
+        {
+          "name": "P2P MESSAGING",
+          "amount": 9963617
+        },
+        {
+          "name": "NATIONAL MEDIA RESEARCH PLANNING & PLACEMENT LLC",
+          "amount": 2380908
+        },
+        {
+          "name": "OSCEOLA STRATEGIES LLC",
+          "amount": 434701
+        },
+        {
+          "name": "WAVELENGTH STRATEGY LLC",
+          "amount": 398982
+        },
+        {
+          "name": "DELIVER STRATEGIES LLC",
+          "amount": 312185
+        }
+      ]
+    },
+    "S4MI00595": {
+      "candidateId": "S4MI00595",
+      "name": "ROGERS FOR SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 67022528,
+      "individualContributions": 0,
+      "committeeContributions": 67022528,
+      "ieSupport": 24092454.680000003,
+      "ieOppose": 41066112.109999985,
+      "netIE": -16973657.42999998,
+      "totalInvestment": 91114982.68,
+      "committeeDonorCount": 210,
+      "topPACs": [
+        {
+          "name": "MVAR MEDIA, LLC",
+          "amount": 21116959
+        },
+        {
+          "name": "MAJORITY STRATEGIES LLC",
+          "amount": 16696324
+        },
+        {
+          "name": "GAMBIT STRATEGIES LLC",
+          "amount": 12332937
+        },
+        {
+          "name": "TARGETED VICTORY LLC",
+          "amount": 7024734
+        },
+        {
+          "name": "ROGERS FOR SENATE",
+          "amount": 1667274
+        }
+      ]
+    },
+    "H2MI10176": {
+      "candidateId": "H2MI10176",
+      "name": "AMERICAN PRINTING AND GRAPHICS, INC.",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 8220831,
+      "individualContributions": 0,
+      "committeeContributions": 8220831,
+      "ieSupport": 3089816.389999999,
+      "ieOppose": 287279.75,
+      "netIE": 2802536.639999999,
+      "totalInvestment": 11310647.389999999,
+      "committeeDonorCount": 91,
+      "topPACs": [
+        {
+          "name": "TARGETED VICTORY LLC",
+          "amount": 4611335
+        },
+        {
+          "name": "SYMMETRY MEDIA LLC",
+          "amount": 1399991
+        },
+        {
+          "name": "OTG STRATEGIES",
+          "amount": 1077450
+        },
+        {
+          "name": "OSCEOLA STRATEGIES LLC",
+          "amount": 287003
+        },
+        {
+          "name": "SKDKNICKERBOCKER LLC",
+          "amount": 264731
+        }
+      ]
+    },
+    "S4MI00553": {
+      "candidateId": "S4MI00553",
+      "name": "HILL HARPER FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 52648,
+      "individualContributions": 0,
+      "committeeContributions": 52648,
+      "ieSupport": 17500,
+      "ieOppose": 0,
+      "netIE": 17500,
+      "totalInvestment": 70148,
+      "committeeDonorCount": 7,
+      "topPACs": [
+        {
+          "name": "THRESHOLD GROUP, INC.",
+          "amount": 37500
+        },
+        {
+          "name": "HILL HARPER FOR MICHIGAN",
+          "amount": 5000
+        },
+        {
+          "name": "HILL HARPER FOR MICHIGAN",
+          "amount": 5000
+        },
+        {
+          "name": "HILL HARPER FOR MICHIGAN",
+          "amount": 3300
+        },
+        {
+          "name": "HILL HARPER FOR MICHIGAN",
+          "amount": 1000
+        }
+      ]
+    },
+    "H4MI10107": {
+      "candidateId": "H4MI10107",
+      "name": "EMILY BUSCH FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 10133,
+      "individualContributions": 0,
+      "committeeContributions": 10133,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 10133,
+      "committeeDonorCount": 4,
+      "topPACs": [
+        {
+          "name": "EMILY BUSCH FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "EMILY BUSCH FOR CONGRESS",
+          "amount": 2500
+        },
+        {
+          "name": "EMILY BUSCH FOR CONGRESS",
+          "amount": 1633
+        },
+        {
+          "name": "EMILY BUSCH FOR CONGRESS",
+          "amount": 1000
+        }
+      ]
+    },
+    "H4MI01155": {
+      "candidateId": "H4MI01155",
+      "name": "CALLIE BARR FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "01",
+      "totalRaised": 34810,
+      "individualContributions": 0,
+      "committeeContributions": 34810,
+      "ieSupport": 12000,
+      "ieOppose": 0,
+      "netIE": 12000,
+      "totalInvestment": 46810,
+      "committeeDonorCount": 14,
+      "topPACs": [
+        {
+          "name": "TARGTED VOTER CONTACT",
+          "amount": 12000
+        },
+        {
+          "name": "CALLIE BARR FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "CALLIE BARR FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "CALLIE BARR FOR CONGRESS",
+          "amount": 1500
+        },
+        {
+          "name": "CALLIE BARR FOR CONGRESS",
+          "amount": 1050
+        }
+      ]
+    },
+    "H4MI04159": {
+      "candidateId": "H4MI04159",
+      "name": "JESSICA FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "04",
+      "totalRaised": 60767,
+      "individualContributions": 0,
+      "committeeContributions": 60767,
+      "ieSupport": 3207.2,
+      "ieOppose": 0,
+      "netIE": 3207.2,
+      "totalInvestment": 63974.2,
+      "committeeDonorCount": 17,
+      "topPACs": [
+        {
+          "name": "JESSICA FOR MICHIGAN",
+          "amount": 7500
+        },
+        {
+          "name": "JESSICA FOR MICHIGAN",
+          "amount": 6000
+        },
+        {
+          "name": "JESSICA FOR MICHIGAN",
+          "amount": 5510
+        },
+        {
+          "name": "JESSICA FOR MICHIGAN",
+          "amount": 5000
+        },
+        {
+          "name": "JESSICA FOR MICHIGAN",
+          "amount": 5000
+        }
+      ]
+    },
+    "H4MI03268": {
+      "candidateId": "H4MI03268",
+      "name": "PAUL HUDSON FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "03",
+      "totalRaised": 620864,
+      "individualContributions": 0,
+      "committeeContributions": 620864,
+      "ieSupport": 449448.62,
+      "ieOppose": 85000,
+      "netIE": 364448.62,
+      "totalInvestment": 1070312.62,
+      "committeeDonorCount": 32,
+      "topPACs": [
+        {
+          "name": "INVICTUS ADVERTISING",
+          "amount": 449446
+        },
+        {
+          "name": "AL MEDIA LLC",
+          "amount": 85000
+        },
+        {
+          "name": "PAUL HUDSON FOR CONGRESS",
+          "amount": 21000
+        },
+        {
+          "name": "PAUL HUDSON FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "PAUL HUDSON FOR CONGRESS",
+          "amount": 5000
+        }
+      ]
+    },
+    "H2MI13246": {
+      "candidateId": "H2MI13246",
+      "name": "ADAM HOLLIER FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 33000,
+      "individualContributions": 0,
+      "committeeContributions": 33000,
+      "ieSupport": 4309840.859999999,
+      "ieOppose": 0,
+      "netIE": 4309840.859999999,
+      "totalInvestment": 4342840.859999999,
+      "committeeDonorCount": 8,
+      "topPACs": [
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "HOLLIER, ADAM",
+          "amount": 5000
+        },
+        {
+          "name": "HOLLIER, ADAM",
+          "amount": 5000
+        },
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 5000
+        }
+      ]
+    },
+    "H4MI13234": {
+      "candidateId": "H4MI13234",
+      "name": "ADAM HOLLIER FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 21127,
+      "individualContributions": 0,
+      "committeeContributions": 21127,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 21127,
+      "committeeDonorCount": 8,
+      "topPACs": [
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 10000
+        },
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 2000
+        },
+        {
+          "name": "ADAM HOLLIER FOR CONGRESS",
+          "amount": 1500
+        }
+      ]
+    },
+    "H4MI10099": {
+      "candidateId": "H4MI10099",
+      "name": "DIANE YOUNG FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 8600,
+      "individualContributions": 0,
+      "committeeContributions": 8600,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 8600,
+      "committeeDonorCount": 4,
+      "topPACs": [
+        {
+          "name": "YOUNG, DIANE",
+          "amount": 5000
+        },
+        {
+          "name": "DIANE YOUNG FOR CONGRESS",
+          "amount": 2500
+        },
+        {
+          "name": "DIANE YOUNG FOR CONGRESS",
+          "amount": 1000
+        },
+        {
+          "name": "DIANE YOUNG FOR CONGRESS",
+          "amount": 100
+        }
+      ]
+    },
+    "H6MI07108": {
+      "candidateId": "H6MI07108",
+      "name": "KILDEE, DALE",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "07",
+      "totalRaised": -2500,
+      "individualContributions": 0,
+      "committeeContributions": -2500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -2500,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "KILDEE, DALE",
+          "amount": -2500
+        }
+      ]
+    },
+    "H2MI01142": {
+      "candidateId": "H2MI01142",
+      "name": "FRIENDS OF DR BOB",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "01",
+      "totalRaised": -289,
+      "individualContributions": 0,
+      "committeeContributions": -289,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -289,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "FRIENDS OF DR BOB",
+          "amount": -289
+        }
+      ]
+    },
+    "H2MI08154": {
+      "candidateId": "H2MI08154",
+      "name": "COMMITTEE TO ELECT BRIAN JAYE",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": -39,
+      "individualContributions": 0,
+      "committeeContributions": -39,
+      "ieSupport": 1318.97,
+      "ieOppose": 0,
+      "netIE": 1318.97,
+      "totalInvestment": 1279.97,
+      "committeeDonorCount": 2,
+      "topPACs": [
+        {
+          "name": "JAYE, BRIAN",
+          "amount": 250
+        },
+        {
+          "name": "COMMITTEE TO ELECT BRIAN JAYE",
+          "amount": -289
+        }
+      ]
+    },
+    "H4MI10131": {
+      "candidateId": "H4MI10131",
+      "name": "DR. KUMAR FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 8500,
+      "individualContributions": 0,
+      "committeeContributions": 8500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 8500,
+      "committeeDonorCount": 3,
+      "topPACs": [
+        {
+          "name": "DR. KUMAR FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "DR. KUMAR FOR CONGRESS",
+          "amount": 2500
+        },
+        {
+          "name": "DR. KUMAR FOR CONGRESS",
+          "amount": 1000
+        }
+      ]
+    },
+    "H4MI03243": {
+      "candidateId": "H4MI03243",
+      "name": "MICHAEL MARKEY FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "03",
+      "totalRaised": 306400,
+      "individualContributions": 0,
+      "committeeContributions": 306400,
+      "ieSupport": 0,
+      "ieOppose": 306297.97000000003,
+      "netIE": -306297.97000000003,
+      "totalInvestment": 306400,
+      "committeeDonorCount": 3,
+      "topPACs": [
+        {
+          "name": "INVICTUS ADVERTISING",
+          "amount": 306296
+        },
+        {
+          "name": "STAFFORD PRINTING",
+          "amount": 232
+        },
+        {
+          "name": "MICHAEL MARKEY FOR CONGRESS",
+          "amount": -128
+        }
+      ]
+    },
+    "H2MI13311": {
+      "candidateId": "H2MI13311",
+      "name": "STEVEN ELLIOTT FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 25,
+      "individualContributions": 0,
+      "committeeContributions": 25,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 25,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "STEVEN ELLIOTT FOR CONGRESS",
+          "amount": 25
+        }
+      ]
+    },
+    "S4MI00561": {
+      "candidateId": "S4MI00561",
+      "name": "DR. SHERRY FOR SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": -362,
+      "individualContributions": 0,
+      "committeeContributions": -362,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -362,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "DR. SHERRY FOR SENATE",
+          "amount": -362
+        }
+      ]
+    },
+    "S4MI00637": {
+      "candidateId": "S4MI00637",
+      "name": "MEIJER FOR SENATE, INC.",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": -60122,
+      "individualContributions": 0,
+      "committeeContributions": -60122,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -60122,
+      "committeeDonorCount": 5,
+      "topPACs": [
+        {
+          "name": "MEIJER FOR SENATE, INC.",
+          "amount": 5000
+        },
+        {
+          "name": "MEIJER FOR SENATE, INC.",
+          "amount": 5000
+        },
+        {
+          "name": "MEIJER FOR SENATE, INC.",
+          "amount": 3300
+        },
+        {
+          "name": "MEIJER FOR SENATE INC.",
+          "amount": 2500
+        },
+        {
+          "name": "MEIJER FOR SENATE, INC.",
+          "amount": -75922
+        }
+      ]
+    },
+    "S4MI00603": {
+      "candidateId": "S4MI00603",
+      "name": "CHIEF JAMES CRAIG FOR SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": -1387,
+      "individualContributions": 0,
+      "committeeContributions": -1387,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -1387,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "CHIEF JAMES CRAIG FOR SENATE",
+          "amount": -1387
+        }
+      ]
+    },
+    "H8MI09118": {
+      "candidateId": "H8MI09118",
+      "name": "COMMUNITY LABOR ADMINISTRATIVE SERVICES",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "09",
+      "totalRaised": 2221,
+      "individualContributions": 0,
+      "committeeContributions": 2221,
+      "ieSupport": 1127705.97,
+      "ieOppose": 774829.0599999999,
+      "netIE": 352876.91000000003,
+      "totalInvestment": 1129926.97,
+      "committeeDonorCount": 2,
+      "topPACs": [
+        {
+          "name": "COMMUNITY LABOR ADMINISTRATIVE SERVICES",
+          "amount": 2221
+        },
+        {
+          "name": "ANDY LEVIN FOR CONGRESS",
+          "amount": 0
+        }
+      ]
+    },
+    "S4MI00504": {
+      "candidateId": "S4MI00504",
+      "name": "LESLIE LOVE FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 250,
+      "individualContributions": 0,
+      "committeeContributions": 250,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 250,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "LESLIE LOVE FOR MICHIGAN",
+          "amount": 250
+        }
+      ]
+    },
+    "H4MI08218": {
+      "candidateId": "H4MI08218",
+      "name": "KRISTEN FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 8212119,
+      "individualContributions": 0,
+      "committeeContributions": 8212119,
+      "ieSupport": 1081187.4999999998,
+      "ieOppose": 1211964.18,
+      "netIE": -130776.68000000017,
+      "totalInvestment": 9293306.5,
+      "committeeDonorCount": 247,
+      "topPACs": [
+        {
+          "name": "P2P MESSAGING",
+          "amount": 4898559
+        },
+        {
+          "name": "KRISTEN FOR MICHIGAN",
+          "amount": 753171
+        },
+        {
+          "name": "NATIONAL MEDIA RESEARCH PLANNING & PLACEMENT LLC",
+          "amount": 629952
+        },
+        {
+          "name": "OSCEOLA STRATEGIES LLC",
+          "amount": 434311
+        },
+        {
+          "name": "TECHNICOLOR POLITICAL LLC",
+          "amount": 142987
+        }
+      ]
+    },
+    "S4MI00694": {
+      "candidateId": "S4MI00694",
+      "name": "JUSTIN AMASH FOR SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 494108,
+      "individualContributions": 0,
+      "committeeContributions": 494108,
+      "ieSupport": 681801.0499999997,
+      "ieOppose": 0,
+      "netIE": 681801.0499999997,
+      "totalInvestment": 1175909.0499999998,
+      "committeeDonorCount": 9,
+      "topPACs": [
+        {
+          "name": "UNITED STATES POSTAL SERVICE",
+          "amount": 292552
+        },
+        {
+          "name": "ENGAGEMENT STRATEGIES, INC.",
+          "amount": 181056
+        },
+        {
+          "name": "JUSTIN AMASH FOR SENATE",
+          "amount": 5000
+        },
+        {
+          "name": "JUSTIN AMASH FOR SENATE",
+          "amount": 5000
+        },
+        {
+          "name": "JUSTIN AMASH FOR SENATE",
+          "amount": 5000
+        }
+      ]
+    },
+    "H0MI08141": {
+      "candidateId": "H0MI08141",
+      "name": "PAUL JUNGE FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 7336286,
+      "individualContributions": 0,
+      "committeeContributions": 7336286,
+      "ieSupport": 50053.229999999996,
+      "ieOppose": 11226167.129999999,
+      "netIE": -11176113.899999999,
+      "totalInvestment": 7386339.23,
+      "committeeDonorCount": 104,
+      "topPACs": [
+        {
+          "name": "LEFT HOOK",
+          "amount": 4580347
+        },
+        {
+          "name": "AMPLIFY MEDIA LLC",
+          "amount": 598269
+        },
+        {
+          "name": "OSCEOLA STRATEGIES LLC",
+          "amount": 434311
+        },
+        {
+          "name": "LEAGUE OF CONSERVATION VOTERS, INC.",
+          "amount": 410400
+        },
+        {
+          "name": "LEFT HOOK",
+          "amount": 312293
+        }
+      ]
+    },
+    "H2MI04260": {
+      "candidateId": "H2MI04260",
+      "name": "ALFONSO FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "04",
+      "totalRaised": 250,
+      "individualContributions": 0,
+      "committeeContributions": 250,
+      "ieSupport": 4909.85,
+      "ieOppose": 43994.81,
+      "netIE": -39084.96,
+      "totalInvestment": 5159.85,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "ALFONSO FOR CONGRESS",
+          "amount": 250
+        }
+      ]
+    },
+    "H4MI10123": {
+      "candidateId": "H4MI10123",
+      "name": "COMMITTEE TO ELECT RHONDA POWELL",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 500,
+      "individualContributions": 0,
+      "committeeContributions": 500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 500,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "COMMITTEE TO ELECT RHONDA POWELL",
+          "amount": 500
+        }
+      ]
+    },
+    "H8MI13185": {
+      "candidateId": "H8MI13185",
+      "name": "BUYING TIME LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 2279670,
+      "individualContributions": 0,
+      "committeeContributions": 2279670,
+      "ieSupport": 0,
+      "ieOppose": 2268731.96,
+      "netIE": -2268731.96,
+      "totalInvestment": 2279670,
+      "committeeDonorCount": 4,
+      "topPACs": [
+        {
+          "name": "BUYING TIME LLC",
+          "amount": 2259270
+        },
+        {
+          "name": "INTERNATIONAL OUTDOORS",
+          "amount": 12900
+        },
+        {
+          "name": "MARY WATERS FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "MARY WATERS FOR CONGRESS",
+          "amount": 2500
+        }
+      ]
+    },
+    "H4MI13259": {
+      "candidateId": "H4MI13259",
+      "name": "MAIL MATTERS LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 52538,
+      "individualContributions": 0,
+      "committeeContributions": 52538,
+      "ieSupport": 52540.26,
+      "ieOppose": 0,
+      "netIE": 52540.26,
+      "totalInvestment": 105078.26000000001,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "MAIL MATTERS LLC",
+          "amount": 52538
+        }
+      ]
+    },
+    "H4MI08259": {
+      "candidateId": "H4MI08259",
+      "name": "RED EAGLE MEDIA",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 302810,
+      "individualContributions": 0,
+      "committeeContributions": 302810,
+      "ieSupport": 665690,
+      "ieOppose": 0,
+      "netIE": 665690,
+      "totalInvestment": 968500,
+      "committeeDonorCount": 8,
+      "topPACs": [
+        {
+          "name": "RED EAGLE MEDIA",
+          "amount": 291810
+        },
+        {
+          "name": "MARY DRAVES FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "MARY DRAVES FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "MARY DRAVES FOR CONGRESS",
+          "amount": 5000
+        },
+        {
+          "name": "MARY DRAVES FOR CONGRESS",
+          "amount": 2500
+        }
+      ]
+    },
+    "H4MI08242": {
+      "candidateId": "H4MI08242",
+      "name": "COLLIER FOR MICHIGAN",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 175695,
+      "individualContributions": 0,
+      "committeeContributions": 175695,
+      "ieSupport": 160696.04,
+      "ieOppose": 0,
+      "netIE": 160696.04,
+      "totalInvestment": 336391.04000000004,
+      "committeeDonorCount": 4,
+      "topPACs": [
+        {
+          "name": "COLLIER FOR MICHIGAN",
+          "amount": 102520
+        },
+        {
+          "name": "DOVER STRATEGY GROUP",
+          "amount": 63175
+        },
+        {
+          "name": "COLLIER FOR MICHIGAN",
+          "amount": 5000
+        },
+        {
+          "name": "COLLIER FOR MICHIGAN",
+          "amount": 5000
+        }
+      ]
+    },
+    "H4MI05164": {
+      "candidateId": "H4MI05164",
+      "name": "ELECT LIBBI URBAN",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "05",
+      "totalRaised": 22000,
+      "individualContributions": 0,
+      "committeeContributions": 22000,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 22000,
+      "committeeDonorCount": 4,
+      "topPACs": [
+        {
+          "name": "ELECT LIBBY URBAN",
+          "amount": 10000
+        },
+        {
+          "name": "ELECT LIBBI URBAN",
+          "amount": 6000
+        },
+        {
+          "name": "ELECT LIBBI URBAN",
+          "amount": 5000
+        },
+        {
+          "name": "ELECT LIBBI URBAN",
+          "amount": 1000
+        }
+      ]
+    },
+    "H4MI10115": {
+      "candidateId": "H4MI10115",
+      "name": "TIFFANY TILLEY FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 4500,
+      "individualContributions": 0,
+      "committeeContributions": 4500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 4500,
+      "committeeDonorCount": 2,
+      "topPACs": [
+        {
+          "name": "TIFFANY TILLEY FOR CONGRESS",
+          "amount": 2500
+        },
+        {
+          "name": "TIFFANY TILLEY FOR CONGRESS",
+          "amount": 2000
+        }
+      ]
+    },
+    "H4MI02000": {
+      "candidateId": "H4MI02000",
+      "name": "COMMITTEE TO ELECT MICHAEL LYNCH",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "02",
+      "totalRaised": 250,
+      "individualContributions": 0,
+      "committeeContributions": 250,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 250,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "COMMITTEE TO ELECT MICHAEL LYNCH",
+          "amount": 250
+        }
+      ]
+    },
+    "H4MI13267": {
+      "candidateId": "H4MI13267",
+      "name": "COMMITTEE TO ELECT CHRISTOPHER CLARK",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 500,
+      "individualContributions": 0,
+      "committeeContributions": 500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 500,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "COMMITTEE TO ELECT CHRISTOPHER CLARK",
+          "amount": 500
+        }
+      ]
+    },
+    "H6MI10235": {
+      "candidateId": "H6MI10235",
+      "name": "SKDKNICKERBOCKER LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 110000,
+      "individualContributions": 0,
+      "committeeContributions": 110000,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 110000,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "SKDKNICKERBOCKER LLC",
+          "amount": 110000
+        }
+      ]
+    },
+    "H4MI06154": {
+      "candidateId": "H4MI06154",
+      "name": "COMMITTEE TO ELECT HEATHER SMILEY",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "06",
+      "totalRaised": -500,
+      "individualContributions": 0,
+      "committeeContributions": -500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -500,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "COMMITTEE TO ELECT HEATHER SMILEY",
+          "amount": -500
+        }
+      ]
+    },
+    "H2MI13360": {
+      "candidateId": "H2MI13360",
+      "name": "MARTELL BIVINGS FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": -540,
+      "individualContributions": 0,
+      "committeeContributions": -540,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -540,
+      "committeeDonorCount": 2,
+      "topPACs": [
+        {
+          "name": "MARTELL BIVINGS FOR CONGRESS",
+          "amount": 1000
+        },
+        {
+          "name": "MARTELL BIVINGS FOR CONGRESS",
+          "amount": -1540
+        }
+      ]
+    },
+    "H2MI10287": {
+      "candidateId": "H2MI10287",
+      "name": "WESTERN AMERICAN MAILERS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 110,
+      "individualContributions": 0,
+      "committeeContributions": 110,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 110,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "WESTERN AMERICAN MAILERS",
+          "amount": 110
+        }
+      ]
+    },
+    "H2MI10077": {
+      "candidateId": "H2MI10077",
+      "name": "18TH STREET MEDIA LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 439004,
+      "individualContributions": 0,
+      "committeeContributions": 439004,
+      "ieSupport": 64746.62999999994,
+      "ieOppose": 0,
+      "netIE": 64746.62999999994,
+      "totalInvestment": 503750.62999999995,
+      "committeeDonorCount": 4,
+      "topPACs": [
+        {
+          "name": "18TH STREET MEDIA LLC",
+          "amount": 287279
+        },
+        {
+          "name": "BLITZ CANVASSING LLC",
+          "amount": 145754
+        },
+        {
+          "name": "",
+          "amount": 4329
+        },
+        {
+          "name": "FOR OUR FUTURE ACTION FUND",
+          "amount": 1642
+        }
+      ]
+    },
+    "H4MI03045": {
+      "candidateId": "H4MI03045",
+      "name": "EHLERS, BRUCE",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "03",
+      "totalRaised": 200,
+      "individualContributions": 0,
+      "committeeContributions": 200,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 200,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "EHLERS, BRUCE",
+          "amount": 200
+        }
+      ]
+    },
+    "H0MI14149": {
+      "candidateId": "H0MI14149",
+      "name": "",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "14",
+      "totalRaised": 4056,
+      "individualContributions": 0,
+      "committeeContributions": 4056,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 4056,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "",
+          "amount": 4056
+        }
+      ]
+    },
+    "H2MI10184": {
+      "candidateId": "H2MI10184",
+      "name": "PAYLOCITY",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "10",
+      "totalRaised": 8431,
+      "individualContributions": 0,
+      "committeeContributions": 8431,
+      "ieSupport": 45300.62,
+      "ieOppose": 0,
+      "netIE": 45300.62,
+      "totalInvestment": 53731.62,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "PAYLOCITY",
+          "amount": 8431
+        }
+      ]
+    },
+    "H2MI13196": {
+      "candidateId": "H2MI13196",
+      "name": "NEHME FOR CONGRESS",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": -21,
+      "individualContributions": 0,
+      "committeeContributions": -21,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -21,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "NEHME FOR CONGRESS",
+          "amount": -21
+        }
+      ]
+    },
+    "H2MI07149": {
+      "candidateId": "H2MI07149",
+      "name": "ZENITH STRATEGY LLC",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "07",
+      "totalRaised": 62785,
+      "individualContributions": 0,
+      "committeeContributions": 62785,
+      "ieSupport": 62788.38,
+      "ieOppose": 0,
+      "netIE": 62788.38,
+      "totalInvestment": 125573.38,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "ZENITH STRATEGY LLC",
+          "amount": 62785
+        }
+      ]
+    },
+    "H4MI08275": {
+      "candidateId": "H4MI08275",
+      "name": "APEX GROWTH STRATEGIES",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 16437,
+      "individualContributions": 0,
+      "committeeContributions": 16437,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 16437,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "APEX GROWTH STRATEGIES",
+          "amount": 16437
+        }
+      ]
+    },
+    "H4MI08267": {
+      "candidateId": "H4MI08267",
+      "name": "MISSION CONTROL, INC.",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 294653,
+      "individualContributions": 0,
+      "committeeContributions": 294653,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 294653,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "MISSION CONTROL, INC.",
+          "amount": 294653
+        }
+      ]
+    },
+    "S4MI00710": {
+      "candidateId": "S4MI00710",
+      "name": "SOLIS-MULLEN FOR US SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 20,
+      "individualContributions": 0,
+      "committeeContributions": 20,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 20,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "SOLIS-MULLEN FOR US SENATE",
+          "amount": 20
+        }
+      ]
+    },
+    "H4MI09125": {
+      "candidateId": "H4MI09125",
+      "name": "COMMITTEE TO ELECT CLINTON ST MOSLEY",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "09",
+      "totalRaised": 10500,
+      "individualContributions": 0,
+      "committeeContributions": 10500,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 10500,
+      "committeeDonorCount": 3,
+      "topPACs": [
+        {
+          "name": "COMMITTEE TO ELECT CLINTON ST MOSLEY",
+          "amount": 5000
+        },
+        {
+          "name": "COMMITTEE TO ELECT CLINTON ST MOSLEY",
+          "amount": 5000
+        },
+        {
+          "name": "COMMITTEE TO ELECT CLINTON ST MOSLEY",
+          "amount": 500
+        }
+      ]
+    },
+    "S4MI00686": {
+      "candidateId": "S4MI00686",
+      "name": "CURRAN FOR SENATE",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": -190,
+      "individualContributions": 0,
+      "committeeContributions": -190,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": -190,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "CURRAN FOR SENATE",
+          "amount": -190
+        }
+      ]
+    },
+    "S4MI00183": {
+      "candidateId": "S4MI00183",
+      "name": "TMA DIRECT",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "totalRaised": 10000,
+      "individualContributions": 0,
+      "committeeContributions": 10000,
+      "ieSupport": 0,
+      "ieOppose": 0,
+      "netIE": 0,
+      "totalInvestment": 10000,
+      "committeeDonorCount": 1,
+      "topPACs": [
+        {
+          "name": "TMA DIRECT",
+          "amount": 10000
+        }
+      ]
+    },
+    "P80001571": {
+      "candidateId": "P80001571",
+      "name": "TRUMP, DONALD",
+      "party": "REP",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 248727.29,
+      "ieOppose": 29685395.86999999,
+      "netIE": -29436668.57999999,
+      "totalInvestment": 248727.29
+    },
+    "P00009423": {
+      "candidateId": "P00009423",
+      "name": "HARRIS, KAMALA",
+      "party": "DEM",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 729118.2400000001,
+      "ieOppose": 554825.74,
+      "netIE": 174292.50000000012,
+      "totalInvestment": 729118.2400000001
+    },
+    "UNKNOWN": {
+      "candidateId": "UNKNOWN",
+      "name": "Slotkin, Elissa",
+      "party": "OTHER",
+      "office": "S",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 5204455.629999997,
+      "ieOppose": 32201993.60999999,
+      "netIE": -26997537.97999999,
+      "totalInvestment": 5204455.629999997
+    },
+    "P40011793": {
+      "candidateId": "P40011793",
+      "name": "Kennedy, Robert",
+      "party": "OTHER",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 19145.65,
+      "ieOppose": 23166.16,
+      "netIE": -4020.5099999999984,
+      "totalInvestment": 19145.65
+    },
+    "P80000722": {
+      "candidateId": "P80000722",
+      "name": "BIDEN, JOSEPH R JR",
+      "party": "DEM",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 167483.43,
+      "ieOppose": 232341.97,
+      "netIE": -64858.54000000001,
+      "totalInvestment": 167483.43
+    },
+    "P20003984": {
+      "candidateId": "P20003984",
+      "name": "STEIN, JILL",
+      "party": "OTHER",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 139784.96,
+      "ieOppose": 0,
+      "netIE": 139784.96,
+      "totalInvestment": 139784.96
+    },
+    "P60012465": {
+      "candidateId": "P60012465",
+      "name": "BIDEN, JR., JOSEPH R.",
+      "party": "OTHER",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 8000,
+      "ieOppose": 0,
+      "netIE": 8000,
+      "totalInvestment": 8000
+    },
+    "P40010977": {
+      "candidateId": "P40010977",
+      "name": "Haley, Nikki",
+      "party": "REP",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 679989.42,
+      "ieOppose": 0,
+      "netIE": 679989.42,
+      "totalInvestment": 679989.42
+    },
+    "P40013765": {
+      "candidateId": "P40013765",
+      "name": "SUAREZ, FRANCIS X.",
+      "party": "REP",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 2525.3,
+      "ieOppose": 0,
+      "netIE": 2525.3,
+      "totalInvestment": 2525.3
+    },
+    "P40011983": {
+      "candidateId": "P40011983",
+      "name": "Oliver, Chase",
+      "party": "OTHER",
+      "office": "P",
+      "state": "MI",
+      "district": "00",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 1400000,
+      "ieOppose": 0,
+      "netIE": 1400000,
+      "totalInvestment": 1400000
+    },
+    "H2MI13295": {
+      "candidateId": "H2MI13295",
+      "name": "ROBERSON, PORTIA",
+      "party": "DEM",
+      "office": "H",
+      "state": "MI",
+      "district": "13",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 5000,
+      "ieOppose": 0,
+      "netIE": 5000,
+      "totalInvestment": 5000
+    },
+    "H2CT05222": {
+      "candidateId": "H2CT05222",
+      "name": "Logan, George",
+      "party": "REP",
+      "office": "H",
+      "state": "MI",
+      "district": "05",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 2000,
+      "ieOppose": 0,
+      "netIE": 2000,
+      "totalInvestment": 2000
+    },
+    "H6MI04113": {
+      "candidateId": "H6MI04113",
+      "name": "UPTON, FREDERICK STEPHEN",
+      "party": "REP",
+      "office": "H",
+      "state": "MI",
+      "district": "06",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 0,
+      "ieOppose": 16250,
+      "netIE": -16250,
+      "totalInvestment": 0
+    },
+    "H2MI04294": {
+      "candidateId": "H2MI04294",
+      "name": "WENKE, LORENCE RAYMOND MR",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "04",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 0,
+      "ieOppose": 3965.01,
+      "netIE": -3965.01,
+      "totalInvestment": 0
+    },
+    "H2MI06117": {
+      "candidateId": "H2MI06117",
+      "name": "Carra, Stephen",
+      "party": "REP",
+      "office": "H",
+      "state": "MI",
+      "district": "06",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 0,
+      "ieOppose": 9624.3,
+      "netIE": -9624.3,
+      "totalInvestment": 0
+    },
+    "H2MI05176": {
+      "candidateId": "H2MI05176",
+      "name": "Goldberg, Bartley",
+      "party": "DEM",
+      "office": "H",
+      "state": "MI",
+      "district": "05",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 1702.06,
+      "ieOppose": 0,
+      "netIE": 1702.06,
+      "totalInvestment": 1702.06
+    },
+    "H2MI14111": {
+      "candidateId": "H2MI14111",
+      "name": "LAWRENCE, BRENDA",
+      "party": "DEM",
+      "office": "H",
+      "state": "MI",
+      "district": "14",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 26940.519999999997,
+      "ieOppose": 0,
+      "netIE": 26940.519999999997,
+      "totalInvestment": 26940.519999999997
+    },
+    "H2MI12172": {
+      "candidateId": "H2MI12172",
+      "name": "WINFREY, JANICE MARIE",
+      "party": "DEM",
+      "office": "H",
+      "state": "MI",
+      "district": "12",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 1603410,
+      "ieOppose": 0,
+      "netIE": 1603410,
+      "totalInvestment": 1603410
+    },
+    "H0MI04140": {
+      "candidateId": "H0MI04140",
+      "name": "CANNY, DAVID",
+      "party": "OTHER",
+      "office": "H",
+      "state": "MI",
+      "district": "08",
+      "totalRaised": 0,
+      "individualContributions": 0,
+      "committeeContributions": 0,
+      "ieSupport": 225898.25,
+      "ieOppose": 0,
+      "netIE": 225898.25,
+      "totalInvestment": 225898.25
+    }
+  },
+  "byRace": {
+    "MI-H-05": [
+      "H2MI05119",
+      "H4MI05164",
+      "H2CT05222",
+      "H2MI05176"
+    ],
+    "MI-H-10": [
+      "H0MI10287",
+      "H2MI10150",
+      "H2MI10176",
+      "H4MI10107",
+      "H4MI10099",
+      "H4MI10131",
+      "H4MI10123",
+      "H4MI10115",
+      "H6MI10235",
+      "H2MI10287",
+      "H2MI10077",
+      "H2MI10184"
+    ],
+    "MI-H-13": [
+      "H8MI13250",
+      "H2MI13204",
+      "H2MI13246",
+      "H4MI13234",
+      "H2MI13311",
+      "H8MI13185",
+      "H4MI13259",
+      "H4MI13267",
+      "H2MI13360",
+      "H2MI13196",
+      "H2MI13295"
+    ],
+    "MI-H-03": [
+      "H2MI03197",
+      "H0MI03316",
+      "H0MI03308",
+      "H4MI03268",
+      "H4MI03243",
+      "H4MI03045"
+    ],
+    "MI-H-11": [
+      "H8MI11254",
+      "H2MI11240"
+    ],
+    "MI-H-08": [
+      "H8MI08102",
+      "H0MI08042",
+      "H2MI08154",
+      "H4MI08218",
+      "H0MI08141",
+      "H4MI08259",
+      "H4MI08242",
+      "H4MI08275",
+      "H4MI08267",
+      "H0MI04140"
+    ],
+    "MI-H-01": [
+      "H6MI01226",
+      "H4MI01155",
+      "H2MI01142"
+    ],
+    "MI-H-04": [
+      "H4MI04126",
+      "H4MI04159",
+      "H2MI04260",
+      "H2MI04294"
+    ],
+    "MI-H-02": [
+      "H0MI02094",
+      "H4MI02000"
+    ],
+    "MI-H-12": [
+      "H4MI12079",
+      "H2MI12172"
+    ],
+    "MI-H-07": [
+      "H4MI07103",
+      "H2MI07123",
+      "H4MI07210",
+      "H6MI07108",
+      "H2MI07149"
+    ],
+    "MI-S-00": [
+      "S4MI00355",
+      "S8MI00281",
+      "S4MI00470",
+      "S8MI00372",
+      "S4MI00595",
+      "S4MI00553",
+      "S4MI00561",
+      "S4MI00637",
+      "S4MI00603",
+      "S4MI00504",
+      "S4MI00694",
+      "S4MI00710",
+      "S4MI00686",
+      "S4MI00183",
+      "UNKNOWN"
+    ],
+    "MI-H-09": [
+      "H8MI09068",
+      "H8MI09118",
+      "H4MI09125"
+    ],
+    "MI-H-17": [
+      "H2MI17023"
+    ],
+    "MI-H-06": [
+      "H4MI06154",
+      "H6MI04113",
+      "H2MI06117"
+    ],
+    "MI-H-14": [
+      "H0MI14149",
+      "H2MI14111"
+    ],
+    "MI-P-00": [
+      "P80001571",
+      "P00009423",
+      "P40011793",
+      "P80000722",
+      "P20003984",
+      "P60012465",
+      "P40010977",
+      "P40013765",
+      "P40011983"
+    ]
+  }
+}

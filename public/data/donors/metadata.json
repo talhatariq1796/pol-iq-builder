@@ -1,0 +1,18 @@
+{
+  "cycles": [
+    "2024",
+    "2026"
+  ],
+  "processedAt": "2025-12-02T14:42:24.052Z",
+  "source": "fec-bulk",
+  "stats": {
+    "totalContributions": 105312,
+    "totalAmount": 15954603,
+    "uniqueDonors": 7663,
+    "zipCodes": 21,
+    "dateRange": {
+      "earliest": "2021-01-09",
+      "latest": "2025-10-31"
+    }
+  }
+}

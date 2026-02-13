@@ -1,0 +1,1190 @@
+import { buffer, distance, intersect, union } from "@arcgis/core/geometry/geometryEngine";
+import StatisticDefinition from "@arcgis/core/rest/support/StatisticDefinition";
+import Geometry from "@arcgis/core/geometry/Geometry";
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
+import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer";
+import { QueryClassifier } from './QueryClassifier';
+import { IntentType, QueryIntent } from './QueryClassifier';
+import { QueryResults } from "@/types/ai-layers";
+import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
+import Graphic from "@arcgis/core/Graphic";
+import Point from "@arcgis/core/geometry/Point";
+import { shouldIncludeGeometry } from '@/utils/layer-geometry-manager';
+import { layers } from '@/config/layers';
+import Query from '@arcgis/core/rest/support/Query';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import Polygon from '@arcgis/core/geometry/Polygon';
+import { FilterConfig, FilterState, LayerState, AIResponse, AIResponseData } from './types';
+import { determineVisualizationType, VisualizationFactory, VisualizationType } from '@/utils/visualization-factory';
+import { shouldIncludeGeometry as layerUtilsShouldIncludeGeometry } from '../utils/layerUtils';
+import { LayerConfig } from '@/types/layers';
+
+// Type helper for ArcGIS geometry types
+type ArcGISGeometryType = 'point' | 'multipoint' | 'polyline' | 'polygon' | 'extent' | 'mesh' | undefined;
+
+// Extended geometry type that includes multipatch
+type FeatureSetGeometryType = 'point' | 'multipoint' | 'polyline' | 'polygon' | 'mesh' | 'multipatch' | undefined;
+
+// Layer state interfaces
+export interface FilterConfig {
+  field: string;
+  label: string;
+  type: 'range' | 'select' | 'text';
+  options?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export interface FilterState {
+  [key: string]: {
+    value: any;
+    enabled: boolean;
+  };
+}
+
+export interface LayerState {
+  layer: __esri.FeatureLayer;
+  visible: boolean;
+  group: string;
+  filters: FilterConfig[];
+  activeFilters?: FilterState;
+  queryResults?: QueryResults;
+  loading: boolean;
+}
+
+export interface AIResponseData {
+  text: string;
+  features?: __esri.Graphic[];
+  statistics?: Record<string, number>;
+  location?: __esri.Point;
+  radius?: number;
+  area?: __esri.Polygon;
+}
+
+export interface AIResponse {
+  data: AIResponseData;
+  type: 'COMPETITION' | 'MARKET' | 'STANDARD';
+}
+
+export default class AILayerManager {
+  private layerStates: { [key: string]: LayerState };
+  private view: __esri.MapView;
+  private queryClassifier: QueryClassifier;
+  private lastIntent?: QueryIntent;
+  private filterCache: Map<string, string> = new Map();
+  private defaultFilters: Map<string, FilterConfig[]> = new Map();
+  private loadingStates: Map<string, boolean> = new Map();
+  private queryCache: Map<string, __esri.FeatureSet> = new Map();
+  private readonly queryTimeout: number = 30000; // 30 second timeout
+  private readonly maxRetries: number = 3;
+  private readonly retryDelay: number = 1000;
+
+  public context: {
+    selectedArea?: __esri.Geometry;
+    activeFilters: FilterState;
+    conversationHistory: Array<{
+      query: string;
+      response: AIResponse;
+      timestamp: Date;
+    }>;
+  };
+
+  constructor(
+    view: __esri.MapView,
+    layerStates: Record<string, LayerState>
+  ) {
+    console.log('[AILayerManager] Initializing with states:', {
+      stateCount: Object.keys(layerStates).length,
+      states: Object.entries(layerStates).map(([id, state]) => ({
+        id,
+        hasLayer: !!state.layer,
+        title: state.layer?.title,
+        group: state.group
+      }))
+    });
+
+    this.view = view;
+    this.layerStates = layerStates;
+    this.queryClassifier = new QueryClassifier();
+    this.context = {
+      conversationHistory: [],
+      activeFilters: {}
+    };
+
+    // Initialize in sequence to ensure proper startup
+    this.initializeManager().catch(error => {
+      console.error('[AILayerManager] Initialization failed:', error);
+    });
+  }
+
+  // Comprehensive initialization method
+  private async initializeManager(): Promise<void> {
+    console.log('[InitializeManager] Starting initialization...');
+    this.loadingStates.set('global', true);
+    try {
+      // Track initialization state for each layer
+      const initStates = new Map<string, string>();
+      
+      // 1. Load layers sequentially with proper error handling
+      for (const [id, state] of Object.entries(this.layerStates)) {
+        try {
+          if (!state.layer) {
+            initStates.set(id, 'missing_layer');
+            continue;
+          }
+
+          this.loadingStates.set(id, true);
+          
+          // Ensure layer is properly loaded
+          if (!state.layer.loaded) {
+            await state.layer.load();
+          }
+          
+          // Verify layer capabilities after loading
+          if (!state.layer.capabilities?.operations?.supportsQuery) {
+            console.warn(`[Initialize] Layer ${id} does not support querying`);
+            initStates.set(id, 'not_queryable');
+            continue;
+          }
+
+          // Initialize layer-specific settings
+          await this.initializeLayerSettings(id, state);
+          
+          initStates.set(id, 'initialized');
+          
+        } catch (error) {
+          console.error(`[Initialize] Error initializing layer ${id}:`, error);
+          initStates.set(id, 'error');
+        } finally {
+          this.loadingStates.set(id, false);
+        }
+      }
+
+      // 2. Initialize default filters after layers are loaded
+      await this.initializeDefaultFilters();
+
+      // 3. Populate query results with proper pagination
+      await this.populateAllLayerQueryResults();
+
+      // 4. Verify layer access and capabilities
+      const verificationResults = await this.verifyAllLayers();
+
+      console.log('[InitializeManager] Initialization complete:', {
+        layerStates: Object.fromEntries(initStates),
+        verificationResults
+      });
+
+    } catch (error) {
+      console.error('[InitializeManager] Critical initialization error:', error);
+      throw error;
+    } finally {
+      this.loadingStates.set('global', false);
+    }
+  }
+
+  // Enhanced layer settings initialization
+  private async initializeLayerSettings(id: string, state: LayerState): Promise<void> {
+    // Verify and set layer visibility
+    state.layer.visible = state.visible ?? false;
+
+    // Initialize layer filters if not present
+    if (!state.filters) {
+      state.filters = await this.generateDefaultFilters(state.layer);
+    }
+
+    // Set up layer-specific configurations
+    if (state.layer.capabilities?.operations?.supportsQuery) {
+      // Set reasonable query limits
+      state.layer.capabilities.query = {
+        ...state.layer.capabilities.query,
+        maxRecordCount: 1000,
+        supportsPagination: true
+      };
+    }
+  }
+
+  // Create empty feature set when no results are found
+  private createEmptyFeatureSet(layer: __esri.FeatureLayer): __esri.FeatureSet {
+    return new FeatureSet({
+      features: [],
+      fields: layer.fields || [],
+      geometryType: this.convertGeometryType(layer.geometryType),
+      spatialReference: layer.spatialReference,
+      displayFieldName: layer.displayField || "",
+      exceededTransferLimit: false
+    });
+  }
+
+  // Enhanced query method with pagination
+  private async executeQueryWithPagination(
+    layer: __esri.FeatureLayer,
+    query: __esri.Query,
+    maxFeatures: number = 1000
+  ): Promise<__esri.FeatureSet> {
+    console.log('[Query] Starting paginated query:', {
+      layerId: layer.id,
+      maxFeatures
+    });
+
+    const allFeatures: __esri.Graphic[] = [];
+    let resultCount = 0;
+    let exceededTransferLimit = true;
+    
+    while (exceededTransferLimit && resultCount < maxFeatures) {
+      query.start = resultCount;
+      query.num = Math.min(100, maxFeatures - resultCount);
+
+      try {
+        const result = await this.executeQueryWithDiagnostics(layer, query);
+        
+        if (result.features?.length) {
+          allFeatures.push(...result.features);
+          resultCount += result.features.length;
+        }
+        
+        exceededTransferLimit = result.exceededTransferLimit || false;
+        
+        if (!exceededTransferLimit || resultCount >= maxFeatures) {
+          break;
+        }
+
+      } catch (error) {
+        console.error('[Query] Pagination error:', error);
+        break;
+      }
+    }
+
+    return new FeatureSet({
+      features: allFeatures,
+      fields: layer.fields || [],
+      geometryType: this.convertGeometryType(layer.geometryType),
+      spatialReference: layer.spatialReference
+    });
+  }
+
+  // Enhanced query diagnostics method
+  private async executeQueryWithDiagnostics(
+    layer: __esri.FeatureLayer, 
+    query: __esri.Query
+  ): Promise<__esri.FeatureSet> {
+    console.log('[Query] Starting execution:', {
+      layerId: layer.id,
+      layerTitle: layer.title,
+      queryParams: {
+        where: query.where,
+        geometry: query.geometry ? {
+          type: query.geometry.type,
+          extent: query.geometry.extent
+        } : 'None',
+        outFields: query.outFields,
+        spatialRelationship: query.spatialRelationship
+      }
+    });
+
+    let attempt = 0;
+    while (attempt < this.maxRetries) {
+      try {
+        // Ensure layer is loaded
+        if (!layer.loaded) {
+          await layer.load();
+        }
+
+        // Check if layer supports querying
+        if (!layer.capabilities?.operations?.supportsQuery) {
+          throw new Error('Layer does not support querying');
+        }
+
+        // Store original visibility
+        const wasVisible = layer.visible;
+        
+        try {
+          // Temporarily make layer queryable if needed
+          if (!wasVisible) {
+            layer.visible = true;
+          }
+
+          // Execute query with timeout
+          const queryPromise = layer.queryFeatures(query);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Query timeout')), this.queryTimeout);
+          });
+
+          const result = await Promise.race([queryPromise, timeoutPromise]);
+
+          if (!result.features || result.features.length === 0) {
+            console.warn(`[Query] No features found for layer ${layer.title}`, {
+              queryParams: query,
+              layerCapabilities: layer.capabilities
+            });
+          }
+
+          console.log('[Query] Execution successful:', {
+            featureCount: result.features?.length,
+            fieldCount: result.fields?.length
+          });
+
+          return result;
+
+        } finally {
+          // Restore original visibility
+          if (!wasVisible) {
+            layer.visible = false;
+          }
+        }
+
+      } catch (error) {
+        console.error(`[Query] Attempt ${attempt + 1} failed:`, error);
+        
+        if (attempt < this.maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, this.retryDelay * Math.pow(2, attempt)));
+          attempt++;
+          continue;
+        }
+        
+        return this.createEmptyFeatureSet(layer);
+      }
+    }
+
+    return this.createEmptyFeatureSet(layer);
+  }
+
+  // Updated function name and logs
+  public async populateAllLayerQueryResults(): Promise<void> {
+    console.log('[PopulateAllResults] Starting query results population for all layers');
+    
+    const populationPromises = Object.entries(this.layerStates)
+      .filter(([_, state]) => state.layer?.loaded && state.layer.capabilities?.operations?.supportsQuery)
+      .map(async ([id, state]) => {
+        try {
+          // Create base query
+          const query = state.layer.createQuery();
+          query.outFields = ["*"];
+          
+          // Use utility to determine if geometry should be included
+          const includeGeometry = shouldIncludeGeometry(id, layers[id]);
+          query.returnGeometry = includeGeometry;
+          
+          query.where = state.activeFilters ? 
+            this.buildFilterExpression(state.activeFilters) : 
+            "1=1";
+
+          // Execute paginated query
+          const maxFeatures = state.layer.capabilities?.query?.maxRecordCount || 1000;
+          const featureSet = await this.executeQueryWithPagination(
+            state.layer,
+            query,
+            maxFeatures
+          );
+
+          // Cache results
+          this.queryCache.set(id, featureSet);
+          
+          // Update layer state
+          this.layerStates[id].queryResults = {
+            features: featureSet.features?.map(f => new Graphic({
+              geometry: new Point({
+                x: (f.geometry as __esri.Point).x,
+                y: (f.geometry as __esri.Point).y,
+                spatialReference: { wkid: 4326 }
+              }),
+              attributes: f.attributes
+            })),
+            fields: featureSet.fields || [],
+            hasQueryResults: featureSet.features?.length > 0,
+            featureCount: featureSet.features?.length || 0
+          };
+
+          console.log(`[PopulateAllResults] Populated layer ${id}:`, {
+            featureCount: featureSet.features?.length,
+            fieldCount: featureSet.fields?.length
+          });
+
+        } catch (error) {
+          console.error(`[PopulateAllResults] Error populating layer ${id}:`, error);
+          this.layerStates[id].queryResults = {
+            features: [],
+            fields: [],
+            hasQueryResults: false,
+            featureCount: 0
+          };
+        }
+      });
+
+    await Promise.all(populationPromises);
+    
+    console.log('[PopulateAllResults] Query results population complete:', {
+      layerCount: Object.keys(this.layerStates).length,
+      populatedCount: Object.values(this.layerStates)
+        .filter(state => state.queryResults?.hasQueryResults).length
+    });
+  }
+
+  // Initialize default filters for layers
+  private async initializeDefaultFilters(): Promise<void> {
+    console.log('[InitializeDefaultFilters] Starting filter configuration');
+
+    for (const [layerId, state] of Object.entries(this.layerStates)) {
+      if (!state.layer?.loaded) continue;
+
+      try {
+        const defaultFilters = await this.generateDefaultFilters(state.layer);
+        this.defaultFilters.set(layerId, defaultFilters);
+        if ('filters' in state) {
+          state.filters = defaultFilters;
+        } else {
+          console.warn(`LayerState for ${layerId} is missing 'filters' property.`);
+        }
+
+      } catch (error) {
+        console.error(`[InitFilters] Error for layer ${layerId}:`, error);
+      }
+    }
+
+    console.log('[InitializeDefaultFilters] Completed filter configuration', {
+      layersProcessed: this.defaultFilters.size
+    });
+  }
+
+  // Helper method to generate default filters
+  private async generateDefaultFilters(layer: __esri.FeatureLayer): Promise<FilterConfig[]> {
+    const filters: FilterConfig[] = [];
+    
+    if (!layer.fields) return filters;
+
+    layer.fields.forEach(field => {
+      switch (field.type) {
+        case 'small-integer':
+        case 'integer':
+        case 'single':
+        case 'double':
+          filters.push({
+            field: field.name,
+            label: field.alias || field.name,
+            type: 'range',
+            min: 0,
+            max: 100,
+            step: field.type === 'integer' || field.type === 'small-integer' ? 1 : 0.1
+          });
+          break;
+        case 'string':
+          filters.push({
+            field: field.name,
+            label: field.alias || field.name,
+            type: 'text'
+          });
+          break;
+        default:
+          if ('domain' in field && field.domain?.type === 'coded-value') {
+            const codedDomain = field.domain as __esri.CodedValueDomain;
+            if (codedDomain?.codedValues) {
+              filters.push({
+                field: field.name,
+                label: field.alias || field.name,
+                type: 'select',
+                options: codedDomain.codedValues.map(cv => cv.name)
+              });
+            }
+          }
+          break;
+      }
+    });
+
+    return filters;
+  }
+
+  // Build filter expression for layer querying
+  private buildFilterExpression(filters: FilterState): string {
+    console.log('[BuildFilterExpression] Building expression from filters:', {
+      filterCount: Object.keys(filters).length
+    });
+
+    const expressions: string[] = [];
+    
+    Object.entries(filters).forEach(([field, state]) => {
+      if (!state.enabled) return;
+
+      const fieldInfo = this.findFieldConfig(field);
+      if (!fieldInfo) return;
+
+      switch (fieldInfo.type) {
+        case 'range':
+          if (Array.isArray(state.value)) {
+            expressions.push(
+              `${field} >= ${state.value[0]} AND ${field} <= ${state.value[1]}`
+            );
+          }
+          break;
+        case 'select':
+          if (state.value) {
+            expressions.push(`${field} = '${state.value}'`);
+          }
+          break;
+        case 'text':
+          if (state.value) {
+            expressions.push(
+              `${field} LIKE '%${state.value.replace(/'/g, "''")}%'`
+            );
+          }
+          break;
+      }
+    });
+
+    const finalExpression = expressions.length > 0 ? expressions.join(' AND ') : '1=1';
+    
+    console.log('[BuildFilterExpression] Built expression:', {
+      expressionCount: expressions.length,
+      finalExpression
+    });
+
+    return finalExpression;
+  }
+
+  // Find field configuration for a given field name
+  private findFieldConfig(fieldName: string): FilterConfig | undefined {
+    for (const configs of this.defaultFilters.values()) {
+      const config = configs.find(c => c.field === fieldName);
+      if (config) return config;
+    }
+    return undefined;
+  }
+
+  // Layer verification methods
+  public async verifyLayerAccess(layerId: string): Promise<boolean> {
+    try {
+      const state = this.layerStates[layerId];
+      if (!state?.layer?.loaded) return false;
+
+      const query = state.layer.createQuery();
+      query.where = "1=1";
+      query.outFields = ["*"];
+      query.num = 1;
+
+      await this.executeQueryWithDiagnostics(state.layer, query);
+      return true;
+    } catch (error) {
+      console.error(`[VerifyLayer] Access failed for ${layerId}:`, error);
+      return false;
+    }
+  }
+
+  public async verifyAllLayers(): Promise<Record<string, boolean>> {
+    console.log('[VerifyAllLayers] Starting verification');
+    
+    const verificationResults: Record<string, boolean> = {};
+    
+    for (const layerId of Object.keys(this.layerStates)) {
+      verificationResults[layerId] = await this.verifyLayerAccess(layerId);
+    }
+
+    console.log('[VerifyAllLayers] Verification complete:', {
+      totalLayers: Object.keys(verificationResults).length,
+      verifiedLayers: Object.values(verificationResults).filter(Boolean).length
+    });
+
+    return verificationResults;
+  }
+
+  // Spatial and attribute query methods
+  public async spatialQuery(geometry: __esri.Geometry): Promise<Record<string, __esri.FeatureSet>> {
+    console.log('[SpatialQuery] Starting:', {
+      geometryType: geometry.type,
+      layerCount: Object.keys(this.layerStates).length
+    });
+    
+    const results: Record<string, __esri.FeatureSet> = {};
+    
+    for (const [id, state] of Object.entries(this.layerStates)) {
+      if (!state.layer?.loaded) continue;
+
+      try {
+        console.log(`[SpatialQuery] Querying layer ${id}`);
+        
+        const query = state.layer.createQuery();
+        query.geometry = geometry;
+        query.spatialRelationship = "intersects";
+        query.outFields = ["*"];
+        
+        // Use utility to determine if geometry should be included
+        const includeGeometry = shouldIncludeGeometry(id, layers[id]);
+        query.returnGeometry = includeGeometry;
+
+        const featureSet = await this.executeQueryWithPagination(
+          state.layer,
+          query
+        );
+        
+        // Update layer state and cache
+        this.layerStates[id].queryResults = {
+          features: featureSet.features?.map(f => new Graphic({
+            geometry: new Point({
+              x: (f.geometry as __esri.Point).x,
+              y: (f.geometry as __esri.Point).y,
+              spatialReference: { wkid: 4326 }
+            }),
+            attributes: f.attributes
+          })),
+          fields: featureSet.fields || [],
+          hasQueryResults: featureSet.features?.length > 0,
+          featureCount: featureSet.features?.length || 0
+        };
+        
+        this.queryCache.set(id, featureSet);
+        results[id] = featureSet;
+
+      } catch (error) {
+        console.error(`[SpatialQuery] Error for layer ${id}:`, error);
+        const emptySet = this.createEmptyFeatureSet(state.layer);
+        this.layerStates[id].queryResults = {
+          features: [],
+          fields: [],
+          hasQueryResults: false,
+          featureCount: 0
+        };
+        results[id] = emptySet;
+      }
+    }
+
+    console.log('[SpatialQuery] Complete:', {
+      layerCount: Object.keys(results).length,
+      resultsPerLayer: Object.entries(results).map(([id, result]) => ({
+        id,
+        featureCount: result.features?.length || 0
+      }))
+    });
+
+    return results;
+  }
+
+  // Analysis methods
+  private async analyzeCompetition(searchArea: __esri.Polygon): Promise<{
+    competitors: number;
+    averageDistance: number;
+    marketGap: boolean;
+  }> {
+    console.log('[AnalyzeCompetition] Starting analysis');
+
+    const competitorLayers = Object.entries(this.layerStates)
+      .filter(([_, state]) => state.group === 'competitors')
+      .map(([id, _]) => id);
+
+    console.log('[AnalyzeCompetition] Found competitor layers:', competitorLayers);
+
+    const results = await this.spatialQuery(searchArea);
+    const competitors = competitorLayers.reduce((total, layerId) => {
+      return total + (results[layerId]?.features?.length || 0);
+    }, 0);
+
+    let averageDistance = 0;
+    if (competitors > 1) {
+      let totalDistance = 0;
+      let count = 0;
+      
+      for (const layerId of competitorLayers) {
+        const features = results[layerId]?.features || [];
+        for (let i = 0; i < features.length; i++) {
+          for (let j = i + 1; j < features.length; j++) {
+            if (features[i].geometry && features[j].geometry) {
+              totalDistance += distance(features[i].geometry, features[j].geometry) as number;
+              count++;
+            }
+          }
+        }
+      }
+      
+      averageDistance = count > 0 ? totalDistance / count : 0;
+    }
+
+    const marketGap = competitors === 0 || (competitors < 3 && averageDistance > 2000);
+
+    console.log('[AnalyzeCompetition] Analysis complete:', {
+      competitors,
+      averageDistance,
+      marketGap
+    });
+
+    return { competitors, averageDistance, marketGap };
+  }
+
+  private async calculateMarketPotential(area: __esri.Polygon): Promise<{
+    demographics: {
+      totalHouseholds: number;
+      medianIncome: number;
+      ageGroups: { [key: string]: number };
+    };
+    spendingPower: number;
+    penetrationRate: number;
+  }> {
+    console.log('[CalculateMarketPotential] Starting calculation for area:', area?.extent);
+    let demographics = {
+      totalHouseholds: 0,
+      medianIncome: 0,
+      ageGroups: {}
+    };
+    let spendingPower = 0;
+    let penetrationRate = 0;
+
+    try {
+      // --- Query FED_data Layer for Households, Income, Age --- 
+      const fedLayerConfig = layers['FED_data'];
+      if (!fedLayerConfig) {
+        console.error('[CalculateMarketPotential] FED_data layer configuration not found.');
+        throw new Error('FED_data layer config missing');
+      }
+      const fedLayer = this.layerStates[fedLayerConfig.id]?.layer; 
+      if (!fedLayer) {
+         console.warn('[CalculateMarketPotential] FED_data layer not found in layerStates. Attempting to create.');
+         // Potentially try to load it dynamically if not present
+         // For now, throw error or return default
+         throw new Error('FED_data layer not available in manager');
+      }
+      
+      // Define fields needed from FED_data
+      const fields = ['ECYHTYHHD', 'ECYHNIMED', 'ECYPTAMED']; // Households, Median Income, Median Age
+
+      const query = new Query({
+        geometry: area,
+        spatialRelationship: "intersects",
+        outFields: fields,
+        returnGeometry: false
+      });
+
+      console.log('[CalculateMarketPotential] Querying FED_data:', { where: query.where, outFields: query.outFields });
+      const results = await this.executeQueryWithDiagnostics(fedLayer, query);
+      console.log('[CalculateMarketPotential] FED_data query results:', results.features.length);
+
+      // Aggregate results
+      let householdsSum = 0;
+      let incomeSum = 0;
+      let ageSum = 0;
+      let validFeatureCount = 0;
+
+      if (results.features && results.features.length > 0) {
+        results.features.forEach(feature => {
+          const attrs = feature.attributes;
+          if (attrs) {
+            householdsSum += attrs['ECYHTYHHD'] || 0;
+            incomeSum += attrs['ECYHNIMED'] || 0;
+            ageSum += attrs['ECYPTAMED'] || 0;
+            // TODO: Add age group calculation if needed based on ECYPTAMED or other age fields
+            validFeatureCount++;
+          }
+        });
+
+        if (validFeatureCount > 0) {
+          demographics = {
+            totalHouseholds: householdsSum,
+            medianIncome: incomeSum / validFeatureCount,
+            ageGroups: {}
+          };
+          console.log('[CalculateMarketPotential] Aggregated Demographics:', demographics);
+        } else {
+          console.warn('[CalculateMarketPotential] No valid features found in FED_data query results.');
+        }
+      } else {
+        console.warn('[CalculateMarketPotential] No features returned from FED_data query.');
+      }
+
+      // --- Calculate Spending Power --- 
+      // Using totalHouseholds and medianIncome
+      // Assuming 15% discretionary spending (adjust as needed)
+      spendingPower = demographics.totalHouseholds * demographics.medianIncome * 0.15; 
+      console.log('[CalculateMarketPotential] Calculated Spending Power:', spendingPower);
+
+      // --- TODO: Calculate Penetration Rate --- 
+      // This likely requires querying other layers (e.g., competitors, existing customers)
+      // Placeholder value
+      penetrationRate = 0; 
+      console.log('[CalculateMarketPotential] Penetration Rate (Placeholder):', penetrationRate);
+
+    } catch (error) {
+      console.error('[CalculateMarketPotential] Error during calculation:', error);
+      // Return default/empty values on error or re-throw
+      // For now, return defaults initialized above
+    }
+
+    return {
+      demographics,
+      spendingPower,
+      penetrationRate
+    };
+  }
+
+  // Filter management methods
+  public async updateLayerFilters(layerId: string, filters: FilterState): Promise<void> {
+    console.log('[UpdateLayerFilters] Updating filters for layer:', {
+      layerId,
+      filterCount: Object.keys(filters).length
+    });
+
+    const state = this.layerStates[layerId];
+    if (!state?.layer?.loaded) {
+      console.warn('[UpdateLayerFilters] Layer not found or not loaded:', layerId);
+      return;
+    }
+
+    try {
+      const expression = this.buildFilterExpression(filters);
+      
+      console.log('[UpdateLayerFilters] Built expression:', {
+        layerId,
+        expression
+      });
+
+      this.filterCache.set(layerId, expression);
+      state.layer.definitionExpression = expression;
+      state.activeFilters = filters;
+      this.context.activeFilters = {
+        ...this.context.activeFilters,
+        ...filters
+      };
+
+      await state.layer.refresh();
+      await this.populateAllLayerQueryResults();
+
+    } catch (error) {
+      console.error(`[UpdateLayerFilters] Error updating filters for layer ${layerId}:`, error);
+      throw error;
+    }
+  }
+
+  public async updateAllFilters(filters: FilterState): Promise<void> {
+    console.log('[UpdateAllFilters] Updating all filters:', {
+      filterCount: Object.keys(filters).length
+    });
+
+    const updatePromises = Object.keys(this.layerStates)
+      .filter(layerId => this.layerStates[layerId].layer?.loaded)
+      .map(layerId => this.updateLayerFilters(layerId, filters));
+
+    try {
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('[UpdateAllFilters] Error:', error);
+      throw error;
+    }
+  }
+
+  public async clearLayerFilters(layerId: string): Promise<void> {
+    console.log('[ClearLayerFilters] Clearing filters for layer:', layerId);
+    await this.updateLayerFilters(layerId, {});
+  }
+
+  public async clearAllFilters(): Promise<void> {
+    console.log('[ClearAllFilters] Clearing all filters');
+    
+    const clearPromises = Object.keys(this.layerStates)
+      .filter(layerId => this.layerStates[layerId].layer?.loaded)
+      .map(layerId => this.clearLayerFilters(layerId));
+
+    try {
+      await Promise.all(clearPromises);
+      this.context.activeFilters = {};
+      this.filterCache.clear();
+    } catch (error) {
+      console.error('[ClearAllFilters] Error:', error);
+      throw error;
+    }
+  }
+
+  // Utility methods
+  public getActiveFilters(layerId: string): FilterState {
+    return this.layerStates[layerId]?.activeFilters || {};
+  }
+
+  public getAllActiveFilters(): Record<string, FilterState> {
+    const activeFilters: Record<string, FilterState> = {};
+    Object.entries(this.layerStates)
+      .filter(([_, state]) => state.layer?.loaded)
+      .forEach(([id, state]) => {
+        if (state.activeFilters) {
+          activeFilters[id] = state.activeFilters;
+        }
+      });
+    return activeFilters;
+  }
+
+  public getLayerFilters(layerId: string): FilterConfig[] {
+    return this.layerStates[layerId]?.filters || [];
+  }
+
+  public getAllFilters(): Record<string, FilterConfig[]> {
+    const filters: Record<string, FilterConfig[]> = {};
+    Object.entries(this.layerStates)
+      .filter(([_, state]) => state.layer?.loaded)
+      .forEach(([id, state]) => {
+        if (state.filters?.length > 0) {
+          filters[id] = state.filters;
+        }
+      });
+    return filters;
+  }
+
+  // Cleanup method
+  public async cleanup(): Promise<void> {
+    console.log('[Cleanup] Starting cleanup');
+
+    try {
+      // Clear caches
+      this.filterCache.clear();
+      this.queryCache.clear();
+      this.loadingStates.clear();
+
+      // Reset context
+      this.context = {
+        conversationHistory: [],
+        activeFilters: {}
+      };
+
+      // Reset layer states
+      for (const state of Object.values(this.layerStates)) {
+        if (state.layer?.loaded) {
+          // Clear any definition expressions
+          state.layer.definitionExpression = "";
+          
+          // Reset visibility to original state
+          state.layer.visible = state.visible;
+          
+          // Clear any custom renderers
+          if (state.layer.renderer && 'type' in state.layer.renderer) {
+            // Create a transparent default renderer using the proper ArcGIS classes
+            state.layer.renderer = new SimpleRenderer({
+              symbol: new SimpleMarkerSymbol({
+                color: [0, 0, 0, 0],
+                size: 0,
+                outline: {
+                  color: [0, 0, 0, 0],
+                  width: 0
+                }
+              })
+            });
+          }
+          
+          // Clear query results
+          state.queryResults = {
+            features: [],
+            fields: [],
+            hasQueryResults: false,
+            featureCount: 0
+          };
+        }
+      }
+
+      // Clear last intent
+      this.lastIntent = undefined;
+
+      console.log('[Cleanup] Resources released successfully');
+    } catch (error) {
+      console.error('[Cleanup] Error during cleanup:', error);
+      throw error;
+    }
+  }
+
+  // Export layer configuration
+  public exportLayerConfiguration(): {
+    layerStates: Record<string, {
+      id: string;
+      group: string;
+      visible: boolean;
+      filters: FilterConfig[];
+    }>;
+    activeFilters: FilterState;
+  } {
+    const layerStates: Record<string, any> = {};
+
+    Object.entries(this.layerStates)
+      .filter(([_, state]) => state.layer?.loaded)
+      .forEach(([id, state]) => {
+        layerStates[id] = {
+          id,
+          group: state.group,
+          visible: state.visible,
+          filters: state.filters
+        };
+      });
+
+    return {
+      layerStates,
+      activeFilters: this.context.activeFilters
+    };
+  }
+
+  // State persistence methods
+  public async saveManagerState(): Promise<string> {
+    try {
+      const state = this.exportLayerConfiguration();
+      const stateJson = JSON.stringify(state);
+      
+      // Store in localStorage
+      localStorage.setItem('aiLayerManagerState', stateJson);
+
+      console.log('[SaveManagerState] State saved successfully');
+      return stateJson;
+    } catch (error) {
+      console.error('[SaveManagerState] Error saving state:', error);
+      throw error;
+    }
+  }
+
+  public async restoreManagerState(stateJson?: string): Promise<void> {
+    try {
+      const savedState = stateJson || 
+        localStorage.getItem('aiLayerManagerState');
+
+      if (!savedState) {
+        console.warn('[RestoreManagerState] No saved state found');
+        return;
+      }
+
+      const parsedState = JSON.parse(savedState);
+
+      // Restore active filters
+      if (parsedState.activeFilters) {
+        this.context.activeFilters = parsedState.activeFilters;
+      }
+
+      // Restore layer filter configurations
+      Object.entries(parsedState.layerStates || {}).forEach(([id, layerState]) => {
+        const currentState = this.layerStates[id];
+        if (currentState?.layer?.loaded && 
+            typeof layerState === 'object' && 
+            layerState !== null) {
+          
+          // Restore visibility
+          if ('visible' in layerState) {
+            currentState.visible = !!layerState.visible;
+            currentState.layer.visible = !!layerState.visible;
+          }
+          
+          // Restore filters
+          if ('filters' in layerState && Array.isArray(layerState.filters)) {
+            currentState.filters = layerState.filters;
+          }
+        }
+      });
+
+      // Refresh layers with restored state
+      await this.populateAllLayerQueryResults();
+
+      console.log('[RestoreManagerState] State restored successfully');
+    } catch (error) {
+      console.error('[RestoreManagerState] Error restoring state:', error);
+      throw error;
+    }
+  }
+
+  // Visualization methods
+  public async createHeatmap(layerId: string, field: string): Promise<__esri.HeatmapRenderer> {
+    console.log('[CreateHeatmap]', {
+      layerId,
+      field
+    });
+  
+    const state = this.layerStates[layerId];
+    if (!state?.layer?.loaded) {
+      throw new Error(`Layer ${layerId} not found or not loaded`);
+    }
+  
+    // Get field statistics for better rendering
+    const query = state.layer.createQuery();
+    query.outStatistics = [
+      new StatisticDefinition({
+        onStatisticField: field,
+        outStatisticFieldName: "min",
+        statisticType: "min"
+      }),
+      new StatisticDefinition({
+        onStatisticField: field,
+        outStatisticFieldName: "max",
+        statisticType: "max"
+      })
+    ];
+  
+    try {
+      const statistics = await state.layer.queryFeatures(query);
+      const minValue = statistics.features[0].attributes.min;
+      const maxValue = statistics.features[0].attributes.max;
+  
+      return new HeatmapRenderer({
+        field,
+        radius: 10,
+        // Use the correct properties as per ArcGIS API
+        minDensity: 0,
+        maxDensity: 100,
+        colorStops: [
+          { ratio: 0, color: [0, 0, 255, 0] },      // Transparent blue
+          { ratio: 0.2, color: [0, 0, 255, 0.3] },  // Light blue
+          { ratio: 0.4, color: [0, 255, 255, 0.5] }, // Cyan
+          { ratio: 0.6, color: [0, 255, 0, 0.7] },   // Green
+          { ratio: 0.8, color: [255, 255, 0, 0.8] }, // Yellow
+          { ratio: 1, color: [255, 0, 0, 1] }        // Red
+        ]
+      });
+    } catch (error) {
+      console.error('[CreateHeatmap] Error creating renderer:', error);
+      throw error;
+    }
+  }
+
+  // Map view accessor
+  public getMapView(): __esri.MapView {
+    return this.view;
+  }
+
+  // Layer utilities
+  private static LayerManagerUtils = {
+    createFilterConfig: (config: Partial<FilterConfig>): FilterConfig => {
+      return {
+        field: config.field || '',
+        label: config.label || config.field || '',
+        type: config.type || 'text',
+        options: config.options,
+        min: config.min,
+        max: config.max,
+        step: config.step
+      };
+    }
+  };
+
+  async processQuery(query: string): Promise<void> {
+    // Process the query and update layer states
+    // Implementation details can be added based on requirements
+  }
+
+  getLayersByGroup(group: string): string[] {
+    // Return array of layer IDs that belong to the specified group
+    return Object.entries(this.layerStates)
+      .filter(([_, state]) => state.group === group)
+      .map(([id]) => id);
+  }
+
+  updateSelectedArea(geometry: __esri.Geometry): void {
+    // Update the selected area in the manager's context
+    this.context.selectedArea = geometry;
+  }
+
+  clearContext(): void {
+    this.context = {
+      selectedArea: undefined,
+      activeFilters: {},
+      conversationHistory: []
+    };
+  }
+
+  // Helper method to convert layer geometry type
+  private convertGeometryType(layerGeometryType: __esri.FeatureLayer['geometryType']): ArcGISGeometryType {
+    switch (layerGeometryType) {
+      case 'point':
+      case 'multipoint':
+      case 'polyline':
+      case 'polygon':
+      case 'mesh':
+        return layerGeometryType;
+      case 'multipatch':
+        return 'mesh';  // Map multipatch to mesh for ArcGIS compatibility
+      default:
+        return undefined;
+    }
+  }
+}

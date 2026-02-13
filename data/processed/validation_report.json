@@ -1,0 +1,114 @@
+{
+  "generated": "2025-11-30T18:45:51.925150",
+  "total_issues": 3,
+  "overall_status": "warn",
+  "validations": {
+    "precincts": {
+      "issues": [],
+      "metrics": {
+        "precinct_count": 103,
+        "geometry_types": [
+          "Polygon",
+          "MultiPolygon"
+        ]
+      },
+      "status": "pass"
+    },
+    "election_results": {
+      "issues": [
+        "Missing election year: 2020",
+        "Missing election year: 2022",
+        "Missing election year: 2024"
+      ],
+      "metrics": {
+        "election_count": 0,
+        "elections": [],
+        "total_races": 0
+      },
+      "status": "warn"
+    },
+    "targeting_scores": {
+      "issues": [],
+      "metrics": {
+        "precinct_count": 103,
+        "gotv_range": [
+          24.7,
+          81.8
+        ],
+        "gotv_mean": 56.8650485436893,
+        "persuasion_range": [
+          32.3,
+          69.3
+        ],
+        "persuasion_mean": 47.38252427184466,
+        "partisan_lean_range": [
+          -38.01,
+          74.92
+        ],
+        "partisan_lean_mean": 31.635394736842112,
+        "strategy_distribution": {
+          "Persuasion Target": 36,
+          "Maintenance": 4,
+          "Base Mobilization": 57,
+          "Battleground": 6
+        }
+      },
+      "status": "pass"
+    },
+    "h3_aggregates": {
+      "issues": [],
+      "metrics": {
+        "cell_count": 273,
+        "resolution": 7,
+        "available_metrics": [
+          "partisan_lean",
+          "swing_potential",
+          "gotv_priority",
+          "persuasion_opportunity",
+          "combined_score",
+          "total_population",
+          "population_age_18up",
+          "dem_affiliation_pct",
+          "rep_affiliation_pct",
+          "liberal_pct",
+          "conservative_pct",
+          "college_pct",
+          "diversity_index",
+          "median_household_income"
+        ],
+        "null_counts": {
+          "partisan_lean": 19
+        }
+      },
+      "status": "pass"
+    },
+    "ba_demographics": {
+      "issues": [],
+      "metrics": {
+        "precinct_count": 103,
+        "field_coverage": {
+          "total_population": 103,
+          "population_age_18up": 103,
+          "median_household_income": 103,
+          "dem_affiliation_pct": 103,
+          "rep_affiliation_pct": 103,
+          "college_pct": 103
+        },
+        "population_range": [
+          562,
+          4392
+        ],
+        "population_mean": 1419.3398058252428
+      },
+      "status": "pass"
+    },
+    "ml_models": {
+      "issues": [],
+      "metrics": {
+        "model_count": 7,
+        "training_samples": 103
+      },
+      "status": "pass"
+    }
+  }
+}

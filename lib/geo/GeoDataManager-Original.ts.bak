@@ -1,0 +1,1865 @@
+/**
+ * Geographic Data Manager
+ * 
+ * Manages comprehensive geographic data including hierarchies, ZIP codes,
+ * aliases, and regional boundaries for reliable geo-awareness.
+ */
+
+export interface GeographicDatabase {
+  entities: Map<string, GeographicEntity>;
+  zipCodeToCity: Map<string, string>;
+  aliasMap: Map<string, string>;
+  stateAbbreviations: Map<string, string>;
+  regionalGroups: Map<string, string[]>;
+}
+
+import { GeographicEntity } from './GeoAwarenessEngine';
+
+export class GeoDataManager {
+  private static instance: GeoDataManager | null = null;
+  private database: GeographicDatabase;
+
+  private constructor() {
+    this.database = {
+      entities: new Map(),
+      zipCodeToCity: new Map(),
+      aliasMap: new Map(),
+      stateAbbreviations: new Map(),
+      regionalGroups: new Map()
+    };
+    this.initializeDatabase();
+  }
+
+  public static getInstance(): GeoDataManager {
+    if (!GeoDataManager.instance) {
+      GeoDataManager.instance = new GeoDataManager();
+    }
+    return GeoDataManager.instance;
+  }
+
+  public getDatabase(): GeographicDatabase {
+    return this.database;
+  }
+
+  private initializeDatabase(): void {
+    console.log('[GeoDataManager] Initializing geographic database...');
+    
+    this.loadStates();
+    this.loadTriStateMetros();
+    this.loadNewYorkData();
+    this.loadNewJerseyData();
+    this.loadPennsylvaniaData();
+    this.loadCommonAliases();
+    this.loadRegionalGroups();
+    this.loadZipCodePrefixes();
+    
+    console.log(`[GeoDataManager] Database initialized with ${this.database.entities.size} entities`);
+  }
+
+  private loadStates(): void {
+    // Project covers NY, NJ, PA only
+    const states = [
+      { name: 'New York', abbr: 'NY', aliases: ['NY', 'NY State', 'Empire State', 'New York State'] },
+      { name: 'New Jersey', abbr: 'NJ', aliases: ['NJ', 'Jersey', 'Garden State'] },
+      { name: 'Pennsylvania', abbr: 'PA', aliases: ['PA', 'Penn', 'Keystone State', 'Commonwealth of Pennsylvania'] }
+    ];
+
+    states.forEach(state => {
+      const entity: GeographicEntity = {
+        name: state.name,
+        type: 'state',
+        aliases: [state.abbr, ...state.aliases],
+        confidence: 1.0
+      };
+
+      this.addEntity(entity);
+      this.database.stateAbbreviations.set(state.abbr.toLowerCase(), state.name.toLowerCase());
+    });
+  }
+
+  private loadTriStateMetros(): void {
+    // Only NY, NJ, PA metros for this project
+    const metros = [
+      // New York State
+      {
+        name: 'New York City',
+        state: 'New York',
+        aliases: ['NYC', 'New York', 'NY', 'Big Apple', 'New York Metro', 'Manhattan'],
+        zipPrefixes: ['100', '101', '102', '103', '104', '105', '110', '111', '112', '113', '114', '116']
+      },
+      {
+        name: 'Chicago',
+        state: 'Illinois',
+        aliases: ['Chi-town', 'Windy City', 'Second City'],
+        zipPrefixes: ['606', '607', '608', '609']
+      },
+      {
+        name: 'Houston',
+        state: 'Texas',
+        aliases: ['H-Town', 'Space City', 'Bayou City'],
+        zipPrefixes: ['770', '771', '772', '773', '774', '775']
+      },
+      {
+        name: 'Phoenix',
+        state: 'Arizona',
+        aliases: ['Valley of the Sun', 'PHX'],
+        zipPrefixes: ['850', '851', '852', '853', '854']
+      },
+      {
+        name: 'Philadelphia',
+        state: 'Pennsylvania',
+        aliases: ['Philly', 'City of Brotherly Love', 'Phila'],
+        zipPrefixes: ['191', '192', '193', '194']
+      },
+      {
+        name: 'San Antonio',
+        state: 'Texas',
+        aliases: ['SA', 'Alamo City'],
+        zipPrefixes: ['782', '783']
+      },
+      {
+        name: 'San Diego',
+        state: 'California',
+        aliases: ['SD', 'Americas Finest City'],
+        zipPrefixes: ['920', '921', '922']
+      },
+      {
+        name: 'Dallas',
+        state: 'Texas',
+        aliases: ['Big D', 'DFW'],
+        zipPrefixes: ['750', '751', '752', '753']
+      },
+      {
+        name: 'San Jose',
+        state: 'California',
+        aliases: ['SJ', 'Capital of Silicon Valley'],
+        zipPrefixes: ['950', '951']
+      },
+      {
+        name: 'Austin',
+        state: 'Texas',
+        aliases: ['ATX', 'Live Music Capital', 'Keep Austin Weird'],
+        zipPrefixes: ['787', '788']
+      },
+      {
+        name: 'Jacksonville',
+        state: 'Florida',
+        aliases: ['Jax', 'JAX', 'River City'],
+        zipPrefixes: ['322']
+      },
+      {
+        name: 'Fort Worth',
+        state: 'Texas',
+        aliases: ['Cowtown', 'DFW'],
+        zipPrefixes: ['761']
+      },
+      {
+        name: 'Columbus',
+        state: 'Ohio',
+        aliases: ['CBus', 'The Discovery City'],
+        zipPrefixes: ['432', '433']
+      },
+      {
+        name: 'San Francisco',
+        state: 'California',
+        aliases: ['SF', 'Frisco', 'The City', 'San Fran', 'Bay Area'],
+        zipPrefixes: ['941']
+      },
+      {
+        name: 'Charlotte',
+        state: 'North Carolina',
+        aliases: ['Queen City', 'CLT'],
+        zipPrefixes: ['282']
+      },
+      {
+        name: 'Indianapolis',
+        state: 'Indiana',
+        aliases: ['Indy', 'Circle City', 'Naptown'],
+        zipPrefixes: ['462', '463', '464', '465', '466']
+      },
+      {
+        name: 'Seattle',
+        state: 'Washington',
+        aliases: ['Emerald City', 'Rain City', 'SEA'],
+        zipPrefixes: ['981', '982']
+      },
+      {
+        name: 'Denver',
+        state: 'Colorado',
+        aliases: ['Mile High City', 'DEN'],
+        zipPrefixes: ['802', '803', '804', '805']
+      },
+      {
+        name: 'Washington',
+        state: 'District of Columbia',
+        aliases: ['DC', 'Washington DC', 'The District', 'DMV'],
+        zipPrefixes: ['200', '201', '202', '203', '204', '205']
+      },
+      {
+        name: 'Boston',
+        state: 'Massachusetts',
+        aliases: ['Beantown', 'The Hub', 'BOS'],
+        zipPrefixes: ['021', '022', '023', '024', '025']
+      },
+      {
+        name: 'El Paso',
+        state: 'Texas',
+        aliases: ['EP', 'Sun City'],
+        zipPrefixes: ['799', '885']
+      },
+      {
+        name: 'Detroit',
+        state: 'Michigan',
+        aliases: ['Motor City', 'Motown', 'DET'],
+        zipPrefixes: ['482', '483']
+      },
+      {
+        name: 'Nashville',
+        state: 'Tennessee',
+        aliases: ['Music City', 'Nash', 'Athens of the South'],
+        zipPrefixes: ['372']
+      },
+      {
+        name: 'Portland',
+        state: 'Oregon',
+        aliases: ['PDX', 'Rose City', 'Rip City'],
+        zipPrefixes: ['972', '973']
+      },
+      {
+        name: 'Oklahoma City',
+        state: 'Oklahoma',
+        aliases: ['OKC', 'The Big Friendly'],
+        zipPrefixes: ['731']
+      },
+      {
+        name: 'Las Vegas',
+        state: 'Nevada',
+        aliases: ['Vegas', 'Sin City', 'LV', 'Entertainment Capital'],
+        zipPrefixes: ['890', '891']
+      },
+      {
+        name: 'Louisville',
+        state: 'Kentucky',
+        aliases: ['Derby City', 'Lou'],
+        zipPrefixes: ['402', '403']
+      },
+      {
+        name: 'Baltimore',
+        state: 'Maryland',
+        aliases: ['Charm City', 'Bmore', 'BAL'],
+        zipPrefixes: ['212', '213', '214']
+      },
+      {
+        name: 'Milwaukee',
+        state: 'Wisconsin',
+        aliases: ['Brew City', 'MKE'],
+        zipPrefixes: ['532', '533', '534', '535']
+      },
+      {
+        name: 'Albuquerque',
+        state: 'New Mexico',
+        aliases: ['ABQ', 'Duke City'],
+        zipPrefixes: ['870', '871', '872', '873', '874']
+      },
+      {
+        name: 'Tucson',
+        state: 'Arizona',
+        aliases: ['Old Pueblo', 'TUS'],
+        zipPrefixes: ['856', '857']
+      },
+      {
+        name: 'Fresno',
+        state: 'California',
+        aliases: ['The Big Fresno'],
+        zipPrefixes: ['936', '937']
+      },
+      {
+        name: 'Sacramento',
+        state: 'California',
+        aliases: ['Sac', 'City of Trees', 'SAC'],
+        zipPrefixes: ['942', '943', '944', '945', '946']
+      },
+      {
+        name: 'Mesa',
+        state: 'Arizona',
+        aliases: ['East Valley'],
+        zipPrefixes: ['852']
+      },
+      {
+        name: 'Kansas City',
+        state: 'Missouri',
+        aliases: ['KC', 'KCMO', 'City of Fountains'],
+        zipPrefixes: ['641', '642']
+      },
+      {
+        name: 'Atlanta',
+        state: 'Georgia',
+        aliases: ['ATL', 'Hotlanta', 'A-Town', 'Gate City'],
+        zipPrefixes: ['303', '304', '305', '306', '307', '308', '309', '310', '311', '312']
+      },
+      {
+        name: 'Long Beach',
+        state: 'California',
+        aliases: ['LBC', 'The LBC'],
+        zipPrefixes: ['908']
+      },
+      {
+        name: 'Colorado Springs',
+        state: 'Colorado',
+        aliases: ['The Springs', 'Olympic City'],
+        zipPrefixes: ['809']
+      },
+      {
+        name: 'Raleigh',
+        state: 'North Carolina',
+        aliases: ['City of Oaks', 'RDU'],
+        zipPrefixes: ['276']
+      },
+      {
+        name: 'Omaha',
+        state: 'Nebraska',
+        aliases: ['Big O', 'Gateway to the West'],
+        zipPrefixes: ['681', '682']
+      },
+      {
+        name: 'Miami',
+        state: 'Florida',
+        aliases: ['MIA', 'Magic City', '305'],
+        zipPrefixes: ['331', '332', '333', '334']
+      },
+      {
+        name: 'Tampa',
+        state: 'Florida',
+        aliases: ['Tampa Bay', 'TPA'],
+        zipPrefixes: ['336']
+      },
+      {
+        name: 'Cleveland',
+        state: 'Ohio',
+        aliases: ['The Land', 'CLE', 'Forest City'],
+        zipPrefixes: ['441', '442', '443', '444']
+      },
+      {
+        name: 'Wichita',
+        state: 'Kansas',
+        aliases: ['ICT', 'Air Capital'],
+        zipPrefixes: ['672']
+      },
+      {
+        name: 'Arlington',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['760']
+      },
+      {
+        name: 'New Orleans',
+        state: 'Louisiana',
+        aliases: ['NOLA', 'The Big Easy', 'Crescent City'],
+        zipPrefixes: ['701']
+      },
+      {
+        name: 'Bakersfield',
+        state: 'California',
+        aliases: ['Bako'],
+        zipPrefixes: ['933']
+      },
+      {
+        name: 'Tampa',
+        state: 'Florida',
+        aliases: ['Tampa Bay', 'TPA'],
+        zipPrefixes: ['336']
+      },
+      {
+        name: 'Honolulu',
+        state: 'Hawaii',
+        aliases: ['HNL', 'Pacific Paradise'],
+        zipPrefixes: ['968']
+      },
+      {
+        name: 'Aurora',
+        state: 'Colorado',
+        aliases: ['A-Town'],
+        zipPrefixes: ['800']
+      },
+      {
+        name: 'Anaheim',
+        state: 'California',
+        aliases: ['A-Town', 'Home of Disneyland'],
+        zipPrefixes: ['928']
+      },
+      {
+        name: 'Santa Ana',
+        state: 'California',
+        aliases: ['SA'],
+        zipPrefixes: ['927']
+      },
+      {
+        name: 'St. Louis',
+        state: 'Missouri',
+        aliases: ['STL', 'Gateway City', 'Mound City'],
+        zipPrefixes: ['631', '632', '633', '634', '635']
+      },
+      {
+        name: 'Riverside',
+        state: 'California',
+        aliases: ['IE', 'Inland Empire'],
+        zipPrefixes: ['925']
+      },
+      {
+        name: 'Corpus Christi',
+        state: 'Texas',
+        aliases: ['CC', 'Sparkling City by the Sea'],
+        zipPrefixes: ['784']
+      },
+      {
+        name: 'Lexington',
+        state: 'Kentucky',
+        aliases: ['Lex', 'Horse Capital'],
+        zipPrefixes: ['405']
+      },
+      {
+        name: 'Pittsburgh',
+        state: 'Pennsylvania',
+        aliases: ['Steel City', 'PIT', 'Iron City'],
+        zipPrefixes: ['152', '153', '154']
+      },
+      {
+        name: 'Anchorage',
+        state: 'Alaska',
+        aliases: ['ANC'],
+        zipPrefixes: ['995', '996']
+      },
+      {
+        name: 'Stockton',
+        state: 'California',
+        aliases: ['Mudville'],
+        zipPrefixes: ['952']
+      },
+      {
+        name: 'Cincinnati',
+        state: 'Ohio',
+        aliases: ['Cincy', 'Queen City', 'The Nati'],
+        zipPrefixes: ['452', '453', '454', '455', '456']
+      },
+      {
+        name: 'St. Paul',
+        state: 'Minnesota',
+        aliases: ['Twin Cities', 'MSP'],
+        zipPrefixes: ['551']
+      },
+      {
+        name: 'Toledo',
+        state: 'Ohio',
+        aliases: ['Glass City'],
+        zipPrefixes: ['436']
+      },
+      {
+        name: 'Newark',
+        state: 'New Jersey',
+        aliases: ['Brick City'],
+        zipPrefixes: ['071']
+      },
+      {
+        name: 'Greensboro',
+        state: 'North Carolina',
+        aliases: ['Gate City', 'GSO'],
+        zipPrefixes: ['274']
+      },
+      {
+        name: 'Plano',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Henderson',
+        state: 'Nevada',
+        aliases: ['Vegas Metro'],
+        zipPrefixes: ['890']
+      },
+      {
+        name: 'Lincoln',
+        state: 'Nebraska',
+        aliases: ['Star City'],
+        zipPrefixes: ['685']
+      },
+      {
+        name: 'Buffalo',
+        state: 'New York',
+        aliases: ['Queen City', 'City of Good Neighbors', 'BUF'],
+        zipPrefixes: ['142']
+      },
+      {
+        name: 'Jersey City',
+        state: 'New Jersey',
+        aliases: ['JC'],
+        zipPrefixes: ['073']
+      },
+      {
+        name: 'Chula Vista',
+        state: 'California',
+        aliases: ['CV'],
+        zipPrefixes: ['919']
+      },
+      {
+        name: 'Fort Wayne',
+        state: 'Indiana',
+        aliases: ['Summit City'],
+        zipPrefixes: ['468']
+      },
+      {
+        name: 'Orlando',
+        state: 'Florida',
+        aliases: ['O-Town', 'City Beautiful', 'Theme Park Capital'],
+        zipPrefixes: ['328', '329', '340', '341', '342', '343', '344', '345', '346', '347']
+      },
+      {
+        name: 'St. Petersburg',
+        state: 'Florida',
+        aliases: ['St. Pete', 'Tampa Bay'],
+        zipPrefixes: ['337']
+      },
+      {
+        name: 'Chandler',
+        state: 'Arizona',
+        aliases: ['East Valley'],
+        zipPrefixes: ['852']
+      },
+      {
+        name: 'Laredo',
+        state: 'Texas',
+        aliases: ['Gateway City'],
+        zipPrefixes: ['780']
+      },
+      {
+        name: 'Norfolk',
+        state: 'Virginia',
+        aliases: ['Mermaid City', '757'],
+        zipPrefixes: ['235']
+      },
+      {
+        name: 'Durham',
+        state: 'North Carolina',
+        aliases: ['Bull City', 'RDU'],
+        zipPrefixes: ['277']
+      },
+      {
+        name: 'Madison',
+        state: 'Wisconsin',
+        aliases: ['Mad City', 'MSN'],
+        zipPrefixes: ['537']
+      },
+      {
+        name: 'Lubbock',
+        state: 'Texas',
+        aliases: ['Hub City', 'LBB'],
+        zipPrefixes: ['794']
+      },
+      {
+        name: 'Irvine',
+        state: 'California',
+        aliases: ['Master Planned City'],
+        zipPrefixes: ['926']
+      },
+      {
+        name: 'Winston-Salem',
+        state: 'North Carolina',
+        aliases: ['Twin City', 'Camel City'],
+        zipPrefixes: ['271']
+      },
+      {
+        name: 'Glendale',
+        state: 'Arizona',
+        aliases: ['West Valley'],
+        zipPrefixes: ['853']
+      },
+      {
+        name: 'Garland',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Hialeah',
+        state: 'Florida',
+        aliases: ['MIA'],
+        zipPrefixes: ['330']
+      },
+      {
+        name: 'Reno',
+        state: 'Nevada',
+        aliases: ['Biggest Little City', 'RNO'],
+        zipPrefixes: ['894', '895']
+      },
+      {
+        name: 'Chesapeake',
+        state: 'Virginia',
+        aliases: ['757'],
+        zipPrefixes: ['233']
+      },
+      {
+        name: 'Gilbert',
+        state: 'Arizona',
+        aliases: ['East Valley'],
+        zipPrefixes: ['852']
+      },
+      {
+        name: 'Baton Rouge',
+        state: 'Louisiana',
+        aliases: ['Red Stick', 'BR', 'Capital City'],
+        zipPrefixes: ['708']
+      },
+      {
+        name: 'Irving',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Scottsdale',
+        state: 'Arizona',
+        aliases: ['The West\'s Most Western Town'],
+        zipPrefixes: ['852']
+      },
+      {
+        name: 'North Las Vegas',
+        state: 'Nevada',
+        aliases: ['Vegas Metro', 'North Vegas'],
+        zipPrefixes: ['890']
+      },
+      {
+        name: 'Fremont',
+        state: 'California',
+        aliases: ['Silicon Valley'],
+        zipPrefixes: ['945']
+      },
+      {
+        name: 'Boise',
+        state: 'Idaho',
+        aliases: ['City of Trees', 'BOI'],
+        zipPrefixes: ['837']
+      },
+      {
+        name: 'Richmond',
+        state: 'Virginia',
+        aliases: ['River City', 'RVA'],
+        zipPrefixes: ['232']
+      },
+      {
+        name: 'San Bernardino',
+        state: 'California',
+        aliases: ['San Berdoo', 'IE'],
+        zipPrefixes: ['924']
+      },
+      {
+        name: 'Birmingham',
+        state: 'Alabama',
+        aliases: ['Steel City', 'BHM'],
+        zipPrefixes: ['352']
+      },
+      {
+        name: 'Spokane',
+        state: 'Washington',
+        aliases: ['Lilac City', 'GEG'],
+        zipPrefixes: ['992']
+      },
+      {
+        name: 'Rochester',
+        state: 'New York',
+        aliases: ['Flower City', 'ROC'],
+        zipPrefixes: ['146']
+      },
+      {
+        name: 'Des Moines',
+        state: 'Iowa',
+        aliases: ['DSM'],
+        zipPrefixes: ['503']
+      },
+      {
+        name: 'Modesto',
+        state: 'California',
+        aliases: ['Water Wealth Contentment Health'],
+        zipPrefixes: ['953']
+      },
+      {
+        name: 'Fayetteville',
+        state: 'North Carolina',
+        aliases: ['Fayettenam', 'All American City'],
+        zipPrefixes: ['283']
+      },
+      {
+        name: 'Tacoma',
+        state: 'Washington',
+        aliases: ['City of Destiny', 'T-Town'],
+        zipPrefixes: ['984']
+      },
+      {
+        name: 'Oxnard',
+        state: 'California',
+        aliases: ['Ventura County'],
+        zipPrefixes: ['930']
+      },
+      {
+        name: 'Fontana',
+        state: 'California',
+        aliases: ['IE'],
+        zipPrefixes: ['923']
+      },
+      {
+        name: 'Columbus',
+        state: 'Georgia',
+        aliases: ['Fountain City'],
+        zipPrefixes: ['319']
+      },
+      {
+        name: 'Montgomery',
+        state: 'Alabama',
+        aliases: ['Cradle of the Confederacy', 'MGM'],
+        zipPrefixes: ['361']
+      },
+      {
+        name: 'Moreno Valley',
+        state: 'California',
+        aliases: ['MoVal', 'IE'],
+        zipPrefixes: ['925']
+      },
+      {
+        name: 'Shreveport',
+        state: 'Louisiana',
+        aliases: ['Ark-La-Tex', 'SHV'],
+        zipPrefixes: ['711']
+      },
+      {
+        name: 'Aurora',
+        state: 'Illinois',
+        aliases: ['City of Lights'],
+        zipPrefixes: ['605']
+      },
+      {
+        name: 'Yonkers',
+        state: 'New York',
+        aliases: ['City of Hills'],
+        zipPrefixes: ['107']
+      },
+      {
+        name: 'Akron',
+        state: 'Ohio',
+        aliases: ['Rubber City', 'CAK'],
+        zipPrefixes: ['443']
+      },
+      {
+        name: 'Huntington Beach',
+        state: 'California',
+        aliases: ['Surf City', 'HB'],
+        zipPrefixes: ['926']
+      },
+      {
+        name: 'Little Rock',
+        state: 'Arkansas',
+        aliases: ['Rock City', 'LIT'],
+        zipPrefixes: ['722']
+      },
+      {
+        name: 'Augusta',
+        state: 'Georgia',
+        aliases: ['Garden City', 'AGS'],
+        zipPrefixes: ['309']
+      },
+      {
+        name: 'Amarillo',
+        state: 'Texas',
+        aliases: ['Yellow Rose', 'AMA'],
+        zipPrefixes: ['791']
+      },
+      {
+        name: 'Glendale',
+        state: 'California',
+        aliases: ['Jewel City'],
+        zipPrefixes: ['912']
+      },
+      {
+        name: 'Mobile',
+        state: 'Alabama',
+        aliases: ['Port City', 'MOB'],
+        zipPrefixes: ['366']
+      },
+      {
+        name: 'Grand Rapids',
+        state: 'Michigan',
+        aliases: ['Furniture City', 'GRR'],
+        zipPrefixes: ['495']
+      },
+      {
+        name: 'Salt Lake City',
+        state: 'Utah',
+        aliases: ['SLC', 'Crossroads of the West'],
+        zipPrefixes: ['841']
+      },
+      {
+        name: 'Tallahassee',
+        state: 'Florida',
+        aliases: ['Tally', 'TLH'],
+        zipPrefixes: ['323']
+      },
+      {
+        name: 'Huntsville',
+        state: 'Alabama',
+        aliases: ['Rocket City', 'HSV'],
+        zipPrefixes: ['358']
+      },
+      {
+        name: 'Grand Prairie',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Knoxville',
+        state: 'Tennessee',
+        aliases: ['Marble City', 'TYS'],
+        zipPrefixes: ['379']
+      },
+      {
+        name: 'Worcester',
+        state: 'Massachusetts',
+        aliases: ['Wormtown', 'Heart of the Commonwealth'],
+        zipPrefixes: ['016']
+      },
+      {
+        name: 'Newport News',
+        state: 'Virginia',
+        aliases: ['The Port', '757'],
+        zipPrefixes: ['236']
+      },
+      {
+        name: 'Brownsville',
+        state: 'Texas',
+        aliases: ['BRO'],
+        zipPrefixes: ['785']
+      },
+      {
+        name: 'Overland Park',
+        state: 'Kansas',
+        aliases: ['OP', 'KC Metro'],
+        zipPrefixes: ['662']
+      },
+      {
+        name: 'Santa Clarita',
+        state: 'California',
+        aliases: ['SCV'],
+        zipPrefixes: ['913']
+      },
+      {
+        name: 'Providence',
+        state: 'Rhode Island',
+        aliases: ['Creative Capital', 'PVD'],
+        zipPrefixes: ['029']
+      },
+      {
+        name: 'Garden Grove',
+        state: 'California',
+        aliases: ['GG'],
+        zipPrefixes: ['928']
+      },
+      {
+        name: 'Chattanooga',
+        state: 'Tennessee',
+        aliases: ['Scenic City', 'CHA'],
+        zipPrefixes: ['374']
+      },
+      {
+        name: 'Oceanside',
+        state: 'California',
+        aliases: ['O-side'],
+        zipPrefixes: ['920']
+      },
+      {
+        name: 'Jackson',
+        state: 'Mississippi',
+        aliases: ['City with Soul', 'JAN'],
+        zipPrefixes: ['392']
+      },
+      {
+        name: 'Fort Lauderdale',
+        state: 'Florida',
+        aliases: ['Venice of America', 'FLL'],
+        zipPrefixes: ['333']
+      },
+      {
+        name: 'Santa Rosa',
+        state: 'California',
+        aliases: ['Wine Country'],
+        zipPrefixes: ['954']
+      },
+      {
+        name: 'Rancho Cucamonga',
+        state: 'California',
+        aliases: ['RC', 'IE'],
+        zipPrefixes: ['917']
+      },
+      {
+        name: 'Port St. Lucie',
+        state: 'Florida',
+        aliases: ['PSL'],
+        zipPrefixes: ['349']
+      },
+      {
+        name: 'Tempe',
+        state: 'Arizona',
+        aliases: ['East Valley'],
+        zipPrefixes: ['852']
+      },
+      {
+        name: 'Ontario',
+        state: 'California',
+        aliases: ['ONT', 'IE'],
+        zipPrefixes: ['917']
+      },
+      {
+        name: 'Vancouver',
+        state: 'Washington',
+        aliases: ['Couve', 'PDX Metro'],
+        zipPrefixes: ['986']
+      },
+      {
+        name: 'Cape Coral',
+        state: 'Florida',
+        aliases: ['Waterfront Wonderland'],
+        zipPrefixes: ['339']
+      },
+      {
+        name: 'Sioux Falls',
+        state: 'South Dakota',
+        aliases: ['Falls', 'FSD'],
+        zipPrefixes: ['571']
+      },
+      {
+        name: 'Springfield',
+        state: 'Missouri',
+        aliases: ['Queen City', 'SGF'],
+        zipPrefixes: ['658']
+      },
+      {
+        name: 'Peoria',
+        state: 'Illinois',
+        aliases: ['River City', 'PIA'],
+        zipPrefixes: ['616']
+      },
+      {
+        name: 'Pembroke Pines',
+        state: 'Florida',
+        aliases: ['Pines', 'MIA Metro'],
+        zipPrefixes: ['330']
+      },
+      {
+        name: 'Elk Grove',
+        state: 'California',
+        aliases: ['EG'],
+        zipPrefixes: ['956']
+      },
+      {
+        name: 'Salem',
+        state: 'Oregon',
+        aliases: ['Cherry City', 'SLE'],
+        zipPrefixes: ['973']
+      },
+      {
+        name: 'Lancaster',
+        state: 'California',
+        aliases: ['Antelope Valley'],
+        zipPrefixes: ['935']
+      },
+      {
+        name: 'Corona',
+        state: 'California',
+        aliases: ['Circle City', 'IE'],
+        zipPrefixes: ['928']
+      },
+      {
+        name: 'Eugene',
+        state: 'Oregon',
+        aliases: ['Track Town', 'EUG'],
+        zipPrefixes: ['974']
+      },
+      {
+        name: 'Palmdale',
+        state: 'California',
+        aliases: ['Antelope Valley'],
+        zipPrefixes: ['935']
+      },
+      {
+        name: 'Salinas',
+        state: 'California',
+        aliases: ['Salad Bowl of the World', 'SNS'],
+        zipPrefixes: ['939']
+      },
+      {
+        name: 'Springfield',
+        state: 'Massachusetts',
+        aliases: ['City of Firsts', 'Basketball Hall of Fame City'],
+        zipPrefixes: ['011']
+      },
+      {
+        name: 'Pasadena',
+        state: 'Texas',
+        aliases: ['Strawberry Capital'],
+        zipPrefixes: ['775']
+      },
+      {
+        name: 'Fort Collins',
+        state: 'Colorado',
+        aliases: ['FoCo', 'Choice City'],
+        zipPrefixes: ['805']
+      },
+      {
+        name: 'Hayward',
+        state: 'California',
+        aliases: ['Heart of Bay'],
+        zipPrefixes: ['945']
+      },
+      {
+        name: 'Pomona',
+        state: 'California',
+        aliases: ['City of Progress'],
+        zipPrefixes: ['917']
+      },
+      {
+        name: 'Cary',
+        state: 'North Carolina',
+        aliases: ['Containment Area for Relocated Yankees'],
+        zipPrefixes: ['275']
+      },
+      {
+        name: 'Rockford',
+        state: 'Illinois',
+        aliases: ['Forest City', 'RFD'],
+        zipPrefixes: ['611']
+      },
+      {
+        name: 'Alexandria',
+        state: 'Virginia',
+        aliases: ['Old Town', 'DCA'],
+        zipPrefixes: ['223']
+      },
+      {
+        name: 'Escondido',
+        state: 'California',
+        aliases: ['Hidden Valley'],
+        zipPrefixes: ['920']
+      },
+      {
+        name: 'McKinney',
+        state: 'Texas',
+        aliases: ['Unique by Nature', 'DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Kansas City',
+        state: 'Kansas',
+        aliases: ['KCK', 'KC Metro'],
+        zipPrefixes: ['661']
+      },
+      {
+        name: 'Joliet',
+        state: 'Illinois',
+        aliases: ['City of Steel'],
+        zipPrefixes: ['604']
+      },
+      {
+        name: 'Sunnyvale',
+        state: 'California',
+        aliases: ['Heart of Silicon Valley'],
+        zipPrefixes: ['940']
+      },
+      {
+        name: 'Torrance',
+        state: 'California',
+        aliases: ['South Bay'],
+        zipPrefixes: ['905']
+      },
+      {
+        name: 'Bridgeport',
+        state: 'Connecticut',
+        aliases: ['Park City', 'BDR'],
+        zipPrefixes: ['066']
+      },
+      {
+        name: 'Lakewood',
+        state: 'Colorado',
+        aliases: ['Mile High City Suburb'],
+        zipPrefixes: ['802']
+      },
+      {
+        name: 'Hollywood',
+        state: 'Florida',
+        aliases: ['Diamond of the Gold Coast'],
+        zipPrefixes: ['330']
+      },
+      {
+        name: 'Paterson',
+        state: 'New Jersey',
+        aliases: ['Silk City'],
+        zipPrefixes: ['075']
+      },
+      {
+        name: 'Naperville',
+        state: 'Illinois',
+        aliases: ['Naper'],
+        zipPrefixes: ['605']
+      },
+      {
+        name: 'Syracuse',
+        state: 'New York',
+        aliases: ['Salt City', 'SYR'],
+        zipPrefixes: ['132']
+      },
+      {
+        name: 'Mesquite',
+        state: 'Texas',
+        aliases: ['Rodeo Capital', 'DFW'],
+        zipPrefixes: ['751']
+      },
+      {
+        name: 'Dayton',
+        state: 'Ohio',
+        aliases: ['Gem City', 'DAY'],
+        zipPrefixes: ['454']
+      },
+      {
+        name: 'Savannah',
+        state: 'Georgia',
+        aliases: ['Hostess City', 'SAV'],
+        zipPrefixes: ['314']
+      },
+      {
+        name: 'Clarksville',
+        state: 'Tennessee',
+        aliases: ['Gateway to the New South'],
+        zipPrefixes: ['370']
+      },
+      {
+        name: 'Orange',
+        state: 'California',
+        aliases: ['Circle City'],
+        zipPrefixes: ['928']
+      },
+      {
+        name: 'Pasadena',
+        state: 'California',
+        aliases: ['City of Roses', 'Tournament of Roses'],
+        zipPrefixes: ['911']
+      },
+      {
+        name: 'Fullerton',
+        state: 'California',
+        aliases: ['FT'],
+        zipPrefixes: ['928']
+      },
+      {
+        name: 'Killeen',
+        state: 'Texas',
+        aliases: ['Fort Hood'],
+        zipPrefixes: ['765']
+      },
+      {
+        name: 'Frisco',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Hampton',
+        state: 'Virginia',
+        aliases: ['757'],
+        zipPrefixes: ['236']
+      },
+      {
+        name: 'McAllen',
+        state: 'Texas',
+        aliases: ['City of Palms'],
+        zipPrefixes: ['785']
+      },
+      {
+        name: 'Warren',
+        state: 'Michigan',
+        aliases: ['DET Metro'],
+        zipPrefixes: ['480']
+      },
+      {
+        name: 'Bellevue',
+        state: 'Washington',
+        aliases: ['Beautiful View', 'SEA Metro'],
+        zipPrefixes: ['980']
+      },
+      {
+        name: 'West Valley City',
+        state: 'Utah',
+        aliases: ['West Valley'],
+        zipPrefixes: ['841']
+      },
+      {
+        name: 'Columbia',
+        state: 'Missouri',
+        aliases: ['CoMo', 'Athens of Missouri'],
+        zipPrefixes: ['652']
+      },
+      {
+        name: 'Olathe',
+        state: 'Kansas',
+        aliases: ['Beautiful', 'KC Metro'],
+        zipPrefixes: ['660']
+      },
+      {
+        name: 'Sterling Heights',
+        state: 'Michigan',
+        aliases: ['DET Metro'],
+        zipPrefixes: ['483']
+      },
+      {
+        name: 'New Haven',
+        state: 'Connecticut',
+        aliases: ['Elm City', 'BDL'],
+        zipPrefixes: ['065']
+      },
+      {
+        name: 'Miramar',
+        state: 'Florida',
+        aliases: ['MIA Metro'],
+        zipPrefixes: ['330']
+      },
+      {
+        name: 'Waco',
+        state: 'Texas',
+        aliases: ['Heart of Texas', 'ACT'],
+        zipPrefixes: ['767']
+      },
+      {
+        name: 'Thousand Oaks',
+        state: 'California',
+        aliases: ['TO', 'Ventura County'],
+        zipPrefixes: ['913']
+      },
+      {
+        name: 'Cedar Rapids',
+        state: 'Iowa',
+        aliases: ['City of Five Seasons', 'CID'],
+        zipPrefixes: ['524']
+      },
+      {
+        name: 'Charleston',
+        state: 'South Carolina',
+        aliases: ['Holy City', 'CHS'],
+        zipPrefixes: ['294']
+      },
+      {
+        name: 'Visalia',
+        state: 'California',
+        aliases: ['Gateway to Sequoias'],
+        zipPrefixes: ['932']
+      },
+      {
+        name: 'Topeka',
+        state: 'Kansas',
+        aliases: ['Capital City', 'TOP'],
+        zipPrefixes: ['666']
+      },
+      {
+        name: 'Elizabeth',
+        state: 'New Jersey',
+        aliases: ['EWR'],
+        zipPrefixes: ['072']
+      },
+      {
+        name: 'Gainesville',
+        state: 'Florida',
+        aliases: ['GNV', 'Gator Nation'],
+        zipPrefixes: ['326']
+      },
+      {
+        name: 'Thornton',
+        state: 'Colorado',
+        aliases: ['DEN Metro'],
+        zipPrefixes: ['802']
+      },
+      {
+        name: 'Roseville',
+        state: 'California',
+        aliases: ['SAC Metro'],
+        zipPrefixes: ['956']
+      },
+      {
+        name: 'Carrollton',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['750']
+      },
+      {
+        name: 'Coral Springs',
+        state: 'Florida',
+        aliases: ['MIA Metro'],
+        zipPrefixes: ['330']
+      },
+      {
+        name: 'Stamford',
+        state: 'Connecticut',
+        aliases: ['City That Works'],
+        zipPrefixes: ['069']
+      },
+      {
+        name: 'Simi Valley',
+        state: 'California',
+        aliases: ['Ventura County'],
+        zipPrefixes: ['930']
+      },
+      {
+        name: 'Concord',
+        state: 'California',
+        aliases: ['East Bay'],
+        zipPrefixes: ['945']
+      },
+      {
+        name: 'Hartford',
+        state: 'Connecticut',
+        aliases: ['Insurance Capital', 'BDL'],
+        zipPrefixes: ['061']
+      },
+      {
+        name: 'Kent',
+        state: 'Washington',
+        aliases: ['SEA Metro'],
+        zipPrefixes: ['980']
+      },
+      {
+        name: 'Lafayette',
+        state: 'Louisiana',
+        aliases: ['Hub City', 'LFT'],
+        zipPrefixes: ['705']
+      },
+      {
+        name: 'Midland',
+        state: 'Texas',
+        aliases: ['Tall City', 'MAF'],
+        zipPrefixes: ['797']
+      },
+      {
+        name: 'Surprise',
+        state: 'Arizona',
+        aliases: ['West Valley'],
+        zipPrefixes: ['853']
+      },
+      {
+        name: 'Denton',
+        state: 'Texas',
+        aliases: ['DFW'],
+        zipPrefixes: ['762']
+      },
+      {
+        name: 'Victorville',
+        state: 'California',
+        aliases: ['High Desert'],
+        zipPrefixes: ['923']
+      },
+      {
+        name: 'Evansville',
+        state: 'Indiana',
+        aliases: ['River City', 'EVV'],
+        zipPrefixes: ['477']
+      },
+      {
+        name: 'Santa Clara',
+        state: 'California',
+        aliases: ['Heart of Silicon Valley', 'SJC'],
+        zipPrefixes: ['950']
+      },
+      {
+        name: 'Abilene',
+        state: 'Texas',
+        aliases: ['Key City', 'ABI'],
+        zipPrefixes: ['796']
+      },
+      {
+        name: 'Athens',
+        state: 'Georgia',
+        aliases: ['Classic City', 'AHN'],
+        zipPrefixes: ['306']
+      },
+      {
+        name: 'Vallejo',
+        state: 'California',
+        aliases: ['Bay Area'],
+        zipPrefixes: ['945']
+      },
+      {
+        name: 'Allentown',
+        state: 'Pennsylvania',
+        aliases: ['A-Town', 'ABE'],
+        zipPrefixes: ['181']
+      },
+      {
+        name: 'Norman',
+        state: 'Oklahoma',
+        aliases: ['OKC Metro'],
+        zipPrefixes: ['730']
+      },
+      {
+        name: 'Beaumont',
+        state: 'Texas',
+        aliases: ['BPT'],
+        zipPrefixes: ['777']
+      },
+      {
+        name: 'Independence',
+        state: 'Missouri',
+        aliases: ['Queen City of the Trails', 'KC Metro'],
+        zipPrefixes: ['640']
+      },
+      {
+        name: 'Murfreesboro',
+        state: 'Tennessee',
+        aliases: ['Boro', 'Nashville Metro'],
+        zipPrefixes: ['371']
+      },
+      {
+        name: 'Ann Arbor',
+        state: 'Michigan',
+        aliases: ['Tree Town', 'A2'],
+        zipPrefixes: ['481']
+      },
+      {
+        name: 'Fargo',
+        state: 'North Dakota',
+        aliases: ['FAR'],
+        zipPrefixes: ['581']
+      },
+      {
+        name: 'Columbia',
+        state: 'South Carolina',
+        aliases: ['Cola', 'CAE'],
+        zipPrefixes: ['292']
+      },
+      {
+        name: 'Clearwater',
+        state: 'Florida',
+        aliases: ['Tampa Bay'],
+        zipPrefixes: ['337']
+      },
+      {
+        name: 'Richmond',
+        state: 'California',
+        aliases: ['Bay Area'],
+        zipPrefixes: ['948']
+      },
+      {
+        name: 'Pearland',
+        state: 'Texas',
+        aliases: ['Houston Metro'],
+        zipPrefixes: ['775']
+      },
+      {
+        name: 'Antioch',
+        state: 'California',
+        aliases: ['East Bay'],
+        zipPrefixes: ['945']
+      },
+      {
+        name: 'Temecula',
+        state: 'California',
+        aliases: ['Wine Country'],
+        zipPrefixes: ['925']
+      },
+      {
+        name: 'Inglewood',
+        state: 'California',
+        aliases: ['City of Champions'],
+        zipPrefixes: ['903']
+      },
+      {
+        name: 'Centennial',
+        state: 'Colorado',
+        aliases: ['DEN Metro'],
+        zipPrefixes: ['801']
+      },
+      {
+        name: 'West Jordan',
+        state: 'Utah',
+        aliases: ['SLC Metro'],
+        zipPrefixes: ['840']
+      },
+      {
+        name: 'Las Cruces',
+        state: 'New Mexico',
+        aliases: ['City of Crosses', 'LRU'],
+        zipPrefixes: ['880']
+      },
+      {
+        name: 'Richmond',
+        state: 'Virginia',
+        aliases: ['River City', 'RIC'],
+        zipPrefixes: ['232']
+      },
+      {
+        name: 'Murrieta',
+        state: 'California',
+        aliases: ['IE'],
+        zipPrefixes: ['925']
+      },
+      {
+        name: 'Wilmington',
+        state: 'North Carolina',
+        aliases: ['Port City', 'ILM'],
+        zipPrefixes: ['284']
+      },
+      {
+        name: 'Provo',
+        state: 'Utah',
+        aliases: ['Happy Valley', 'PVU'],
+        zipPrefixes: ['846']
+      },
+      {
+        name: 'Daly City',
+        state: 'California',
+        aliases: ['Gateway to Peninsula'],
+        zipPrefixes: ['940']
+      },
+      {
+        name: 'Davie',
+        state: 'Florida',
+        aliases: ['Western Town', 'MIA Metro'],
+        zipPrefixes: ['333']
+      },
+      {
+        name: 'West Palm Beach',
+        state: 'Florida',
+        aliases: ['WPB'],
+        zipPrefixes: ['334']
+      },
+      {
+        name: 'Edison',
+        state: 'New Jersey',
+        aliases: ['NYC Metro'],
+        zipPrefixes: ['088']
+      },
+      {
+        name: 'Clovis',
+        state: 'California',
+        aliases: ['Gateway to Sierra'],
+        zipPrefixes: ['936']
+      },
+      {
+        name: 'Carlsbad',
+        state: 'California',
+        aliases: ['Village by the Sea'],
+        zipPrefixes: ['920']
+      },
+      {
+        name: 'Westminster',
+        state: 'Colorado',
+        aliases: ['DEN Metro'],
+        zipPrefixes: ['800']
+      },
+      {
+        name: 'St. Joseph',
+        state: 'Missouri',
+        aliases: ['Saint Joe', 'STJ'],
+        zipPrefixes: ['645']
+      },
+      {
+        name: 'Round Rock',
+        state: 'Texas',
+        aliases: ['Austin Metro'],
+        zipPrefixes: ['786']
+      }
+    ];
+
+    metros.forEach(metro => {
+      const entity: GeographicEntity = {
+        name: metro.name,
+        type: 'city',
+        aliases: metro.aliases,
+        parentEntity: metro.state.toLowerCase(),
+        zipCodes: this.generateZipCodesFromPrefixes(metro.zipPrefixes),
+        confidence: 1.0
+      };
+
+      this.addEntity(entity);
+      
+      // Add ZIP code mappings
+      entity.zipCodes?.forEach(zip => {
+        this.database.zipCodeToCity.set(zip, metro.name.toLowerCase());
+      });
+    });
+  }
+
+  private loadNewYorkData(): void {
+    const boroughs = [
+      {
+        name: 'Manhattan',
+        aliases: ['New York County', 'The City'],
+        zipPrefixes: ['100', '101', '102', '103', '104']
+      },
+      {
+        name: 'Brooklyn',
+        aliases: ['Kings County', 'BK'],
+        zipPrefixes: ['112']
+      },
+      {
+        name: 'Queens',
+        aliases: ['Queens County', 'QNS'],
+        zipPrefixes: ['110', '111', '113', '114', '116']
+      },
+      {
+        name: 'Bronx',
+        aliases: ['Bronx County', 'BX'],
+        zipPrefixes: ['104', '105']
+      },
+      {
+        name: 'Staten Island',
+        aliases: ['Richmond County', 'SI'],
+        zipPrefixes: ['103']
+      }
+    ];
+
+    boroughs.forEach(borough => {
+      const entity: GeographicEntity = {
+        name: borough.name,
+        type: 'borough',
+        aliases: borough.aliases,
+        parentEntity: 'new york',
+        zipCodes: this.generateZipCodesFromPrefixes(borough.zipPrefixes),
+        confidence: 1.0
+      };
+
+      this.addEntity(entity);
+      
+      // Add ZIP code mappings
+      entity.zipCodes?.forEach(zip => {
+        this.database.zipCodeToCity.set(zip, borough.name.toLowerCase());
+      });
+    });
+  }
+
+  private loadCaliforniaData(): void {
+    // Bay Area
+    const bayAreaCities = [
+      'San Francisco', 'Oakland', 'San Jose', 'Fremont', 'Hayward',
+      'Sunnyvale', 'Santa Clara', 'Berkeley', 'Richmond', 'Vallejo',
+      'Concord', 'Antioch', 'Daly City'
+    ];
+
+    this.database.regionalGroups.set('bay area', bayAreaCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('sf bay area', bayAreaCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('silicon valley', 
+      ['san jose', 'sunnyvale', 'santa clara', 'fremont', 'hayward'].map(c => c.toLowerCase())
+    );
+
+    // LA Metro
+    const laMetroCities = [
+      'Los Angeles', 'Long Beach', 'Glendale', 'Pasadena', 'Burbank',
+      'Santa Monica', 'Inglewood', 'Torrance', 'Pomona', 'West Covina'
+    ];
+
+    this.database.regionalGroups.set('los angeles metro', laMetroCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('la metro', laMetroCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('greater los angeles', laMetroCities.map(c => c.toLowerCase()));
+
+    // Add aliases
+    this.database.aliasMap.set('norcal', 'northern california');
+    this.database.aliasMap.set('socal', 'southern california');
+  }
+
+  private loadTexasData(): void {
+    // DFW Metro
+    const dfwCities = [
+      'Dallas', 'Fort Worth', 'Arlington', 'Plano', 'Garland', 'Irving',
+      'Grand Prairie', 'Mesquite', 'Frisco', 'McKinney', 'Carrollton', 'Denton'
+    ];
+
+    this.database.regionalGroups.set('dallas fort worth', dfwCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('dfw', dfwCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('metroplex', dfwCities.map(c => c.toLowerCase()));
+
+    // Houston Metro
+    const houstonCities = [
+      'Houston', 'Pasadena', 'Pearland', 'Sugar Land', 'Baytown', 'Missouri City'
+    ];
+
+    this.database.regionalGroups.set('houston metro', houstonCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('greater houston', houstonCities.map(c => c.toLowerCase()));
+  }
+
+  private loadFloridaData(): void {
+    // South Florida
+    const southFloridaCities = [
+      'Miami', 'Fort Lauderdale', 'Hialeah', 'Pembroke Pines', 'Hollywood',
+      'Miramar', 'Coral Springs', 'Davie', 'West Palm Beach'
+    ];
+
+    this.database.regionalGroups.set('south florida', southFloridaCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('miami metro', southFloridaCities.map(c => c.toLowerCase()));
+    this.database.regionalGroups.set('sofla', southFloridaCities.map(c => c.toLowerCase()));
+
+    // Tampa Bay
+    const tampaBayCities = ['Tampa', 'St. Petersburg', 'Clearwater'];
+    this.database.regionalGroups.set('tampa bay', tampaBayCities.map(c => c.toLowerCase()));
+  }
+
+  private loadCommonAliases(): void {
+    const aliases = [
+      // Cities
+      ['nyc', 'new york'],
+      ['ny', 'new york'],
+      ['philly', 'philadelphia'],
+      ['chi-town', 'chicago'],
+      ['la', 'los angeles'],
+      ['sf', 'san francisco'],
+      ['dc', 'washington'],
+      ['boston', 'boston'],
+      ['vegas', 'las vegas'],
+      ['miami', 'miami'],
+      ['atlanta', 'atlanta'],
+      ['denver', 'denver'],
+      ['seattle', 'seattle'],
+      ['portland', 'portland'],
+      ['phoenix', 'phoenix'],
+      ['dallas', 'dallas'],
+      ['houston', 'houston'],
+      ['austin', 'austin'],
+      ['san antonio', 'san antonio'],
+      
+      // Regions
+      ['northeast', 'northeastern united states'],
+      ['southeast', 'southeastern united states'],
+      ['midwest', 'midwestern united states'],
+      ['southwest', 'southwestern united states'],
+      ['west coast', 'western united states'],
+      ['east coast', 'eastern united states'],
+      ['pacific northwest', 'pacific northwest'],
+      ['new england', 'new england'],
+      ['great lakes', 'great lakes region'],
+      ['gulf coast', 'gulf coast'],
+      ['rust belt', 'rust belt'],
+      ['sun belt', 'sun belt'],
+      ['bible belt', 'bible belt'],
+      
+      // States
+      ['ca', 'california'],
+      ['tx', 'texas'],
+      ['fl', 'florida'],
+      ['ny', 'new york'],
+      ['pa', 'pennsylvania'],
+      ['il', 'illinois'],
+      ['oh', 'ohio'],
+      ['ga', 'georgia'],
+      ['nc', 'north carolina'],
+      ['mi', 'michigan']
+    ];
+
+    aliases.forEach(([alias, canonical]) => {
+      this.database.aliasMap.set(alias, canonical);
+    });
+  }
+
+  private loadRegionalGroups(): void {
+    const regions = [
+      {
+        name: 'northeastern united states',
+        cities: ['new york', 'boston', 'philadelphia', 'baltimore', 'washington',
+                'pittsburgh', 'buffalo', 'rochester', 'syracuse', 'albany',
+                'hartford', 'providence', 'bridgeport', 'new haven', 'stamford']
+      },
+      {
+        name: 'southeastern united states',
+        cities: ['atlanta', 'miami', 'tampa', 'orlando', 'jacksonville',
+                'charlotte', 'raleigh', 'nashville', 'memphis', 'new orleans',
+                'birmingham', 'richmond', 'norfolk', 'charleston', 'savannah']
+      },
+      {
+        name: 'midwestern united states',
+        cities: ['chicago', 'detroit', 'columbus', 'milwaukee', 'indianapolis',
+                'cleveland', 'minneapolis', 'kansas city', 'st. louis', 'cincinnati',
+                'toledo', 'akron', 'dayton', 'grand rapids', 'madison']
+      },
+      {
+        name: 'southwestern united states',
+        cities: ['phoenix', 'tucson', 'albuquerque', 'las cruces', 'el paso',
+                'austin', 'san antonio', 'houston', 'dallas', 'fort worth',
+                'oklahoma city', 'tulsa', 'las vegas', 'denver', 'colorado springs']
+      },
+      {
+        name: 'western united states',
+        cities: ['los angeles', 'san francisco', 'san diego', 'san jose',
+                'sacramento', 'fresno', 'oakland', 'seattle', 'portland',
+                'spokane', 'boise', 'salt lake city', 'phoenix', 'tucson']
+      }
+    ];
+
+    regions.forEach(region => {
+      this.database.regionalGroups.set(region.name, region.cities);
+    });
+  }
+
+  private loadZipCodePrefixes(): void {
+    // Major ZIP code prefix patterns for quick lookup
+    const prefixMappings = [
+      // New York
+      ['100', 'manhattan'], ['101', 'manhattan'], ['102', 'manhattan'],
+      ['103', 'staten island'], ['104', 'bronx'], ['105', 'bronx'],
+      ['110', 'queens'], ['111', 'queens'], ['112', 'brooklyn'],
+      ['113', 'queens'], ['114', 'queens'], ['116', 'queens'],
+      
+      // California
+      ['900', 'los angeles'], ['901', 'los angeles'], ['902', 'los angeles'],
+      ['903', 'los angeles'], ['904', 'los angeles'], ['905', 'los angeles'],
+      ['906', 'los angeles'], ['907', 'los angeles'], ['908', 'los angeles'],
+      ['941', 'san francisco'], ['942', 'sacramento'], ['943', 'sacramento'],
+      ['944', 'sacramento'], ['945', 'fremont'], ['950', 'san jose'],
+      
+      // Texas
+      ['750', 'dallas'], ['751', 'dallas'], ['752', 'dallas'], ['753', 'dallas'],
+      ['760', 'arlington'], ['761', 'fort worth'], ['762', 'denton'],
+      ['770', 'houston'], ['771', 'houston'], ['772', 'houston'],
+      ['775', 'houston'], ['787', 'austin'], ['788', 'austin'],
+      
+      // Florida
+      ['330', 'miami'], ['331', 'miami'], ['332', 'miami'], ['333', 'miami'],
+      ['336', 'tampa'], ['337', 'st. petersburg'],
+      
+      // Illinois
+      ['606', 'chicago'], ['607', 'chicago'], ['608', 'chicago'], ['609', 'chicago'],
+      
+      // Others can be added as needed...
+    ];
+
+    prefixMappings.forEach(([prefix, city]) => {
+      // Generate all ZIP codes for this prefix (00-99)
+      for (let i = 0; i < 100; i++) {
+        const zipCode = prefix + i.toString().padStart(2, '0');
+        this.database.zipCodeToCity.set(zipCode, city);
+      }
+    });
+  }
+
+  private generateZipCodesFromPrefixes(prefixes: string[]): string[] {
+    const zipCodes: string[] = [];
+    
+    prefixes.forEach(prefix => {
+      // Generate representative ZIP codes for each prefix
+      // In a real implementation, this would use actual ZIP code data
+      for (let i = 0; i < 100; i += 10) { // Sample every 10th ZIP
+        zipCodes.push(prefix + i.toString().padStart(2, '0'));
+      }
+    });
+    
+    return zipCodes;
+  }
+
+  private addEntity(entity: GeographicEntity): void {
+    // Add primary name
+    this.database.entities.set(entity.name.toLowerCase(), entity);
+    
+    // Add all aliases
+    entity.aliases.forEach(alias => {
+      this.database.entities.set(alias.toLowerCase(), entity);
+    });
+  }
+}

@@ -1,0 +1,26 @@
+/* Fix for ESRI UI positioning */
+.esri-ui.calcite-mode-light {
+  inset: 0px 0px 0px !important; /* Override the 100px top positioning */
+}
+
+/* Fix for map widgets container */
+.esri-ui-top-left {
+  top: 0 !important;
+  left: 0 !important;
+}
+
+/* Position the widget container with specific offsets */
+.esri-ui-corner-container {
+  inset: 8px 0 0 12px !important; /* 8px from top, 12px from left */
+}
+
+/* Make sure our widget container is appropriately positioned */
+.widget-container {
+  margin-top: 0 !important; /* Reset the extreme negative margin */
+  top: 0px !important;
+}
+
+/* Ensure the widget content is visible */
+.esri-ui-corner-container {
+  overflow: visible !important;
+}

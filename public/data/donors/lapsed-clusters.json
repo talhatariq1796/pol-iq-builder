@@ -1,0 +1,81 @@
+[
+  {
+    "clusterId": "cluster_48823_48840_48842_48864",
+    "centroid": {
+      "lat": 42.718125,
+      "lng": -84.416375
+    },
+    "zipCodes": [
+      "48864",
+      "48842",
+      "48823",
+      "48840"
+    ],
+    "donorCount": 24,
+    "totalHistoricalAmount": 82935,
+    "avgHistoricalGift": 3455.625,
+    "totalEstimatedRecovery": 8490,
+    "avgRecoveryScore": 59.666666666666664,
+    "highPriorityCount": 5,
+    "mediumPriorityCount": 18,
+    "lowPriorityCount": 1,
+    "donorDensity": 0.494528788767295,
+    "canvassingEfficiency": 4,
+    "estimatedContactRate": 0.41933333333333334,
+    "priorityScore": 67,
+    "recommendedApproach": "Personalized mail + email follow-up",
+    "estimatedHoursNeeded": 2
+  },
+  {
+    "clusterId": "cluster_48906_48910_48917_48933",
+    "centroid": {
+      "lat": 42.70155,
+      "lng": -84.57027500000001
+    },
+    "zipCodes": [
+      "48917",
+      "48906",
+      "48910",
+      "48933"
+    ],
+    "donorCount": 23,
+    "totalHistoricalAmount": 44168,
+    "avgHistoricalGift": 1920.3478260869565,
+    "totalEstimatedRecovery": 4807,
+    "avgRecoveryScore": 60.47826086956522,
+    "highPriorityCount": 3,
+    "mediumPriorityCount": 19,
+    "lowPriorityCount": 1,
+    "donorDensity": 1.0668522630387491,
+    "canvassingEfficiency": 4,
+    "estimatedContactRate": 0.42095652173913045,
+    "priorityScore": 54,
+    "recommendedApproach": "Personalized mail + email follow-up",
+    "estimatedHoursNeeded": 2
+  },
+  {
+    "clusterId": "cluster_48911_48912",
+    "centroid": {
+      "lat": 42.75905,
+      "lng": -84.56045
+    },
+    "zipCodes": [
+      "48912",
+      "48911"
+    ],
+    "donorCount": 7,
+    "totalHistoricalAmount": 23752,
+    "avgHistoricalGift": 3393.1428571428573,
+    "totalEstimatedRecovery": 1963,
+    "avgRecoveryScore": 63,
+    "highPriorityCount": 3,
+    "mediumPriorityCount": 4,
+    "lowPriorityCount": 0,
+    "donorDensity": 1.008578475281686,
+    "canvassingEfficiency": 4,
+    "estimatedContactRate": 0.426,
+    "priorityScore": 40,
+    "recommendedApproach": "Personalized mail + email follow-up",
+    "estimatedHoursNeeded": 0.6
+  }
+]

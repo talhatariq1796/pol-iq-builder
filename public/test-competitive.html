@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Competitive Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-result { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .debug-logs { background: #1e1e1e; color: #00ff00; padding: 15px; font-family: monospace; border-radius: 5px; max-height: 400px; overflow-y: auto; }
+        button { padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #005a8b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Competitive Analysis Debug Logs</h1>
+    
+    <button onclick="testCompetitiveAnalysis()">Run Competitive Analysis Test</button>
+    
+    <div id="status">Ready to test...</div>
+    
+    <div class="test-result">
+        <h3>Debug Console Logs:</h3>
+        <div class="debug-logs" id="logs">
+            Console logs will appear here...
+        </div>
+    </div>
+    
+    <div class="test-result">
+        <h3>Results:</h3>
+        <div id="results">Results will appear here...</div>
+    </div>
+
+    <script>
+        // Capture console.log messages
+        const originalLog = console.log;
+        const logs = [];
+        
+        console.log = function(...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            logs.push(message);
+            document.getElementById('logs').innerHTML = logs.join('\n');
+            
+            // Also log to real console
+            originalLog.apply(console, args);
+        };
+
+        async function testCompetitiveAnalysis() {
+            console.log('🔥 Starting competitive analysis test...');
+            document.getElementById('status').innerHTML = 'Testing competitive analysis...';
+            
+            try {
+                // This should trigger the AnalysisEngine through the frontend
+                // But since we're in a simple HTML page, let's simulate the key parts
+                
+                console.log('📊 This test will show if our debug logs appear when competitive analysis runs');
+                console.log('🔥 Looking for these key debug messages:');
+                console.log('1. [DataProcessor] getProcessorForEndpoint called with endpoint');  
+                console.log('2. [DataProcessor] FORCING CompetitiveDataProcessor');
+                console.log('3. [CompetitiveDataProcessor] UPDATED VERSION RUNNING');
+                console.log('4. [CompetitiveDataProcessor] Processing competitive data');
+                
+                // Test if we can access the main application
+                const response = await fetch('/', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/html'
+                    }
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Application is running on localhost:3002');
+                    document.getElementById('status').innerHTML = 'Application accessible - now test competitive analysis in the main app';
+                    document.getElementById('results').innerHTML = `
+                        <p><strong>Next Step:</strong> Go to the main application and:</p>
+                        <ol>
+                            <li>Enter a query like "competitive analysis" or "Nike vs Adidas"</li>
+                            <li>Check the browser console for debug logs</li>
+                            <li>Look for the debug messages we added to DataProcessor and CompetitiveDataProcessor</li>
+                        </ol>
+                        <p><strong>Expected Debug Messages:</strong></p>
+                        <ul>
+                            <li>🔥 [DataProcessor] FORCING CompetitiveDataProcessor for [endpoint]</li>
+                            <li>🚀 [CompetitiveDataProcessor] UPDATED VERSION RUNNING</li>
+                            <li>[CompetitiveDataProcessor] Processing competitive data with X records</li>
+                            <li>Detailed scoring calculations for each area</li>
+                        </ul>
+                    `;
+                } else {
+                    console.log('❌ Could not access main application');
+                    document.getElementById('status').innerHTML = 'Could not access main application';
+                }
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                document.getElementById('status').innerHTML = `Test failed: ${error.message}`;
+            }
+        }
+        
+        // Auto-run test
+        setTimeout(testCompetitiveAnalysis, 1000);
+    </script>
+</body>
+</html>

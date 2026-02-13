@@ -1,0 +1,212 @@
+/**
+ * Modal Scrolling Utilities
+ * CSS utilities for consistent modal and dialog scrolling behavior
+ * 
+ * Usage patterns for fixing modal scrolling issues:
+ * 1. Apply .modal-container to the main modal/dialog container
+ * 2. Apply .modal-header to fixed header sections
+ * 3. Apply .modal-content to scrollable content areas
+ * 4. Apply .modal-footer to fixed footer sections
+ */
+
+/* Main modal container - flexbox layout */
+.modal-container {
+  @apply flex flex-col max-h-[90vh] h-[90vh] overflow-hidden;
+}
+
+/* Fixed header that doesn't scroll */
+.modal-header {
+  @apply flex-shrink-0;
+}
+
+/* Scrollable content area */
+.modal-content {
+  @apply flex-1 min-h-0 overflow-y-auto;
+}
+
+/* Fixed footer that doesn't scroll */
+.modal-footer {
+  @apply flex-shrink-0;
+}
+
+/* Responsive modal container for smaller screens */
+@media (max-width: 768px) {
+  .modal-container {
+    @apply max-h-[95vh] h-[95vh];
+  }
+}
+
+/* Dialog-specific utilities */
+.dialog-container {
+  @apply max-w-7xl p-0 theme-dialog overflow-hidden flex flex-col;
+}
+
+.dialog-content-scrollable {
+  @apply flex-1 min-h-0 overflow-y-auto;
+}
+
+/* Tab content scrolling utilities */
+.tabs-container {
+  @apply w-full flex flex-col flex-1 min-h-0;
+}
+
+.tabs-list-fixed {
+  @apply flex-shrink-0;
+}
+
+.tab-content-scrollable {
+  @apply space-y-6 flex-1 min-h-0 overflow-y-auto;
+}
+
+/* Report-specific utilities */
+.report-container {
+  @apply space-y-6 p-6 min-h-full flex flex-col;
+}
+
+.report-header {
+  @apply flex-shrink-0;
+}
+
+.report-stats {
+  @apply flex-shrink-0;
+}
+
+.report-content {
+  @apply flex-1 min-h-0;
+}
+
+/* Content modal utilities */
+.content-modal-dialog {
+  @apply max-w-[90vw] max-h-[90vh] h-[90vh] w-fit overflow-hidden flex flex-col;
+}
+
+.content-modal-header {
+  @apply flex-shrink-0;
+}
+
+.content-modal-body {
+  @apply mt-4 flex-1 min-h-0 overflow-y-auto;
+}
+
+/* Regular modal utilities */
+.regular-modal-container {
+  @apply relative z-50 w-[90vw] h-[90vh] theme-dialog rounded-lg theme-shadow-primary flex flex-col;
+}
+
+.regular-modal-header {
+  @apply flex items-center justify-between px-4 py-2 border-b flex-shrink-0;
+}
+
+.regular-modal-content {
+  @apply flex-1 min-h-0 overflow-y-auto;
+}
+
+/* Scrollbar styling for webkit browsers */
+.modal-content::-webkit-scrollbar,
+.dialog-content-scrollable::-webkit-scrollbar,
+.tab-content-scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track,
+.dialog-content-scrollable::-webkit-scrollbar-track,
+.tab-content-scrollable::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+.modal-content::-webkit-scrollbar-thumb,
+.dialog-content-scrollable::-webkit-scrollbar-thumb,
+.tab-content-scrollable::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded hover:bg-gray-500;
+}
+
+/* Firefox scrollbar styling */
+.modal-content,
+.dialog-content-scrollable,
+.tab-content-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+/* Smooth scrolling behavior */
+.modal-content,
+.dialog-content-scrollable,
+.tab-content-scrollable {
+  scroll-behavior: smooth;
+}
+
+/* Animation utilities for modal content */
+.modal-fade-in {
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Utility classes for common modal patterns */
+.modal-full-height {
+  @apply max-h-[90vh] h-[90vh];
+}
+
+.modal-auto-height {
+  @apply max-h-[90vh];
+}
+
+.modal-medium-height {
+  @apply max-h-[70vh];
+}
+
+.modal-small-height {
+  @apply max-h-[50vh];
+}
+
+/* Grid layout utilities for modal content */
+.modal-grid-content {
+  @apply grid gap-4 p-4;
+}
+
+.modal-flex-content {
+  @apply flex flex-col gap-4 p-4;
+}
+
+/* Padding utilities that work with flexbox */
+.modal-padding-sm {
+  @apply p-2;
+}
+
+.modal-padding-md {
+  @apply p-4;
+}
+
+.modal-padding-lg {
+  @apply p-6;
+}
+
+.modal-padding-xl {
+  @apply p-8;
+}
+
+/* Debug utilities (can be removed in production) */
+.debug-modal-container {
+  @apply border-2 border-red-500;
+}
+
+.debug-modal-header {
+  @apply border-2 border-blue-500;
+}
+
+.debug-modal-content {
+  @apply border-2 border-green-500;
+}
+
+.debug-modal-footer {
+  @apply border-2 border-yellow-500;
+}

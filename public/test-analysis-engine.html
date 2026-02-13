@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Analysis Engine</title>
+</head>
+<body>
+    <h1>Analysis Engine Test</h1>
+    <button onclick="testQuery()">Test Strategic Markets Query</button>
+    <div id="results"></div>
+
+    <script type="module">
+        import { AnalysisEngine } from '/lib/analysis/AnalysisEngine.js';
+        
+        window.testQuery = async function() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Testing...</h2>';
+            
+            try {
+                // Create engine
+                const engine = new AnalysisEngine();
+                resultsDiv.innerHTML += '<p>✅ Engine created</p>';
+                
+                // Test strategic markets query
+                const query = "Show me the top strategic markets for Nike expansion";
+                resultsDiv.innerHTML += `<p>Query: "${query}"</p>`;
+                
+                const result = await engine.executeAnalysis(query);
+                
+                resultsDiv.innerHTML += '<h3>Result:</h3>';
+                resultsDiv.innerHTML += `<p>Success: ${result.success}</p>`;
+                resultsDiv.innerHTML += `<p>Endpoint: ${result.endpoint}</p>`;
+                resultsDiv.innerHTML += `<p>Type: ${result.type}</p>`;
+                resultsDiv.innerHTML += `<p>Records: ${result.data?.records?.length || 0}</p>`;
+                
+                if (result.data?.records?.length > 0) {
+                    resultsDiv.innerHTML += '<h4>Top 5 Records:</h4>';
+                    const top5 = result.data.records.slice(0, 5);
+                    resultsDiv.innerHTML += '<pre>' + JSON.stringify(top5, null, 2) + '</pre>';
+                }
+                
+                if (result.error) {
+                    resultsDiv.innerHTML += `<p style="color: red;">Error: ${result.error}</p>`;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

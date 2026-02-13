@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Terminology Validation - All 16 Endpoints</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .endpoint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .endpoint-card { border: 2px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; }
+        .endpoint-card.tested { border-color: #28a745; background: #f8fff8; }
+        .endpoint-card.failed { border-color: #dc3545; background: #fff8f8; }
+        .endpoint-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .endpoint-id { font-family: monospace; font-weight: bold; color: #007bff; }
+        .endpoint-name { font-size: 16px; font-weight: bold; }
+        .score-info { background: #e7f3ff; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .expected-score { font-weight: bold; color: #0066cc; }
+        .test-query { font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px; margin: 8px 0; font-size: 14px; }
+        .validation-results { margin-top: 10px; }
+        .validation-pass { color: #28a745; font-weight: bold; }
+        .validation-fail { color: #dc3545; font-weight: bold; }
+        .test-button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .test-button:hover { background: #0056b3; }
+        .test-button.tested { background: #28a745; }
+        .test-button.failed { background: #dc3545; }
+        .summary-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+        .progress-section { margin: 20px 0; }
+        .progress-bar { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #28a745, #20c997); transition: width 0.3s; }
+        .instructions { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Score Terminology Validation Test</h1>
+        <p>Verify that Claude analysis uses the correct score terminology for each of the 16 endpoints</p>
+    </div>
+
+    <div class="summary-stats">
+        <div class="stat-card">
+            <h3 id="totalEndpoints">16</h3>
+            <p>Total Endpoints</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="testedEndpoints">0</h3>
+            <p>Tested</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="passedEndpoints">0</h3>
+            <p>Passed</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="failedEndpoints">0</h3>
+            <p>Failed</p>
+        </div>
+    </div>
+
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <p id="progressText">0 of 16 endpoints validated (0%)</p>
+    </div>
+
+    <div class="instructions">
+        <h3>📋 Testing Instructions:</h3>
+        <ol>
+            <li><strong>Open the application:</strong> <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+            <li><strong>For each endpoint below:</strong>
+                <ul>
+                    <li>Copy the test query</li>
+                    <li>Paste it into the application</li>
+                    <li>Wait for Claude analysis to complete</li>
+                    <li>Check the browser console for <code>[ScoreValidation]</code> messages</li>
+                    <li>Verify Claude uses the expected score terminology</li>
+                    <li>Mark as ✅ Pass or ❌ Fail using the buttons</li>
+                </ul>
+            </li>
+            <li><strong>Console validation:</strong> Look for these messages:
+                <ul>
+                    <li>✅ <code>[ScoreValidation] ✅ Claude analysis uses correct terminology</code></li>
+                    <li>❌ <code>[ScoreValidation] Claude analysis has incorrect terminology</code></li>
+                    <li>✅ <code>[ScoreExplanation] ✅ Claude explains score calculation at beginning</code></li>
+                    <li>❌ <code>[ScoreExplanation] Claude analysis missing score explanation</code></li>
+                    <li>❌ <code>[ScoreExplanation] Claude score explanation not at beginning</code></li>
+                </ul>
+            </li>
+            <li><strong>Manual validation:</strong> Check that Claude's analysis:
+                <ul>
+                    <li><strong>Starts with score explanation</strong> - The first paragraph should explain how scores are calculated</li>
+                    <li><strong>Uses plain language</strong> - No technical formulas, easy to understand</li>
+                    <li><strong>Explains what scores measure</strong> - Clear description of what the scores represent</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="endpoint-grid" id="endpointGrid">
+        <!-- Endpoints will be populated by JavaScript -->
+    </div>
+
+    <div style="text-align: center; margin: 40px 0;">
+        <button onclick="window.open('http://localhost:3000', '_blank')" style="padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
+            🚀 Open Application for Testing
+        </button>
+    </div>
+
+    <script>
+        // Comprehensive endpoint score configuration
+        const endpointConfigs = [
+            {
+                endpoint: '/analyze',
+                name: 'General Analysis',
+                category: 'core',
+                expectedScore: 'strategic value scores',
+                scoreField: 'strategic_value_score',
+                testQuery: 'Show me the top strategic markets for Nike expansion',
+                description: 'Strategic importance rating for business expansion',
+                expectedExplanation: 'Strategic value scores measure the strategic importance of each market for Nike\'s long-term growth and expansion opportunities, calculated based on market potential, growth trends, and competitive positioning.'
+            },
+            {
+                endpoint: '/competitive-analysis',
+                name: 'Brand Competition Analysis',
+                category: 'competitive',
+                expectedScore: 'competitive advantage scores',
+                scoreField: 'competitive_advantage_score',
+                testQuery: 'Nike vs Adidas competitive analysis across markets',
+                description: 'Competitive positioning strength relative to competitors'
+            },
+            {
+                endpoint: '/correlation-analysis',
+                name: 'Correlation Analysis',
+                category: 'core',
+                expectedScore: 'correlation coefficients',
+                scoreField: 'correlation_score',
+                testQuery: 'What factors are most correlated with Nike market share?',
+                description: 'Statistical relationship strength between variables'
+            },
+            {
+                endpoint: '/spatial-clusters',
+                name: 'Geographic Clustering',
+                category: 'geographic',
+                expectedScore: 'cluster similarity scores',
+                scoreField: 'cluster_score',
+                testQuery: 'Group similar geographic areas for Nike expansion',
+                description: 'Geographic similarity and cluster membership strength'
+            },
+            {
+                endpoint: '/demographic-insights',
+                name: 'Demographic Analysis',
+                category: 'demographic',
+                expectedScore: 'demographic compatibility scores',
+                scoreField: 'demographic_score',
+                testQuery: 'Analyze demographic patterns for athletic footwear markets',
+                description: 'Population and demographic alignment with target market'
+            },
+            {
+                endpoint: '/trend-analysis',
+                name: 'Trend Analysis',
+                category: 'temporal',
+                expectedScore: 'trend strength scores',
+                scoreField: 'trend_score',
+                testQuery: 'Show me trending growth patterns in Nike markets',
+                description: 'Temporal trend magnitude and consistency'
+            },
+            {
+                endpoint: '/anomaly-detection',
+                name: 'Anomaly Detection',
+                category: 'detection',
+                expectedScore: 'anomaly scores',
+                scoreField: 'anomaly_score',
+                testQuery: 'Detect unusual patterns in Nike sales data',
+                description: 'Statistical deviation from expected patterns'
+            },
+            {
+                endpoint: '/feature-interactions',
+                name: 'Feature Interaction Analysis',
+                category: 'advanced',
+                expectedScore: 'interaction strength scores',
+                scoreField: 'interaction_score',
+                testQuery: 'How do income and age interact to affect Nike preference?',
+                description: 'Combined effect magnitude of multiple variables'
+            },
+            {
+                endpoint: '/outlier-detection',
+                name: 'Outlier Detection',
+                category: 'detection',
+                expectedScore: 'outlier deviation scores',
+                scoreField: 'outlier_score',
+                testQuery: 'Find outlier markets with exceptional Nike performance',
+                description: 'Statistical distance from population center'
+            },
+            {
+                endpoint: '/comparative-analysis',
+                name: 'Comparative Analysis',
+                category: 'comparative',
+                expectedScore: 'comparative performance scores',
+                scoreField: 'comparative_score',
+                testQuery: 'Compare Nike performance between urban vs rural markets',
+                description: 'Relative performance comparison between groups'
+            },
+            {
+                endpoint: '/predictive-modeling',
+                name: 'Predictive Modeling',
+                category: 'predictive',
+                expectedScore: 'prediction confidence scores',
+                scoreField: 'prediction_score',
+                testQuery: 'Predict future Nike market performance by region',
+                description: 'Model confidence in future performance predictions'
+            },
+            {
+                endpoint: '/segment-profiling',
+                name: 'Market Segmentation',
+                category: 'segmentation',
+                expectedScore: 'segment affinity scores',
+                scoreField: 'segment_score',
+                testQuery: 'Profile distinct Nike customer segments by geography',
+                description: 'Market segment membership and characteristics strength'
+            },
+            {
+                endpoint: '/scenario-analysis',
+                name: 'Scenario Analysis',
+                category: 'strategic',
+                expectedScore: 'scenario impact scores',
+                scoreField: 'scenario_score',
+                testQuery: 'What-if analysis: Nike expands digital marketing budget 50%',
+                description: 'Projected impact magnitude under different scenarios'
+            },
+            {
+                endpoint: '/market-sizing',
+                name: 'Market Sizing Analysis',
+                category: 'market',
+                expectedScore: 'market potential scores',
+                scoreField: 'market_size_score',
+                testQuery: 'Size the addressable market for Nike in each region',
+                description: 'Total addressable market opportunity rating'
+            },
+            {
+                endpoint: '/brand-analysis',
+                name: 'Brand Performance Analysis',
+                category: 'brand',
+                expectedScore: 'brand performance scores',
+                scoreField: 'brand_score',
+                testQuery: 'Analyze Nike brand awareness and perception by region',
+                description: 'Overall brand strength and market positioning'
+            },
+            {
+                endpoint: '/real-estate-analysis',
+                name: 'Real Estate Market Analysis',
+                category: 'real-estate',
+                expectedScore: 'location suitability scores',
+                scoreField: 'location_score',
+                testQuery: 'Analyze real estate markets for Nike retail store locations',
+                description: 'Real estate location attractiveness for business purposes'
+            }
+        ];
+
+        let testResults = {};
+        let stats = { total: 16, tested: 0, passed: 0, failed: 0 };
+
+        function createEndpointCard(config) {
+            return `
+                <div class="endpoint-card" id="card-${config.endpoint.replace('/', '')}">
+                    <div class="endpoint-header">
+                        <div>
+                            <div class="endpoint-id">${config.endpoint}</div>
+                            <div class="endpoint-name">${config.name}</div>
+                        </div>
+                        <div class="category ${config.category}">${config.category}</div>
+                    </div>
+                    
+                    <div class="score-info">
+                        <div><strong>Expected Score:</strong> <span class="expected-score">"${config.expectedScore}"</span></div>
+                        <div><strong>Score Field:</strong> <code>${config.scoreField}</code></div>
+                        <div><strong>Description:</strong> ${config.description}</div>
+                        ${config.expectedExplanation ? `<div><strong>Expected Explanation:</strong> <em>${config.expectedExplanation}</em></div>` : ''}
+                    </div>
+                    
+                    <div class="test-query">${config.testQuery}</div>
+                    
+                    <div class="validation-results" id="results-${config.endpoint.replace('/', '')}">
+                        <em>Not tested yet</em>
+                    </div>
+                    
+                    <div style="margin-top: 10px;">
+                        <button class="test-button" onclick="markResult('${config.endpoint}', 'pass')">✅ Pass</button>
+                        <button class="test-button" onclick="markResult('${config.endpoint}', 'fail')">❌ Fail</button>
+                        <button class="test-button" onclick="copyQuery('${config.testQuery}')" style="background: #6c757d;">📋 Copy Query</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function markResult(endpoint, result) {
+            const cardId = endpoint.replace('/', '');
+            const card = document.getElementById(`card-${cardId}`);
+            const resultsDiv = document.getElementById(`results-${cardId}`);
+            
+            if (!testResults[endpoint]) {
+                stats.tested++;
+            }
+            
+            if (testResults[endpoint] === 'pass') stats.passed--;
+            if (testResults[endpoint] === 'fail') stats.failed--;
+            
+            testResults[endpoint] = result;
+            
+            if (result === 'pass') {
+                stats.passed++;
+                card.className = 'endpoint-card tested';
+                resultsDiv.innerHTML = '<div class="validation-pass">✅ Claude uses correct score terminology</div>';
+            } else {
+                stats.failed++;
+                card.className = 'endpoint-card failed';
+                resultsDiv.innerHTML = '<div class="validation-fail">❌ Claude uses incorrect score terminology</div>';
+            }
+            
+            updateStats();
+        }
+
+        function copyQuery(query) {
+            navigator.clipboard.writeText(query).then(() => {
+                console.log('Query copied to clipboard:', query);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('testedEndpoints').textContent = stats.tested;
+            document.getElementById('passedEndpoints').textContent = stats.passed;
+            document.getElementById('failedEndpoints').textContent = stats.failed;
+            
+            const percentage = Math.round((stats.tested / stats.total) * 100);
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = 
+                `${stats.tested} of ${stats.total} endpoints validated (${percentage}%)`;
+        }
+
+        // Initialize the page
+        function init() {
+            const grid = document.getElementById('endpointGrid');
+            grid.innerHTML = endpointConfigs.map(createEndpointCard).join('');
+            updateStats();
+            
+            console.log('🎯 Score Terminology Validation Test Loaded');
+            console.log('Total endpoints to test:', endpointConfigs.length);
+            console.log('Expected score types:', endpointConfigs.map(c => `${c.endpoint}: "${c.expectedScore}"`));
+        }
+
+        // Run initialization
+        init();
+    </script>
+</body>
+</html>

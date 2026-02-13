@@ -1,0 +1,524 @@
+import React from 'react';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
+import { VisualizationOptions, BaseVisualization, BaseVisualizationData, VisualizationResult } from './base-visualization';
+import { LayerConfig } from '@/types/layers';
+import Graphic from '@arcgis/core/Graphic';
+import { createGeometry } from '../geometry';
+import { StandardizedLegendData, colorToRgba, getSymbolShape, getSymbolSize } from '@/types/legend';
+import { LegendItem } from '@/components/MapLegend';
+import SpatialReference from '@arcgis/core/geometry/SpatialReference';
+import * as projection from '@arcgis/core/geometry/projection';
+import * as geometryEngineAsync from '@arcgis/core/geometry/geometryEngineAsync';
+import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';
+import { createQuartileRenderer } from '../createQuartileRenderer';
+import { isFinite } from 'lodash';
+import Geometry from '@arcgis/core/geometry/Geometry';
+
+// Define FieldType to match ArcGIS expected types
+type FieldType = "string" | "geometry" | "oid" | "double" | "small-integer" | "integer" | "big-integer" | "single" | "long" | "date" | "date-only" | "time-only" | "timestamp-offset" | "blob" | "raster" | "guid" | "global-id" | "xml";
+
+export interface JointHighData extends BaseVisualizationData {
+  features: any[];
+  layerConfig: LayerConfig;
+  layerId: string;
+  primaryField: string;
+  comparisonField: string;
+}
+
+interface JointHighVisualizationOptions extends VisualizationOptions {
+  rendererField?: string;
+  title?: string;
+  // Add missing properties that are being used in the code
+  features?: any[];
+  primaryField?: string;
+  comparisonField?: string;
+  primaryLayerId?: string;
+  metrics?: string[];
+  approach?: string;
+}
+
+export class JointHighVisualization extends BaseVisualization<JointHighData> {
+  protected renderer: ClassBreaksRenderer;
+  protected data: JointHighData | null = null;
+  protected options: JointHighVisualizationOptions = {};
+
+  constructor() {
+    super();
+    this.renderer = new ClassBreaksRenderer({
+      field: "joint_score",
+      classBreakInfos: [
+        {
+          minValue: 0,
+          maxValue: 0.25,
+          symbol: new SimpleFillSymbol({
+            color: [255, 255, 178, 0.7],
+            outline: { color: [100, 100, 100, 0.3], width: 0.5 }
+          }),
+          label: "Low (0-25%)"
+        },
+        {
+          minValue: 0.25,
+          maxValue: 0.5,
+          symbol: new SimpleFillSymbol({
+            color: [254, 204, 92, 0.7],
+            outline: { color: [100, 100, 100, 0.3], width: 0.5 }
+          }),
+          label: "Low-Medium (25-50%)"
+        },
+        {
+          minValue: 0.5,
+          maxValue: 0.75,
+          symbol: new SimpleFillSymbol({
+            color: [253, 141, 60, 0.7],
+            outline: { color: [100, 100, 100, 0.3], width: 0.5 }
+          }),
+          label: "Medium-High (50-75%)"
+        },
+        {
+          minValue: 0.75,
+          maxValue: 1,
+          symbol: new SimpleFillSymbol({
+            color: [240, 59, 32, 0.7],
+            outline: { color: [100, 100, 100, 0.3], width: 0.5 }
+          }),
+          label: "High (75-100%)"
+        }
+      ]
+    });
+  }
+
+  /**
+   * Process feature data to prepare for visualization
+   */
+  private async processFeatures(
+    features: any[],
+    primaryField: string,
+    comparisonField: string,
+    targetSR?: SpatialReference
+  ): Promise<Graphic[]> {
+    const webMercator = targetSR || SpatialReference.WebMercator;
+    
+    console.log(`[JointHighViz processFeatures] Processing ${features.length} features`);
+    console.log(`Primary field: ${primaryField}, Comparison field: ${comparisonField}`);
+
+    // First pass: extract numeric values and calculate min/max
+    let primaryMin = Infinity;
+    let primaryMax = -Infinity;
+    let comparisonMin = Infinity;
+    let comparisonMax = -Infinity;
+    let validCount = 0;
+
+    // Track real features with numeric values for both fields
+    const validFeatures = [];
+
+    for (const feature of features) {
+      const attrs = { ...(feature.attributes || {}), ...(feature.properties || {}) };
+      
+      // Only process features that have valid numeric values for both fields
+      const primaryValue = this.parseNumericValue(attrs[primaryField], primaryField);
+      const comparisonValue = this.parseNumericValue(attrs[comparisonField], comparisonField);
+
+      if (primaryValue !== null && comparisonValue !== null) {
+        validCount++;
+        validFeatures.push({ feature, primaryValue, comparisonValue });
+        
+        // Update min/max
+        primaryMin = Math.min(primaryMin, primaryValue);
+        primaryMax = Math.max(primaryMax, primaryValue);
+        comparisonMin = Math.min(comparisonMin, comparisonValue);
+        comparisonMax = Math.max(comparisonMax, comparisonValue);
+      }
+    }
+
+    if (validCount === 0) {
+      console.warn(`[JointHighViz] No valid features with both ${primaryField} and ${comparisonField}`);
+      return [];
+    }
+
+    // Calculate ranges for normalization
+    const primaryRange = primaryMax - primaryMin;
+    const comparisonRange = comparisonMax - comparisonMin;
+
+    console.log(`[JointHighViz processFeatures] Stats: 
+      Primary: min=${primaryMin}, max=${primaryMax}, range=${primaryRange}
+      Comparison: min=${comparisonMin}, max=${comparisonMax}, range=${comparisonRange}
+      Valid features: ${validCount} / ${features.length}`);
+
+    // Second pass: calculate normalized values and joint score
+    const validScores = [];
+
+    for (const { feature, primaryValue, comparisonValue } of validFeatures) {
+      // Normalize values to 0-1 range
+      const normalizedPrimary = primaryRange > 0 
+        ? (primaryValue - primaryMin) / primaryRange 
+        : 0.5;
+      
+      const normalizedComparison = comparisonRange > 0
+        ? (comparisonValue - comparisonMin) / comparisonRange
+        : 0.5;
+      
+      // Calculate joint score (geometric mean of normalized values)
+      const score = Math.sqrt(normalizedPrimary * normalizedComparison);
+      
+      validScores.push({ 
+        feature, 
+        score, 
+        normalizedPrimary, 
+        normalizedComparison,
+        primaryValue,
+        comparisonValue
+      });
+    }
+
+    // Sort by joint score descending
+    validScores.sort((a, b) => b.score - a.score);
+    const top25Percent = Math.ceil(validScores.length * 0.25);
+    const topFeatures = validScores.slice(0, top25Percent);
+
+    console.log(`[JointHighViz processFeatures] Filtered to top ${topFeatures.length} features (25%)`);
+
+    // Third pass: create graphics for top features
+    const result: Graphic[] = [];
+    let idx = 1;
+
+    for (const { feature, score, normalizedPrimary, normalizedComparison } of topFeatures) {
+      let geom = feature.geometry as __esri.Geometry;
+      if (geom.spatialReference?.wkid !== targetSR.wkid) {
+        try {
+          // Cast geometry to any to bypass TypeScript's geometry type validation
+          const anyGeom = geom as any;
+          const pg = await projection.project(anyGeom, targetSR);
+          geom = Array.isArray(pg) ? pg[0] : pg;
+        } catch {
+          continue;
+        }
+      }
+      
+      if (!geom) continue;
+
+      const attrs = { ...(feature.attributes || {}), ...(feature.properties || {}) };
+      const outputAttrs: Record<string, any> = {
+        OBJECTID: idx++,
+        [this.data.primaryField]: this.parseNumericValue(attrs[this.data.primaryField], this.data.primaryField, 0),
+        [this.data.comparisonField]: this.parseNumericValue(attrs[this.data.comparisonField], this.data.comparisonField, 0),
+        normalized_primary: normalizedPrimary,
+        normalized_comparison: normalizedComparison,
+        joint_score: score
+      };
+
+      // Copy identifier fields if they exist
+      ['FEDNAME', 'CSDNAME', 'CFSAUID', 'PRNAME', 'DESCRIPTION'].forEach(fld => {
+        if (attrs[fld] !== undefined) outputAttrs[fld] = attrs[fld];
+      });
+
+      result.push(new Graphic({
+        geometry: geom as any, // Cast to any to bypass TypeScript's strict typing
+        attributes: outputAttrs
+      }));
+    }
+
+    return result;
+  }
+
+  /**
+   * Parse a value to a number, handling various formats
+   */
+  private parseNumericValue(value: any, fieldName: string, defaultValue: number | null = null): number | null {
+    if (value === undefined || value === null) {
+      return defaultValue;
+    }
+    
+    // If it's already a number, return it directly
+    if (typeof value === 'number' && isFinite(value)) {
+      return value;
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof value === 'string') {
+      // Remove any non-numeric characters except decimal point and minus sign
+      const cleaned = value.replace(/[^\d.-]/g, '');
+      const parsed = parseFloat(cleaned);
+      if (!isNaN(parsed) && isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    
+    console.warn(`[JointHighViz] Could not parse value '${value}' for field ${fieldName}`);
+    return defaultValue;
+  }
+
+  async create(
+    data: JointHighData,
+    options: JointHighVisualizationOptions = {}
+  ): Promise<VisualizationResult> {
+    const startTime = performance.now();
+    console.log('[JointHighViz Create] Starting joint high visualization', {
+      featureCount: data.features?.length,
+      primaryField: data.primaryField, 
+      comparisonField: data.comparisonField,
+      layerId: data.layerId,
+      options: {
+        metrics: options?.metrics,
+        approach: options?.approach,
+        hasFeatures: options?.features && options.features.length > 0
+      }
+    });
+
+    // Store input data and options
+    this.data = data; 
+    this.options = options;
+
+    // Handle options.features if provided directly (from multi-layer usage)
+    if (!data.features || data.features.length === 0) {
+      if (options?.features && options.features.length > 0) {
+        console.log('[JointHighViz Create] Using features from options instead of data');
+        data.features = options.features;
+        
+        // Also try to get fields from options if not in data
+        if (!data.primaryField && options?.primaryField) {
+          data.primaryField = options.primaryField;
+        } else if (!data.primaryField && options?.metrics && options.metrics.length > 0) {
+          data.primaryField = options.metrics[0];
+        }
+        
+        if (!data.comparisonField && options?.comparisonField) {
+          data.comparisonField = options.comparisonField;
+        } else if (!data.comparisonField && options?.metrics && options.metrics.length > 1) {
+          data.comparisonField = options.metrics[1];
+        }
+        
+        if (!data.layerId && options?.primaryLayerId) {
+          data.layerId = options.primaryLayerId;
+        }
+      }
+    }
+
+    try {
+      // --- 1. Validate inputs ---
+      if (!data.features || data.features.length === 0) {
+        throw new Error('No features provided for joint high visualization');
+      }
+      
+      if (!data.primaryField) {
+        throw new Error('Primary field is required for joint high visualization');
+      }
+      
+      if (!data.comparisonField) {
+        throw new Error('Comparison field is required for joint high visualization');
+      }
+      
+      // --- 2. Process features to generate graphics ---
+      console.log('[JointHighViz Create] Processing features');
+      const processingStartTime = performance.now();
+      
+      const targetSR = SpatialReference.WebMercator;
+      const topGraphics = await this.processFeatures(
+        data.features,
+        data.primaryField,
+        data.comparisonField,
+        targetSR
+      );
+      
+      if (topGraphics.length === 0) {
+        throw new Error(`No valid features found with both ${data.primaryField} and ${data.comparisonField}`);
+      }
+      
+      console.log(`[JointHighViz Create] Generated ${topGraphics.length} top graphics in ${
+        (performance.now() - processingStartTime).toFixed(2)
+      }ms`);
+      
+      // --- 3. Create feature layer ---
+      console.log('[JointHighViz Create] Creating feature layer');
+      
+      // Setup required fields
+      const objectIdField = "OBJECTID";
+      const layerTitle = options?.title || `Joint High: ${data.primaryField} & ${data.comparisonField}`;
+      
+      // Determine geometry type from first feature
+      const geometryType = topGraphics[0].geometry?.type as "point" | "polygon";
+      
+      // Create new layer
+      const layer = new FeatureLayer({
+        source: topGraphics,
+        title: layerTitle,
+        objectIdField: objectIdField,
+        fields: [
+          {
+            name: objectIdField,
+            alias: objectIdField,
+            type: "oid"
+          },
+          {
+            name: data.primaryField,
+            alias: data.primaryField,
+            type: "double"
+          },
+          {
+            name: data.comparisonField,
+            alias: data.comparisonField,
+            type: "double"
+          },
+          {
+            name: "normalized_primary",
+            alias: "Normalized Primary",
+            type: "double"
+          },
+          {
+            name: "normalized_comparison",
+            alias: "Normalized Comparison",
+            type: "double"
+          },
+          {
+            name: "joint_score",
+            alias: "Joint Score",
+            type: "double"
+          }
+        ],
+        renderer: this.renderer,
+        spatialReference: targetSR,
+        geometryType: geometryType === 'point' ? 'point' : 'polygon'
+      });
+      
+      // Setup popup template
+      layer.popupTemplate = {
+        title: layerTitle,
+        content: [
+          {
+            type: "fields",
+            fieldInfos: [
+              {
+                fieldName: data.primaryField,
+                label: data.primaryField,
+                format: { places: 2 }
+              },
+              {
+                fieldName: data.comparisonField,
+                label: data.comparisonField,
+                format: { places: 2 }
+              },
+              {
+                fieldName: "joint_score",
+                label: "Joint Score",
+                format: { places: 4 }
+              }
+            ]
+          }
+        ]
+      };
+      
+      // Apply class breaks renderer based on joint_score
+      const rendererField = options?.rendererField || "joint_score";
+      const rendererResult = await createQuartileRenderer({
+        layer,
+        field: rendererField,
+        colorScheme: {
+          colorStops: [
+            { color: [255, 255, 178], value: 0 },
+            { color: [254, 204, 92], value: 0.25 },
+            { color: [253, 141, 60], value: 0.5 },
+            { color: [240, 59, 32], value: 0.75 },
+            { color: [189, 0, 38], value: 1 }
+          ],
+          opacityStops: [
+            { opacity: 0.7, value: 0 },
+            { opacity: 0.7, value: 1 }
+          ]
+        }
+      });
+      
+      if (rendererResult) {
+        layer.renderer = rendererResult.renderer;
+        this.renderer = rendererResult.renderer;
+      }
+      
+      // Store the layer in the instance
+      this.layer = layer;
+      
+      // CRITICAL FIX: Store a reference to this visualization on the layer
+      this.layer.set('visualization', this);
+      
+      // --- 4. Calculate extent ---
+      console.log('[JointHighViz Create] Calculating extent');
+      try {
+        // Use geometryEngine to calculate a unified extent
+        const geometriesToUnion = topGraphics
+          .map(g => g.geometry)
+          .filter((g): g is __esri.Geometry => g != null)
+          .map(g => g as any); // Cast to any to bypass TypeScript's strict geometry type checking
+        
+        if (geometriesToUnion.length > 0) {
+          this.extent = (await geometryEngineAsync.union(geometriesToUnion))?.extent || null;
+        }
+        
+        console.log('[JointHighViz Create] Extent calculation result:', 
+          this.extent ? {
+            xmin: this.extent.xmin.toFixed(2),
+            ymin: this.extent.ymin.toFixed(2),
+            xmax: this.extent.xmax.toFixed(2),
+            ymax: this.extent.ymax.toFixed(2),
+            width: (this.extent.xmax - this.extent.xmin).toFixed(2),
+            height: (this.extent.ymax - this.extent.ymin).toFixed(2),
+            spatialReference: this.extent.spatialReference.wkid
+          } : 'No extent calculated'
+        );
+      } catch (error) {
+        console.error('[JointHighViz Create] Error calculating extent:', error);
+        // Continue even if extent calculation fails
+      }
+      
+      console.log(`[JointHighViz Create] Complete in ${(performance.now() - startTime).toFixed(2)}ms`);
+      
+      return {
+        layer: this.layer,
+        extent: this.extent,
+        type: 'joint-high'
+      };
+    } catch (error) {
+      console.error('[JointHighViz Create] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get standardized legend data
+   */
+  getLegendInfo(): StandardizedLegendData {
+    const renderer = this.renderer;
+    
+    if (renderer.type === "class-breaks") {
+      const classBreaksRenderer = renderer as ClassBreaksRenderer;
+      
+      return {
+        title: `Joint High: ${this.data?.primaryField || ''} & ${this.data?.comparisonField || ''}`,
+        type: 'class-breaks',
+        description: 'Areas with high values in both metrics',
+        items: classBreaksRenderer.classBreakInfos.map(info => {
+          const symbol = info.symbol as SimpleFillSymbol;
+          return {
+            label: info.label || `${info.minValue} - ${info.maxValue}`,
+            color: `rgba(${symbol.color.toRgba().join(',')})`,
+            shape: 'square',
+            size: 16
+          };
+        })
+      };
+    }
+    
+    // Fallback simple legend
+    return {
+      title: 'Joint High Areas',
+      type: 'simple',
+      description: 'Areas with high values in both metrics',
+      items: [
+        {
+          label: 'Joint High Area',
+          color: 'rgba(240,59,32,0.7)',
+          shape: 'square',
+          size: 16
+        }
+      ]
+    };
+  }
+}

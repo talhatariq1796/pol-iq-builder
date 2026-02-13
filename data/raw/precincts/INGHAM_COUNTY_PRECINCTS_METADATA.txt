@@ -1,0 +1,83 @@
+INGHAM COUNTY, MICHIGAN - VOTING PRECINCT BOUNDARIES
+====================================================
+
+DATA SOURCE INFORMATION
+-----------------------
+Source: Michigan GIS Open Data Portal
+Portal URL: https://gis-michigan.opendata.arcgis.com/datasets/Michigan::2024-voting-precincts
+ArcGIS REST Service: https://gisagocss.state.mi.us/arcgis/rest/services/OpenData/boundaries/MapServer/9
+Dataset: 2024 Voting Precincts
+Collection Date: November 30, 2025
+
+COUNTY INFORMATION
+------------------
+County: Ingham County
+State FIPS: 26 (Michigan)
+County FIPS: 065
+Full FIPS Code: 26065
+
+DATASET STATISTICS
+------------------
+Total Precincts: 103
+File Format: GeoJSON
+Geometry Type: Polygon
+File Size: 795 KB
+
+JURISDICTIONS INCLUDED
+----------------------
+1. Alaiedon Township
+2. Aurelius Township
+3. Bunker Hill Township
+4. Delhi Township
+5. East Lansing City
+6. Ingham Township
+7. Lansing City (County Seat)
+8. Leroy Township
+9. Leslie City
+10. Locke Township
+11. Mason City
+12. Meridian Township
+13. Onondaga Township
+14. Stockbridge Township
+15. Vevay Township
+16. Wheatfield Township
+17. White Oak Township
+18. Williamston City
+19. Williamstown Township
+
+FIELD STRUCTURE
+---------------
+- NAME: Unique precinct identifier (e.g., "0650080000001")
+- COUNTYFIPS: County FIPS code ("065")
+- MCDFIPS: Minor Civil Division FIPS code
+- Precinct_Long_Name: Full precinct name (e.g., "Alaiedon Township, Precinct 1")
+- Precinct_Short_Name: Abbreviated name (e.g., "Alaiedon Twp 1")
+- Jurisdiction_Name: Municipality name
+
+DATA QUALITY NOTES
+------------------
+The 2024 Precinct data set represents the geography used for the 2024 election cycle.
+Information was collected from local election officials along with county/local GIS 
+authorities as well as a validation done by most, but not all jurisdictions.
+
+CREDIT
+------
+Center for Shared Solutions
+Department of Technology, Management, and Budget
+State of Michigan
+
+This dataset is a public record and there are no restrictions on the use, 
+reproduction, or distribution of this dataset.
+
+DOWNLOAD INFORMATION
+--------------------
+Downloaded By: Data Acquisition Agent
+Download Date: November 30, 2025
+File Path: /path/to/project/data/raw/precincts/ingham_county_precincts_2024.geojson
+
+QUERY PARAMETERS
+----------------
+WHERE Clause: COUNTYFIPS='065'
+Output Fields: * (all fields)
+Format: GeoJSON
+Geometry: Included

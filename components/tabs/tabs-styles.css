@@ -1,0 +1,308 @@
+.selection-button {
+    @apply flex items-center justify-center rounded-xl transition-all duration-200 p-4;
+    height: 80px;
+    width: 80px;
+  }
+  
+  .selection-button .icon {
+    @apply transition-transform duration-200;
+  }
+  
+  .selection-button .icon svg {
+    @apply w-8 h-8;
+  }
+  
+  /* Point Button */
+  .selection-button.point {
+    @apply border-blue-200 hover:bg-blue-50;
+  }
+  
+  .selection-button.point.active {
+    @apply bg-blue-500 text-white border-blue-600;
+  }
+  
+  .selection-button.point:hover:not(.active) {
+    @apply border-blue-300;
+  }
+  
+  .selection-button.point .icon {
+    @apply text-blue-500;
+  }
+  
+  .selection-button.point.active .icon {
+    @apply text-white;
+  }
+  
+  /* Polygon Button */
+  .selection-button.polygon {
+    @apply border-green-200 hover:bg-green-50;
+  }
+  
+  .selection-button.polygon.active {
+    @apply bg-green-500 text-white border-green-600;
+  }
+  
+  .selection-button.polygon:hover:not(.active) {
+    @apply border-green-300;
+  }
+  
+  .selection-button.polygon .icon {
+    @apply text-green-500;
+  }
+  
+  .selection-button.polygon.active .icon {
+    @apply text-white;
+  }
+  
+  /* Click Button */
+  .selection-button.click {
+    @apply border-purple-200 hover:bg-purple-50;
+  }
+  
+  .selection-button.click.active {
+    @apply bg-purple-500 text-white border-purple-600;
+  }
+  
+  .selection-button.click:hover:not(.active) {
+    @apply border-purple-300;
+  }
+  
+  .selection-button.click .icon {
+    @apply text-purple-500;
+  }
+  
+  .selection-button.click.active .icon {
+    @apply text-white;
+  }
+  
+  /* Hover effect for all buttons */
+  .selection-button:hover .icon {
+    transform: scale(1.1);
+  }
+  
+  /* Disabled state */
+  .selection-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .selection-button:disabled:hover .icon {
+    transform: none;
+  }
+
+  .toggle-group-item {
+    @apply transition-all duration-200;
+  }
+  
+  .toggle-group-item:not(:disabled) {
+    @apply hover:bg-gray-50;
+  }
+  
+  .toggle-group-item:not(:disabled):hover svg {
+    @apply transform scale-110 transition-transform duration-200;
+  }
+  
+  .toggle-group-item[data-state='on'] {
+    @apply font-semibold;
+  }
+  
+  .toggle-group-item[data-state='on'] svg {
+    @apply transform scale-110;
+  }
+  
+  .toggle-group-item:first-child {
+    @apply rounded-l-md;
+  }
+  
+  .toggle-group-item:last-child {
+    @apply rounded-r-md;
+  }
+  
+  .toggle-group-item:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .drawing-tools-group {
+    display: inline-flex;
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    padding: 2px;
+  }
+  
+  .drawing-tool-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    width: 48px;
+    border-radius: 0.375rem;
+    transition: all 200ms;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  
+  .drawing-tool-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .drawing-tool-button:not(:disabled):hover {
+    background-color: #f8fafc;
+  }
+  
+  .drawing-tool-button.active {
+    background-color: #f1f5f9;
+  }
+  
+  .drawing-tool-button.point.active {
+    color: #2563eb;
+    background-color: #eff6ff;
+  }
+  
+  .drawing-tool-button.polygon.active {
+    color: #16a34a;
+    background-color: #f0fdf4;
+  }
+  
+  .drawing-tool-button.click.active {
+    color: #9333ea;
+    background-color: #faf5ff;
+  }
+  
+  .drawing-tool-button svg {
+    width: 20px;
+    height: 20px;
+    transition: transform 200ms;
+  }
+  
+  .drawing-tool-button:not(:disabled):hover svg {
+    transform: scale(1.1);
+  }
+
+  .button-group {
+    display: inline-flex;
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .selection-button {
+    @apply flex items-center justify-center rounded-xl transition-all duration-200 p-4;
+    height: 80px;
+    width: 80px;
+}
+  
+  .selection-button .icon {
+    transition: transform 200ms;
+  }
+  
+  .selection-button:hover:not(:disabled) .icon {
+    transform: scale(1.1);
+  }
+  
+  .selection-button.point {
+    color: #2563eb !important;
+  }
+  
+  .selection-button.polygon {
+    color: #16a34a !important;
+  }
+  
+  .selection-button.click {
+    color: #9333ea !important;
+  }
+  
+  .selection-button.active {
+    background-color: #f8fafc !important;
+  }
+  
+  .selection-button.point.active {
+    background-color: #eff6ff !important;
+  }
+  
+  .selection-button.polygon.active {
+    background-color: #f0fdf4 !important;
+  }
+  
+  .selection-button.click.active {
+    background-color: #faf5ff !important;
+  }
+  
+  .selection-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+  }
+  
+  .selection-button:disabled .icon {
+    transform: none !important;
+  }
+
+/* Reset Button Styles */
+.reset-button {
+  @apply relative flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-600 bg-white hover:bg-red-50 border-2 border-red-200 hover:border-red-300 transition-all duration-200 rounded-full;
+}
+
+.reset-button svg {
+  @apply h-4 w-4 transition-transform duration-200;
+}
+
+.reset-button:hover svg {
+  @apply rotate-90;
+}
+
+/* Tooltip */
+.tooltip-wrapper {
+  @apply relative inline-flex;
+}
+
+.tooltip-wrapper::before {
+  content: attr(data-tooltip);
+  @apply absolute left-1/2 -translate-x-1/2 px-2 py-1 bg-white text-gray-900 text-xs rounded pointer-events-none opacity-0 invisible -top-8 transition-all duration-200 border shadow-sm;
+  white-space: nowrap;
+}
+
+.tooltip-wrapper::after {
+  content: '';
+  @apply absolute left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white pointer-events-none opacity-0 invisible transition-all duration-200;
+  top: -4px;
+}
+
+.tooltip-wrapper:hover::before {
+  @apply opacity-100 visible -top-10;
+}
+
+.tooltip-wrapper:hover::after {
+  @apply opacity-100 visible -top-6;
+}
+
+.tooltip-content {
+  @apply bg-white border shadow-sm !bg-opacity-100 !opacity-100;
+}
+
+/* Override any existing opacity transitions */
+.tooltip-content[data-state="delayed-open"],
+.tooltip-content[data-state="instant-open"] {
+  @apply !opacity-100;
+}
+
+[data-radix-popper-content-wrapper] [role="tooltip"] {
+  background-color: white !important;
+  opacity: 1 !important;
+}
+
+/* Add border and shadow */
+[data-radix-popper-content-wrapper] {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.1)) !important;
+}
+
+/* Cursor Circle Style */
+.cursor-circle {
+  fill: rgba(22, 163, 74, 0.2) !important;    /* Match polygon fill */
+  stroke: #16a34a !important;                 /* Match polygon stroke */
+  stroke-width: 2px !important;
+  pointer-events: none !important;
+}

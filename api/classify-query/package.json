@@ -1,0 +1,13 @@
+{
+  "name": "query-classification-api",
+  "version": "1.0.0",
+  "description": "API for geospatial query classification",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^3.18.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+} 

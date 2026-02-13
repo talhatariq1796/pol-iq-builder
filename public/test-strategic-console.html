@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Strategic Analysis Console Test</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            margin: 20px; 
+            background: #1a1a1a; 
+            color: #00ff00; 
+        }
+        .log { 
+            margin: 5px 0; 
+            padding: 5px; 
+            background: #2a2a2a; 
+            border-left: 3px solid #00ff00; 
+        }
+        .error { border-left-color: #ff3333; color: #ff3333; }
+        .warning { border-left-color: #ffaa00; color: #ffaa00; }
+        .debug { border-left-color: #00aaff; color: #00aaff; }
+        #console { 
+            height: 500px; 
+            overflow-y: auto; 
+            border: 1px solid #333; 
+            padding: 10px; 
+            margin: 10px 0; 
+        }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover { background: #444; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Strategic Analysis Debug Console</h1>
+    
+    <div>
+        <button onclick="clearConsole()">Clear Console</button>
+        <button onclick="testStrategicFlow()">Test Strategic Flow</button>
+        <button onclick="captureConsoleLogs()">Capture Console Logs</button>
+    </div>
+    
+    <div id="console"></div>
+    
+    <div>
+        <h3>🎯 Looking for these debug messages:</h3>
+        <ul>
+            <li><code>[ChoroplethRenderer] Using field for class breaks: strategic_value_score</code></li>
+            <li><code>[ChoroplethRenderer] Data type: strategic_analysis</code></li>
+            <li><code>[ChoroplethRenderer] First 3 records structure:</code></li>
+            <li><code>[ChoroplethRenderer] 🎯 Creating ArcGIS renderer with field: "strategic_value_score"</code></li>
+        </ul>
+        
+        <h3>📋 Instructions:</h3>
+        <ol>
+            <li>Open main app in another tab: <a href="http://localhost:3002" target="_blank">http://localhost:3002</a></li>
+            <li>Run query: <strong>"Show me strategic markets for Nike expansion"</strong></li>
+            <li>Come back here and click "Capture Console Logs"</li>
+            <li>Look for the debug messages above</li>
+        </ol>
+    </div>
+
+    <script>
+        let logBuffer = [];
+        
+        // Intercept console.log
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logBuffer.push({type: 'log', message: args.join(' '), timestamp: new Date().toLocaleTimeString()});
+            updateDisplay();
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logBuffer.push({type: 'error', message: args.join(' '), timestamp: new Date().toLocaleTimeString()});
+            updateDisplay();
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            logBuffer.push({type: 'warning', message: args.join(' '), timestamp: new Date().toLocaleTimeString()});
+            updateDisplay();
+        };
+        
+        function updateDisplay() {
+            const consoleDiv = document.getElementById('console');
+            const strategicLogs = logBuffer.filter(log => 
+                log.message.includes('ChoroplethRenderer') || 
+                log.message.includes('strategic') ||
+                log.message.includes('VisualizationRenderer') ||
+                log.message.includes('Strategic')
+            );
+            
+            consoleDiv.innerHTML = strategicLogs.map(log => 
+                `<div class="log ${log.type}">
+                    <span style="color: #666">[${log.timestamp}]</span> ${log.message}
+                </div>`
+            ).join('');
+            
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        function clearConsole() {
+            logBuffer = [];
+            updateDisplay();
+        }
+        
+        function testStrategicFlow() {
+            console.log('🔍 Testing Strategic Analysis Flow...');
+            console.log('[ChoroplethRenderer] Using field for class breaks: strategic_value_score');
+            console.log('[ChoroplethRenderer] Data type: strategic_analysis');
+            console.log('[ChoroplethRenderer] Record count: 3983');
+            console.log('[ChoroplethRenderer] First 3 records structure:');
+            console.log('  Record 1: { area_name: "11234 (Brooklyn)", strategic_value_score: 79.34, hasTargetField: true }');
+            console.log('[ChoroplethRenderer] 🎯 Creating ArcGIS renderer with field: "strategic_value_score"');
+            console.log('✅ Test simulation complete - this is what you should see in the main app');
+        }
+        
+        function captureConsoleLogs() {
+            // This would capture logs from the main app if they were on the same domain
+            console.log('📋 Console capture attempted - check main app console manually');
+            console.log('🔍 Looking for ChoroplethRenderer debug messages...');
+            
+            // Simulate checking for key messages
+            setTimeout(() => {
+                const hasStrategicLogs = logBuffer.some(log => log.message.includes('strategic_value_score'));
+                const hasRendererLogs = logBuffer.some(log => log.message.includes('ChoroplethRenderer'));
+                
+                if (hasStrategicLogs && hasRendererLogs) {
+                    console.log('✅ Strategic analysis debug logs detected!');
+                } else {
+                    console.log('❌ No strategic analysis debug logs found');
+                    console.log('💡 Make sure to run the query in the main app first');
+                }
+            }, 1000);
+        }
+        
+        // Initialize
+        updateDisplay();
+        console.log('🚀 Strategic Analysis Debug Console Ready');
+        console.log('📍 Run query in main app: http://localhost:3002');
+    </script>
+</body>
+</html>

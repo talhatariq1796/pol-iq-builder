@@ -1,0 +1,1014 @@
+/* Analysis Widget Styles */
+.analysis-widget {
+  background-color: white !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 8px !important;
+  font-family: "Helvetica Neue", sans-serif !important;
+  max-height: calc(100vh - 10px) !important;
+  position: relative !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.analysis-widget .widget-close-button {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 10 !important;
+  padding: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #666 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.analysis-widget .widget-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  color: #333 !important;
+}
+
+/* Card header styles */
+.analysis-widget [class*="card-header"] {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+.analysis-widget [class*="card-title"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #000000 !important;
+  margin: 0 !important;
+}
+
+/* Tab styles */
+.analysis-widget [class*="tabs-list"] {
+  background-color: #f5f5f5 !important;
+  padding: 4px !important;
+  border-radius: 6px !important;
+  margin-bottom: 16px !important;
+}
+
+.analysis-widget [class*="tabs-trigger"] {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #666 !important;
+  transition: all 0.2s ease !important;
+}
+
+.analysis-widget [class*="tabs-trigger"][data-state="active"] {
+  background-color: white !important;
+  color: #33a852 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.analysis-widget [class*="tabs-trigger"][data-state="inactive"]:hover {
+  color: #333 !important;
+}
+
+.analysis-widget [class*="tabs-trigger"][data-disabled] {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Button styles */
+.analysis-widget button[class*="button"] {
+  font-family: "Helvetica Neue", sans-serif !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.analysis-widget button[class*="button"][data-variant="default"] {
+  background-color: #33a852 !important;
+  color: white !important;
+}
+
+.analysis-widget button[class*="button"][data-variant="default"]:hover {
+  background-color: #2c9447 !important;
+}
+
+.analysis-widget button[class*="button"][data-variant="outline"] {
+  border-color: #e5e5e5 !important;
+  color: #666 !important;
+}
+
+.analysis-widget button[class*="button"][data-variant="outline"]:hover {
+  border-color: #33a852 !important;
+  color: #33a852 !important;
+  background-color: rgba(51, 168, 82, 0.05) !important;
+}
+
+/* Form control styles */
+.analysis-widget [class*="label"] {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #333 !important;
+}
+
+.analysis-widget [class*="input"],
+.analysis-widget [class*="select-trigger"] {
+  border-color: #e5e5e5 !important;
+  transition: all 0.2s ease !important;
+}
+
+.analysis-widget [class*="input"]:focus,
+.analysis-widget [class*="select-trigger"]:focus {
+  border-color: #33a852 !important;
+  box-shadow: 0 0 0 2px rgba(51, 168, 82, 0.2) !important;
+  outline: none !important;
+}
+
+/* Radio group styles */
+.analysis-widget [class*="radio-group-item"] {
+  border-color: #e5e5e5 !important;
+  transition: all 0.2s ease !important;
+}
+
+.analysis-widget [class*="radio-group-item"][data-state="checked"] {
+  border-color: #33a852 !important;
+  background-color: #33a852 !important;
+}
+
+/* Select styles */
+.analysis-widget [class*="select-content"] {
+  border-color: #e5e5e5 !important;
+  background-color: white !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.analysis-widget [class*="select-item"] {
+  font-size: 14px !important;
+  color: #333 !important;
+  transition: all 0.2s ease !important;
+}
+
+.analysis-widget [class*="select-item"]:hover {
+  background-color: rgba(51, 168, 82, 0.05) !important;
+}
+
+.analysis-widget [class*="select-item"][data-highlighted] {
+  background-color: rgba(51, 168, 82, 0.1) !important;
+  color: #33a852 !important;
+}
+
+/* Card content padding */
+.analysis-widget [class*="card-content"] {
+  padding: 16px !important;
+}
+
+/* Spacing utilities */
+.analysis-widget .space-y-4 > * + * {
+  margin-top: 16px !important;
+}
+
+.analysis-widget .space-y-2 > * + * {
+  margin-top: 8px !important;
+}
+
+/* Drawing cursor styles */
+.analysis-widget[data-drawing="true"] {
+  cursor: crosshair !important;
+}
+
+/* Disabled state styles */
+.analysis-widget button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Error state styles */
+.analysis-widget .error-message {
+  color: #dc2626 !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
+}
+
+/* Active drawing state indicator */
+.analysis-widget .drawing-active {
+  background-color: rgba(51, 168, 82, 0.1) !important;
+  border-radius: 6px !important;
+  padding: 8px !important;
+  margin-bottom: 16px !important;
+  color: #33a852 !important;
+  font-size: 14px !important;
+  text-align: center !important;
+}
+
+.widget-close-button {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 10 !important;
+  padding: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #666 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.widget-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  color: #333 !important;
+}
+
+.widget-close-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: currentColor !important;
+}
+
+/* Layer List specific adjustments */
+.esri-layer-list .widget-close-button {
+  top: 8px !important;
+  right: 8px !important;
+}
+
+/* Bookmarks specific adjustments */
+.esri-bookmarks .widget-close-button {
+  top: 8px !important;
+  right: 8px !important;
+}
+
+/* Print widget specific adjustments */
+.esri-print .widget-close-button {
+  top: 8px !important;
+  right: 8px !important;
+}
+
+/* Ensure close button is always on top */
+.esri-widget .widget-close-button {
+  z-index: 100 !important;
+}
+
+.widget-container.visible {
+  display: block;
+}
+
+.widget-close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.widget-close-button:hover {
+  background-color: rgba(0,0,0,0.05);
+  color: #333;
+}
+
+.print-widget-container {
+  min-width: 300px;
+}
+
+/* Add or update these specific styles in your current CSS file */
+.esri-widget {
+  position: absolute !important;  /* Add this */
+  z-index: 50 !important;        /* Add this */
+  display: none !important;      /* Add this */
+  font-size: 12px !important;
+}
+
+.esri-widget.visible {
+  display: block !important;     /* Add this */
+}
+
+.widget-container.visible {
+  display: block !important;     /* Add this */
+}
+
+/* Add these specific styles */
+.esri-ui-top-left {
+  position: absolute !important;
+  top: 0px !important; /* Changed from 20px to eliminate the gap */
+  left: 20px !important;
+  z-index: 600 !important;
+}
+
+.esri-widget--panel {
+  background-color: #fff !important;
+  padding: 12px !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+}
+
+/* Ensure calcite components are visible */
+calcite-flow,
+calcite-flow-item,
+calcite-list,
+calcite-list-item {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Remove any interfering transforms */
+.esri-ui-corner {
+  transform: none !important;
+}
+
+/* Widget base styles */
+.esri-widget,
+.esri-widget--panel,
+.widget-container {
+  max-width: 280px !important;
+  width: 280px !important;
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+  font-size: 12px !important;
+  padding: 8px !important;
+  background-color: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  position: absolute !important;
+  z-index: 1000 !important;
+}
+
+/* Specific widget height constraints */
+.esri-layer-list,
+.esri-search,
+.esri-bookmarks,
+.esri-print {
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+}
+
+/* Widget container specific height constraints */
+.widget-container[data-widget-type="layerList"],
+.widget-container[data-widget-type="search"],  
+.widget-container[data-widget-type="bookmarks"],
+.widget-container[data-widget-type="print"] {
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+}
+
+/* LayerController specific constraints */
+.layer-controller,
+.layer-controller-container {
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+}
+
+/* Force height constraints on any widget in top-left position */
+.esri-ui-top-left > *,
+.esri-ui-top-left .esri-widget,
+.esri-ui-top-left .widget-container {
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+}
+
+/* Widget content */
+.esri-widget__content,
+.esri-widget__content > *,
+.esri-widget__content > div {
+  font-size: 12px !important;
+  padding: 4px !important;
+  background-color: white !important;
+}
+
+/* Widget headings */
+.esri-widget__heading,
+.esri-widget__header-title {
+  font-size: 14px !important;
+  padding: 8px !important;
+  font-weight: 600 !important;
+  display: none !important;
+}
+
+/* Search widget */
+.esri-search__input,
+.esri-search__input-container {
+  font-size: 12px !important;
+  height: 32px !important;
+  padding: 4px 8px !important;
+  background-color: white !important;
+}
+
+/* Zoom Widget Styles */
+.esri-view .esri-component.esri-zoom {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.esri-view .esri-component.esri-zoom .esri-widget--button {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+.esri-view .esri-component.esri-zoom .esri-widget--button:hover {
+  background: #f8f9fa !important;
+}
+
+/* Remove all backgrounds and shadows from containers */
+.esri-ui-corner.esri-ui-bottom-right,
+.esri-ui-corner.esri-ui-bottom-right *,
+.esri-zoom.esri-widget,
+.esri-zoom.esri-widget *,
+.esri-view .esri-ui .esri-widget,
+.esri-view .esri-ui .esri-component,
+.esri-widget {
+  background: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Force correct positioning */
+.esri-ui-corner.esri-ui-bottom-right {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+/* Override any widget panel styles */
+.esri-widget--panel {
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Ensure button container is clean */
+.esri-widget--button-container {
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+}
+
+/* Layer list */
+.esri-layer-list__item,
+.esri-layer-list__item-title,
+.esri-layer-list__item-content {
+  font-size: 12px !important;
+  padding: 4px !important;
+  background-color: white !important;
+}
+
+/* Legend */
+.esri-legend__layer,
+.esri-legend__layer-caption,
+.esri-legend__layer-table,
+.esri-legend__layer-body {
+  font-size: 12px !important;
+  padding: 4px !important;
+  background-color: white !important;
+}
+
+/* Bookmarks */
+.esri-bookmarks__bookmark-list-item,
+.esri-bookmarks__bookmark-name {
+  font-size: 12px !important;
+  padding: 4px !important;
+  background-color: white !important;
+}
+
+/* Print widget */
+.esri-print__container,
+.esri-print__header-title,
+.esri-print__layout-tab,
+.esri-print__layout-option,
+.esri-print__template-tab,
+.esri-print__template-option,
+.esri-print__size-tab,
+.esri-print__size-option,
+.esri-print__advanced-options,
+.esri-print__advanced-options label,
+.esri-print__advanced-options input,
+.esri-print__button-container button,
+.esri-print__output-container button {
+  font-size: 12px !important;
+  padding: 4px !important;
+  background-color: white !important;
+}
+
+/* Ensure visibility */
+.esri-widget:not([hidden]) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background-color: white !important;
+}
+
+/* Position widgets */
+.esri-ui-top-left {
+  top: 0px !important;
+  left: 16px !important;
+  z-index: 999 !important;
+}
+
+.esri-ui-corner {
+  position: absolute !important;
+  z-index: 1 !important;
+}
+
+/* Flow panels */
+calcite-flow,
+calcite-flow-item {
+  font-size: 12px !important;
+  max-width: 280px !important;
+  background-color: white !important;
+}
+
+/* Layer list actions */
+.esri-layer-list__item calcite-action[slot="actions-end"] {
+  font-size: 12px !important;
+  background-color: white !important;
+}
+
+/* Ensure all widget content is visible */
+.esri-widget__content,
+.esri-widget__heading,
+.esri-search__input,
+.esri-zoom__buttons,
+.esri-layer-list__item,
+.esri-legend__layer,
+.esri-bookmarks__bookmark-list-item,
+.esri-print__container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 12px !important;
+  background-color: white !important;
+}
+
+/* Widget Container Styles */
+.widget-container {
+  position: absolute !important;
+  top: 8px !important;
+  background-color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12) !important;
+  z-index: 1000 !important;
+  width: 280px !important;
+  max-height: calc(100vh - 40px) !important;
+  overflow-y: auto !important;
+  font-family: "Helvetica Neue", sans-serif !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Widget Container Header */
+.widget-container::before {
+  content: attr(data-widget-title) !important;
+  display: block !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  font-family: "Helvetica Neue", sans-serif !important;
+  background-color: white !important;
+}
+
+/* Widget Container Content */
+.widget-container > * {
+  font-size: 12px !important;
+  padding: 8px !important;
+  background-color: white !important;
+}
+
+/* Ensure proper visibility */
+.widget-container.visible {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  background-color: white !important;
+}
+
+/* Widget-specific positioning */
+.widget-container[data-widget-type="layerList"] {
+  top: 8px !important;
+  background-color: white !important;
+}
+
+.widget-container[data-widget-type="search"] {
+  top: 8px !important;
+  background-color: white !important;
+}
+
+.widget-container[data-widget-type="filter"] {
+  top: 8px !important;
+  background-color: white !important;
+}
+
+.widget-container[data-widget-type="print"] {
+  top: 8px !important;
+  background-color: white !important;
+}
+
+.widget-container[data-widget-type="projects"] {
+  top: 8px !important;
+  background-color: white !important;
+}
+
+/* Layer Control Card Styles */
+.layer-control-card {
+  max-width: 280px !important;
+  font-size: 12px !important;
+  background-color: white !important;
+}
+
+.layer-control-content {
+  padding: 1rem !important;
+  padding-top: 0 !important;
+  background-color: white !important;
+}
+
+/* Layer Group Styles */
+.layer-group {
+  margin-bottom: 1rem !important;
+  background-color: white !important;
+}
+
+.layer-group h3 {
+  font-size: 12px !important;
+  margin-bottom: 0.5rem !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Layer Item Styles */
+.group.relative {
+  padding-bottom: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+.group.relative .text-sm {
+  font-size: 11px !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Switch Button Styles */
+.group.relative button[role="switch"] {
+  height: 1.25rem !important;
+  width: 2.25rem !important;
+  background-color: white !important;
+}
+
+.group.relative button[role="switch"] span {
+  height: 1rem !important;
+  width: 1rem !important;
+  background-color: white !important;
+}
+
+/* Grip Handle Styles */
+.group.relative .lucide-grip-vertical {
+  width: 14px !important;
+  height: 14px !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Spacing Adjustments */
+.space-y-4 {
+  margin-top: 0.5rem !important;
+  background-color: white !important;
+}
+
+.space-y-2 {
+  margin-top: 0.25rem !important;
+  background-color: white !important;
+}
+
+/* Card Styles */
+.rounded-xl {
+  border-radius: 0.5rem !important;
+  background-color: white !important;
+}
+
+/* Ensure all text is small */
+.esri-widget__heading,
+.esri-widget__content,
+.esri-layer-list__item-title,
+.esri-layer-list__item-content,
+.esri-legend__layer,
+.esri-legend__layer-caption,
+.esri-legend__layer-table,
+.esri-legend__layer-body,
+.esri-bookmarks__bookmark-list-item,
+.esri-bookmarks__bookmark-name,
+.esri-print__container,
+.esri-print__header-title,
+.esri-print__layout-tab,
+.esri-print__layout-option,
+.esri-print__template-tab,
+.esri-print__template-option,
+.esri-print__size-tab,
+.esri-print__size-option,
+.esri-print__advanced-options label,
+.esri-print__advanced-options input,
+.esri-print__advanced-options select,
+.esri-print__button-container button,
+.esri-print__output-container button {
+  font-size: 12px !important;
+  background-color: white !important;
+}
+
+/* Ensure proper visibility */
+.esri-widget:not([hidden]) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background-color: white !important;
+}
+
+/* Layer List Specific Styles */
+.layer-control-card {
+  max-width: 280px !important;
+  font-size: 12px !important;
+  background-color: white !important;
+}
+
+.layer-control-content {
+  padding: 1rem !important;
+  padding-top: 0 !important;
+  background-color: white !important;
+}
+
+/* Layer Group Styles */
+.layer-group {
+  margin-bottom: 1rem !important;
+  background-color: white !important;
+}
+
+.layer-group h3 {
+  font-size: 12px !important;
+  margin-bottom: 0.5rem !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Layer Item Styles */
+.group.relative {
+  padding-bottom: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+.group.relative .text-sm {
+  font-size: 11px !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Switch Button Styles */
+.group.relative button[role="switch"] {
+  height: 1.25rem !important;
+  width: 2.25rem !important;
+  background-color: white !important;
+}
+
+.group.relative button[role="switch"] span {
+  height: 1rem !important;
+  width: 1rem !important;
+  background-color: white !important;
+}
+
+/* Grip Handle Styles */
+.group.relative .lucide-grip-vertical {
+  width: 14px !important;
+  height: 14px !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Hover and Active States */
+.group.relative:hover {
+  background-color: #fef2f2 !important; /* Light red background on hover */
+}
+
+.group.relative[aria-checked="true"] {
+  background-color: #fef2f2 !important; /* Light red background for checked items */
+}
+
+/* Layer List Container */
+.layer-control-card {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  background-color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12) !important;
+  z-index: 1000 !important;
+  width: 280px !important;
+  max-height: calc(100vh - 40px) !important;
+  overflow-y: auto !important;
+  font-family: "Helvetica Neue", sans-serif !important;
+}
+
+/* Layer List Header */
+.layer-control-card::before {
+  content: "Layers" !important;
+  display: block !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background-color: white !important;
+}
+
+/* Layer List Content */
+.layer-control-content {
+  padding: 16px !important;
+  padding-top: 0 !important;
+  background-color: white !important;
+}
+
+/* Layer Group Container */
+.layer-group {
+  margin-bottom: 1rem !important;
+  background-color: white !important;
+}
+
+/* Layer Group Header */
+.layer-group h3 {
+  font-size: 12px !important;
+  margin-bottom: 0.5rem !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+/* Layer Item Container */
+.group.relative {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 8px !important;
+  margin-bottom: 0.5rem !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+/* Layer Item Text */
+.group.relative .text-sm {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+}
+
+/* Switch Button Container */
+.group.relative button[role="switch"] {
+  height: 1.25rem !important;
+  width: 2.25rem !important;
+  background-color: white !important;
+  margin-right: 0.5rem !important;
+}
+
+/* Switch Button Thumb */
+.group.relative button[role="switch"] span {
+  height: 1rem !important;
+  width: 1rem !important;
+  background-color: white !important;
+}
+
+/* Grip Handle Icon */
+.group.relative .lucide-grip-vertical {
+  width: 14px !important;
+  height: 14px !important;
+  background-color: white !important;
+  color: #ea4335 !important; /* Google Red color */
+  margin-right: 0.5rem !important;
+}
+
+/* Hover State */
+.group.relative:hover {
+  background-color: #fef2f2 !important; /* Light red background on hover */
+}
+
+/* Checked State */
+.group.relative[aria-checked="true"] {
+  background-color: #fef2f2 !important; /* Light red background for checked items */
+}
+
+/* Spacing Utilities */
+.space-y-4 {
+  margin-top: 1rem !important;
+  background-color: white !important;
+}
+
+.space-y-2 {
+  margin-top: 0.5rem !important;
+  background-color: white !important;
+}
+
+/* Ensure graphics are visible */
+.esri-view .esri-graphics-layer .esri-graphic {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure graphics are visible when selected */
+.esri-view .esri-graphics-layer .esri-graphic[data-type="selection"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure highlight styles are visible */
+.esri-view .esri-highlight {
+  outline: 2px solid #33a852 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(51, 168, 82, 0.2) !important;
+}
+
+/* Print widget export button - override blue brand color to green */
+.esri-print__export-button[kind="brand"],
+.esri-print calcite-button.esri-print__export-button[kind="brand"],
+calcite-button.esri-print__export-button[kind="brand"] {
+  --calcite-color-brand: #21c55d !important;
+  --calcite-color-brand-hover: #16a34a !important;
+  --calcite-color-brand-press: #15803d !important;
+  background-color: #21c55d !important;
+  border-color: #21c55d !important;
+}
+
+.esri-print__export-button[kind="brand"]:hover,
+.esri-print calcite-button.esri-print__export-button[kind="brand"]:hover,
+calcite-button.esri-print__export-button[kind="brand"]:hover {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+}
+
+.esri-print__export-button[kind="brand"]:active,
+.esri-print calcite-button.esri-print__export-button[kind="brand"]:active,
+calcite-button.esri-print__export-button[kind="brand"]:active {
+  background-color: #15803d !important;
+  border-color: #15803d !important;
+}
+
+/* Override any ESRI defaults */
+.esri-view .esri-ui .esri-widget,
+.esri-view .esri-ui .esri-component {
+  width: auto !important;
+}
+
+.esri-view .esri-ui-bottom-right {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+}

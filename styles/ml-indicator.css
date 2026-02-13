@@ -1,0 +1,50 @@
+.ml-processing-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #4527a0, #7b1fa2);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.3s ease;
+}
+
+.ml-processing-indicator:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.ml-icon {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.ml-text {
+  white-space: nowrap;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* For dark mode */
+@media (prefers-color-scheme: dark) {
+  .ml-processing-indicator {
+    background: linear-gradient(135deg, #673ab7, #9c27b0);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  }
+} 

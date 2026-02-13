@@ -1,0 +1,10 @@
+/* Add required ArcGIS 3.46 CSS overrides */
+.esriReportPlayer {
+    height: 100%;
+    width: 100%;
+  }
+  
+  .esriPrintDialog {
+    position: absolute;
+    z-index: 1000;
+  }

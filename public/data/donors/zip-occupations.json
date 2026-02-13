@@ -1,0 +1,908 @@
+[
+  {
+    "zipCode": "48821",
+    "city": "DIMONDALE",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 16,
+        "totalAmount": 6709,
+        "avgContribution": 71
+      },
+      {
+        "occupation": "BUILDER",
+        "donorCount": 1,
+        "totalAmount": 6000,
+        "avgContribution": 3000
+      },
+      {
+        "occupation": "OFFICER",
+        "donorCount": 1,
+        "totalAmount": 1738,
+        "avgContribution": 109
+      },
+      {
+        "occupation": "OWNER",
+        "donorCount": 1,
+        "totalAmount": 1352,
+        "avgContribution": 47
+      },
+      {
+        "occupation": "CERTIFIED REGISTERED NURSE ANESTHETIST",
+        "donorCount": 2,
+        "totalAmount": 909,
+        "avgContribution": 76
+      },
+      {
+        "occupation": "AREA VP",
+        "donorCount": 1,
+        "totalAmount": 500,
+        "avgContribution": 500
+      },
+      {
+        "occupation": "ASSEMBLY LINE",
+        "donorCount": 1,
+        "totalAmount": 458,
+        "avgContribution": 229
+      },
+      {
+        "occupation": "ENTREPRENEUR",
+        "donorCount": 2,
+        "totalAmount": 337,
+        "avgContribution": 48
+      },
+      {
+        "occupation": "WARRANT OFFICER",
+        "donorCount": 1,
+        "totalAmount": 236,
+        "avgContribution": 236
+      },
+      {
+        "occupation": "CHIEF INFORMATION STEWARD",
+        "donorCount": 1,
+        "totalAmount": 200,
+        "avgContribution": 200
+      }
+    ]
+  },
+  {
+    "zipCode": "48823",
+    "city": "EAST LANSING",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 65,
+        "totalAmount": 77937,
+        "avgContribution": 65
+      },
+      {
+        "occupation": "BUILDER",
+        "donorCount": 1,
+        "totalAmount": 12910,
+        "avgContribution": 369
+      },
+      {
+        "occupation": "INSURANCE",
+        "donorCount": 1,
+        "totalAmount": 6600,
+        "avgContribution": 2200
+      },
+      {
+        "occupation": "CEO",
+        "donorCount": 2,
+        "totalAmount": 6300,
+        "avgContribution": 1050
+      },
+      {
+        "occupation": "EXECUTIVE",
+        "donorCount": 2,
+        "totalAmount": 6123,
+        "avgContribution": 3062
+      },
+      {
+        "occupation": "CLINICIAN",
+        "donorCount": 1,
+        "totalAmount": 5440,
+        "avgContribution": 259
+      },
+      {
+        "occupation": "EXECUTIVE VICE PRESIDENT",
+        "donorCount": 1,
+        "totalAmount": 5300,
+        "avgContribution": 1767
+      },
+      {
+        "occupation": "FOUNDER CEO",
+        "donorCount": 1,
+        "totalAmount": 5000,
+        "avgContribution": 5000
+      },
+      {
+        "occupation": "PRESIDENT",
+        "donorCount": 3,
+        "totalAmount": 3750,
+        "avgContribution": 1250
+      },
+      {
+        "occupation": "FINANCE",
+        "donorCount": 1,
+        "totalAmount": 3500,
+        "avgContribution": 438
+      }
+    ]
+  },
+  {
+    "zipCode": "48826",
+    "city": "EAST LANSING",
+    "topOccupations": [
+      {
+        "occupation": "EXECUTIVE DIRECTOR",
+        "donorCount": 1,
+        "totalAmount": 250,
+        "avgContribution": 250
+      }
+    ]
+  },
+  {
+    "zipCode": "48837",
+    "city": "GRAND LEDGE",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 44,
+        "totalAmount": 20369,
+        "avgContribution": 40
+      },
+      {
+        "occupation": "SALES",
+        "donorCount": 2,
+        "totalAmount": 2181,
+        "avgContribution": 242
+      },
+      {
+        "occupation": "ENGINEER",
+        "donorCount": 1,
+        "totalAmount": 1560,
+        "avgContribution": 520
+      },
+      {
+        "occupation": "LOBBYIST",
+        "donorCount": 1,
+        "totalAmount": 1520,
+        "avgContribution": 760
+      },
+      {
+        "occupation": "MEDICAL DOCTOR",
+        "donorCount": 1,
+        "totalAmount": 901,
+        "avgContribution": 60
+      },
+      {
+        "occupation": "WAITRESS",
+        "donorCount": 1,
+        "totalAmount": 879,
+        "avgContribution": 98
+      },
+      {
+        "occupation": "ENTREPRENEUR",
+        "donorCount": 2,
+        "totalAmount": 400,
+        "avgContribution": 200
+      },
+      {
+        "occupation": "RETAILER",
+        "donorCount": 1,
+        "totalAmount": 300,
+        "avgContribution": 100
+      },
+      {
+        "occupation": "COMPUTERS",
+        "donorCount": 1,
+        "totalAmount": 270,
+        "avgContribution": 135
+      },
+      {
+        "occupation": "LEGAL SUPPORT",
+        "donorCount": 1,
+        "totalAmount": 264,
+        "avgContribution": 66
+      }
+    ]
+  },
+  {
+    "zipCode": "48840",
+    "city": "HASLETT",
+    "topOccupations": [
+      {
+        "occupation": "CEO",
+        "donorCount": 1,
+        "totalAmount": 16000,
+        "avgContribution": 8000
+      },
+      {
+        "occupation": "RETIRED",
+        "donorCount": 27,
+        "totalAmount": 13730,
+        "avgContribution": 43
+      },
+      {
+        "occupation": "PROPERTY MANAGEMENT",
+        "donorCount": 1,
+        "totalAmount": 6870,
+        "avgContribution": 3435
+      },
+      {
+        "occupation": "ORAL SURGEON",
+        "donorCount": 1,
+        "totalAmount": 3123,
+        "avgContribution": 3123
+      },
+      {
+        "occupation": "OPTOMETRIST",
+        "donorCount": 1,
+        "totalAmount": 750,
+        "avgContribution": 375
+      },
+      {
+        "occupation": "ENGINEER",
+        "donorCount": 2,
+        "totalAmount": 666,
+        "avgContribution": 222
+      },
+      {
+        "occupation": "RN",
+        "donorCount": 2,
+        "totalAmount": 625,
+        "avgContribution": 13
+      },
+      {
+        "occupation": "PROFESSOR",
+        "donorCount": 1,
+        "totalAmount": 520,
+        "avgContribution": 260
+      },
+      {
+        "occupation": "REAL ESTATE INVESTING",
+        "donorCount": 1,
+        "totalAmount": 510,
+        "avgContribution": 255
+      },
+      {
+        "occupation": "SR MORTGAGE BANKER",
+        "donorCount": 1,
+        "totalAmount": 476,
+        "avgContribution": 238
+      }
+    ]
+  },
+  {
+    "zipCode": "48842",
+    "city": "HOLT",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 28,
+        "totalAmount": 12770,
+        "avgContribution": 55
+      },
+      {
+        "occupation": "OFFICE MANAGER",
+        "donorCount": 1,
+        "totalAmount": 5204,
+        "avgContribution": 2602
+      },
+      {
+        "occupation": "PRESIDENT",
+        "donorCount": 1,
+        "totalAmount": 5204,
+        "avgContribution": 2602
+      },
+      {
+        "occupation": "PROVIDER CONTRACTS MGR",
+        "donorCount": 1,
+        "totalAmount": 1792,
+        "avgContribution": 58
+      },
+      {
+        "occupation": "PROFESSOR",
+        "donorCount": 1,
+        "totalAmount": 1250,
+        "avgContribution": 625
+      },
+      {
+        "occupation": "PROVIDER CONTRACT MANAGER",
+        "donorCount": 1,
+        "totalAmount": 1069,
+        "avgContribution": 38
+      },
+      {
+        "occupation": "LAWYER",
+        "donorCount": 1,
+        "totalAmount": 570,
+        "avgContribution": 143
+      },
+      {
+        "occupation": "HR",
+        "donorCount": 1,
+        "totalAmount": 528,
+        "avgContribution": 48
+      },
+      {
+        "occupation": "FACILITIES DIRECTOR",
+        "donorCount": 1,
+        "totalAmount": 386,
+        "avgContribution": 35
+      },
+      {
+        "occupation": "MAINTENANCE",
+        "donorCount": 1,
+        "totalAmount": 316,
+        "avgContribution": 105
+      }
+    ]
+  },
+  {
+    "zipCode": "48854",
+    "city": "MASON",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 47,
+        "totalAmount": 68414,
+        "avgContribution": 125
+      },
+      {
+        "occupation": "PRESIDENT",
+        "donorCount": 2,
+        "totalAmount": 39705,
+        "avgContribution": 3054
+      },
+      {
+        "occupation": "TRUCK DRIVER",
+        "donorCount": 3,
+        "totalAmount": 2699,
+        "avgContribution": 59
+      },
+      {
+        "occupation": "OWNER",
+        "donorCount": 4,
+        "totalAmount": 1762,
+        "avgContribution": 196
+      },
+      {
+        "occupation": "CEO",
+        "donorCount": 2,
+        "totalAmount": 1709,
+        "avgContribution": 122
+      },
+      {
+        "occupation": "INDEPENDENT CONTRACTOR",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 1000
+      },
+      {
+        "occupation": "CARNIVAL OWNER",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 500
+      },
+      {
+        "occupation": "REALTOR",
+        "donorCount": 1,
+        "totalAmount": 828,
+        "avgContribution": 64
+      },
+      {
+        "occupation": "BUSINESS OWNER",
+        "donorCount": 1,
+        "totalAmount": 780,
+        "avgContribution": 390
+      },
+      {
+        "occupation": "EXCAVATING",
+        "donorCount": 1,
+        "totalAmount": 761,
+        "avgContribution": 69
+      }
+    ]
+  },
+  {
+    "zipCode": "48864",
+    "city": "OKEMOS",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 52,
+        "totalAmount": 169670,
+        "avgContribution": 127
+      },
+      {
+        "occupation": "CARDINAL FABRICATING",
+        "donorCount": 1,
+        "totalAmount": 6600,
+        "avgContribution": 6600
+      },
+      {
+        "occupation": "CPA",
+        "donorCount": 2,
+        "totalAmount": 6051,
+        "avgContribution": 1513
+      },
+      {
+        "occupation": "RISK MANAGEMENT",
+        "donorCount": 1,
+        "totalAmount": 5132,
+        "avgContribution": 733
+      },
+      {
+        "occupation": "PHOTOGRAPHER",
+        "donorCount": 1,
+        "totalAmount": 4370,
+        "avgContribution": 291
+      },
+      {
+        "occupation": "CEO",
+        "donorCount": 4,
+        "totalAmount": 3824,
+        "avgContribution": 637
+      },
+      {
+        "occupation": "POLITICAL CONSULTANT",
+        "donorCount": 1,
+        "totalAmount": 3123,
+        "avgContribution": 1562
+      },
+      {
+        "occupation": "SELF-EMPLOYED",
+        "donorCount": 2,
+        "totalAmount": 2850,
+        "avgContribution": 259
+      },
+      {
+        "occupation": "MANAGER",
+        "donorCount": 1,
+        "totalAmount": 2541,
+        "avgContribution": 1271
+      },
+      {
+        "occupation": "PHYSICIAN",
+        "donorCount": 4,
+        "totalAmount": 2473,
+        "avgContribution": 247
+      }
+    ]
+  },
+  {
+    "zipCode": "48895",
+    "city": "WILLIAMSTON",
+    "topOccupations": [
+      {
+        "occupation": "ATTORNEY",
+        "donorCount": 2,
+        "totalAmount": 15426,
+        "avgContribution": 1928
+      },
+      {
+        "occupation": "OWNER",
+        "donorCount": 1,
+        "totalAmount": 14200,
+        "avgContribution": 4733
+      },
+      {
+        "occupation": "RETIRED",
+        "donorCount": 19,
+        "totalAmount": 10735,
+        "avgContribution": 40
+      },
+      {
+        "occupation": "ENGINEER",
+        "donorCount": 2,
+        "totalAmount": 7911,
+        "avgContribution": 193
+      },
+      {
+        "occupation": "REAL ESTATE APPRAISER",
+        "donorCount": 2,
+        "totalAmount": 7397,
+        "avgContribution": 528
+      },
+      {
+        "occupation": "EXECUTIVE",
+        "donorCount": 1,
+        "totalAmount": 2602,
+        "avgContribution": 867
+      },
+      {
+        "occupation": "REAL ESTATE",
+        "donorCount": 3,
+        "totalAmount": 2527,
+        "avgContribution": 253
+      },
+      {
+        "occupation": "CONSULTANT WRITER",
+        "donorCount": 1,
+        "totalAmount": 2082,
+        "avgContribution": 1041
+      },
+      {
+        "occupation": "FINANCIAL ADVISOR",
+        "donorCount": 1,
+        "totalAmount": 1456,
+        "avgContribution": 104
+      },
+      {
+        "occupation": "REAL ESTSTE",
+        "donorCount": 1,
+        "totalAmount": 1319,
+        "avgContribution": 101
+      }
+    ]
+  },
+  {
+    "zipCode": "48906",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 26,
+        "totalAmount": 18565,
+        "avgContribution": 25
+      },
+      {
+        "occupation": "COOPER BODY SHOP",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 1000
+      },
+      {
+        "occupation": "OWNDER",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 1000
+      },
+      {
+        "occupation": "SCHEDULING TL",
+        "donorCount": 1,
+        "totalAmount": 780,
+        "avgContribution": 390
+      },
+      {
+        "occupation": "CONTRACTOR",
+        "donorCount": 1,
+        "totalAmount": 500,
+        "avgContribution": 250
+      },
+      {
+        "occupation": "ROBOTIC PROGRAMMER",
+        "donorCount": 1,
+        "totalAmount": 290,
+        "avgContribution": 41
+      },
+      {
+        "occupation": "WATER",
+        "donorCount": 1,
+        "totalAmount": 261,
+        "avgContribution": 65
+      },
+      {
+        "occupation": "MANAGER",
+        "donorCount": 1,
+        "totalAmount": 260,
+        "avgContribution": 260
+      },
+      {
+        "occupation": "ATTORNEY",
+        "donorCount": 1,
+        "totalAmount": 255,
+        "avgContribution": 85
+      },
+      {
+        "occupation": "REALTOR",
+        "donorCount": 1,
+        "totalAmount": 250,
+        "avgContribution": 250
+      }
+    ]
+  },
+  {
+    "zipCode": "48910",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 25,
+        "totalAmount": 17613,
+        "avgContribution": 66
+      },
+      {
+        "occupation": "ENVIRONMENTAL SERVICES",
+        "donorCount": 1,
+        "totalAmount": 5000,
+        "avgContribution": 2500
+      },
+      {
+        "occupation": "ENTREPRENEUR",
+        "donorCount": 2,
+        "totalAmount": 4378,
+        "avgContribution": 6
+      },
+      {
+        "occupation": "SELF EMPLOYED",
+        "donorCount": 1,
+        "totalAmount": 1058,
+        "avgContribution": 5
+      },
+      {
+        "occupation": "CPA",
+        "donorCount": 1,
+        "totalAmount": 1041,
+        "avgContribution": 1041
+      },
+      {
+        "occupation": "OWNER",
+        "donorCount": 1,
+        "totalAmount": 996,
+        "avgContribution": 21
+      },
+      {
+        "occupation": "ENGINEER",
+        "donorCount": 1,
+        "totalAmount": 995,
+        "avgContribution": 77
+      },
+      {
+        "occupation": "SELF-EMPLOYED",
+        "donorCount": 1,
+        "totalAmount": 756,
+        "avgContribution": 29
+      },
+      {
+        "occupation": "SERVICE",
+        "donorCount": 1,
+        "totalAmount": 721,
+        "avgContribution": 5
+      },
+      {
+        "occupation": "GOVERNMENT AFFAIRS",
+        "donorCount": 1,
+        "totalAmount": 500,
+        "avgContribution": 500
+      }
+    ]
+  },
+  {
+    "zipCode": "48911",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "OWNER",
+        "donorCount": 2,
+        "totalAmount": 17719,
+        "avgContribution": 4430
+      },
+      {
+        "occupation": "RETIRED",
+        "donorCount": 11,
+        "totalAmount": 11382,
+        "avgContribution": 28
+      },
+      {
+        "occupation": "HOMEMAKER",
+        "donorCount": 1,
+        "totalAmount": 6600,
+        "avgContribution": 6600
+      },
+      {
+        "occupation": "COMPUTER ENGINEER",
+        "donorCount": 2,
+        "totalAmount": 5548,
+        "avgContribution": 396
+      },
+      {
+        "occupation": "ACCOUNTANT",
+        "donorCount": 2,
+        "totalAmount": 2290,
+        "avgContribution": 573
+      },
+      {
+        "occupation": "FINANCIAL ADVISOR",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 1000
+      },
+      {
+        "occupation": "CEO",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 1000
+      },
+      {
+        "occupation": "P CEO",
+        "donorCount": 1,
+        "totalAmount": 775,
+        "avgContribution": 775
+      },
+      {
+        "occupation": "TRUCK DRIVER",
+        "donorCount": 2,
+        "totalAmount": 530,
+        "avgContribution": 265
+      },
+      {
+        "occupation": "EXECUTIVE DIRECTOR",
+        "donorCount": 1,
+        "totalAmount": 500,
+        "avgContribution": 500
+      }
+    ]
+  },
+  {
+    "zipCode": "48912",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 18,
+        "totalAmount": 17936,
+        "avgContribution": 97
+      },
+      {
+        "occupation": "PRESIDENT",
+        "donorCount": 2,
+        "totalAmount": 3603,
+        "avgContribution": 601
+      },
+      {
+        "occupation": "OWNER",
+        "donorCount": 1,
+        "totalAmount": 2000,
+        "avgContribution": 2000
+      },
+      {
+        "occupation": "SM BUS OWNER",
+        "donorCount": 1,
+        "totalAmount": 1500,
+        "avgContribution": 750
+      },
+      {
+        "occupation": "DENTIST",
+        "donorCount": 1,
+        "totalAmount": 548,
+        "avgContribution": 17
+      },
+      {
+        "occupation": "FELLOW",
+        "donorCount": 1,
+        "totalAmount": 516,
+        "avgContribution": 516
+      },
+      {
+        "occupation": "EXECUTIVE LEADERSHIP",
+        "donorCount": 1,
+        "totalAmount": 500,
+        "avgContribution": 500
+      },
+      {
+        "occupation": "KITCHEN SANITATION WORKER",
+        "donorCount": 1,
+        "totalAmount": 14,
+        "avgContribution": 7
+      }
+    ]
+  },
+  {
+    "zipCode": "48915",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 2,
+        "totalAmount": 1861,
+        "avgContribution": 23
+      }
+    ]
+  },
+  {
+    "zipCode": "48917",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "RETIRED",
+        "donorCount": 53,
+        "totalAmount": 35201,
+        "avgContribution": 53
+      },
+      {
+        "occupation": "DENTIST",
+        "donorCount": 1,
+        "totalAmount": 3000,
+        "avgContribution": 500
+      },
+      {
+        "occupation": "MAINTENANCE SUPERVISOR",
+        "donorCount": 1,
+        "totalAmount": 2450,
+        "avgContribution": 817
+      },
+      {
+        "occupation": "COO",
+        "donorCount": 1,
+        "totalAmount": 1280,
+        "avgContribution": 30
+      },
+      {
+        "occupation": "INSURANCE",
+        "donorCount": 1,
+        "totalAmount": 1035,
+        "avgContribution": 173
+      },
+      {
+        "occupation": "BUSINESS OWNER",
+        "donorCount": 1,
+        "totalAmount": 1000,
+        "avgContribution": 1000
+      },
+      {
+        "occupation": "INSURANCE SALES",
+        "donorCount": 1,
+        "totalAmount": 900,
+        "avgContribution": 180
+      },
+      {
+        "occupation": "EVENTS",
+        "donorCount": 1,
+        "totalAmount": 750,
+        "avgContribution": 375
+      },
+      {
+        "occupation": "ENGINEER",
+        "donorCount": 1,
+        "totalAmount": 558,
+        "avgContribution": 80
+      },
+      {
+        "occupation": "DENTISR",
+        "donorCount": 1,
+        "totalAmount": 520,
+        "avgContribution": 520
+      }
+    ]
+  },
+  {
+    "zipCode": "48933",
+    "city": "LANSING",
+    "topOccupations": [
+      {
+        "occupation": "REAL ESTATE",
+        "donorCount": 1,
+        "totalAmount": 11600,
+        "avgContribution": 11600
+      },
+      {
+        "occupation": "CONSULTANT",
+        "donorCount": 2,
+        "totalAmount": 1568,
+        "avgContribution": 523
+      },
+      {
+        "occupation": "STAFF",
+        "donorCount": 1,
+        "totalAmount": 565,
+        "avgContribution": 35
+      },
+      {
+        "occupation": "RETIRED",
+        "donorCount": 1,
+        "totalAmount": 550,
+        "avgContribution": 50
+      },
+      {
+        "occupation": "ENGINEER",
+        "donorCount": 1,
+        "totalAmount": 276,
+        "avgContribution": 138
+      }
+    ]
+  }
+]

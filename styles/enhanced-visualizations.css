@@ -1,0 +1,421 @@
+/**
+ * Enhanced Visualization Styles
+ * 
+ * CSS animations and styles to complement the JavaScript visual effects system.
+ * Provides smooth transitions, hover effects, and UI enhancements for map visualizations.
+ */
+
+/* ============================================================================
+   ENHANCED POPUP ANIMATIONS
+   ============================================================================ */
+
+.enhanced-popup-content {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.enhanced-popup-content .esri-feature__content-element {
+  animation: fadeInContent 0.4s ease-out 0.1s both;
+}
+
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================================================
+   LEGEND ENHANCEMENTS
+   ============================================================================ */
+
+.enhanced-legend {
+  transition: all 0.3s ease;
+}
+
+.enhanced-legend:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.enhanced-legend .esri-legend__layer {
+  transition: all 0.2s ease;
+}
+
+.enhanced-legend .esri-legend__layer:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
+}
+
+.legend-item-enhanced {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.legend-item-enhanced::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.legend-item-enhanced:hover::before {
+  opacity: 1;
+}
+
+.legend-glow-effect {
+  animation: legendGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes legendGlow {
+  from {
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.6);
+  }
+}
+
+/* ============================================================================
+   MAP WIDGET ENHANCEMENTS
+   ============================================================================ */
+
+.esri-view .esri-view-surface {
+  transition: filter 0.3s ease;
+}
+
+/* Enhanced layer visibility transitions */
+.esri-layer {
+  transition: opacity 0.4s ease-in-out;
+}
+
+.esri-layer.layer-entering {
+  animation: layerFadeIn 0.8s ease-out;
+}
+
+.esri-layer.layer-exiting {
+  animation: layerFadeOut 0.4s ease-in;
+}
+
+@keyframes layerFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes layerFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+/* ============================================================================
+   CANVAS EFFECT LAYERS
+   ============================================================================ */
+
+.firefly-canvas,
+.gradient-canvas,
+.hover-animation-canvas,
+.ambient-particles-canvas {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.firefly-canvas {
+  z-index: 1000;
+  mix-blend-mode: screen;
+}
+
+.gradient-canvas {
+  z-index: 999;
+  mix-blend-mode: multiply;
+}
+
+.hover-animation-canvas {
+  z-index: 1001;
+  mix-blend-mode: normal;
+}
+
+.ambient-particles-canvas {
+  z-index: 998;
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+}
+
+/* ============================================================================
+   COMPETITIVE ANALYSIS ENHANCEMENTS
+   ============================================================================ */
+
+.competitive-symbol-enhanced {
+  animation: competitiveEntrance 1s ease-out;
+}
+
+@keyframes competitiveEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0) rotate(180deg);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.2) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.competitive-pulse {
+  animation: competitivePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes competitivePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.competitive-glow {
+  filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.6));
+}
+
+.competitive-dominant {
+  filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8));
+}
+
+.competitive-opportunity {
+  filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.7));
+}
+
+.competitive-trailing {
+  filter: drop-shadow(0 0 6px rgba(255, 107, 107, 0.5));
+}
+
+/* ============================================================================
+   CHOROPLETH ENHANCEMENTS
+   ============================================================================ */
+
+.choropleth-enhanced {
+  transition: all 0.2s ease;
+}
+
+.choropleth-enhanced:hover {
+  filter: brightness(1.1) contrast(1.05);
+  transform: translateZ(0); /* Triggers hardware acceleration */
+}
+
+.choropleth-gradient-animated {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ============================================================================
+   LOADING AND TRANSITION STATES
+   ============================================================================ */
+
+.visualization-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.visualization-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: loading-shimmer 2s infinite;
+}
+
+@keyframes loading-shimmer {
+  from {
+    left: -100%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+.visualization-ready {
+  animation: visualizationReady 0.6s ease-out;
+}
+
+@keyframes visualizationReady {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================================ */
+
+.enhanced-visualization-container {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce motion for users with motion sensitivity */
+@media (prefers-reduced-motion: reduce) {
+  .firefly-canvas,
+  .ambient-particles-canvas,
+  .competitive-pulse,
+  .legend-glow-effect,
+  .choropleth-gradient-animated,
+  .visualization-loading::before {
+    animation: none !important;
+  }
+  
+  .enhanced-popup-content,
+  .choropleth-enhanced,
+  .competitive-symbol-enhanced,
+  .visualization-ready,
+  .esri-layer {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  /* Reduce effect intensity on mobile for performance */
+  .firefly-canvas,
+  .ambient-particles-canvas {
+    opacity: 0.5;
+  }
+  
+  .competitive-pulse {
+    animation-duration: 4s; /* Slower on mobile */
+  }
+  
+  .legend-glow-effect {
+    animation: none; /* Disable on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  /* Minimal effects on small screens */
+  .firefly-canvas,
+  .gradient-canvas,
+  .ambient-particles-canvas {
+    display: none;
+  }
+  
+  .enhanced-popup-content {
+    animation-duration: 0.2s;
+  }
+}
+
+/* ============================================================================
+   HIGH CONTRAST MODE SUPPORT
+   ============================================================================ */
+
+@media (prefers-contrast: high) {
+  .enhanced-legend,
+  .legend-item-enhanced {
+    border: 2px solid;
+  }
+  
+  .competitive-glow,
+  .competitive-dominant,
+  .competitive-opportunity,
+  .competitive-trailing {
+    filter: none;
+    border: 2px solid currentColor;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .enhanced-popup-content {
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffffff;
+  }
+  
+  .enhanced-legend {
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffffff;
+  }
+  
+  .legend-item-enhanced::before {
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  }
+  
+  .firefly-canvas {
+    mix-blend-mode: screen;
+  }
+  
+  .ambient-particles-canvas {
+    mix-blend-mode: soft-light;
+    opacity: 0.4;
+  }
+}

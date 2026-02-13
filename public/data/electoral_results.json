@@ -1,0 +1,714 @@
+{
+  "metadata": {
+    "title": "Electoral Results by District",
+    "description": "Electoral voting results by federal electoral districts",
+    "partyColors": {
+      "Liberal": [220, 50, 50, 1.0],
+      "Conservative": [0, 30, 140, 1.0],
+      "NDP": [240, 130, 0, 1.0],
+      "Bloc": [0, 175, 240, 1.0],
+      "Green": [30, 140, 30, 1.0],
+      "Independent": [100, 100, 100, 1.0],
+      "PPC": [120, 40, 140, 1.0],
+      "Other": [180, 180, 180, 1.0]
+    }
+  },
+  "districts": [
+    {
+      "id": "ajax",
+      "name": "Ajax",
+      "feduid": "35001",
+      "winner": {
+        "name": "Mark Holland",
+        "party": "Liberal",
+        "votes": 28279
+      },
+      "candidates": [
+        {
+          "name": "Mark Holland",
+          "party": "Liberal",
+          "votes": 28279,
+          "percentage": 46.7
+        },
+        {
+          "name": "Eli Kolani",
+          "party": "Conservative",
+          "votes": 21832,
+          "percentage": 36.1
+        },
+        {
+          "name": "Monique Hughes",
+          "party": "NDP",
+          "votes": 8321,
+          "percentage": 13.7
+        },
+        {
+          "name": "Lisa Robinson",
+          "party": "PPC",
+          "votes": 1241,
+          "percentage": 2.1
+        },
+        {
+          "name": "Leigh Paulseth",
+          "party": "Green",
+          "votes": 872,
+          "percentage": 1.4
+        }
+      ]
+    },
+    {
+      "id": "algoma-manitoulin-kapuskasing",
+      "name": "Algoma--Manitoulin--Kapuskasing",
+      "feduid": "35002",
+      "winner": {
+        "name": "Carol Hughes",
+        "party": "NDP",
+        "votes": 15972
+      },
+      "candidates": [
+        {
+          "name": "Carol Hughes",
+          "party": "NDP",
+          "votes": 15972,
+          "percentage": 40.5
+        },
+        {
+          "name": "Duke Peltier",
+          "party": "Liberal",
+          "votes": 12618,
+          "percentage": 32.0
+        },
+        {
+          "name": "John Sagman",
+          "party": "Conservative",
+          "votes": 9310,
+          "percentage": 23.6
+        },
+        {
+          "name": "Stephen Zimmermann",
+          "party": "Green",
+          "votes": 871,
+          "percentage": 2.2
+        },
+        {
+          "name": "Harry Jaaskelainen",
+          "party": "PPC",
+          "votes": 678,
+          "percentage": 1.7
+        }
+      ]
+    },
+    {
+      "id": "aurora-oak-ridges-richmond-hill",
+      "name": "Aurora--Oak Ridges--Richmond Hill",
+      "feduid": "35003",
+      "winner": {
+        "name": "Leah Taylor Roy",
+        "party": "Liberal",
+        "votes": 21234
+      },
+      "candidates": [
+        {
+          "name": "Leah Taylor Roy",
+          "party": "Liberal",
+          "votes": 21234,
+          "percentage": 42.3
+        },
+        {
+          "name": "Leona Alleslev",
+          "party": "Conservative",
+          "votes": 20380,
+          "percentage": 40.6
+        },
+        {
+          "name": "Janice Hagan",
+          "party": "NDP",
+          "votes": 6342,
+          "percentage": 12.6
+        },
+        {
+          "name": "Tim Flemming",
+          "party": "Green",
+          "votes": 1421,
+          "percentage": 2.8
+        },
+        {
+          "name": "Anthony Siskos",
+          "party": "PPC",
+          "votes": 845,
+          "percentage": 1.7
+        }
+      ]
+    },
+    {
+      "id": "barrie-innisfil",
+      "name": "Barrie--Innisfil",
+      "feduid": "35004",
+      "winner": {
+        "name": "John Brassard",
+        "party": "Conservative",
+        "votes": 24573
+      },
+      "candidates": [
+        {
+          "name": "John Brassard",
+          "party": "Conservative",
+          "votes": 24573,
+          "percentage": 46.1
+        },
+        {
+          "name": "Lisa-Marie Wilson",
+          "party": "Liberal",
+          "votes": 17879,
+          "percentage": 33.5
+        },
+        {
+          "name": "Aleesha Gostkowski",
+          "party": "NDP",
+          "votes": 8132,
+          "percentage": 15.2
+        },
+        {
+          "name": "Tanya Saari",
+          "party": "Green",
+          "votes": 1687,
+          "percentage": 3.2
+        },
+        {
+          "name": "Corrado Brancato",
+          "party": "PPC",
+          "votes": 1052,
+          "percentage": 2.0
+        }
+      ]
+    },
+    {
+      "id": "barrie-springwater-oro-medonte",
+      "name": "Barrie--Springwater--Oro-Medonte",
+      "feduid": "35005",
+      "winner": {
+        "name": "Doug Shipley",
+        "party": "Conservative",
+        "votes": 24345
+      },
+      "candidates": [
+        {
+          "name": "Doug Shipley",
+          "party": "Conservative",
+          "votes": 24345,
+          "percentage": 45.2
+        },
+        {
+          "name": "Sergio Morales",
+          "party": "Liberal",
+          "votes": 18642,
+          "percentage": 34.6
+        },
+        {
+          "name": "Sarah Lochhead",
+          "party": "NDP",
+          "votes": 8072,
+          "percentage": 15.0
+        },
+        {
+          "name": "Marty Lancaster",
+          "party": "Green",
+          "votes": 1785,
+          "percentage": 3.3
+        },
+        {
+          "name": "Chris Webb",
+          "party": "PPC",
+          "votes": 1049,
+          "percentage": 1.9
+        }
+      ]
+    },
+    {
+      "id": "bay-of-quinte",
+      "name": "Bay of Quinte",
+      "feduid": "35006",
+      "winner": {
+        "name": "Neil Ellis",
+        "party": "Liberal",
+        "votes": 24357
+      },
+      "candidates": [
+        {
+          "name": "Neil Ellis", 
+          "party": "Liberal",
+          "votes": 24357,
+          "percentage": 41.5
+        },
+        {
+          "name": "Ryan Williams",
+          "party": "Conservative",
+          "votes": 21928,
+          "percentage": 37.4
+        },
+        {
+          "name": "Stephanie Bell",
+          "party": "NDP",
+          "votes": 9346,
+          "percentage": 15.9
+        },
+        {
+          "name": "Erica Charlton",
+          "party": "Green",
+          "votes": 1852,
+          "percentage": 3.1
+        },
+        {
+          "name": "Janine LeClerc",
+          "party": "PPC",
+          "votes": 1212,
+          "percentage": 2.1
+        }
+      ]
+    },
+    {
+      "id": "beaches-east-york",
+      "name": "Beaches--East York",
+      "feduid": "35007",
+      "winner": {
+        "name": "Nathaniel Erskine-Smith",
+        "party": "Liberal",
+        "votes": 25313
+      },
+      "candidates": [
+        {
+          "name": "Nathaniel Erskine-Smith",
+          "party": "Liberal",
+          "votes": 25313,
+          "percentage": 47.8
+        },
+        {
+          "name": "Lisa Robinson",
+          "party": "Conservative",
+          "votes": 8124,
+          "percentage": 15.4
+        },
+        {
+          "name": "Rima Berns-McGown",
+          "party": "NDP",
+          "votes": 17044,
+          "percentage": 32.2
+        },
+        {
+          "name": "Maryem Tollar",
+          "party": "Green",
+          "votes": 1612,
+          "percentage": 3.1
+        },
+        {
+          "name": "Philip Fernandez",
+          "party": "Independent",
+          "votes": 809,
+          "percentage": 1.5
+        }
+      ]
+    },
+    {
+      "id": "beauce",
+      "name": "Beauce",
+      "feduid": "24007",
+      "winner": {
+        "name": "Richard Lehoux",
+        "party": "Conservative",
+        "votes": 22754
+      },
+      "candidates": [
+        {
+          "name": "Richard Lehoux",
+          "party": "Conservative",
+          "votes": 22754,
+          "percentage": 38.6
+        },
+        {
+          "name": "Maxime Bernier",
+          "party": "PPC",
+          "votes": 16584,
+          "percentage": 28.1
+        },
+        {
+          "name": "Adam Veilleux",
+          "party": "Liberal",
+          "votes": 8983,
+          "percentage": 15.2
+        },
+        {
+          "name": "Claude Vachon",
+          "party": "Bloc",
+          "votes": 8869,
+          "percentage": 15.0
+        },
+        {
+          "name": "Solange Thibodeau",
+          "party": "NDP",
+          "votes": 1118,
+          "percentage": 1.9
+        },
+        {
+          "name": "Jonathan Gilbert",
+          "party": "Green",
+          "votes": 688,
+          "percentage": 1.2
+        }
+      ]
+    },
+    {
+      "id": "brandon-souris",
+      "name": "Brandon--Souris",
+      "feduid": "46002",
+      "winner": {
+        "name": "Larry Maguire",
+        "party": "Conservative",
+        "votes": 21588
+      },
+      "candidates": [
+        {
+          "name": "Larry Maguire",
+          "party": "Conservative",
+          "votes": 21588,
+          "percentage": 52.4
+        },
+        {
+          "name": "Linda Branconnier",
+          "party": "Liberal",
+          "votes": 10082,
+          "percentage": 24.5
+        },
+        {
+          "name": "Whitney Hodgins",
+          "party": "NDP",
+          "votes": 6683,
+          "percentage": 16.2
+        },
+        {
+          "name": "Bill Tiessen",
+          "party": "Green",
+          "votes": 1454,
+          "percentage": 3.5
+        },
+        {
+          "name": "Tylor Baer",
+          "party": "PPC",
+          "votes": 1405,
+          "percentage": 3.4
+        }
+      ]
+    },
+    {
+      "id": "brampton-centre",
+      "name": "Brampton Centre",
+      "feduid": "35008",
+      "winner": {
+        "name": "Shafqat Ali",
+        "party": "Liberal",
+        "votes": 16530
+      },
+      "candidates": [
+        {
+          "name": "Shafqat Ali",
+          "party": "Liberal",
+          "votes": 16530,
+          "percentage": 46.2
+        },
+        {
+          "name": "Jagdeep Singh",
+          "party": "Conservative",
+          "votes": 13026,
+          "percentage": 36.4
+        },
+        {
+          "name": "Gail Bannister-Clarke",
+          "party": "NDP",
+          "votes": 5196,
+          "percentage": 14.5
+        },
+        {
+          "name": "Karan Gosal",
+          "party": "PPC",
+          "votes": 673,
+          "percentage": 1.9
+        },
+        {
+          "name": "Lucas Petrini",
+          "party": "Green",
+          "votes": 347,
+          "percentage": 1.0
+        }
+      ]
+    },
+    {
+      "id": "brampton-east",
+      "name": "Brampton East",
+      "feduid": "35009",
+      "winner": {
+        "name": "Maninder Sidhu",
+        "party": "Liberal",
+        "votes": 18049
+      },
+      "candidates": [
+        {
+          "name": "Maninder Sidhu",
+          "party": "Liberal",
+          "votes": 18049,
+          "percentage": 45.7
+        },
+        {
+          "name": "Naval Bajaj",
+          "party": "Conservative",
+          "votes": 14894,
+          "percentage": 37.7
+        },
+        {
+          "name": "Manjeet Manku",
+          "party": "NDP",
+          "votes": 5612,
+          "percentage": 14.2
+        },
+        {
+          "name": "Gaurav Walia",
+          "party": "PPC",
+          "votes": 564,
+          "percentage": 1.4
+        },
+        {
+          "name": "Roop Rai",
+          "party": "Green",
+          "votes": 387,
+          "percentage": 1.0
+        }
+      ]
+    },
+    {
+      "id": "davenport",
+      "name": "Davenport",
+      "feduid": "35020",
+      "winner": {
+        "name": "Julie Dzerowicz",
+        "party": "Liberal",
+        "votes": 19860
+      },
+      "candidates": [
+        {
+          "name": "Julie Dzerowicz",
+          "party": "Liberal",
+          "votes": 19860,
+          "percentage": 42.1
+        },
+        {
+          "name": "Alejandra Bravo",
+          "party": "NDP",
+          "votes": 19294,
+          "percentage": 40.9
+        },
+        {
+          "name": "Jenny Kalimbet",
+          "party": "Conservative",
+          "votes": 5383,
+          "percentage": 11.4
+        },
+        {
+          "name": "Adrian Currie",
+          "party": "Green",
+          "votes": 1873,
+          "percentage": 4.0
+        },
+        {
+          "name": "Troy Young",
+          "party": "PPC",
+          "votes": 724,
+          "percentage": 1.5
+        },
+        {
+          "name": "Elizabeth Rowley",
+          "party": "Other",
+          "votes": 45,
+          "percentage": 0.1
+        }
+      ]
+    },
+    {
+      "id": "ottawa-centre", 
+      "name": "Ottawa Centre",
+      "feduid": "35075",
+      "winner": {
+        "name": "Yasir Naqvi",
+        "party": "Liberal",
+        "votes": 33462
+      },
+      "candidates": [
+        {
+          "name": "Yasir Naqvi",
+          "party": "Liberal",
+          "votes": 33462,
+          "percentage": 45.8
+        },
+        {
+          "name": "Angella MacEwen",
+          "party": "NDP",
+          "votes": 24555,
+          "percentage": 33.6
+        },
+        {
+          "name": "Carol Clemenhagen",
+          "party": "Conservative",
+          "votes": 10208,
+          "percentage": 14.0
+        },
+        {
+          "name": "Angela Keller-Herzog",
+          "party": "Green",
+          "votes": 3897,
+          "percentage": 5.3
+        },
+        {
+          "name": "Regina Watteel",
+          "party": "PPC",
+          "votes": 962,
+          "percentage": 1.3
+        }
+      ]
+    },
+    {
+      "id": "toronto-danforth",
+      "name": "Toronto--Danforth",
+      "feduid": "35109",
+      "winner": {
+        "name": "Julie Dabrusin",
+        "party": "Liberal",
+        "votes": 23145
+      },
+      "candidates": [
+        {
+          "name": "Julie Dabrusin",
+          "party": "Liberal",
+          "votes": 23145,
+          "percentage": 47.6
+        },
+        {
+          "name": "Clare Hacksel",
+          "party": "NDP",
+          "votes": 17277,
+          "percentage": 35.6
+        },
+        {
+          "name": "Michael Carey",
+          "party": "Conservative",
+          "votes": 5103,
+          "percentage": 10.5
+        },
+        {
+          "name": "Maryem Tollar",
+          "party": "Green",
+          "votes": 2138,
+          "percentage": 4.4
+        },
+        {
+          "name": "Wayne Simmons",
+          "party": "PPC",
+          "votes": 626,
+          "percentage": 1.3
+        },
+        {
+          "name": "Elizabeth Abbott",
+          "party": "Independent",
+          "votes": 310,
+          "percentage": 0.6
+        }
+      ]
+    },
+    {
+      "id": "richmond-hill",
+      "name": "Richmond Hill",
+      "feduid": "35087",
+      "winner": {
+        "name": "Majid Jowhari",
+        "party": "Liberal",
+        "votes": 17817
+      },
+      "candidates": [
+        {
+          "name": "Majid Jowhari",
+          "party": "Liberal",
+          "votes": 17817,
+          "percentage": 43.3
+        },
+        {
+          "name": "Costas Menegakis",
+          "party": "Conservative",
+          "votes": 17371,
+          "percentage": 42.2
+        },
+        {
+          "name": "Adam DeVita",
+          "party": "NDP",
+          "votes": 4615,
+          "percentage": 11.2
+        },
+        {
+          "name": "Ichha Kohli",
+          "party": "Green",
+          "votes": 859,
+          "percentage": 2.1
+        },
+        {
+          "name": "Igor Tvorogov",
+          "party": "PPC",
+          "votes": 475,
+          "percentage": 1.2
+        }
+      ]
+    },
+    {
+      "id": "mont-royal",
+      "name": "Mont-Royal",
+      "feduid": "24055",
+      "winner": {
+        "name": "Anthony Housefather",
+        "party": "Liberal",
+        "votes": 24443
+      },
+      "candidates": [
+        {
+          "name": "Anthony Housefather",
+          "party": "Liberal",
+          "votes": 24443,
+          "percentage": 56.8
+        },
+        {
+          "name": "Frank Cavallaro",
+          "party": "Conservative",
+          "votes": 9438,
+          "percentage": 21.9
+        },
+        {
+          "name": "Sarah Musgrave",
+          "party": "NDP",
+          "votes": 3521,
+          "percentage": 8.2
+        },
+        {
+          "name": "Patrick Pierra",
+          "party": "Bloc",
+          "votes": 3125,
+          "percentage": 7.3
+        },
+        {
+          "name": "Marc Perez",
+          "party": "Green",
+          "votes": 1756,
+          "percentage": 4.1
+        },
+        {
+          "name": "Saul Ettinger",
+          "party": "PPC",
+          "votes": 745,
+          "percentage": 1.7
+        }
+      ]
+    }
+  ]
+} 

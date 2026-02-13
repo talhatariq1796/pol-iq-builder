@@ -1,0 +1,921 @@
+/* Popup container styles */
+.popup-container {
+  padding: 12px;
+  max-width: 300px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000; /* Ensure proper stacking */
+}
+
+/* Fix for ArcGIS popup visibility */
+.esri-popup {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
+.esri-popup__main-container {
+  z-index: 100 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  pointer-events: auto !important;
+}
+
+/* Make sure content is shown and spinner is hidden */
+.esri-popup__content {
+  display: block !important;
+  visibility: visible !important;
+}
+
+.esri-popup__loader {
+  display: none !important;
+}
+
+/* Always show the header */
+.esri-popup__header {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.popup-header {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  visibility: visible !important;
+}
+
+.popup-title {
+  font-size: 12px; /* xs text size */
+  font-weight: 600;
+  margin: 0;
+  visibility: visible !important;
+  display: block !important;
+}
+
+.popup-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #666;
+}
+
+.popup-close:hover {
+  color: #000;
+}
+
+.popup-content {
+  margin-bottom: 12px;
+  max-height: none !important; /* Prevent height restrictions */
+  overflow: visible !important;
+}
+
+/* Common field display styles */
+.field-display {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.field-display-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.field-display-empty {
+  color: #888;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+/* List display styles */
+.field-display-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-list {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(150px, 2fr);
+  gap: 6px 12px;
+}
+
+.field-item {
+  display: contents;
+}
+
+.field-name {
+  font-weight: 500;
+  color: #555;
+}
+
+.field-value {
+  color: #333;
+}
+
+/* Table display styles */
+.field-display-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.field-table th {
+  background-color: #f5f5f5;
+  padding: 8px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+}
+
+.field-table td {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Custom popup container */
+.custom-popup-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  min-width: 250px;
+  max-height: 80vh;
+  overflow: auto;
+  pointer-events: auto;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  z-index: 100; /* Ensure it's above the map */
+}
+
+/* Inner content container */
+.popup-content-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  z-index: 101; /* Higher than container */
+}
+
+/* Header styling */
+.popup-header {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f7f9fb;
+  visibility: visible !important;
+  position: sticky; /* Keep the header visible */
+  top: 0;
+  z-index: 102; /* Higher than content */
+}
+
+.popup-title {
+  margin: 0;
+  font-size: 12px; /* xs text size */
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+  visibility: visible !important;
+  display: block !important;
+}
+
+.popup-close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  margin: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-close-button:hover {
+  color: #111827;
+}
+
+/* Body styling */
+.popup-body {
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.popup-no-data {
+  padding: 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Popup actions */
+.popup-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f8f9fa;
+}
+
+.popup-action-button {
+  padding: 6px 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.popup-action-button:hover {
+  background-color: #e8e8e8;
+}
+
+.popup-action-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Symbol display */
+.popup-symbol {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 400px) {
+  .popup-container {
+    max-width: 250px;
+  }
+  
+  .field-item {
+    flex-direction: column;
+  }
+  
+  .field-value {
+    text-align: left;
+  }
+}
+
+/* Field display (list style) */
+.field-display-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-item {
+  display: flex;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.field-name {
+  flex: 0 0 40%;
+  font-weight: 500;
+  color: #374151;
+  padding-right: 8px;
+}
+
+.field-value {
+  flex: 0 0 60%;
+  color: #6b7280;
+  word-break: break-word;
+}
+
+/* Field display (table style) */
+.field-display-table {
+  width: 100%;
+}
+
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.field-table th {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 500;
+  color: #374151;
+}
+
+.field-table td {
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.field-display-empty {
+  padding: 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Custom popup emergency content */
+.custom-popup-emergency-content {
+  padding: 10px;
+  background: white;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+/* Custom Popup Styles */
+.custom-popup {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-width: 320px;
+  max-height: 500px;
+  z-index: 1000;
+}
+
+.custom-popup-container {
+  padding: 0;
+  overflow: hidden;
+}
+
+.popup-chart-container {
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f8f9fa;
+}
+
+.popup-action-button {
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+/* Zoom button */
+.popup-action-button[data-action="zoom"],
+.popup-action-button:first-child {
+  background-color: #33a852;
+}
+
+.popup-action-button[data-action="zoom"]:hover,
+.popup-action-button:first-child:hover {
+  background-color: #2a7e42;
+}
+
+/* Infographics button */
+.popup-action-button[data-action="infographics"],
+.popup-action-button:nth-child(2) {
+  background-color: #33a852;
+}
+
+.popup-action-button[data-action="infographics"]:hover,
+.popup-action-button:nth-child(2):hover {
+  background-color: #2a7e42;
+}
+
+/* Bar chart styles */
+.chart-container {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.chart-bar-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.chart-bar-label {
+  width: 120px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-bar-wrapper {
+  flex: 1;
+  height: 24px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  margin: 0 8px;
+}
+
+.chart-bar {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.chart-bar-value {
+  min-width: 40px;
+  text-align: right;
+  font-size: 12px;
+}
+
+/* Enhanced Property Popup Styles */
+.property-popup-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.property-popup-container img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px 8px 0 0;
+}
+
+.property-popup-container .property-image-placeholder {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 14px;
+  border-radius: 8px 8px 0 0;
+}
+
+.property-popup-container .price {
+  font-size: 18px;
+  font-weight: 600;
+  color: #059669;
+  margin-bottom: 8px;
+}
+
+.property-popup-container .status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.property-popup-container .status-active {
+  background-color: #059669;
+}
+
+.property-popup-container .status-sold {
+  background-color: #dc2626;
+}
+
+.property-popup-container .features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.property-popup-container .feature-item {
+  text-align: center;
+}
+
+.property-popup-container .feature-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.property-popup-container .feature-value {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.property-popup-container .centris-number {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Cluster Popup Styles */
+.cluster-popup-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  padding: 16px;
+}
+
+.cluster-popup-container .stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cluster-popup-container .stat-item {
+  text-align: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.cluster-popup-container .stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cluster-popup-container .stat-value {
+  font-size: 16px;
+  color: #111827;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.cluster-popup-container .price-range {
+  padding: 8px;
+  background: #ecfdf5;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.cluster-popup-container .price-range-text {
+  font-size: 12px;
+  color: #065f46;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .property-popup-container {
+    max-width: 280px;
+  }
+  
+  .property-popup-container .features-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .cluster-popup-container .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+/* Enhanced Property Popup Styles - New Design */
+.property-popup-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 340px;
+  min-width: 300px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 2000 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  font-size: 12px; /* xs text size as requested */
+  font-weight: bold; /* bold styling as requested */
+}
+
+/* Custom Property Popup Wrapper */
+.custom-property-popup {
+  z-index: 2000 !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Property Image Section */
+.property-image-section {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.property-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+.property-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.property-image-placeholder .placeholder-icon {
+  color: #94a3b8;
+}
+
+.property-close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background-color 0.2s ease;
+  z-index: 10;
+}
+
+.property-close-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Property Details Section */
+.property-details-section {
+  padding: 20px;
+}
+
+.property-address {
+  font-size: 14px; /* Slightly smaller for full address */
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.property-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #059669;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.property-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.property-status-badge.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.property-status-badge.status-sold {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.property-status-badge.status-unknown {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* Property Details List - Simple Format */
+.property-details-list {
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px; /* xs text size */
+  font-weight: bold; /* bold styling */
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  color: #1e293b;
+  font-weight: 600;
+  text-align: right;
+  margin-left: 8px;
+}
+
+/* Ensure consistent styling for all info items */
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px; /* xs text size */
+  font-weight: bold; /* bold styling */
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: #1e293b;
+  font-weight: 600;
+  text-align: right;
+  margin-left: 8px;
+}
+
+/* Property Identifiers Section */
+.property-identifiers {
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+}
+
+.property-centris-number,
+.property-mls-number {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.property-mls-number {
+  margin-bottom: 0;
+}
+
+/* Action Buttons */
+.property-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.property-action-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.property-zoom-button {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.property-zoom-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.property-cma-button {
+  background-color: #059669;
+  color: white;
+}
+
+.property-cma-button:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.property-action-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 400px) {
+  .property-popup-container {
+    max-width: 300px;
+    min-width: 280px;
+  }
+  
+  .property-features-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .property-actions {
+    flex-direction: column;
+  }
+  
+  .property-action-button {
+    width: 100%;
+  }
+}
+
+/* Animation for smooth appearance */
+.property-popup-container {
+  animation: propertyPopupSlideIn 0.3s ease-out;
+}
+
+@keyframes propertyPopupSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Loading state for images */
+.property-image[style*="opacity: 0.7"] {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+/* Focus states for accessibility */
+.property-close-button:focus,
+.property-action-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Utility classes */
+.hidden {
+  display: none;
+} 

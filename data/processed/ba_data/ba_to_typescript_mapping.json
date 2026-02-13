@@ -1,0 +1,498 @@
+{
+  "metadata": {
+    "description": "Mapping from ArcGIS BA extracted fields to TypeScript political.ts interfaces",
+    "source_service": "https://services8.arcgis.com/VhrZdFGa39zmfR47/arcgis/rest/services/Synapse54__d014245e7a964f67/FeatureServer",
+    "created_at": "2025-11-30T18:12:50Z",
+    "block_groups": 238
+  },
+  "interface_mappings": {
+    "PoliticalAttitudes": {
+      "veryLiberal": {
+        "ba_column": "very_liberal_political_outlook",
+        "ba_layer_id": 90,
+        "description": "2025 Very Liberal Political Outlook"
+      },
+      "somewhatLiberal": {
+        "ba_column": "somewhat_liberal_political_outlook",
+        "ba_layer_id": 91,
+        "description": "2025 Somewhat Liberal Political Outlook"
+      },
+      "middleOfRoad": {
+        "ba_column": "middle_of_the_road_political_outlook",
+        "ba_layer_id": 87,
+        "description": "2025 Middle of the Road Political Outlook"
+      },
+      "somewhatConservative": {
+        "ba_column": "somewhat_conservative_political_outlook",
+        "ba_layer_id": 89,
+        "description": "2025 Somewhat Conservative Political Outlook"
+      },
+      "veryConservative": {
+        "ba_column": "very_conservative_political_outlook",
+        "ba_layer_id": 88,
+        "description": "2025 Very Conservative Political Outlook"
+      },
+      "registeredDemocrat": {
+        "ba_column": "affiliated_w_democratic_political_party_2",
+        "ba_layer_id": 94,
+        "description": "2025 Affiliated with Democratic Political Party"
+      },
+      "registeredRepublican": {
+        "ba_column": "affiliated_w_republican_political_party_2",
+        "ba_layer_id": 93,
+        "description": "2025 Affiliated with Republican Political Party"
+      },
+      "registeredIndependent": {
+        "ba_column": "affiliated_w_independent_no_political_party",
+        "ba_layer_id": 92,
+        "description": "2025 Affiliated with Independent/No Political Party"
+      }
+    },
+    "PoliticalEngagement": {
+      "politicalPodcastListeners": {
+        "ba_column": "listened_to_politics_podcast_30_days_2",
+        "ba_layer_id": 86,
+        "description": "2025 Listened to Politics Podcast 30 Days"
+      },
+      "politicalContributors": {
+        "ba_column": "contributed_to_political_org_12_mo",
+        "ba_layer_id": 85,
+        "description": "2025 Contributed to Political Org 12 Mo"
+      },
+      "wroteCalledPolitician": {
+        "ba_column": "wrote_or_called_a_politician_12_mo",
+        "ba_layer_id": 83,
+        "description": "2025 Wrote or Called a Politician 12 Mo"
+      },
+      "cashGiftsToPolitical": {
+        "ba_column": "cash_gifts_to_political_orgs",
+        "ba_layer_id": 84,
+        "description": "2025 Cash Gifts to Political Orgs"
+      },
+      "followsPoliticiansOnSocial": {
+        "ba_column": "social_media_follow_politicians_2",
+        "ba_layer_id": 82,
+        "description": "2025 Social Media Follow Politicians"
+      },
+      "followsPoliticalGroups": {
+        "ba_column": "social_media_follow_political_groups_2",
+        "ba_layer_id": 81,
+        "description": "2025 Social Media Follow Political Groups"
+      },
+      "volunteerWork": {
+        "ba_column": "volunteered_for_charitable_org_12_mo",
+        "ba_layer_id": 80,
+        "description": "2025 Volunteered for Charitable Org 12 Mo"
+      },
+      "communityParticipation": {
+        "ba_column": "participated_in_public_activity_12_mo",
+        "ba_layer_id": 78,
+        "description": "2025 Participated in Public Activity 12 Mo"
+      },
+      "charitableDonations": {
+        "ba_column": "cash_gifts_to_charities",
+        "ba_layer_id": 79,
+        "description": "2025 Cash Gifts to Charities"
+      },
+      "religiousAttendance": {
+        "ba_column": "attend_religious_services_regularly",
+        "ba_layer_id": 77,
+        "description": "2025 Attend Religious Services Regularly"
+      }
+    },
+    "DemographicSummary": {
+      "totalPopulation": {
+        "ba_column": "total_population",
+        "ba_layer_id": 106,
+        "description": "2025 Total Population"
+      },
+      "votingAgePopulation": {
+        "ba_column": "population_age_18up",
+        "ba_layer_id": 109,
+        "description": "2025 Population Age 18+"
+      },
+      "medianAge": {
+        "ba_column": "median_age",
+        "ba_layer_id": 104,
+        "description": "2025 Median Age"
+      },
+      "medianHouseholdIncome": {
+        "ba_column": "median_household_income",
+        "ba_layer_id": 25,
+        "description": "2025 Median Household Income"
+      },
+      "avgHouseholdIncome": {
+        "ba_column": "average_household_income",
+        "ba_layer_id": 24,
+        "description": "2025 Average Household Income"
+      },
+      "unemploymentRate": {
+        "ba_column": "unemployment_rate",
+        "ba_layer_id": 23,
+        "description": "2025 Unemployment Rate"
+      },
+      "ownerOccupied": {
+        "ba_column": "owner_occupied_hus",
+        "ba_layer_id": 21,
+        "description": "2025 Owner Occupied HUs"
+      },
+      "renterOccupied": {
+        "ba_column": "renter_occupied_hus",
+        "ba_layer_id": 20,
+        "description": "2025 Renter Occupied HUs"
+      },
+      "medianHomeValue": {
+        "ba_column": "median_home_value",
+        "ba_layer_id": 19,
+        "description": "2025 Median Home Value"
+      },
+      "medianRent": {
+        "ba_column": "median_monthly_contract_rent",
+        "ba_layer_id": 18,
+        "description": "2025 Median Monthly Contract Rent"
+      },
+      "workFromHome": {
+        "ba_column": "wrkrs_16+_worked_at_home_acs_5_yr",
+        "ba_layer_id": 22,
+        "description": "2023 Workers 16+ Worked at Home (ACS 5-Yr)"
+      },
+      "diversityIndex": {
+        "ba_column": "diversity_index",
+        "ba_layer_id": 15,
+        "description": "2025 Diversity Index"
+      },
+      "populationDensity": {
+        "ba_column": "population_density",
+        "ba_layer_id": 107,
+        "description": "2025 Population Density"
+      }
+    },
+    "RaceEthnicity": {
+      "whitePop": {
+        "ba_column": "white_population",
+        "ba_layer_id": 14,
+        "description": "2025 White Population"
+      },
+      "blackPop": {
+        "ba_column": "black_population",
+        "ba_layer_id": 13,
+        "description": "2025 Black Population"
+      },
+      "asianPop": {
+        "ba_column": "asian_population",
+        "ba_layer_id": 12,
+        "description": "2025 Asian Population"
+      },
+      "hispanicPop": {
+        "ba_column": "hispanic_population",
+        "ba_layer_id": 11,
+        "description": "2025 Hispanic Population"
+      },
+      "americanIndianPop": {
+        "ba_column": "american_indian_population",
+        "ba_layer_id": 10,
+        "description": "2025 American Indian Population"
+      },
+      "pacificPop": {
+        "ba_column": "pacific_islander_population",
+        "ba_layer_id": 9,
+        "description": "2025 Pacific Islander Population"
+      },
+      "otherRacePop": {
+        "ba_column": "other_race_population",
+        "ba_layer_id": 8,
+        "description": "2025 Other Race Population"
+      },
+      "twoOrMoreRaces": {
+        "ba_column": "population_of_2+_races",
+        "ba_layer_id": 7,
+        "description": "2025 Population of 2+ Races"
+      }
+    },
+    "AgeDistribution": {
+      "age18to24": {
+        "ba_column": "ages_18_to_24",
+        "ba_layer_id": 102,
+        "description": "2025 Ages 18 to 24"
+      },
+      "age25to34": {
+        "ba_column": "ages_25_to_34",
+        "ba_layer_id": 101,
+        "description": "2025 Ages 25 to 34"
+      },
+      "age35to44": {
+        "ba_column": "ages_35_to_44",
+        "ba_layer_id": 100,
+        "description": "2025 Ages 35 to 44"
+      },
+      "age45to54": {
+        "ba_column": "ages_45_to_54",
+        "ba_layer_id": 99,
+        "description": "2025 Ages 45 to 54"
+      },
+      "age55to64": {
+        "ba_column": "ages_55_to_64",
+        "ba_layer_id": 98,
+        "description": "2025 Ages 55 to 64"
+      },
+      "age65to74": {
+        "ba_column": "ages_65_to_74",
+        "ba_layer_id": 97,
+        "description": "2025 Ages 65 to 74"
+      },
+      "age75to84": {
+        "ba_column": "ages_75_to_84",
+        "ba_layer_id": 96,
+        "description": "2025 Ages 75 to 84"
+      },
+      "age85plus": {
+        "ba_column": "ages_85up",
+        "ba_layer_id": 95,
+        "description": "2025 Ages 85+"
+      }
+    },
+    "Education": {
+      "educationBase": {
+        "ba_column": "educational_attainment_base",
+        "ba_layer_id": 30,
+        "description": "2025 Educational Attainment Base"
+      },
+      "hsGraduate": {
+        "ba_column": "pop_age_25+_high_school_diploma",
+        "ba_layer_id": 29,
+        "description": "2025 Pop Age 25+ High School Diploma"
+      },
+      "someCollege": {
+        "ba_column": "pop_age_25+_some_college_no_degree",
+        "ba_layer_id": 28,
+        "description": "2025 Pop Age 25+ Some College No Degree"
+      },
+      "bachelors": {
+        "ba_column": "pop_age_25+_bachelor's_degree",
+        "ba_layer_id": 27,
+        "description": "2025 Pop Age 25+ Bachelor's Degree"
+      },
+      "gradProfessional": {
+        "ba_column": "pop_age_25+_grad_professional_degree",
+        "ba_layer_id": 26,
+        "description": "2025 Pop Age 25+ Grad/Professional Degree"
+      }
+    },
+    "MediaConsumption.tv.networks": {
+      "cnn": {
+        "ba_column": "watched_cnn_cable_news_network_last_week",
+        "ba_layer_id": 62,
+        "description": "2025 Watched CNN Last Week"
+      },
+      "fox": {
+        "ba_column": "watched_fox_news_channel_last_wk",
+        "ba_layer_id": 65,
+        "description": "2025 Watched Fox News Channel Last Week"
+      },
+      "msnbc": {
+        "ba_column": "watched_msnbc_last_wk",
+        "ba_layer_id": 63,
+        "description": "2025 Watched MSNBC Last Week"
+      },
+      "newsmax": {
+        "ba_column": "watched_newsmax_tv_last_wk",
+        "ba_layer_id": 66,
+        "description": "2025 Watched Newsmax TV Last Week"
+      },
+      "bbc": {
+        "ba_column": "watched_bbc_news_last_wk",
+        "ba_layer_id": 64,
+        "description": "2025 Watched BBC News Last Week"
+      },
+      "newsnation": {
+        "ba_column": "watched_newsnation_last_wk",
+        "ba_layer_id": 61,
+        "description": "2025 Watched NewsNation Last Week"
+      }
+    },
+    "MediaConsumption.tv.timeSlots": {
+      "earlyMorning": {
+        "ba_column": "watch_early_morning_local_news_mon_fri",
+        "ba_layer_id": 72,
+        "description": "2025 Watch Early Morning Local News"
+      },
+      "evening": {
+        "ba_column": "watch_early_evening_local_news_mon_fri",
+        "ba_layer_id": 68,
+        "description": "2025 Watch Early Evening Local News"
+      },
+      "lateNight": {
+        "ba_column": "watch_late_evening_local_news_mon_fri",
+        "ba_layer_id": 69,
+        "description": "2025 Watch Late Evening Local News"
+      }
+    },
+    "MediaConsumption.socialMedia": {
+      "facebook": {
+        "ba_column": "social_media_used_facebook_30_days",
+        "ba_layer_id": 36,
+        "description": "2025 Social Media Used Facebook 30 Days"
+      },
+      "twitter": {
+        "ba_column": "social_media_used_x_formerly_twitter",
+        "ba_layer_id": 31,
+        "description": "2025 Social Media Used X (Twitter) 30 Days"
+      },
+      "instagram": {
+        "ba_column": "social_media_used_instagram_30_days",
+        "ba_layer_id": 35,
+        "description": "2025 Social Media Used Instagram 30 Days"
+      },
+      "youtube": {
+        "ba_column": "social_media_used_youtube_30_days",
+        "ba_layer_id": 34,
+        "description": "2025 Social Media Used YouTube 30 Days"
+      },
+      "linkedin": {
+        "ba_column": "social_media_used_linkedin_30_days",
+        "ba_layer_id": 32,
+        "description": "2025 Social Media Used LinkedIn 30 Days"
+      },
+      "reddit": {
+        "ba_column": "social_media_used_reddit_30_days",
+        "ba_layer_id": 37,
+        "description": "2025 Social Media Used Reddit 30 Days"
+      },
+      "newsViaSocial": {
+        "ba_column": "social_media_is_primary_news_source",
+        "ba_layer_id": 39,
+        "description": "2025 Social Media is Primary News Source"
+      }
+    },
+    "MediaConsumption.radio": {
+      "newsRadio": {
+        "ba_column": "listen_to_all_news_radio_format",
+        "ba_layer_id": 45,
+        "description": "2025 Listen to All News Radio Format"
+      },
+      "talkRadio": {
+        "ba_column": "listen_to_news_or_talk_radio_format",
+        "ba_layer_id": 44,
+        "description": "2025 Listen to News or Talk Radio Format"
+      },
+      "nprPublicRadio": {
+        "ba_column": "listen_to_public_radio_format",
+        "ba_layer_id": 43,
+        "description": "2025 Listen to Public Radio Format"
+      }
+    },
+    "MediaConsumption.internet": {
+      "onlineNews": {
+        "ba_column": "used_internet_for_latest_news_30_days",
+        "ba_layer_id": 60,
+        "description": "2025 Used Internet for Latest News 30 Days"
+      },
+      "digitalNewspaper": {
+        "ba_column": "read_digital_newspaper_30_days",
+        "ba_layer_id": 47,
+        "description": "2025 Read Digital Newspaper 30 Days"
+      }
+    },
+    "MediaConsumption.print": {
+      "dailyNewspaper": {
+        "ba_column": "read_daily_newspaper_paper_version",
+        "ba_layer_id": 48,
+        "description": "2025 Read Daily Newspaper (Paper Version)"
+      }
+    }
+  },
+  "categories": {
+    "political": [
+      "very_liberal_political_outlook",
+      "somewhat_liberal_political_outlook",
+      "middle_of_the_road_political_outlook",
+      "somewhat_conservative_political_outlook",
+      "very_conservative_political_outlook",
+      "affiliated_w_democratic_political_party_2",
+      "affiliated_w_republican_political_party_2",
+      "affiliated_w_independent_no_political_party",
+      "listened_to_politics_podcast_30_days_2",
+      "contributed_to_political_org_12_mo",
+      "wrote_or_called_a_politician_12_mo",
+      "cash_gifts_to_political_orgs",
+      "social_media_follow_politicians_2",
+      "social_media_follow_political_groups_2"
+    ],
+    "demographics": [
+      "total_population",
+      "population_age_18up",
+      "median_age",
+      "population_density",
+      "ages_18_to_24",
+      "ages_25_to_34",
+      "ages_35_to_44",
+      "ages_45_to_54",
+      "ages_55_to_64",
+      "ages_65_to_74",
+      "ages_75_to_84",
+      "ages_85up"
+    ],
+    "race_ethnicity": [
+      "white_population",
+      "black_population",
+      "asian_population",
+      "hispanic_population",
+      "american_indian_population",
+      "pacific_islander_population",
+      "other_race_population",
+      "population_of_2+_races",
+      "diversity_index"
+    ],
+    "income_housing": [
+      "median_household_income",
+      "average_household_income",
+      "unemployment_rate",
+      "owner_occupied_hus",
+      "renter_occupied_hus",
+      "median_home_value",
+      "median_monthly_contract_rent",
+      "wrkrs_16+_worked_at_home_acs_5_yr"
+    ],
+    "education": [
+      "educational_attainment_base",
+      "pop_age_25+_high_school_diploma",
+      "pop_age_25+_some_college_no_degree",
+      "pop_age_25+_bachelor's_degree",
+      "pop_age_25+_grad_professional_degree"
+    ],
+    "civic_engagement": [
+      "attend_religious_services_regularly",
+      "participated_in_public_activity_12_mo",
+      "cash_gifts_to_charities",
+      "volunteered_for_charitable_org_12_mo"
+    ],
+    "media_tv": [
+      "watched_cnn_cable_news_network_last_week",
+      "watched_fox_news_channel_last_wk",
+      "watched_msnbc_last_wk",
+      "watched_newsmax_tv_last_wk",
+      "watched_bbc_news_last_wk",
+      "watched_newsnation_last_wk",
+      "watch_early_morning_local_news_mon_fri",
+      "watch_early_evening_local_news_mon_fri",
+      "watch_late_evening_local_news_mon_fri"
+    ],
+    "media_social": [
+      "social_media_used_facebook_30_days",
+      "social_media_used_x_formerly_twitter",
+      "social_media_used_instagram_30_days",
+      "social_media_used_youtube_30_days",
+      "social_media_used_linkedin_30_days",
+      "social_media_used_reddit_30_days",
+      "social_media_is_primary_news_source"
+    ],
+    "media_radio_print": [
+      "listen_to_all_news_radio_format",
+      "listen_to_news_or_talk_radio_format",
+      "listen_to_public_radio_format",
+      "read_digital_newspaper_30_days",
+      "read_daily_newspaper_paper_version",
+      "used_internet_for_latest_news_30_days"
+    ]
+  }
+}

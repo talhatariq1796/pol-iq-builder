@@ -1,0 +1,7 @@
+zip_code
+Income
+Age
+Hispanic_Population
+African_American_Population
+Asian_Population
+Nike_Sales

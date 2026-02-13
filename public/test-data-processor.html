@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test DataProcessor Flow</title>
+</head>
+<body>
+    <h1>Testing DataProcessor Flow</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simple test to see if debug messages appear in console
+        console.log('🧪 Testing if console.log works...');
+        
+        // Test the actual analysis flow
+        async function testCompetitiveAnalysis() {
+            try {
+                console.log('🔥 Starting competitive analysis test...');
+                
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: 'competitive analysis',
+                        endpoint: '/competitive-analysis'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('📊 Response data:', data);
+                
+                document.getElementById('results').innerHTML = `
+                    <h2>Results:</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                document.getElementById('results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test after page loads
+        setTimeout(testCompetitiveAnalysis, 1000);
+    </script>
+</body>
+</html>

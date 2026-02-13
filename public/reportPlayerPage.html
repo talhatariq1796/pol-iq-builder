@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Report Player</title>
+    
+    <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
+    
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .playerDivFullScreen {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #loadingIndicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+    </style>
+
+    <script>
+        var dojoConfig = {
+            async: true,
+            packages: [{
+                name: "esri",
+                location: "https://js.arcgis.com/4.27/esri"
+            }]
+        };
+    </script>
+
+    <script src="https://js.arcgis.com/4.27/"></script>
+
+    <script>
+        require([
+            "esri/config",
+            "esri/request",
+            "esri/identity/OAuthInfo",
+            "esri/identity/IdentityManager"
+        ], function(esriConfig, esriRequest, OAuthInfo, IdentityManager) {
+            
+            function logDebug(type, ...args) {
+                if (args[0]?.target?.includes('metamask')) return;
+                console.log(`[Report Player ${type}]:`, ...args);
+            }
+
+            async function generateInfographic(geometry, template) {
+                const loadingIndicator = document.getElementById('loadingIndicator');
+                loadingIndicator.style.display = 'block';
+
+                try {
+                    logDebug('Info', 'Generating infographic with template:', template);
+
+                    // Set up authentication
+                    esriConfig.apiKey = ""; // Set your ArcGIS API key here
+
+                    // Get an authentication token
+                    const token = await getToken();
+
+                    // Use the reports service
+                    const serviceUrl = "https://utility.arcgisonline.com/arcgis/rest/services/Reports/GPServer/Infographics/execute";
+
+                    const params = {
+    f: "json",
+    token: token,
+    Input_Study_Area: JSON.stringify({
+        features: [{
+            geometry: {
+                rings: geometry.rings,
+                spatialReference: { wkid: 4326 }
+            }
+        }]
+    }),
+    Input_Report_Template: template || "NBH",
+    Input_Format: "html",
+    "env:outSR": 4326,
+    "env:processSR": 4326
+};
+
+                    logDebug('Info', 'Making request with params:', params);
+
+                    const response = await esriRequest(serviceUrl, {
+                        query: params,
+                        method: "post",
+                        responseType: "json"
+                    });
+
+                    logDebug('Info', 'Response received:', response);
+
+                    if (response.data.results && response.data.results[0]) {
+                        const reportUrl = response.data.results[0].value.url;
+                        
+                        // Fetch the actual report content
+                        const reportResponse = await esriRequest(reportUrl, {
+                            query: { token },
+                            responseType: "html"
+                        });
+
+                        document.getElementById('reportDiv').innerHTML = reportResponse.data;
+                    } else {
+                        throw new Error('Invalid response format');
+                    }
+
+                    loadingIndicator.style.display = 'none';
+
+                    window.parent.postMessage({ 
+                        type: 'REPORT_READY',
+                        timestamp: new Date().toISOString(),
+                        status: 'success'
+                    }, '*');
+
+                } catch (error) {
+                    logDebug('Error', 'Error generating infographic:', error);
+                    loadingIndicator.style.display = 'none';
+
+                    window.parent.postMessage({
+                        type: 'REPORT_ERROR',
+                        error: error.message || 'Failed to generate infographic',
+                        timestamp: new Date().toISOString(),
+                        details: {
+                            message: error.message,
+                            status: error.status
+                        }
+                    }, '*');
+
+                    document.getElementById('reportDiv').innerHTML = `
+                        <div style="padding: 20px; color: #e53e3e; background: #fff5f5; border-radius: 8px; margin: 20px;">
+                            <h3 style="margin: 0 0 10px 0;">Error Generating Report</h3>
+                            <p style="margin: 0;">${error.message || 'Failed to generate infographic'}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            async function getToken() {
+                // Register your application
+                const info = new OAuthInfo({
+                    appId: "YOUR_APP_ID",
+                    popup: false
+                });
+                
+                // Set the authentication handler
+                IdentityManager.registerOAuthInfos([info]);
+
+                // Try to get a token with the API key
+                try {
+                    const credential = await IdentityManager.getCredential(
+                        "https://www.arcgis.com/sharing/rest",
+                        { token: esriConfig.apiKey }
+                    );
+                    return credential.token;
+                } catch (error) {
+                    console.error('Error getting token:', error);
+                    throw error;
+                }
+            }
+
+            // Listen for messages from parent
+            window.addEventListener('message', function(event) {
+                if (event.data.target?.includes('metamask')) return;
+                
+                logDebug('Info', 'Received message:', event.data);
+                
+                if (event.data.type === 'INIT_REPORT') {
+                    const payload = event.data.payload;
+                    generateInfographic(payload.geometry, payload.reportTemplate);
+                }
+            });
+
+            // Initialize the API key
+            esriConfig.apiKey = ""; // Set your ArcGIS API key here
+
+            // Notify ready state
+            logDebug('Info', 'Report player initialized');
+            window.parent.postMessage({ 
+                type: 'REPORT_PLAYER_READY',
+                timestamp: new Date().toISOString()
+            }, '*');
+        });
+    </script>
+</head>
+<body>
+    <div id="loadingIndicator">Generating report...</div>
+    <div id="reportDiv" class="playerDivFullScreen"></div>
+</body>
+</html>

@@ -1,0 +1,711 @@
+{
+  "metadata": {
+    "source": "https://services8.arcgis.com/VhrZdFGa39zmfR47/arcgis/rest/services/Synapse54__d014245e7a964f67/FeatureServer",
+    "extracted_at": "2025-11-30T18:12:50.887159",
+    "record_count": 238,
+    "field_count": 102,
+    "layers_extracted": 100
+  },
+  "fields": {
+    "population_of_2+_races": {
+      "layer_id": 7,
+      "layer_name": "2025 Population of 2+ Races",
+      "arcgis_field": "RACE2UP_CY",
+      "alias": "2025 Population of Two or More Races (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "other_race_population": {
+      "layer_id": 8,
+      "layer_name": "2025 Other Race Population",
+      "arcgis_field": "OTHRACE_CY",
+      "alias": "2025 Other Race Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "pacific_islander_population": {
+      "layer_id": 9,
+      "layer_name": "2025 Pacific Islander Population",
+      "arcgis_field": "PACIFIC_CY",
+      "alias": "2025 Pacific Islander Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "american_indian_population": {
+      "layer_id": 10,
+      "layer_name": "2025 American Indian Population",
+      "arcgis_field": "AMERIND_CY",
+      "alias": "2025 American Indian/Alaska Native Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "hispanic_population": {
+      "layer_id": 11,
+      "layer_name": "2025 Hispanic Population",
+      "arcgis_field": "HISPPOP_CY",
+      "alias": "2025 Hispanic Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "asian_population": {
+      "layer_id": 12,
+      "layer_name": "2025 Asian Population",
+      "arcgis_field": "ASIAN_CY",
+      "alias": "2025 Asian Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "black_population": {
+      "layer_id": 13,
+      "layer_name": "2025 Black Population",
+      "arcgis_field": "BLACK_CY",
+      "alias": "2025 Black/African American Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "white_population": {
+      "layer_id": 14,
+      "layer_name": "2025 White Population",
+      "arcgis_field": "WHITE_CY",
+      "alias": "2025 White Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "diversity_index": {
+      "layer_id": 15,
+      "layer_name": "2025 Diversity Index",
+      "arcgis_field": "DIVINDX_CY",
+      "alias": "2025 Diversity Index (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "rhhs_moved_in_2021_later_acs_5_yr": {
+      "layer_id": 16,
+      "layer_name": "2023 RHHs Moved In 2021 Later (ACS 5-Yr)",
+      "arcgis_field": "ACSRMV2021",
+      "alias": "2023 Renter HHs by Year Moved In: 2021 or Later (ACS 5-Yr)",
+      "type": "esriFieldTypeDouble"
+    },
+    "ohhs_moved_in_2021_later_acs_5_yr": {
+      "layer_id": 17,
+      "layer_name": "2023 OHHs Moved In 2021 Later (ACS 5-Yr)",
+      "arcgis_field": "ACSOMV2021",
+      "alias": "2023 Owner HHs by Year Moved In: 2021 or Later (ACS 5-Yr)",
+      "type": "esriFieldTypeDouble"
+    },
+    "median_monthly_contract_rent": {
+      "layer_id": 18,
+      "layer_name": "2025 Median Monthly Contract Rent",
+      "arcgis_field": "MEDCRNT_CY",
+      "alias": "2025 Median Monthly Contract Rent (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "median_home_value": {
+      "layer_id": 19,
+      "layer_name": "2025 Median Home Value",
+      "arcgis_field": "MEDVAL_CY",
+      "alias": "2025 Median Home Value (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "renter_occupied_hus": {
+      "layer_id": 20,
+      "layer_name": "2025 Renter Occupied HUs",
+      "arcgis_field": "RENTER_CY",
+      "alias": "2025 Renter Occupied Housing Units (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "owner_occupied_hus": {
+      "layer_id": 21,
+      "layer_name": "2025 Owner Occupied HUs",
+      "arcgis_field": "OWNER_CY",
+      "alias": "2025 Owner Occupied Housing Units (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "wrkrs_16+_worked_at_home_acs_5_yr": {
+      "layer_id": 22,
+      "layer_name": "2023 Wrkrs 16+ Worked at Home (ACS 5-Yr)",
+      "arcgis_field": "ACSWRKHOME",
+      "alias": "2023 Workers 16+ Worked at Home (ACS 5-Yr)",
+      "type": "esriFieldTypeDouble"
+    },
+    "unemployment_rate": {
+      "layer_id": 23,
+      "layer_name": "2025 Unemployment Rate",
+      "arcgis_field": "UNEMPRT_CY",
+      "alias": "2025 Unemployment Rate (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "average_household_income": {
+      "layer_id": 24,
+      "layer_name": "2025 Average Household Income",
+      "arcgis_field": "AVGHINC_CY",
+      "alias": "2025 Average Household Income (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "median_household_income": {
+      "layer_id": 25,
+      "layer_name": "2025 Median Household Income",
+      "arcgis_field": "MEDHINC_CY",
+      "alias": "2025 Median Household Income (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "pop_age_25+_grad_professional_degree": {
+      "layer_id": 26,
+      "layer_name": "2025 Pop Age 25+ Grad Professional Degree",
+      "arcgis_field": "GRADDEG_CY",
+      "alias": "2025 Population Age 25+: Graduate/Professional Degree (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "pop_age_25+_bachelor's_degree": {
+      "layer_id": 27,
+      "layer_name": "2025 Pop Age 25+ Bachelor's Degree",
+      "arcgis_field": "BACHDEG_CY",
+      "alias": "2025 Population Age 25+: Bachelor's Degree (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "pop_age_25+_some_college_no_degree": {
+      "layer_id": 28,
+      "layer_name": "2025 Pop Age 25+ Some College No Degree",
+      "arcgis_field": "SMCOLL_CY",
+      "alias": "2025 Population Age 25+: Some College/No Degree (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "pop_age_25+_high_school_diploma": {
+      "layer_id": 29,
+      "layer_name": "2025 Pop Age 25+ High School Diploma",
+      "arcgis_field": "HSGRAD_CY",
+      "alias": "2025 Population Age 25+: High School Diploma (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "educational_attainment_base": {
+      "layer_id": 30,
+      "layer_name": "2025 Educational Attainment Base",
+      "arcgis_field": "EDUCBASECY",
+      "alias": "2025 Educational Attainment Base (Pop 25+)(Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_used_x_formerly_twitter": {
+      "layer_id": 31,
+      "layer_name": "2025 Social Media Used X (formerly Twitter)",
+      "arcgis_field": "MP19054A_B",
+      "alias": "2025 Social Media: Used X (formerly Twitter) Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_used_linkedin_30_days": {
+      "layer_id": 32,
+      "layer_name": "2025 Social Media Used LinkedIn 30 Days",
+      "arcgis_field": "MP19050A_B",
+      "alias": "2025 Social Media: Used LinkedIn Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_find_local_info_very_important": {
+      "layer_id": 33,
+      "layer_name": "2025 Social Media Find Local Info Very Important",
+      "arcgis_field": "MP19117A_B",
+      "alias": "2025 Social Media: Find Local Information Very Important",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_used_youtube_30_days": {
+      "layer_id": 34,
+      "layer_name": "2025 Social Media Used YouTube 30 Days",
+      "arcgis_field": "MP19055A_B",
+      "alias": "2025 Social Media: Used YouTube Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_used_instagram_30_days": {
+      "layer_id": 35,
+      "layer_name": "2025 Social Media Used Instagram 30 Days",
+      "arcgis_field": "MP19126A_B",
+      "alias": "2025 Social Media: Used Instagram Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_used_facebook_30_days": {
+      "layer_id": 36,
+      "layer_name": "2025 Social Media Used Facebook 30 Days",
+      "arcgis_field": "MP19049A_B",
+      "alias": "2025 Social Media: Used Facebook Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_used_reddit_30_days": {
+      "layer_id": 37,
+      "layer_name": "2025 Social Media Used Reddit 30 Days",
+      "arcgis_field": "MP19140A_B",
+      "alias": "2025 Social Media: Used Reddit Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_follow_newspapers": {
+      "layer_id": 38,
+      "layer_name": "2025 Social Media Follow Newspapers",
+      "arcgis_field": "MP19166A_B",
+      "alias": "2025 Social Media: Follow Newspapers",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_is_primary_news_source": {
+      "layer_id": 39,
+      "layer_name": "2025 Social Media is Primary News Source",
+      "arcgis_field": "MP28763A_B",
+      "alias": "2025 Social Media Is My Primary News Source: 4-Agree Completely",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_track_news_events_very_important": {
+      "layer_id": 40,
+      "layer_name": "2025 Social Media Track News Events Very Important",
+      "arcgis_field": "MP19115A_B",
+      "alias": "2025 Social Media: Track News/Events Very Important",
+      "type": "esriFieldTypeDouble"
+    },
+    "listened_to_news_current_events_podcast": {
+      "layer_id": 41,
+      "layer_name": "2025 Listened to News Current Events Podcast",
+      "arcgis_field": "MP22107A_B",
+      "alias": "2025 Listened to News/Current Events Podcast Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "radio_keeps_me_informed": {
+      "layer_id": 42,
+      "layer_name": "2025 Radio Keeps Me Informed",
+      "arcgis_field": "MP28745A_B",
+      "alias": "2025 Radio Keeps Me Informed",
+      "type": "esriFieldTypeDouble"
+    },
+    "listen_to_public_radio_format": {
+      "layer_id": 43,
+      "layer_name": "2025 Listen to Public Radio Format",
+      "arcgis_field": "MP22021A_B",
+      "alias": "2025 Listen to Public Radio Format",
+      "type": "esriFieldTypeDouble"
+    },
+    "listen_to_news_or_talk_radio_format": {
+      "layer_id": 44,
+      "layer_name": "2025 Listen to News or Talk Radio Format",
+      "arcgis_field": "MP22019A_B",
+      "alias": "2025 Listen to News or Talk Radio Format",
+      "type": "esriFieldTypeDouble"
+    },
+    "listen_to_all_news_radio_format": {
+      "layer_id": 45,
+      "layer_name": "2025 Listen to All News Radio Format",
+      "arcgis_field": "MP22009A_B",
+      "alias": "2025 Listen to All News Radio Format",
+      "type": "esriFieldTypeDouble"
+    },
+    "newspapers_keep_me_informed": {
+      "layer_id": 46,
+      "layer_name": "2025 Newspapers Keep Me Informed",
+      "arcgis_field": "MP28726A_B",
+      "alias": "2025 Newspapers Keep Me Informed",
+      "type": "esriFieldTypeDouble"
+    },
+    "read_digital_newspaper_30_days": {
+      "layer_id": 47,
+      "layer_name": "2025 Read Digital Newspaper 30 Days",
+      "arcgis_field": "MP21053A_B",
+      "alias": "2025 Read Digital Newspaper Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "read_daily_newspaper_paper_version": {
+      "layer_id": 48,
+      "layer_name": "2025 Read Daily Newspaper (Paper Version)",
+      "arcgis_field": "MP21023A_B",
+      "alias": "2025 Read Daily Newspaper (Paper Version)",
+      "type": "esriFieldTypeDouble"
+    },
+    "read_news_entrtnmt_magazine_hard_copy": {
+      "layer_id": 49,
+      "layer_name": "2025 Read News Entrtnmt Magazine (Hard Copy)",
+      "arcgis_field": "MP21016A_B",
+      "alias": "2025 Read News and Entertainment Magazine (Hard Copy) Last 6 Mo",
+      "type": "esriFieldTypeDouble"
+    },
+    "read_international_or_national_news_in_newspaper": {
+      "layer_id": 50,
+      "layer_name": "2025 Read International or National News in Newspaper",
+      "arcgis_field": "MP21031A_B",
+      "alias": "2025 Read International or National News in Newspaper",
+      "type": "esriFieldTypeDouble"
+    },
+    "read_local_news_in_newspaper": {
+      "layer_id": 51,
+      "layer_name": "2025 Read Local News in Newspaper",
+      "arcgis_field": "MP21032A_B",
+      "alias": "2025 Read Local News in Newspaper",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_huffpost_news_website_or_app_30_days": {
+      "layer_id": 52,
+      "layer_name": "2025 Used HuffPost News Website or App 30 Days",
+      "arcgis_field": "MP19123A_B",
+      "alias": "2025 Used HuffPost News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "read_main_news_or_front_page_in_newspaper": {
+      "layer_id": 53,
+      "layer_name": "2025 Read Main News or Front Page in Newspaper",
+      "arcgis_field": "MP21030A_B",
+      "alias": "2025 Read Main News or Front Page in Newspaper",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_bbc_news_website_or_app_30_days": {
+      "layer_id": 54,
+      "layer_name": "2025 Used BBC News Website or App 30 Days",
+      "arcgis_field": "MP19122A_B",
+      "alias": "2025 Used BBC News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_abc_news_website_or_app_30_days": {
+      "layer_id": 55,
+      "layer_name": "2025 Used ABC News Website or App 30 Days",
+      "arcgis_field": "MP19060A_B",
+      "alias": "2025 Used ABC News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_nbc_news_website_or_app_30_days": {
+      "layer_id": 56,
+      "layer_name": "2025 Used NBC News Website or App 30 Days",
+      "arcgis_field": "MP19064A_B",
+      "alias": "2025 Used NBC News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_cbs_news_website_or_app_30_days": {
+      "layer_id": 57,
+      "layer_name": "2025 Used CBS News Website or App 30 Days",
+      "arcgis_field": "MP19061A_B",
+      "alias": "2025 Used CBS News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_fox_news_website_or_app_30_days": {
+      "layer_id": 58,
+      "layer_name": "2025 Used Fox News Website or App 30 Days",
+      "arcgis_field": "MP19063A_B",
+      "alias": "2025 Used Fox News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_yahoo_news_website_or_app_30_days": {
+      "layer_id": 59,
+      "layer_name": "2025 Used Yahoo News Website or App 30 Days",
+      "arcgis_field": "MP19065A_B",
+      "alias": "2025 Used Yahoo! News Website or App Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "used_internet_for_latest_news_30_days": {
+      "layer_id": 60,
+      "layer_name": "2025 Used Internet for Latest News 30 Days",
+      "arcgis_field": "MP19029A_B",
+      "alias": "2025 Used Internet for Latest News Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "watched_newsnation_last_wk": {
+      "layer_id": 61,
+      "layer_name": "2025 Watched NewsNation Last Wk",
+      "arcgis_field": "MP23113A_B",
+      "alias": "2025 Watched NewsNation Last Week",
+      "type": "esriFieldTypeDouble"
+    },
+    "watched_cnn_cable_news_network_last_week": {
+      "layer_id": 62,
+      "layer_name": "2025 Watched CNN (Cable News Network) Last Week",
+      "arcgis_field": "MP23049A_B",
+      "alias": "2025 Watched CNN (Cable News Network) Last Week",
+      "type": "esriFieldTypeDouble"
+    },
+    "watched_msnbc_last_wk": {
+      "layer_id": 63,
+      "layer_name": "2025 Watched MSNBC Last Wk",
+      "arcgis_field": "MP23078A_B",
+      "alias": "2025 Watched MSNBC Last Week",
+      "type": "esriFieldTypeDouble"
+    },
+    "watched_bbc_news_last_wk": {
+      "layer_id": 64,
+      "layer_name": "2025 Watched BBC News Last Wk",
+      "arcgis_field": "MP23146A_B",
+      "alias": "2025 Watched BBC News Last Week",
+      "type": "esriFieldTypeDouble"
+    },
+    "watched_fox_news_channel_last_wk": {
+      "layer_id": 65,
+      "layer_name": "2025 Watched Fox News Channel Last Wk",
+      "arcgis_field": "MP23061A_B",
+      "alias": "2025 Watched Fox News Channel Last Week",
+      "type": "esriFieldTypeDouble"
+    },
+    "watched_newsmax_tv_last_wk": {
+      "layer_id": 66,
+      "layer_name": "2025 Watched Newsmax TV Last Wk",
+      "arcgis_field": "MP23231A_B",
+      "alias": "2025 Watched Newsmax TV Last Week",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_sunday_news_or_interview_program": {
+      "layer_id": 67,
+      "layer_name": "2025 Watch Sunday News or Interview Program",
+      "arcgis_field": "MP23036A_B",
+      "alias": "2025 Watch Sunday News or Interview Programs on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_early_evening_local_news_mon_fri": {
+      "layer_id": 68,
+      "layer_name": "2025 Watch Early Evening Local News (Mon-Fri)",
+      "arcgis_field": "MP23144A_B",
+      "alias": "2025 Watch Early Evening Local News (Mon-Fri) on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_late_evening_local_news_mon_fri": {
+      "layer_id": 69,
+      "layer_name": "2025 Watch Late Evening Local News (Mon-Fri)",
+      "arcgis_field": "MP23145A_B",
+      "alias": "2025 Watch Late Evening Local News (Mon-Fri) on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_late_night_network_news_mon_fri": {
+      "layer_id": 70,
+      "layer_name": "2025 Watch Late Night Network News (Mon-Fri)",
+      "arcgis_field": "MP23215A_B",
+      "alias": "2025 Watch Late Night Network News (Mon-Fri) on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_early_evening_network_news_mon_fri": {
+      "layer_id": 71,
+      "layer_name": "2025 Watch Early Evening Network News (Mon-Fri)",
+      "arcgis_field": "MP23026A_B",
+      "alias": "2025 Watch Early Evening Network News (Mon-Fri) on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_early_morning_local_news_mon_fri": {
+      "layer_id": 72,
+      "layer_name": "2025 Watch Early Morning Local News (Mon-Fri)",
+      "arcgis_field": "MP23214A_B",
+      "alias": "2025 Watch Early Morning Local News (Mon-Fri) on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_early_morning_talk_info_news": {
+      "layer_id": 73,
+      "layer_name": "2025 Watch Early Morning Talk Info News",
+      "arcgis_field": "MP23029A_B",
+      "alias": "2025 Watch Early Morning Talk/Informational/News on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_early_evening_network_news": {
+      "layer_id": 74,
+      "layer_name": "2025 Watch Early Evening Network News",
+      "arcgis_field": "MP23027A_B",
+      "alias": "2025 Watch Early Evening Network News (Weekend) on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_early_morning_news_on_tv": {
+      "layer_id": 75,
+      "layer_name": "2025 Watch Early Morning News on TV",
+      "arcgis_field": "MP23028A_B",
+      "alias": "2025 Watch Early Morning News on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "watch_news_specials_on_tv": {
+      "layer_id": 76,
+      "layer_name": "2025 Watch News Specials on TV",
+      "arcgis_field": "MP23033A_B",
+      "alias": "2025 Watch News Specials on TV",
+      "type": "esriFieldTypeDouble"
+    },
+    "attend_religious_services_regularly": {
+      "layer_id": 77,
+      "layer_name": "2025 Attend Religious Services Regularly",
+      "arcgis_field": "MP28099A_B",
+      "alias": "2025 Attend Religious Services Regularly: 4-Agree Completely",
+      "type": "esriFieldTypeDouble"
+    },
+    "participated_in_public_activity_12_mo": {
+      "layer_id": 78,
+      "layer_name": "2025 Participated in Public Activity 12 Mo",
+      "arcgis_field": "MP06001A_B",
+      "alias": "2025 Participated in Public Activity Last 12 Mo",
+      "type": "esriFieldTypeDouble"
+    },
+    "cash_gifts_to_charities": {
+      "layer_id": 79,
+      "layer_name": "2025 Cash Gifts to Charities",
+      "arcgis_field": "X12021_X",
+      "alias": "2025 Cash Gifts to Charities",
+      "type": "esriFieldTypeDouble"
+    },
+    "volunteered_for_charitable_org_12_mo": {
+      "layer_id": 80,
+      "layer_name": "2025 Volunteered for Charitable Org 12 Mo",
+      "arcgis_field": "MP06005A_B",
+      "alias": "2025 Volunteered for Charitable Organization Last 12 Mo",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_follow_political_groups_2": {
+      "layer_id": 81,
+      "layer_name": "2025 Social Media Follow Political Groups 2",
+      "arcgis_field": "MP19168A_B",
+      "alias": "2025 Social Media: Follow Political Groups",
+      "type": "esriFieldTypeDouble"
+    },
+    "social_media_follow_politicians_2": {
+      "layer_id": 82,
+      "layer_name": "2025 Social Media Follow Politicians 2",
+      "arcgis_field": "MP19169A_B",
+      "alias": "2025 Social Media: Follow Politicians",
+      "type": "esriFieldTypeDouble"
+    },
+    "wrote_or_called_a_politician_12_mo": {
+      "layer_id": 83,
+      "layer_name": "2025 Wrote or Called a Politician 12 Mo",
+      "arcgis_field": "MP06009A_B",
+      "alias": "2025 Wrote or Called a Politician Last 12 Mo",
+      "type": "esriFieldTypeDouble"
+    },
+    "cash_gifts_to_political_orgs": {
+      "layer_id": 84,
+      "layer_name": "2025 Cash Gifts to Political Orgs",
+      "arcgis_field": "X12024_X",
+      "alias": "2025 Cash Gifts to Political Organizations",
+      "type": "esriFieldTypeDouble"
+    },
+    "contributed_to_political_org_12_mo": {
+      "layer_id": 85,
+      "layer_name": "2025 Contributed to Political Org 12 Mo",
+      "arcgis_field": "MP06021A_B",
+      "alias": "2025 Contributed to Political Organization Last 12 Mo",
+      "type": "esriFieldTypeDouble"
+    },
+    "listened_to_politics_podcast_30_days_2": {
+      "layer_id": 86,
+      "layer_name": "2025 Listened to Politics Podcast 30 Days 2",
+      "arcgis_field": "MP22108A_B",
+      "alias": "2025 Listened to Politics Podcast Last 30 Days",
+      "type": "esriFieldTypeDouble"
+    },
+    "middle_of_the_road_political_outlook": {
+      "layer_id": 87,
+      "layer_name": "2025 Middle of the Road Political Outlook",
+      "arcgis_field": "MP06029A_B",
+      "alias": "2025 Middle of the Road Political Outlook",
+      "type": "esriFieldTypeDouble"
+    },
+    "very_conservative_political_outlook": {
+      "layer_id": 88,
+      "layer_name": "2025 Very Conservative Political Outlook",
+      "arcgis_field": "MP06027A_B",
+      "alias": "2025 Very Conservative Political Outlook",
+      "type": "esriFieldTypeDouble"
+    },
+    "somewhat_conservative_political_outlook": {
+      "layer_id": 89,
+      "layer_name": "2025 Somewhat Conservative Political Outlook",
+      "arcgis_field": "MP06028A_B",
+      "alias": "2025 Somewhat Conservative Political Outlook",
+      "type": "esriFieldTypeDouble"
+    },
+    "very_liberal_political_outlook": {
+      "layer_id": 90,
+      "layer_name": "2025 Very Liberal Political Outlook",
+      "arcgis_field": "MP06031A_B",
+      "alias": "2025 Very Liberal Political Outlook",
+      "type": "esriFieldTypeDouble"
+    },
+    "somewhat_liberal_political_outlook": {
+      "layer_id": 91,
+      "layer_name": "2025 Somewhat Liberal Political Outlook",
+      "arcgis_field": "MP06030A_B",
+      "alias": "2025 Somewhat Liberal Political Outlook",
+      "type": "esriFieldTypeDouble"
+    },
+    "affiliated_w_independent_no_political_party": {
+      "layer_id": 92,
+      "layer_name": "2025 Affiliated w Independent No Political Party",
+      "arcgis_field": "MP06026A_B",
+      "alias": "2025 Affiliated with Independent or No Political Party",
+      "type": "esriFieldTypeDouble"
+    },
+    "affiliated_w_republican_political_party_2": {
+      "layer_id": 93,
+      "layer_name": "2025 Affiliated w Republican Political Party 2",
+      "arcgis_field": "MP06025A_B",
+      "alias": "2025 Affiliated with Republican Political Party",
+      "type": "esriFieldTypeDouble"
+    },
+    "affiliated_w_democratic_political_party_2": {
+      "layer_id": 94,
+      "layer_name": "2025 Affiliated w Democratic Political Party 2",
+      "arcgis_field": "MP06024A_B",
+      "alias": "2025 Affiliated with Democratic Political Party",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_85up": {
+      "layer_id": 95,
+      "layer_name": "2025 Ages 85up",
+      "arcgis_field": "IQF0UJ91B7QN",
+      "alias": "2025 Both Ages 85+",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_75_to_84": {
+      "layer_id": 96,
+      "layer_name": "2025 Ages 75 to 84",
+      "arcgis_field": "ZYMFA88IVE1O",
+      "alias": "2025 Both Ages 75 to 84",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_65_to_74": {
+      "layer_id": 97,
+      "layer_name": "2025 Ages 65 to 74",
+      "arcgis_field": "XOIF89L1HYBU",
+      "alias": "2025 Both Ages 65 to 74",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_55_to_64": {
+      "layer_id": 98,
+      "layer_name": "2025 Ages 55 to 64",
+      "arcgis_field": "11EECWM23TA0",
+      "alias": "2025 Both Ages 55 to 64",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_45_to_54": {
+      "layer_id": 99,
+      "layer_name": "2025 Ages 45 to 54",
+      "arcgis_field": "3J120QWY5PSF",
+      "alias": "2025 Both Ages 45 to 54",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_35_to_44": {
+      "layer_id": 100,
+      "layer_name": "2025 Ages 35 to 44",
+      "arcgis_field": "KJSY5EMNQEKX",
+      "alias": "2025 Both Ages 35 to 44",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_25_to_34": {
+      "layer_id": 101,
+      "layer_name": "2025 Ages 25 to 34",
+      "arcgis_field": "GOS0ZXXQ8RNK",
+      "alias": "2025 Both Ages 25 to 34",
+      "type": "esriFieldTypeDouble"
+    },
+    "ages_18_to_24": {
+      "layer_id": 102,
+      "layer_name": "2025 Ages 18 to 24",
+      "arcgis_field": "VTQKSHBJ7GT8",
+      "alias": "2025 Both Ages 18 to 24",
+      "type": "esriFieldTypeDouble"
+    },
+    "median_age": {
+      "layer_id": 104,
+      "layer_name": "2025 Median Age",
+      "arcgis_field": "MEDAGE_CY",
+      "alias": "2025 Median Age (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "total_population": {
+      "layer_id": 106,
+      "layer_name": "2025 Total Population",
+      "arcgis_field": "TOTPOP_CY",
+      "alias": "2025 Total Population (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "population_density": {
+      "layer_id": 107,
+      "layer_name": "2025 Population Density",
+      "arcgis_field": "POPDENS_CY",
+      "alias": "2025 Population Density (Pop per Square Mile) (Esri)",
+      "type": "esriFieldTypeDouble"
+    },
+    "population_age_18up": {
+      "layer_id": 109,
+      "layer_name": "2025 Population Age 18up",
+      "arcgis_field": "POP18UP_CY",
+      "alias": "2025 Total Population Age 18+ (Esri)",
+      "type": "esriFieldTypeDouble"
+    }
+  }
+}

@@ -1,0 +1,125 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import Map from '@arcgis/core/Map';
+import MapView from '@arcgis/core/views/MapView';
+import LayerController from '../LayerController';
+import { layers } from '../../../config/layers';
+import '@testing-library/jest-dom';
+
+// Mock the ArcGIS Map and MapView
+jest.mock('@arcgis/core/Map', () => {
+  return jest.fn().mockImplementation(() => ({
+    add: jest.fn(),
+    remove: jest.fn(),
+    layers: {
+      toArray: jest.fn().mockReturnValue([])
+    }
+  }));
+});
+
+jest.mock('@arcgis/core/views/MapView', () => {
+  return jest.fn().mockImplementation(() => ({
+    map: {
+      add: jest.fn(),
+      remove: jest.fn(),
+      layers: {
+        toArray: jest.fn().mockReturnValue([])
+      }
+    }
+  }));
+});
+
+describe('LayerController', () => {
+  let mockView: MapView;
+  let mockMap: Map;
+
+  beforeEach(() => {
+    // Create fresh instances for each test
+    mockMap = new Map();
+    mockView = new MapView({
+      map: mockMap
+    });
+  });
+
+  it('should toggle layer visibility when switch is clicked', async () => {
+    // Find the demographics layer config
+    const demographicsLayer = projectLayerConfig.groups
+      .find(group => group.id === 'demographics-group')
+      ?.layers?.find(layer => layer.id === 'demographics');
+
+    if (!demographicsLayer) {
+      throw new Error('Demographics layer not found in config');
+    }
+
+    // Render the LayerController
+    render(
+      <LayerController
+        view={mockView}
+        config={projectLayerConfig}
+        visible={true}
+        onLayerStatesChange={() => {}}
+      />
+    );
+
+    // Wait for the layer to be loaded
+    const layerSwitch = await screen.findByRole('switch', { name: demographicsLayer.name }) as HTMLInputElement;
+    
+    // Initial state should be visible (based on config)
+    expect(layerSwitch.checked).toBe(true);
+
+    // Click the switch to toggle visibility
+    fireEvent.click(layerSwitch);
+
+    // Layer should now be hidden
+    expect(layerSwitch.checked).toBe(false);
+
+    // Verify the layer's visibility was updated in the map
+    const layer = mockView.map.layers.toArray().find((l: any) => l.id === demographicsLayer.id);
+    expect(layer?.visible).toBe(false);
+
+    // Toggle back to visible
+    fireEvent.click(layerSwitch);
+    expect(layerSwitch.checked).toBe(true);
+    expect(layer?.visible).toBe(true);
+  });
+
+  it('should persist layer visibility state between renders', async () => {
+    const demographicsLayer = projectLayerConfig.groups
+      .find(group => group.id === 'demographics-group')
+      ?.layers?.find(layer => layer.id === 'demographics');
+
+    if (!demographicsLayer) {
+      throw new Error('Demographics layer not found in config');
+    }
+
+    // First render
+    const { rerender } = render(
+      <LayerController
+        view={mockView}
+        config={projectLayerConfig}
+        visible={true}
+        onLayerStatesChange={() => {}}
+      />
+    );
+
+    // Wait for the layer to be loaded
+    const layerSwitch = await screen.findByRole('switch', { name: demographicsLayer.name }) as HTMLInputElement;
+    
+    // Toggle visibility
+    fireEvent.click(layerSwitch);
+    expect(layerSwitch.checked).toBe(false);
+
+    // Re-render the component
+    rerender(
+      <LayerController
+        view={mockView}
+        config={projectLayerConfig}
+        visible={true}
+        onLayerStatesChange={() => {}}
+      />
+    );
+
+    // Layer should maintain its hidden state
+    const rerenderedSwitch = await screen.findByRole('switch', { name: demographicsLayer.name }) as HTMLInputElement;
+    expect(rerenderedSwitch.checked).toBe(false);
+  });
+}); 

@@ -1,0 +1,7 @@
+{
+  "target": "time_on_market",
+  "algorithm": "xgboost",
+  "trained_at": "2025-09-28T18:07:55.212Z",
+  "feature_count": 23,
+  "training_samples": 12391
+}

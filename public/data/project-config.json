@@ -1,0 +1,19 @@
+{
+  "totalLocations": 15632,
+  "totalZipCodes": 41000,
+  "dataLayers": 24,
+  "lastUpdated": "2025-08-28",
+  "coverageArea": "United States",
+  "primaryIndustry": "Energy Drink Market",
+  "totalRecords": 742000,
+  "averageAnalysisTime": 2.3,
+  "popularQueries": [
+    "energy drink sales by demographic",
+    "competitor brand density",
+    "target consumer analysis",
+    "market share analysis",
+    "Red Bull vs Monster market comparison",
+    "young adult consumption patterns",
+    "convenience store placement strategy"
+  ]
+}

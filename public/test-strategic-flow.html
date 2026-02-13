@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Strategic Analysis Flow Test</title>
+</head>
+<body>
+    <h1>Strategic Analysis Flow Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        console.log('=== Testing Strategic Analysis Flow ===');
+        
+        // Test 1: Check if strategic-analysis.json has distinct values
+        async function testDataFile() {
+            try {
+                const response = await fetch('/data/endpoints/strategic-analysis.json');
+                const data = await response.json();
+                
+                console.log('1. Strategic analysis data file test:');
+                console.log(`   Records: ${data.results.length}`);
+                
+                const first5Values = data.results.slice(0, 5).map(r => r.strategic_value_score);
+                const uniqueValues = [...new Set(first5Values)];
+                
+                console.log(`   First 5 strategic_value_scores: ${first5Values}`);
+                console.log(`   Unique values: ${uniqueValues.length}`);
+                
+                if (uniqueValues.length === 1) {
+                    console.log('🚨 PROBLEM: All values identical in data file!');
+                } else {
+                    console.log('✅ Data file has distinct values');
+                }
+                
+                document.getElementById('output').innerHTML += `
+                    <h2>Data File Test</h2>
+                    <p>Records: ${data.results.length}</p>
+                    <p>First 5 values: ${first5Values.join(', ')}</p>
+                    <p>Unique values: ${uniqueValues.length}</p>
+                    <p>Status: ${uniqueValues.length === 1 ? '🚨 PROBLEM' : '✅ OK'}</p>
+                `;
+                
+            } catch (error) {
+                console.error('Data file test failed:', error);
+            }
+        }
+        
+        // Test 2: Test Claude API with correct data
+        async function testClaudeAPI() {
+            try {
+                console.log('2. Testing Claude API with strategic analysis data:');
+                
+                // Create test data that mimics what AnalysisEngine should send
+                const testData = {
+                    type: 'strategic_analysis',
+                    records: [
+                        { area_name: '11234 (Brooklyn)', value: 79.34, properties: { strategic_value_score: 79.34 } },
+                        { area_name: '11385 (Ridgewood)', value: 79.17, properties: { strategic_value_score: 79.17 } },
+                        { area_name: '10314 (Staten Island)', value: 79.12, properties: { strategic_value_score: 79.12 } }
+                    ],
+                    targetVariable: 'strategic_value_score'
+                };
+                
+                const response = await fetch('/api/claude/generate-response', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Show me the top strategic markets for Nike expansion' }],
+                        metadata: { analysisType: 'strategic-analysis' },
+                        featureData: testData
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('   Claude API response received');
+                console.log('   Response contains analysis:', result.content?.includes('strategic'));
+                
+                // Check if Claude preserves precision
+                const has793 = result.content?.includes('79.3');
+                const has7934 = result.content?.includes('79.34');
+                
+                console.log(`   Contains 79.3: ${has793}`);
+                console.log(`   Contains 79.34: ${has7934}`);
+                
+                document.getElementById('output').innerHTML += `
+                    <h2>Claude API Test</h2>
+                    <p>Response received: ${!!result.content}</p>
+                    <p>Contains 79.3: ${has793 ? '🚨 PROBLEM' : '✅ OK'}</p>
+                    <p>Contains 79.34: ${has7934 ? '✅ OK' : '🚨 PROBLEM'}</p>
+                    <div style="max-height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
+                        ${result.content || 'No content'}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Claude API test failed:', error);
+            }
+        }
+        
+        // Run tests
+        testDataFile().then(() => testClaudeAPI());
+    </script>
+</body>
+</html>

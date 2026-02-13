@@ -1,0 +1,316 @@
+{
+  "generated": "2025-11-30T18:43:13.166122",
+  "training_samples": 103,
+  "models": {
+    "model_1_turnout": {
+      "model_name": "Turnout Propensity",
+      "model_type": "GradientBoostingRegressor",
+      "features": [
+        "median_age",
+        "median_household_income",
+        "college_pct",
+        "owner_pct",
+        "political_engagement_index",
+        "dem_affiliation_pct",
+        "rep_affiliation_pct",
+        "population_density",
+        "diversity_index"
+      ],
+      "target": "avg_turnout",
+      "r2_score": 0.514812868175175,
+      "r2_std": 0.2719293769155214,
+      "feature_importance": {
+        "median_age": 0.07647437330146406,
+        "median_household_income": 0.09766861423636038,
+        "college_pct": 0.10504477766440432,
+        "owner_pct": 0.051230959411998865,
+        "political_engagement_index": 0.0,
+        "dem_affiliation_pct": 0.016422915435260185,
+        "rep_affiliation_pct": 0.5653502103362094,
+        "population_density": 0.02390833740300616,
+        "diversity_index": 0.06389981221129666
+      },
+      "model_path": "data/models/model_1_turnout_propensity.joblib",
+      "scaler_path": "data/models/model_1_scaler.joblib"
+    },
+    "model_2_partisan": {
+      "model_name": "Partisan Lean Estimation",
+      "model_type": "GradientBoostingRegressor",
+      "features": [
+        "median_age",
+        "median_household_income",
+        "college_pct",
+        "owner_pct",
+        "diversity_index",
+        "population_density",
+        "liberal_pct",
+        "conservative_pct",
+        "moderate_pct",
+        "dem_affiliation_pct",
+        "rep_affiliation_pct"
+      ],
+      "target": "partisan_lean",
+      "r2_score": 0.7900285427994609,
+      "r2_std": 0.13334909196424255,
+      "feature_importance": {
+        "median_age": 0.009026458270951075,
+        "median_household_income": 0.004311078845425145,
+        "college_pct": 0.07786609075018637,
+        "owner_pct": 0.005494600069051544,
+        "diversity_index": 0.02842796002977738,
+        "population_density": 0.7932195618363845,
+        "liberal_pct": 0.008595232923160065,
+        "conservative_pct": 0.044894229664207315,
+        "moderate_pct": 0.003950576758760862,
+        "dem_affiliation_pct": 0.007493191961328147,
+        "rep_affiliation_pct": 0.016721018890767603
+      },
+      "model_path": "data/models/model_2_partisan_lean.joblib",
+      "scaler_path": "data/models/model_2_scaler.joblib"
+    },
+    "model_3_swing": {
+      "model_name": "Swing Potential Classification",
+      "model_type": "RandomForestClassifier",
+      "features": [
+        "median_age",
+        "college_pct",
+        "owner_pct",
+        "moderate_pct",
+        "ind_affiliation_pct",
+        "diversity_index",
+        "population_density"
+      ],
+      "target": "swing_class",
+      "classes": [
+        "Moderate",
+        "Stable",
+        "Swing"
+      ],
+      "accuracy": 0.5941666666666667,
+      "accuracy_std": 0.12615026313444172,
+      "feature_importance": {
+        "median_age": 0.16693719157110062,
+        "college_pct": 0.14226970538888145,
+        "owner_pct": 0.09129165624472663,
+        "moderate_pct": 0.10784464984817516,
+        "ind_affiliation_pct": 0.15724684067618172,
+        "diversity_index": 0.12384958014785666,
+        "population_density": 0.21056037612307776
+      },
+      "model_path": "data/models/model_3_swing_classification.joblib",
+      "scaler_path": "data/models/model_3_scaler.joblib",
+      "encoder_path": "data/models/model_3_encoder.joblib"
+    },
+    "model_4_gotv": {
+      "model_name": "GOTV Priority Scoring",
+      "model_type": "RandomForestRegressor",
+      "features": [
+        "partisan_lean",
+        "avg_turnout",
+        "population_age_18up",
+        "political_engagement_index",
+        "population_density",
+        "owner_pct",
+        "dem_affiliation_pct",
+        "rep_affiliation_pct"
+      ],
+      "target": "gotv_priority",
+      "r2_score": 0.8791996834307378,
+      "r2_std": 0.02464352429618011,
+      "feature_importance": {
+        "partisan_lean": 0.7370449996243921,
+        "avg_turnout": 0.1595150810196835,
+        "population_age_18up": 0.03813299969702491,
+        "political_engagement_index": 0.0,
+        "population_density": 0.03743270539690075,
+        "owner_pct": 0.012096720355703102,
+        "dem_affiliation_pct": 0.005454893963893835,
+        "rep_affiliation_pct": 0.010322599942401901
+      },
+      "model_path": "data/models/model_4_gotv_priority.joblib",
+      "scaler_path": "data/models/model_4_scaler.joblib"
+    },
+    "model_5_persuadability": {
+      "model_name": "Persuadability Index",
+      "model_type": "GradientBoostingRegressor",
+      "features": [
+        "partisan_lean",
+        "swing_potential",
+        "moderate_pct",
+        "ind_affiliation_pct",
+        "political_engagement_index",
+        "college_pct",
+        "median_household_income"
+      ],
+      "target": "persuasion_opportunity",
+      "r2_score": 0.5441507003641347,
+      "r2_std": 0.2708434835946836,
+      "feature_importance": {
+        "partisan_lean": 0.5758187820074497,
+        "swing_potential": 0.24667093968130252,
+        "moderate_pct": 0.0777475927071156,
+        "ind_affiliation_pct": 0.05211484647428579,
+        "political_engagement_index": 0.0,
+        "college_pct": 0.02893086431307373,
+        "median_household_income": 0.018716974816772612
+      },
+      "model_path": "data/models/model_5_persuadability.joblib",
+      "scaler_path": "data/models/model_5_scaler.joblib"
+    },
+    "model_6_forecast": {
+      "model_name": "Election Outcome Forecasting",
+      "model_type": "GradientBoostingRegressor",
+      "features": [
+        "median_age",
+        "median_household_income",
+        "college_pct",
+        "diversity_index",
+        "owner_pct",
+        "population_density",
+        "dem_affiliation_pct",
+        "rep_affiliation_pct",
+        "liberal_pct",
+        "conservative_pct",
+        "political_engagement_index",
+        "avg_turnout"
+      ],
+      "target": "predicted_margin",
+      "r2_score": 0.7722899816997325,
+      "r2_std": 0.13513032675652875,
+      "mae_margin_points": 0.0018088866535636529,
+      "feature_importance": {
+        "median_age": 0.00425187936987549,
+        "median_household_income": 0.0038232007046812093,
+        "college_pct": 0.08175294796851662,
+        "diversity_index": 0.029470651391746216,
+        "owner_pct": 0.0026256662495625243,
+        "population_density": 0.7889473463335843,
+        "dem_affiliation_pct": 0.0066730046129088475,
+        "rep_affiliation_pct": 0.013647897189890925,
+        "liberal_pct": 0.007098289310489734,
+        "conservative_pct": 0.05987526020251998,
+        "political_engagement_index": 0.0,
+        "avg_turnout": 0.0018338566662241818
+      },
+      "model_path": "data/models/model_6_outcome_forecast.joblib",
+      "scaler_path": "data/models/model_6_scaler.joblib",
+      "note": "Predicts D-R margin; convert to vote share via (50 + margin/2)"
+    },
+    "model_7_media": {
+      "model_name": "Media Outreach Optimization",
+      "model_type": "KMeans Clustering",
+      "features": [
+        "watched_fox_news",
+        "watched_cnn",
+        "watched_msnbc",
+        "sm_facebook",
+        "sm_instagram",
+        "radio_public",
+        "radio_talk",
+        "median_age",
+        "college_pct",
+        "partisan_lean"
+      ],
+      "n_clusters": 5,
+      "cluster_profiles": [
+        {
+          "cluster_id": 0,
+          "size": 21,
+          "avg_partisan_lean": 24.87222222222222,
+          "avg_watched_fox_news": 276.76190476190476,
+          "avg_watched_cnn": 278.2857142857143,
+          "avg_watched_msnbc": 191.1904761904762,
+          "avg_sm_facebook": 934.8095238095239,
+          "avg_sm_instagram": 619.8095238095239,
+          "avg_radio_public": 44.19047619047619,
+          "avg_radio_talk": 158.42857142857142,
+          "recommendations": [
+            "CNN advertising",
+            "MSNBC advertising",
+            "Facebook targeted ads",
+            "Instagram campaigns",
+            "NPR sponsorships"
+          ]
+        },
+        {
+          "cluster_id": 1,
+          "size": 31,
+          "avg_partisan_lean": -2.4982608695652178,
+          "avg_watched_fox_news": 205.61290322580646,
+          "avg_watched_cnn": 160.58064516129033,
+          "avg_watched_msnbc": 114.2258064516129,
+          "avg_sm_facebook": 667.8064516129032,
+          "avg_sm_instagram": 352.80645161290323,
+          "avg_radio_public": 21.258064516129032,
+          "avg_radio_talk": 98.25806451612904,
+          "recommendations": [
+            "FOX News advertising",
+            "MSNBC advertising",
+            "Facebook targeted ads",
+            "Instagram campaigns",
+            "NPR sponsorships"
+          ]
+        },
+        {
+          "cluster_id": 2,
+          "size": 3,
+          "avg_partisan_lean": 24.87,
+          "avg_watched_fox_news": 569.6666666666666,
+          "avg_watched_cnn": 553.6666666666666,
+          "avg_watched_msnbc": 382.6666666666667,
+          "avg_sm_facebook": 2068.6666666666665,
+          "avg_sm_instagram": 1197.3333333333333,
+          "avg_radio_public": 51.666666666666664,
+          "avg_radio_talk": 247.0,
+          "recommendations": [
+            "FOX News advertising",
+            "MSNBC advertising",
+            "Facebook targeted ads",
+            "Instagram campaigns",
+            "NPR sponsorships"
+          ]
+        },
+        {
+          "cluster_id": 3,
+          "size": 17,
+          "avg_partisan_lean": 56.699999999999996,
+          "avg_watched_fox_news": 95.52941176470588,
+          "avg_watched_cnn": 152.05882352941177,
+          "avg_watched_msnbc": 68.76470588235294,
+          "avg_sm_facebook": 736.3529411764706,
+          "avg_sm_instagram": 754.9411764705883,
+          "avg_radio_public": 26.58823529411765,
+          "avg_radio_talk": 53.529411764705884,
+          "recommendations": [
+            "CNN advertising",
+            "MSNBC advertising",
+            "Facebook targeted ads",
+            "Instagram campaigns",
+            "NPR sponsorships"
+          ]
+        },
+        {
+          "cluster_id": 4,
+          "size": 31,
+          "avg_partisan_lean": 49.798571428571435,
+          "avg_watched_fox_news": 109.54838709677419,
+          "avg_watched_cnn": 119.2258064516129,
+          "avg_watched_msnbc": 77.09677419354838,
+          "avg_sm_facebook": 494.5806451612903,
+          "avg_sm_instagram": 287.7096774193548,
+          "avg_radio_public": 12.67741935483871,
+          "avg_radio_talk": 49.38709677419355,
+          "recommendations": [
+            "CNN advertising",
+            "MSNBC advertising",
+            "Facebook targeted ads",
+            "Instagram campaigns",
+            "NPR sponsorships"
+          ]
+        }
+      ],
+      "model_path": "data/models/model_7_media_outreach.joblib",
+      "scaler_path": "data/models/model_7_scaler.joblib"
+    }
+  }
+}

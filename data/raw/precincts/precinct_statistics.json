@@ -1,0 +1,121 @@
+{
+  "total_precincts": 103,
+  "total_registered": 215483,
+  "total_active": 180367,
+  "jurisdictions": [
+    {
+      "name": "Alaiedon",
+      "precincts": 2,
+      "registered": 2512,
+      "active": 2288
+    },
+    {
+      "name": "Aurelius",
+      "precincts": 2,
+      "registered": 3541,
+      "active": 3218
+    },
+    {
+      "name": "Bunker Hill",
+      "precincts": 1,
+      "registered": 1648,
+      "active": 1453
+    },
+    {
+      "name": "Delhi",
+      "precincts": 9,
+      "registered": 23169,
+      "active": 20637
+    },
+    {
+      "name": "East Lansing",
+      "precincts": 16,
+      "registered": 20936,
+      "active": 15338
+    },
+    {
+      "name": "Ingham",
+      "precincts": 1,
+      "registered": 2093,
+      "active": 1882
+    },
+    {
+      "name": "Lansing",
+      "precincts": 36,
+      "registered": 94498,
+      "active": 76268
+    },
+    {
+      "name": "Leroy",
+      "precincts": 1,
+      "registered": 2984,
+      "active": 2766
+    },
+    {
+      "name": "Leslie",
+      "precincts": 2,
+      "registered": 3442,
+      "active": 2997
+    },
+    {
+      "name": "Locke",
+      "precincts": 1,
+      "registered": 1567,
+      "active": 1424
+    },
+    {
+      "name": "Mason",
+      "precincts": 2,
+      "registered": 6366,
+      "active": 5724
+    },
+    {
+      "name": "Meridian",
+      "precincts": 22,
+      "registered": 33759,
+      "active": 29311
+    },
+    {
+      "name": "Onondaga",
+      "precincts": 1,
+      "registered": 2480,
+      "active": 2198
+    },
+    {
+      "name": "Stockbridge",
+      "precincts": 1,
+      "registered": 3209,
+      "active": 2845
+    },
+    {
+      "name": "Vevay",
+      "precincts": 1,
+      "registered": 3119,
+      "active": 2796
+    },
+    {
+      "name": "Wheatfield",
+      "precincts": 1,
+      "registered": 1381,
+      "active": 1275
+    },
+    {
+      "name": "White Oak",
+      "precincts": 1,
+      "registered": 1025,
+      "active": 924
+    },
+    {
+      "name": "Williamston",
+      "precincts": 1,
+      "registered": 3156,
+      "active": 2879
+    },
+    {
+      "name": "Williamstown",
+      "precincts": 2,
+      "registered": 4598,
+      "active": 4144
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+export const DEFAULT_FILL_ALPHA = 0.6; 

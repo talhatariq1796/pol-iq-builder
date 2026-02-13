@@ -1,0 +1,341 @@
+[
+  {
+    "precinctId": "east-lansing-1",
+    "dominantSegment": "14B",
+    "dominantPct": 78.5,
+    "secondarySegment": "3A",
+    "secondaryPct": 12.3,
+    "diversityScore": 1.4,
+    "allSegments": [
+      { "code": "14B", "pct": 78.5 },
+      { "code": "3A", "pct": 12.3 },
+      { "code": "8A", "pct": 9.2 }
+    ]
+  },
+  {
+    "precinctId": "east-lansing-2",
+    "dominantSegment": "14B",
+    "dominantPct": 82.1,
+    "secondarySegment": "3B",
+    "secondaryPct": 10.8,
+    "diversityScore": 1.3,
+    "allSegments": [
+      { "code": "14B", "pct": 82.1 },
+      { "code": "3B", "pct": 10.8 },
+      { "code": "8A", "pct": 7.1 }
+    ]
+  },
+  {
+    "precinctId": "east-lansing-3",
+    "dominantSegment": "14B",
+    "dominantPct": 75.2,
+    "secondarySegment": "3A",
+    "secondaryPct": 15.4,
+    "diversityScore": 1.5,
+    "allSegments": [
+      { "code": "14B", "pct": 75.2 },
+      { "code": "3A", "pct": 15.4 },
+      { "code": "8A", "pct": 9.4 }
+    ]
+  },
+  {
+    "precinctId": "lansing-downtown-1",
+    "dominantSegment": "8D",
+    "dominantPct": 52.3,
+    "secondarySegment": "3B",
+    "secondaryPct": 28.5,
+    "diversityScore": 2.1,
+    "allSegments": [
+      { "code": "8D", "pct": 52.3 },
+      { "code": "3B", "pct": 28.5 },
+      { "code": "7A", "pct": 12.2 },
+      { "code": "8A", "pct": 7.0 }
+    ]
+  },
+  {
+    "precinctId": "lansing-downtown-2",
+    "dominantSegment": "8D",
+    "dominantPct": 48.7,
+    "secondarySegment": "3B",
+    "secondaryPct": 32.4,
+    "diversityScore": 2.3,
+    "allSegments": [
+      { "code": "8D", "pct": 48.7 },
+      { "code": "3B", "pct": 32.4 },
+      { "code": "8A", "pct": 18.9 }
+    ]
+  },
+  {
+    "precinctId": "lansing-north-1",
+    "dominantSegment": "5D",
+    "dominantPct": 58.2,
+    "secondarySegment": "8D",
+    "secondaryPct": 24.5,
+    "diversityScore": 1.9,
+    "allSegments": [
+      { "code": "5D", "pct": 58.2 },
+      { "code": "8D", "pct": 24.5 },
+      { "code": "12A", "pct": 17.3 }
+    ]
+  },
+  {
+    "precinctId": "lansing-south-1",
+    "dominantSegment": "7A",
+    "dominantPct": 62.4,
+    "secondarySegment": "5D",
+    "secondaryPct": 22.8,
+    "diversityScore": 1.8,
+    "allSegments": [
+      { "code": "7A", "pct": 62.4 },
+      { "code": "5D", "pct": 22.8 },
+      { "code": "8D", "pct": 14.8 }
+    ]
+  },
+  {
+    "precinctId": "meridian-1",
+    "dominantSegment": "4A",
+    "dominantPct": 65.8,
+    "secondarySegment": "3A",
+    "secondaryPct": 22.4,
+    "diversityScore": 1.7,
+    "allSegments": [
+      { "code": "4A", "pct": 65.8 },
+      { "code": "3A", "pct": 22.4 },
+      { "code": "12A", "pct": 11.8 }
+    ]
+  },
+  {
+    "precinctId": "meridian-2",
+    "dominantSegment": "3A",
+    "dominantPct": 58.2,
+    "secondarySegment": "4A",
+    "secondaryPct": 28.5,
+    "diversityScore": 1.9,
+    "allSegments": [
+      { "code": "3A", "pct": 58.2 },
+      { "code": "4A", "pct": 28.5 },
+      { "code": "8A", "pct": 13.3 }
+    ]
+  },
+  {
+    "precinctId": "meridian-3",
+    "dominantSegment": "4A",
+    "dominantPct": 72.3,
+    "secondarySegment": "12A",
+    "secondaryPct": 18.2,
+    "diversityScore": 1.5,
+    "allSegments": [
+      { "code": "4A", "pct": 72.3 },
+      { "code": "12A", "pct": 18.2 },
+      { "code": "5A", "pct": 9.5 }
+    ]
+  },
+  {
+    "precinctId": "delhi-1",
+    "dominantSegment": "12A",
+    "dominantPct": 68.5,
+    "secondarySegment": "4A",
+    "secondaryPct": 20.8,
+    "diversityScore": 1.6,
+    "allSegments": [
+      { "code": "12A", "pct": 68.5 },
+      { "code": "4A", "pct": 20.8 },
+      { "code": "5D", "pct": 10.7 }
+    ]
+  },
+  {
+    "precinctId": "delhi-2",
+    "dominantSegment": "12A",
+    "dominantPct": 64.2,
+    "secondarySegment": "5D",
+    "secondaryPct": 24.5,
+    "diversityScore": 1.8,
+    "allSegments": [
+      { "code": "12A", "pct": 64.2 },
+      { "code": "5D", "pct": 24.5 },
+      { "code": "4A", "pct": 11.3 }
+    ]
+  },
+  {
+    "precinctId": "williamston-1",
+    "dominantSegment": "6A",
+    "dominantPct": 58.4,
+    "secondarySegment": "12A",
+    "secondaryPct": 28.2,
+    "diversityScore": 1.9,
+    "allSegments": [
+      { "code": "6A", "pct": 58.4 },
+      { "code": "12A", "pct": 28.2 },
+      { "code": "5D", "pct": 13.4 }
+    ]
+  },
+  {
+    "precinctId": "williamston-2",
+    "dominantSegment": "5D",
+    "dominantPct": 62.8,
+    "secondarySegment": "6A",
+    "secondaryPct": 24.5,
+    "diversityScore": 1.8,
+    "allSegments": [
+      { "code": "5D", "pct": 62.8 },
+      { "code": "6A", "pct": 24.5 },
+      { "code": "12A", "pct": 12.7 }
+    ]
+  },
+  {
+    "precinctId": "mason-1",
+    "dominantSegment": "12A",
+    "dominantPct": 70.5,
+    "secondarySegment": "4A",
+    "secondaryPct": 18.8,
+    "diversityScore": 1.5,
+    "allSegments": [
+      { "code": "12A", "pct": 70.5 },
+      { "code": "4A", "pct": 18.8 },
+      { "code": "5D", "pct": 10.7 }
+    ]
+  },
+  {
+    "precinctId": "vevay-1",
+    "dominantSegment": "5A",
+    "dominantPct": 68.2,
+    "secondarySegment": "4A",
+    "secondaryPct": 22.4,
+    "diversityScore": 1.6,
+    "allSegments": [
+      { "code": "5A", "pct": 68.2 },
+      { "code": "4A", "pct": 22.4 },
+      { "code": "12A", "pct": 9.4 }
+    ]
+  },
+  {
+    "precinctId": "alaiedon-1",
+    "dominantSegment": "10A",
+    "dominantPct": 72.8,
+    "secondarySegment": "6A",
+    "secondaryPct": 18.5,
+    "diversityScore": 1.5,
+    "allSegments": [
+      { "code": "10A", "pct": 72.8 },
+      { "code": "6A", "pct": 18.5 },
+      { "code": "12A", "pct": 8.7 }
+    ]
+  },
+  {
+    "precinctId": "aurelius-1",
+    "dominantSegment": "10A",
+    "dominantPct": 68.5,
+    "secondarySegment": "6A",
+    "secondaryPct": 22.4,
+    "diversityScore": 1.6,
+    "allSegments": [
+      { "code": "10A", "pct": 68.5 },
+      { "code": "6A", "pct": 22.4 },
+      { "code": "5D", "pct": 9.1 }
+    ]
+  },
+  {
+    "precinctId": "bunker-hill-1",
+    "dominantSegment": "10A",
+    "dominantPct": 78.2,
+    "secondarySegment": "6A",
+    "secondaryPct": 15.4,
+    "diversityScore": 1.4,
+    "allSegments": [
+      { "code": "10A", "pct": 78.2 },
+      { "code": "6A", "pct": 15.4 },
+      { "code": "5D", "pct": 6.4 }
+    ]
+  },
+  {
+    "precinctId": "leslie-1",
+    "dominantSegment": "10A",
+    "dominantPct": 65.8,
+    "secondarySegment": "5D",
+    "secondaryPct": 24.5,
+    "diversityScore": 1.7,
+    "allSegments": [
+      { "code": "10A", "pct": 65.8 },
+      { "code": "5D", "pct": 24.5 },
+      { "code": "6A", "pct": 9.7 }
+    ]
+  },
+  {
+    "precinctId": "meridian-okemos-1",
+    "dominantSegment": "3A",
+    "dominantPct": 62.5,
+    "secondarySegment": "4A",
+    "secondaryPct": 26.8,
+    "diversityScore": 1.8,
+    "allSegments": [
+      { "code": "3A", "pct": 62.5 },
+      { "code": "4A", "pct": 26.8 },
+      { "code": "8A", "pct": 10.7 }
+    ]
+  },
+  {
+    "precinctId": "meridian-haslett-1",
+    "dominantSegment": "4A",
+    "dominantPct": 74.2,
+    "secondarySegment": "5A",
+    "secondaryPct": 16.8,
+    "diversityScore": 1.5,
+    "allSegments": [
+      { "code": "4A", "pct": 74.2 },
+      { "code": "5A", "pct": 16.8 },
+      { "code": "12A", "pct": 9.0 }
+    ]
+  },
+  {
+    "precinctId": "lansing-eastside-1",
+    "dominantSegment": "8D",
+    "dominantPct": 54.8,
+    "secondarySegment": "5D",
+    "secondaryPct": 28.5,
+    "diversityScore": 2.0,
+    "allSegments": [
+      { "code": "8D", "pct": 54.8 },
+      { "code": "5D", "pct": 28.5 },
+      { "code": "12A", "pct": 16.7 }
+    ]
+  },
+  {
+    "precinctId": "lansing-westside-1",
+    "dominantSegment": "5D",
+    "dominantPct": 62.4,
+    "secondarySegment": "12A",
+    "secondaryPct": 24.8,
+    "diversityScore": 1.8,
+    "allSegments": [
+      { "code": "5D", "pct": 62.4 },
+      { "code": "12A", "pct": 24.8 },
+      { "code": "8D", "pct": 12.8 }
+    ]
+  },
+  {
+    "precinctId": "stockbridge-1",
+    "dominantSegment": "6A",
+    "dominantPct": 68.5,
+    "secondarySegment": "10A",
+    "secondaryPct": 22.4,
+    "diversityScore": 1.6,
+    "allSegments": [
+      { "code": "6A", "pct": 68.5 },
+      { "code": "10A", "pct": 22.4 },
+      { "code": "12A", "pct": 9.1 }
+    ]
+  },
+  {
+    "precinctId": "wheatfield-1",
+    "dominantSegment": "10A",
+    "dominantPct": 70.2,
+    "secondarySegment": "6A",
+    "secondaryPct": 20.5,
+    "diversityScore": 1.6,
+    "allSegments": [
+      { "code": "10A", "pct": 70.2 },
+      { "code": "6A", "pct": 20.5 },
+      { "code": "5D", "pct": 9.3 }
+    ]
+  }
+]

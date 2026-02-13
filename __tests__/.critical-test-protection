@@ -1,0 +1,37 @@
+# CRITICAL TEST PROTECTION
+
+## Protected Files - DO NOT DELETE
+
+The following test files are critical infrastructure and must be preserved:
+
+### query-to-visualization-pipeline.test.ts
+- Purpose: Comprehensive pipeline validation for all production queries
+- Investment: Weeks of development work, complex validation logic
+- Usage: Required before every deployment and major change
+- Reports: Generates detailed JSON and Markdown analysis reports
+- Coverage: Tests ALL queries from ANALYSIS_CATEGORIES (22+ types)
+
+## Deletion Protection
+
+If you need to clean up test files, ALWAYS exclude these critical tests:
+- query-to-visualization-pipeline.test.ts
+- Any files marked with "CRITICAL" or "DO NOT DELETE" comments
+
+## Contact Before Removal
+
+Before removing any test files in this directory, verify with:
+- Technical Lead
+- QA Team  
+- Product Owner (for query-related tests)
+
+## Backup Verification
+
+These tests are included in:
+- Version control (git) 
+- Critical file backups
+- Team knowledge transfer documentation
+
+---
+Last Updated: January 2025
+Protection Level: CRITICAL
+Review Required: Senior Developer + QA Approval

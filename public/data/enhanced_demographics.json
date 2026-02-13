@@ -1,0 +1,2047 @@
+{
+  "metadata": {
+    "created_at": "2025-09-28T15:36:28.863Z",
+    "description": "Enhanced demographic data for all FSA codes in Quebec real estate dataset",
+    "data_sources": [
+      "quebec_housing_sample_areas.json (original 8 areas)",
+      "Generated data based on Montreal area patterns",
+      "StatCan demographic patterns (modeled)"
+    ],
+    "total_fsa_codes": 112,
+    "original_data_count": 8,
+    "generated_data_count": 104,
+    "coverage": {
+      "montreal_metro": 107,
+      "quebec_regional": 5
+    },
+    "features": [
+      "population_25_34",
+      "homeownership_rate",
+      "median_housing_value",
+      "population_density",
+      "avg_household_income",
+      "unemployment_rate",
+      "education_university_rate",
+      "age_median",
+      "walk_score"
+    ]
+  },
+  "data": [
+    {
+      "id": "H0W",
+      "name": "H0W (Quebec, Canada)",
+      "description": "Quebec regional area",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 4747,
+        "homeownership_rate": 79.8,
+        "median_housing_value": 431667,
+        "population_density": 19936,
+        "avg_household_income": 94967,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.33,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H1A",
+      "name": "H1A (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9256,
+        "homeownership_rate": 69.33,
+        "median_housing_value": 500000,
+        "population_density": 38873,
+        "avg_household_income": 110000,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.44,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H1B",
+      "name": "H1B (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9293,
+        "homeownership_rate": 69.55,
+        "median_housing_value": 502500,
+        "population_density": 39032,
+        "avg_household_income": 110550,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.67,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H1C",
+      "name": "H1C (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9331,
+        "homeownership_rate": 69.77,
+        "median_housing_value": 505000,
+        "population_density": 39191,
+        "avg_household_income": 111100,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.89,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H1E",
+      "name": "H1E (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9407,
+        "homeownership_rate": 70.2,
+        "median_housing_value": 510000,
+        "population_density": 39508,
+        "avg_household_income": 112200,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.33,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H1G",
+      "name": "H1G (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9482,
+        "homeownership_rate": 70.63,
+        "median_housing_value": 515000,
+        "population_density": 39825,
+        "avg_household_income": 113300,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.78,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H1H",
+      "name": "H1H (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9520,
+        "homeownership_rate": 70.85,
+        "median_housing_value": 517500,
+        "population_density": 39984,
+        "avg_household_income": 113850,
+        "unemployment_rate": 3,
+        "education_university_rate": 61,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H1J",
+      "name": "H1J (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9596,
+        "homeownership_rate": 71.28,
+        "median_housing_value": 522500,
+        "population_density": 40301,
+        "avg_household_income": 114950,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H1K",
+      "name": "H1K (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9633,
+        "homeownership_rate": 71.5,
+        "median_housing_value": 525000,
+        "population_density": 40460,
+        "avg_household_income": 115500,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.67,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H1L",
+      "name": "H1L (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9671,
+        "homeownership_rate": 71.72,
+        "median_housing_value": 527500,
+        "population_density": 40619,
+        "avg_household_income": 116050,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.89,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H1M",
+      "name": "H1M (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9709,
+        "homeownership_rate": 71.93,
+        "median_housing_value": 530000,
+        "population_density": 40777,
+        "avg_household_income": 116600,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.11,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H1N",
+      "name": "H1N (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9747,
+        "homeownership_rate": 72.15,
+        "median_housing_value": 532500,
+        "population_density": 40936,
+        "avg_household_income": 117150,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.33,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H1P",
+      "name": "H1P (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9822,
+        "homeownership_rate": 72.58,
+        "median_housing_value": 537500,
+        "population_density": 41253,
+        "avg_household_income": 118250,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.78,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H1R",
+      "name": "H1R (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9898,
+        "homeownership_rate": 73.02,
+        "median_housing_value": 542500,
+        "population_density": 41571,
+        "avg_household_income": 119350,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H1S",
+      "name": "H1S (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9936,
+        "homeownership_rate": 73.23,
+        "median_housing_value": 545000,
+        "population_density": 41729,
+        "avg_household_income": 119900,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.44,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H1T",
+      "name": "H1T (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9973,
+        "homeownership_rate": 73.45,
+        "median_housing_value": 547500,
+        "population_density": 41888,
+        "avg_household_income": 120450,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.67,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H1V",
+      "name": "H1V (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 10049,
+        "homeownership_rate": 73.88,
+        "median_housing_value": 552500,
+        "population_density": 42205,
+        "avg_household_income": 121550,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.11,
+        "age_median": 46,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H1W",
+      "name": "H1W (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 10087,
+        "homeownership_rate": 74.1,
+        "median_housing_value": 555000,
+        "population_density": 42364,
+        "avg_household_income": 122100,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.33,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H1X",
+      "name": "H1X (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 10124,
+        "homeownership_rate": 74.32,
+        "median_housing_value": 557500,
+        "population_density": 42523,
+        "avg_household_income": 122650,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.56,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H1Y",
+      "name": "H1Y (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 10162,
+        "homeownership_rate": 74.53,
+        "median_housing_value": 560000,
+        "population_density": 42681,
+        "avg_household_income": 123200,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.78,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H1Z",
+      "name": "H1Z (Quebec, Canada)",
+      "description": "Eastern Montreal suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 10200,
+        "homeownership_rate": 74.75,
+        "median_housing_value": 562500,
+        "population_density": 42840,
+        "avg_household_income": 123750,
+        "unemployment_rate": 3,
+        "education_university_rate": 65,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H2A",
+      "name": "H2A (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13067,
+        "homeownership_rate": 48,
+        "median_housing_value": 722222,
+        "population_density": 54880,
+        "avg_household_income": 158889,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 59.44,
+        "age_median": 44,
+        "walk_score": 92
+      }
+    },
+    {
+      "id": "H2B",
+      "name": "H2B (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13120,
+        "homeownership_rate": 48.15,
+        "median_housing_value": 725833,
+        "population_density": 55104,
+        "avg_household_income": 159683,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 59.67,
+        "age_median": 44,
+        "walk_score": 92
+      }
+    },
+    {
+      "id": "H2C",
+      "name": "H2C (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13173,
+        "homeownership_rate": 48.3,
+        "median_housing_value": 729444,
+        "population_density": 55328,
+        "avg_household_income": 160478,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 59.89,
+        "age_median": 44,
+        "walk_score": 92
+      }
+    },
+    {
+      "id": "H2E",
+      "name": "H2E (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13280,
+        "homeownership_rate": 48.6,
+        "median_housing_value": 736667,
+        "population_density": 55776,
+        "avg_household_income": 162067,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 60.33,
+        "age_median": 44,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H2G",
+      "name": "H2G (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13387,
+        "homeownership_rate": 48.9,
+        "median_housing_value": 743889,
+        "population_density": 56224,
+        "avg_household_income": 163656,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 60.78,
+        "age_median": 44,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H2H",
+      "name": "H2H (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13440,
+        "homeownership_rate": 49.05,
+        "median_housing_value": 747500,
+        "population_density": 56448,
+        "avg_household_income": 164450,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 61,
+        "age_median": 44,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H2J",
+      "name": "H2J (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13547,
+        "homeownership_rate": 49.35,
+        "median_housing_value": 754722,
+        "population_density": 56896,
+        "avg_household_income": 166039,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H2K",
+      "name": "H2K (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13600,
+        "homeownership_rate": 49.5,
+        "median_housing_value": 758333,
+        "population_density": 57120,
+        "avg_household_income": 166833,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 61.67,
+        "age_median": 45,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H2L",
+      "name": "H2L (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13653,
+        "homeownership_rate": 49.65,
+        "median_housing_value": 761944,
+        "population_density": 57344,
+        "avg_household_income": 167628,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 61.89,
+        "age_median": 45,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H2M",
+      "name": "H2M (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13707,
+        "homeownership_rate": 49.8,
+        "median_housing_value": 765556,
+        "population_density": 57568,
+        "avg_household_income": 168422,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 62.11,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H2N",
+      "name": "H2N (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13760,
+        "homeownership_rate": 49.95,
+        "median_housing_value": 769167,
+        "population_density": 57792,
+        "avg_household_income": 169217,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 62.33,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H2P",
+      "name": "H2P (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13867,
+        "homeownership_rate": 50.25,
+        "median_housing_value": 776389,
+        "population_density": 58240,
+        "avg_household_income": 170806,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 62.78,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H2R",
+      "name": "H2R (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 13973,
+        "homeownership_rate": 50.55,
+        "median_housing_value": 783611,
+        "population_density": 58688,
+        "avg_household_income": 172394,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H2S",
+      "name": "H2S (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 14027,
+        "homeownership_rate": 50.7,
+        "median_housing_value": 787222,
+        "population_density": 58912,
+        "avg_household_income": 173189,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 63.44,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H2T",
+      "name": "H2T (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 14080,
+        "homeownership_rate": 50.85,
+        "median_housing_value": 790833,
+        "population_density": 59136,
+        "avg_household_income": 173983,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 63.67,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H2V",
+      "name": "H2V (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 14187,
+        "homeownership_rate": 51.15,
+        "median_housing_value": 798056,
+        "population_density": 59584,
+        "avg_household_income": 175572,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 64.11,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H2W",
+      "name": "H2W (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 14240,
+        "homeownership_rate": 51.3,
+        "median_housing_value": 801667,
+        "population_density": 59808,
+        "avg_household_income": 176367,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 64.33,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H2X",
+      "name": "H2X (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 14293,
+        "homeownership_rate": 51.45,
+        "median_housing_value": 805278,
+        "population_density": 60032,
+        "avg_household_income": 177161,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 64.56,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H2Y",
+      "name": "H2Y (Quebec, Canada)",
+      "description": "Central Montreal urban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 14347,
+        "homeownership_rate": 51.6,
+        "median_housing_value": 808889,
+        "population_density": 60256,
+        "avg_household_income": 177956,
+        "unemployment_rate": 3.5,
+        "education_university_rate": 64.78,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H3C",
+      "name": "H3C (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10429,
+        "homeownership_rate": 42.93,
+        "median_housing_value": 953889,
+        "population_density": 43801,
+        "avg_household_income": 209856,
+        "unemployment_rate": 4,
+        "education_university_rate": 59.89,
+        "age_median": 44,
+        "walk_score": 92
+      }
+    },
+    {
+      "id": "H3E",
+      "name": "H3E (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10513,
+        "homeownership_rate": 43.2,
+        "median_housing_value": 963333,
+        "population_density": 44156,
+        "avg_household_income": 211933,
+        "unemployment_rate": 4,
+        "education_university_rate": 60.33,
+        "age_median": 44,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H3G",
+      "name": "H3G (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10598,
+        "homeownership_rate": 43.47,
+        "median_housing_value": 972778,
+        "population_density": 44511,
+        "avg_household_income": 214011,
+        "unemployment_rate": 4,
+        "education_university_rate": 60.78,
+        "age_median": 44,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H3H",
+      "name": "H3H (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10640,
+        "homeownership_rate": 43.6,
+        "median_housing_value": 977500,
+        "population_density": 44688,
+        "avg_household_income": 215050,
+        "unemployment_rate": 4,
+        "education_university_rate": 61,
+        "age_median": 44,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H3J",
+      "name": "H3J (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10724,
+        "homeownership_rate": 43.87,
+        "median_housing_value": 986944,
+        "population_density": 45043,
+        "avg_household_income": 217128,
+        "unemployment_rate": 4,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H3K",
+      "name": "H3K (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10767,
+        "homeownership_rate": 44,
+        "median_housing_value": 991667,
+        "population_density": 45220,
+        "avg_household_income": 218167,
+        "unemployment_rate": 4,
+        "education_university_rate": 61.67,
+        "age_median": 45,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H3L",
+      "name": "H3L (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10809,
+        "homeownership_rate": 44.13,
+        "median_housing_value": 996389,
+        "population_density": 45397,
+        "avg_household_income": 219206,
+        "unemployment_rate": 4,
+        "education_university_rate": 61.89,
+        "age_median": 45,
+        "walk_score": 93
+      }
+    },
+    {
+      "id": "H3M",
+      "name": "H3M (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10851,
+        "homeownership_rate": 44.27,
+        "median_housing_value": 1001111,
+        "population_density": 45575,
+        "avg_household_income": 220244,
+        "unemployment_rate": 4,
+        "education_university_rate": 62.11,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H3N",
+      "name": "H3N (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10893,
+        "homeownership_rate": 44.4,
+        "median_housing_value": 1005833,
+        "population_density": 45752,
+        "avg_household_income": 221283,
+        "unemployment_rate": 4,
+        "education_university_rate": 62.33,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H3P",
+      "name": "H3P (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 10978,
+        "homeownership_rate": 44.67,
+        "median_housing_value": 1015278,
+        "population_density": 46107,
+        "avg_household_income": 223361,
+        "unemployment_rate": 4,
+        "education_university_rate": 62.78,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H3R",
+      "name": "H3R (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11062,
+        "homeownership_rate": 44.93,
+        "median_housing_value": 1024722,
+        "population_density": 46461,
+        "avg_household_income": 225439,
+        "unemployment_rate": 4,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H3S",
+      "name": "H3S (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11104,
+        "homeownership_rate": 45.07,
+        "median_housing_value": 1029444,
+        "population_density": 46639,
+        "avg_household_income": 226478,
+        "unemployment_rate": 4,
+        "education_university_rate": 63.44,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H3T",
+      "name": "H3T (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11147,
+        "homeownership_rate": 45.2,
+        "median_housing_value": 1034167,
+        "population_density": 46816,
+        "avg_household_income": 227517,
+        "unemployment_rate": 4,
+        "education_university_rate": 63.67,
+        "age_median": 45,
+        "walk_score": 94
+      }
+    },
+    {
+      "id": "H3V",
+      "name": "H3V (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11231,
+        "homeownership_rate": 45.47,
+        "median_housing_value": 1043611,
+        "population_density": 47171,
+        "avg_household_income": 229594,
+        "unemployment_rate": 4,
+        "education_university_rate": 64.11,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H3W",
+      "name": "H3W (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11273,
+        "homeownership_rate": 45.6,
+        "median_housing_value": 1048333,
+        "population_density": 47348,
+        "avg_household_income": 230633,
+        "unemployment_rate": 4,
+        "education_university_rate": 64.33,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H3X",
+      "name": "H3X (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11316,
+        "homeownership_rate": 45.73,
+        "median_housing_value": 1053056,
+        "population_density": 47525,
+        "avg_household_income": 231672,
+        "unemployment_rate": 4,
+        "education_university_rate": 64.56,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H3Y",
+      "name": "H3Y (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11358,
+        "homeownership_rate": 45.87,
+        "median_housing_value": 1057778,
+        "population_density": 47703,
+        "avg_household_income": 232711,
+        "unemployment_rate": 4,
+        "education_university_rate": 64.78,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H3Z",
+      "name": "H3Z (Quebec, Canada)",
+      "description": "Downtown and upscale central areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Core",
+      "metrics": {
+        "population_25_34": 11400,
+        "homeownership_rate": 46,
+        "median_housing_value": 1062500,
+        "population_density": 47880,
+        "avg_household_income": 233750,
+        "unemployment_rate": 4,
+        "education_university_rate": 65,
+        "age_median": 46,
+        "walk_score": 95
+      }
+    },
+    {
+      "id": "H4A",
+      "name": "H4A (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8167,
+        "homeownership_rate": 58.67,
+        "median_housing_value": 577778,
+        "population_density": 34300,
+        "avg_household_income": 127111,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.44,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H4B",
+      "name": "H4B (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8200,
+        "homeownership_rate": 58.85,
+        "median_housing_value": 580667,
+        "population_density": 34440,
+        "avg_household_income": 127747,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.67,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H4C",
+      "name": "H4C (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8233,
+        "homeownership_rate": 59.03,
+        "median_housing_value": 583556,
+        "population_density": 34580,
+        "avg_household_income": 128382,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.89,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H4E",
+      "name": "H4E (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8300,
+        "homeownership_rate": 59.4,
+        "median_housing_value": 589333,
+        "population_density": 34860,
+        "avg_household_income": 129653,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.33,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H4G",
+      "name": "H4G (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8367,
+        "homeownership_rate": 59.77,
+        "median_housing_value": 595111,
+        "population_density": 35140,
+        "avg_household_income": 130924,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.78,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H4H",
+      "name": "H4H (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8400,
+        "homeownership_rate": 59.95,
+        "median_housing_value": 598000,
+        "population_density": 35280,
+        "avg_household_income": 131560,
+        "unemployment_rate": 3,
+        "education_university_rate": 61,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H4J",
+      "name": "H4J (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8467,
+        "homeownership_rate": 60.32,
+        "median_housing_value": 603778,
+        "population_density": 35560,
+        "avg_household_income": 132831,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H4K",
+      "name": "H4K (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8500,
+        "homeownership_rate": 60.5,
+        "median_housing_value": 606667,
+        "population_density": 35700,
+        "avg_household_income": 133467,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.67,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H4L",
+      "name": "H4L (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8533,
+        "homeownership_rate": 60.68,
+        "median_housing_value": 609556,
+        "population_density": 35840,
+        "avg_household_income": 134102,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.89,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H4M",
+      "name": "H4M (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8567,
+        "homeownership_rate": 60.87,
+        "median_housing_value": 612444,
+        "population_density": 35980,
+        "avg_household_income": 134738,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.11,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H4N",
+      "name": "H4N (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8600,
+        "homeownership_rate": 61.05,
+        "median_housing_value": 615333,
+        "population_density": 36120,
+        "avg_household_income": 135373,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.33,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H4P",
+      "name": "H4P (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8667,
+        "homeownership_rate": 61.42,
+        "median_housing_value": 621111,
+        "population_density": 36400,
+        "avg_household_income": 136644,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.78,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H4R",
+      "name": "H4R (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8733,
+        "homeownership_rate": 61.78,
+        "median_housing_value": 626889,
+        "population_density": 36680,
+        "avg_household_income": 137916,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H4S",
+      "name": "H4S (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8767,
+        "homeownership_rate": 61.97,
+        "median_housing_value": 629778,
+        "population_density": 36820,
+        "avg_household_income": 138551,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.44,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H4T",
+      "name": "H4T (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8800,
+        "homeownership_rate": 62.15,
+        "median_housing_value": 632667,
+        "population_density": 36960,
+        "avg_household_income": 139187,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.67,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H4V",
+      "name": "H4V (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8867,
+        "homeownership_rate": 62.52,
+        "median_housing_value": 638444,
+        "population_density": 37240,
+        "avg_household_income": 140458,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.11,
+        "age_median": 46,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H4W",
+      "name": "H4W (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8900,
+        "homeownership_rate": 62.7,
+        "median_housing_value": 641333,
+        "population_density": 37380,
+        "avg_household_income": 141093,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.33,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H4X",
+      "name": "H4X (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 8933,
+        "homeownership_rate": 62.88,
+        "median_housing_value": 644222,
+        "population_density": 37520,
+        "avg_household_income": 141729,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.56,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H4Z",
+      "name": "H4Z (Quebec, Canada)",
+      "description": "Southwestern Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 9000,
+        "homeownership_rate": 63.25,
+        "median_housing_value": 650000,
+        "population_density": 37800,
+        "avg_household_income": 143000,
+        "unemployment_rate": 3,
+        "education_university_rate": 65,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H7K",
+      "name": "H7K (Quebec, Canada)",
+      "description": "Laval suburban areas",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 7707,
+        "homeownership_rate": 82.5,
+        "median_housing_value": 560000,
+        "population_density": 32368,
+        "avg_household_income": 123200,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.67,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H8B",
+      "name": "H8B (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 6779,
+        "homeownership_rate": 72.76,
+        "median_housing_value": 558333,
+        "population_density": 28470,
+        "avg_household_income": 122833,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.67,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H8E",
+      "name": "H8E (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 6861,
+        "homeownership_rate": 73.44,
+        "median_housing_value": 566667,
+        "population_density": 28818,
+        "avg_household_income": 124667,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.33,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H8H",
+      "name": "H8H (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 6944,
+        "homeownership_rate": 74.12,
+        "median_housing_value": 575000,
+        "population_density": 29165,
+        "avg_household_income": 126500,
+        "unemployment_rate": 3,
+        "education_university_rate": 61,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H8J",
+      "name": "H8J (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 6999,
+        "homeownership_rate": 74.57,
+        "median_housing_value": 580556,
+        "population_density": 29396,
+        "avg_household_income": 127722,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H8N",
+      "name": "H8N (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7109,
+        "homeownership_rate": 75.48,
+        "median_housing_value": 591667,
+        "population_density": 29859,
+        "avg_household_income": 130167,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.33,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H8P",
+      "name": "H8P (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7164,
+        "homeownership_rate": 75.93,
+        "median_housing_value": 597222,
+        "population_density": 30091,
+        "avg_household_income": 131389,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.78,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H8R",
+      "name": "H8R (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7220,
+        "homeownership_rate": 76.39,
+        "median_housing_value": 602778,
+        "population_density": 30322,
+        "avg_household_income": 132611,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H8S",
+      "name": "H8S (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7247,
+        "homeownership_rate": 76.61,
+        "median_housing_value": 605556,
+        "population_density": 30438,
+        "avg_household_income": 133222,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.44,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H8T",
+      "name": "H8T (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7275,
+        "homeownership_rate": 76.84,
+        "median_housing_value": 608333,
+        "population_density": 30554,
+        "avg_household_income": 133833,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.67,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H8X",
+      "name": "H8X (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7385,
+        "homeownership_rate": 77.75,
+        "median_housing_value": 619444,
+        "population_density": 31017,
+        "avg_household_income": 136278,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.56,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H8Y",
+      "name": "H8Y (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7412,
+        "homeownership_rate": 77.97,
+        "median_housing_value": 622222,
+        "population_density": 31132,
+        "avg_household_income": 136889,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.78,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H8Z",
+      "name": "H8Z (Quebec, Canada)",
+      "description": "Western Montreal areas",
+      "region": "Greater Montreal",
+      "urban_type": "Urban Suburban",
+      "metrics": {
+        "population_25_34": 7440,
+        "homeownership_rate": 78.2,
+        "median_housing_value": 625000,
+        "population_density": 31248,
+        "avg_household_income": 137500,
+        "unemployment_rate": 3,
+        "education_university_rate": 65,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H9A",
+      "name": "H9A (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6316,
+        "homeownership_rate": 87.47,
+        "median_housing_value": 688889,
+        "population_density": 26525,
+        "avg_household_income": 151556,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.44,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H9B",
+      "name": "H9B (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6341,
+        "homeownership_rate": 87.74,
+        "median_housing_value": 692333,
+        "population_density": 26634,
+        "avg_household_income": 152313,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.67,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H9C",
+      "name": "H9C (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6367,
+        "homeownership_rate": 88.01,
+        "median_housing_value": 695778,
+        "population_density": 26742,
+        "avg_household_income": 153071,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.89,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "H9E",
+      "name": "H9E (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6419,
+        "homeownership_rate": 88.56,
+        "median_housing_value": 702667,
+        "population_density": 26958,
+        "avg_household_income": 154587,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.33,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H9G",
+      "name": "H9G (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6470,
+        "homeownership_rate": 89.11,
+        "median_housing_value": 709556,
+        "population_density": 27175,
+        "avg_household_income": 156102,
+        "unemployment_rate": 3,
+        "education_university_rate": 60.78,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H9H",
+      "name": "H9H (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6496,
+        "homeownership_rate": 89.38,
+        "median_housing_value": 713000,
+        "population_density": 27283,
+        "avg_household_income": 156860,
+        "unemployment_rate": 3,
+        "education_university_rate": 61,
+        "age_median": 44,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H9J",
+      "name": "H9J (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6548,
+        "homeownership_rate": 89.93,
+        "median_housing_value": 719889,
+        "population_density": 27500,
+        "avg_household_income": 158376,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 77
+      }
+    },
+    {
+      "id": "H9K",
+      "name": "H9K (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6573,
+        "homeownership_rate": 90.2,
+        "median_housing_value": 723333,
+        "population_density": 27608,
+        "avg_household_income": 159133,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.67,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H9L",
+      "name": "H9L (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6599,
+        "homeownership_rate": 90.47,
+        "median_housing_value": 726778,
+        "population_density": 27716,
+        "avg_household_income": 159891,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.89,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H9P",
+      "name": "H9P (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6702,
+        "homeownership_rate": 91.57,
+        "median_housing_value": 740556,
+        "population_density": 28149,
+        "avg_household_income": 162922,
+        "unemployment_rate": 3,
+        "education_university_rate": 62.78,
+        "age_median": 45,
+        "walk_score": 78
+      }
+    },
+    {
+      "id": "H9R",
+      "name": "H9R (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6754,
+        "homeownership_rate": 92.11,
+        "median_housing_value": 747444,
+        "population_density": 28366,
+        "avg_household_income": 164438,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H9S",
+      "name": "H9S (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6780,
+        "homeownership_rate": 92.39,
+        "median_housing_value": 750889,
+        "population_density": 28474,
+        "avg_household_income": 165196,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.44,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H9T",
+      "name": "H9T (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6805,
+        "homeownership_rate": 92.66,
+        "median_housing_value": 754333,
+        "population_density": 28582,
+        "avg_household_income": 165953,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.67,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H9V",
+      "name": "H9V (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6857,
+        "homeownership_rate": 93.21,
+        "median_housing_value": 761222,
+        "population_density": 28799,
+        "avg_household_income": 167469,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.11,
+        "age_median": 46,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "H9W",
+      "name": "H9W (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6883,
+        "homeownership_rate": 93.48,
+        "median_housing_value": 764667,
+        "population_density": 28907,
+        "avg_household_income": 168227,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.33,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H9X",
+      "name": "H9X (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6908,
+        "homeownership_rate": 93.75,
+        "median_housing_value": 768111,
+        "population_density": 29015,
+        "avg_household_income": 168984,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.56,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "H9Z",
+      "name": "H9Z (Quebec, Canada)",
+      "description": "West Island affluent suburbs",
+      "region": "Greater Montreal",
+      "urban_type": "Suburban",
+      "metrics": {
+        "population_25_34": 6960,
+        "homeownership_rate": 94.3,
+        "median_housing_value": 775000,
+        "population_density": 29232,
+        "avg_household_income": 170500,
+        "unemployment_rate": 3,
+        "education_university_rate": 65,
+        "age_median": 46,
+        "walk_score": 80
+      }
+    },
+    {
+      "id": "J1B",
+      "name": "J1B (Quebec, Canada)",
+      "description": "Quebec regional area",
+      "region": "Quebec Regional",
+      "urban_type": "Rural/Regional",
+      "metrics": {
+        "population_25_34": 4373,
+        "homeownership_rate": 74.9,
+        "median_housing_value": 390833,
+        "population_density": 18368,
+        "avg_household_income": 85983,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.67,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "J1C",
+      "name": "J1C (Quebec, Canada)",
+      "description": "Quebec regional area",
+      "region": "Quebec Regional",
+      "urban_type": "Rural/Regional",
+      "metrics": {
+        "population_25_34": 4391,
+        "homeownership_rate": 75.13,
+        "median_housing_value": 392778,
+        "population_density": 18443,
+        "avg_household_income": 86411,
+        "unemployment_rate": 3,
+        "education_university_rate": 59.89,
+        "age_median": 44,
+        "walk_score": 76
+      }
+    },
+    {
+      "id": "J4R",
+      "name": "J4R (Quebec, Canada)",
+      "description": "Quebec regional area",
+      "region": "Quebec Regional",
+      "urban_type": "Rural/Regional",
+      "metrics": {
+        "population_25_34": 4658,
+        "homeownership_rate": 78.63,
+        "median_housing_value": 421944,
+        "population_density": 19563,
+        "avg_household_income": 92828,
+        "unemployment_rate": 3,
+        "education_university_rate": 63.22,
+        "age_median": 45,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "J7V",
+      "name": "J7V (Quebec, Canada)",
+      "description": "Quebec regional area",
+      "region": "Quebec Regional",
+      "urban_type": "Rural/Regional",
+      "metrics": {
+        "population_25_34": 4729,
+        "homeownership_rate": 79.57,
+        "median_housing_value": 429722,
+        "population_density": 19861,
+        "avg_household_income": 94539,
+        "unemployment_rate": 3,
+        "education_university_rate": 64.11,
+        "age_median": 46,
+        "walk_score": 79
+      }
+    },
+    {
+      "id": "J9J",
+      "name": "J9J (Quebec, Canada)",
+      "description": "Quebec regional area",
+      "region": "Quebec Regional",
+      "urban_type": "Rural/Regional",
+      "metrics": {
+        "population_25_34": 4516,
+        "homeownership_rate": 76.77,
+        "median_housing_value": 406389,
+        "population_density": 18965,
+        "avg_household_income": 89406,
+        "unemployment_rate": 3,
+        "education_university_rate": 61.44,
+        "age_median": 45,
+        "walk_score": 77
+      }
+    }
+  ]
+}
