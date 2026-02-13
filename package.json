@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build --no-lint",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build --no-lint",
     "start": "next start",
     "copy-arcgis-assets": "cp -r node_modules/@arcgis/core/assets public/assets",
     "test": "jest",
@@ -157,6 +157,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^27.0.0",
     "pdfkit": "^0.17.2",
+    "cross-env": "^7.0.3",
     "postcss": "^8.4.38",
     "puppeteer": "^24.15.0",
     "sass": "^1.89.1",
