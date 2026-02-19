@@ -407,7 +407,6 @@ export function ValueByAlphaLayer({
   onPrecinctClick,
   onPrecinctHover,
   selectedPrecinctName,
-  boundariesUrl = null,
 }: ValueByAlphaLayerProps) {
   const layerRef = useRef<GeoJSONLayer | null>(null);
   const clickHandlerRef = useRef<IHandle | null>(null);
