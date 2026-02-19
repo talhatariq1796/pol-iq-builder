@@ -12,11 +12,24 @@
  * - Maintenance: Gray - Low priority / safe areas
  */
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 // ============================================================================
-// Precinct Name Normalization
+// Municipality Name Normalization & Score Aggregation
 // ============================================================================
+
+/**
+ * Data source: ingham_municipalities.geojson
+ * Each feature represents a township/city and has:
+ *   - JURISDICTION_NAME: "Alaiedon", "East Lansing", etc.
+ *   - JURISDICTION_TYPE: "township" | "city" | "charter township"
+ *   - PRECINCT_IDS: ["WP-065-00800-00001", "WP-065-00800-00002", ...]
+ *   - REGISTERED_VOTERS, ACTIVE_VOTERS (municipality totals)
+ *
+ * Targeting scores are keyed by PRECINCT NAME, not precinct ID.
+ * We find all score keys that start with the jurisdiction name,
+ * then aggregate them to a single municipality-level score.
+ */
 
 /**
  * Normalizes a boundary precinct name to match targeting scores format.
@@ -27,87 +40,238 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
  * This function converts boundary names to targeting score keys.
  */
 function normalizePrecinctName(boundaryName: string): string {
-  if (!boundaryName) return '';
+  if (!boundaryName) return "";
 
   let normalized = boundaryName;
 
   // Remove "City of " prefix
-  normalized = normalized.replace(/^City of /i, '');
+  normalized = normalized.replace(/^City of /i, "");
 
   // Remove "Charter Township" and replace with just the name
-  normalized = normalized.replace(/ Charter Township/i, '');
+  normalized = normalized.replace(/ Charter Township/i, "");
 
   // Remove " Township" suffix (but keep the base name)
-  normalized = normalized.replace(/ Township/i, '');
+  normalized = normalized.replace(/ Township/i, "");
 
   // Replace ", Precinct" with " Precinct" (remove comma)
-  normalized = normalized.replace(/,\s*Precinct/i, ' Precinct');
+  normalized = normalized.replace(/,\s*Precinct/i, " Precinct");
 
   // Clean up any double spaces
-  normalized = normalized.replace(/\s+/g, ' ').trim();
+  normalized = normalized.replace(/\s+/g, " ").trim();
 
   return normalized;
 }
 
 /**
- * Creates a lookup map from boundary names to targeting score keys.
+ * Resolves a boundary precinct name to a targeting score key.
  * Attempts multiple normalization strategies to find matches.
+ * Returns the matching key from targetingScoreKeys, or undefined if not found.
  */
-function createPrecinctNameLookup(
-  targetingScoreKeys: string[]
-): Map<string, string> {
-  const lookup = new Map<string, string>();
+function resolveTargetingScoreKey(
+  boundaryName: string,
+  targetingScoreKeys: string[],
+  normalizedScoreKeys: Map<string, string>,
+): string | undefined {
+  if (!boundaryName) return undefined;
 
-  // Create a normalized version of each targeting score key for matching
-  const normalizedScoreKeys = new Map<string, string>();
-  for (const key of targetingScoreKeys) {
-    // Store both the original key and lowercase version for fuzzy matching
-    normalizedScoreKeys.set(key.toLowerCase(), key);
-    normalizedScoreKeys.set(key.toLowerCase().replace(/\s+/g, ''), key);
+  // 1. Exact match
+  if (targetingScoreKeys.includes(boundaryName)) {
+    return boundaryName;
   }
 
-  return {
-    get: (boundaryName: string): string | undefined => {
-      // Try exact match first
-      if (targetingScoreKeys.includes(boundaryName)) {
-        return boundaryName;
-      }
+  // 2. Normalized match (strip "City of ", "Charter Township", etc.)
+  const normalized = normalizePrecinctName(boundaryName);
+  if (targetingScoreKeys.includes(normalized)) {
+    return normalized;
+  }
 
-      // Try normalized name
-      const normalized = normalizePrecinctName(boundaryName);
-      if (targetingScoreKeys.includes(normalized)) {
-        return normalized;
-      }
+  // 3. Lowercase match
+  const normalizedLower = normalized.toLowerCase();
+  if (normalizedScoreKeys.has(normalizedLower)) {
+    return normalizedScoreKeys.get(normalizedLower);
+  }
 
-      // Try lowercase match
-      const normalizedLower = normalized.toLowerCase();
-      if (normalizedScoreKeys.has(normalizedLower)) {
-        return normalizedScoreKeys.get(normalizedLower);
-      }
+  // 4. No-spaces match
+  const noSpaces = normalizedLower.replace(/\s+/g, "");
+  if (normalizedScoreKeys.has(noSpaces)) {
+    return normalizedScoreKeys.get(noSpaces);
+  }
 
-      // Try without spaces
-      const noSpaces = normalizedLower.replace(/\s+/g, '');
-      if (normalizedScoreKeys.has(noSpaces)) {
-        return normalizedScoreKeys.get(noSpaces);
-      }
+  // 5. Partial match: check if any targeting key starts with the normalized name
+  for (const key of targetingScoreKeys) {
+    const keyLower = key.toLowerCase();
+    if (
+      keyLower.startsWith(normalizedLower) ||
+      normalizedLower.startsWith(keyLower)
+    ) {
+      return key;
+    }
+  }
 
-      return undefined;
-    },
-    set: lookup.set.bind(lookup),
-    has: lookup.has.bind(lookup),
-  } as Map<string, string>;
+  return undefined;
 }
-import GeoJSONLayer from '@arcgis/core/layers/GeoJSONLayer';
-import Graphic from '@arcgis/core/Graphic';
-import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
-import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
-import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
-import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';
-import PopupTemplate from '@arcgis/core/PopupTemplate';
-import LabelClass from '@arcgis/core/layers/support/LabelClass';
-import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 
-import { politicalDataService } from '@/lib/services/PoliticalDataService';
+/**
+ * Builds a pre-computed lookup map from normalized boundary name variants
+ * to their canonical targeting score key for O(1) lookups.
+ */
+function buildNormalizedScoreKeyMap(
+  targetingScoreKeys: string[],
+): Map<string, string> {
+  const normalizedScoreKeys = new Map<string, string>();
+  for (const key of targetingScoreKeys) {
+    const lower = key.toLowerCase();
+    normalizedScoreKeys.set(lower, key);
+    normalizedScoreKeys.set(lower.replace(/\s+/g, ""), key);
+    // Also store normalized version
+    const norm = normalizePrecinctName(key).toLowerCase();
+    if (!normalizedScoreKeys.has(norm)) normalizedScoreKeys.set(norm, key);
+    if (!normalizedScoreKeys.has(norm.replace(/\s+/g, ""))) {
+      normalizedScoreKeys.set(norm.replace(/\s+/g, ""), key);
+    }
+  }
+  return normalizedScoreKeys;
+}
+
+/**
+ * Finds ALL targeting score keys that belong to a given municipality (jurisdiction).
+ *
+ * Municipality names like "Alaiedon" match precinct keys like:
+ *   "Alaiedon Township Precinct 1", "Alaiedon Township Precinct 2"
+ * Municipality names like "East Lansing" match:
+ *   "East Lansing Precinct 1", "City of East Lansing Precinct 1", etc.
+ *
+ * Returns all matching keys so their scores can be aggregated.
+ */
+function findMunicipalityScoreKeys(
+  jurisdictionName: string,
+  jurisdictionType: string,
+  targetingScoreKeys: string[],
+): string[] {
+  if (!jurisdictionName) return [];
+
+  const nameNorm = jurisdictionName.trim().toLowerCase();
+
+  // Build candidate name variants to match against precinct keys
+  const variants: string[] = [
+    nameNorm, // "alaiedon"
+    `${nameNorm} township`, // "alaiedon township"
+    `${nameNorm} charter township`, // "alaiedon charter township"
+    `city of ${nameNorm}`, // "city of east lansing"
+    `${nameNorm} city`, // "east lansing city"
+  ];
+
+  const matched: string[] = [];
+  for (const key of targetingScoreKeys) {
+    const keyLower = key.toLowerCase();
+    // Key must START with one of our name variants (to avoid partial matches like "Mason" matching "Mason County")
+    if (
+      variants.some(
+        (v) =>
+          keyLower.startsWith(v + " ") ||
+          keyLower.startsWith(v + ",") ||
+          keyLower === v,
+      )
+    ) {
+      matched.push(key);
+    }
+  }
+
+  // Fallback: try without the " precinct" suffix requirement
+  if (matched.length === 0) {
+    for (const key of targetingScoreKeys) {
+      const keyLower = key.toLowerCase();
+      if (keyLower.includes(nameNorm)) {
+        matched.push(key);
+      }
+    }
+  }
+
+  return matched;
+}
+
+/**
+ * Aggregates targeting scores from multiple constituent precincts into a
+ * single municipality-level score. Uses weighted averaging for numeric fields
+ * and picks the most-common targeting strategy.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function aggregateMunicipalityScores(scoresList: any[]): any | undefined {
+  if (!scoresList || scoresList.length === 0) return undefined;
+  if (scoresList.length === 1) return scoresList[0];
+
+  // Average numeric fields
+  const avg = (field: string) => {
+    const vals = scoresList
+      .map((s) => s?.[field])
+      .filter((v): v is number => typeof v === "number");
+    return vals.length > 0
+      ? vals.reduce((a, b) => a + b, 0) / vals.length
+      : null;
+  };
+
+  const avgNested = (obj: string, field: string) => {
+    const vals = scoresList
+      .map((s) => s?.[obj]?.[field])
+      .filter((v): v is number => typeof v === "number");
+    return vals.length > 0
+      ? vals.reduce((a, b) => a + b, 0) / vals.length
+      : null;
+  };
+
+  // Pick modal (most common) targeting strategy
+  const strategyCounts: Record<string, number> = {};
+  for (const s of scoresList) {
+    const st = s?.targeting_strategy || "Unknown";
+    strategyCounts[st] = (strategyCounts[st] || 0) + 1;
+  }
+  const dominantStrategy =
+    Object.entries(strategyCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+    "Unknown";
+
+  // Sum voter counts
+  const sumField = (field: string) => {
+    const vals = scoresList
+      .map((s) => s?.[field])
+      .filter((v): v is number => typeof v === "number");
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) : null;
+  };
+
+  return {
+    targeting_strategy: dominantStrategy,
+    gotv_priority: avg("gotv_priority"),
+    persuasion_opportunity: avg("persuasion_opportunity"),
+    combined_score: avg("combined_score"),
+    gotv_classification: scoresList[0]?.gotv_classification || "Unknown",
+    persuasion_classification:
+      scoresList[0]?.persuasion_classification || "Unknown",
+    recommendation: scoresList[0]?.recommendation || "No data available",
+    registered_voters: sumField("registered_voters"),
+    active_voters: sumField("active_voters"),
+    total_population: sumField("total_population"),
+    median_household_income: avg("median_household_income"),
+    dem_affiliation_pct: avg("dem_affiliation_pct"),
+    rep_affiliation_pct: avg("rep_affiliation_pct"),
+    political_scores: {
+      partisan_lean: avgNested("political_scores", "partisan_lean"),
+      swing_potential: avgNested("political_scores", "swing_potential"),
+      turnout: { average: avgNested("political_scores", "turnout") },
+    },
+  };
+}
+
+import Graphic from "@arcgis/core/Graphic";
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
+import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer";
+import ClassBreaksRenderer from "@arcgis/core/renderers/ClassBreaksRenderer";
+import PopupTemplate from "@arcgis/core/PopupTemplate";
+import LabelClass from "@arcgis/core/layers/support/LabelClass";
+import TextSymbol from "@arcgis/core/symbols/TextSymbol";
+
+import { politicalDataService } from "@/lib/services/PoliticalDataService";
+import { loadBoundariesWithFallback } from "@/lib/map/boundariesLoader";
+import GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer";
 
 // ============================================================================
 // Temporal Color Ramps
@@ -118,15 +282,15 @@ const TEMPORAL_COLORS = {
     // Red (R) to Purple (tossup) to Blue (D)
     breaks: [-40, -20, -10, -5, 0, 5, 10, 20, 40],
     colors: [
-      [153, 27, 30, 0.8],   // R +40+
-      [239, 68, 68, 0.75],  // R +20-40
+      [153, 27, 30, 0.8], // R +40+
+      [239, 68, 68, 0.75], // R +20-40
       [252, 165, 165, 0.7], // R +10-20
-      [254, 202, 202, 0.65],// R +5-10
+      [254, 202, 202, 0.65], // R +5-10
       [167, 139, 250, 0.6], // Tossup -5 to +5
-      [191, 219, 254, 0.65],// D +5-10
+      [191, 219, 254, 0.65], // D +5-10
       [147, 197, 253, 0.7], // D +10-20
       [59, 130, 246, 0.75], // D +20-40
-      [29, 78, 216, 0.8],   // D +40+
+      [29, 78, 216, 0.8], // D +40+
     ],
   },
   turnout: {
@@ -134,11 +298,11 @@ const TEMPORAL_COLORS = {
     breaks: [0, 30, 45, 55, 65, 75, 100],
     colors: [
       [229, 231, 235, 0.6], // Very low < 30%
-      [254, 240, 138, 0.65],// Low 30-45%
-      [253, 224, 71, 0.7],  // Below avg 45-55%
+      [254, 240, 138, 0.65], // Low 30-45%
+      [253, 224, 71, 0.7], // Below avg 45-55%
       [163, 230, 53, 0.75], // Average 55-65%
-      [74, 222, 128, 0.8],  // Good 65-75%
-      [34, 197, 94, 0.85],  // High 75%+
+      [74, 222, 128, 0.8], // Good 65-75%
+      [34, 197, 94, 0.85], // High 75%+
     ],
   },
   demPct: {
@@ -146,11 +310,11 @@ const TEMPORAL_COLORS = {
     breaks: [0, 30, 40, 50, 60, 70, 100],
     colors: [
       [254, 202, 202, 0.65], // <30% - Light red (heavily R)
-      [253, 224, 71, 0.6],   // 30-40% - Yellow
-      [209, 213, 219, 0.6],  // 40-50% - Gray (competitive)
-      [147, 197, 253, 0.7],  // 50-60% - Light blue
-      [59, 130, 246, 0.75],  // 60-70% - Blue
-      [29, 78, 216, 0.85],   // 70%+ - Dark blue
+      [253, 224, 71, 0.6], // 30-40% - Yellow
+      [209, 213, 219, 0.6], // 40-50% - Gray (competitive)
+      [147, 197, 253, 0.7], // 50-60% - Light blue
+      [59, 130, 246, 0.75], // 60-70% - Blue
+      [29, 78, 216, 0.85], // 70%+ - Dark blue
     ],
   },
 };
@@ -162,42 +326,42 @@ const TEMPORAL_COLORS = {
 // STRATEGY_COLORS must match the actual values in targeting_scores data:
 // "Base Mobilization", "Battleground", "Maintenance", "Persuasion Target"
 const STRATEGY_COLORS = {
-  'Battleground': {
-    fill: [147, 51, 234, 0.6],      // Purple #9333ea - Competitive areas
-    outline: [126, 34, 206, 1],     // Dark purple
-    label: 'Battleground',
+  Battleground: {
+    fill: [147, 51, 234, 0.6], // Purple #9333ea - Competitive areas
+    outline: [126, 34, 206, 1], // Dark purple
+    label: "Battleground",
   },
-  'Base Mobilization': {
-    fill: [37, 99, 235, 0.6],       // Blue #2563eb - Turnout focus
-    outline: [29, 78, 216, 1],      // Dark blue
-    label: 'Base Mobilization',
+  "Base Mobilization": {
+    fill: [37, 99, 235, 0.6], // Blue #2563eb - Turnout focus
+    outline: [29, 78, 216, 1], // Dark blue
+    label: "Base Mobilization",
   },
-  'Persuasion Target': {
-    fill: [234, 88, 12, 0.6],       // Orange #ea580c - Persuadable voters
-    outline: [194, 65, 12, 1],      // Dark orange
-    label: 'Persuasion Target',
+  "Persuasion Target": {
+    fill: [234, 88, 12, 0.6], // Orange #ea580c - Persuadable voters
+    outline: [194, 65, 12, 1], // Dark orange
+    label: "Persuasion Target",
   },
-  'Maintenance': {
-    fill: [156, 163, 175, 0.5],     // Gray #9ca3af - Low priority
-    outline: [107, 114, 128, 1],    // Dark gray
-    label: 'Maintenance',
+  Maintenance: {
+    fill: [156, 163, 175, 0.5], // Gray #9ca3af - Low priority
+    outline: [107, 114, 128, 1], // Dark gray
+    label: "Maintenance",
   },
 } as const;
 
 // Default for precincts without data - more visible "no data" styling
 const DEFAULT_SYMBOL = new SimpleFillSymbol({
-  color: [220, 220, 220, 0.6],  // More visible gray
+  color: [220, 220, 220, 0.6], // More visible gray
   outline: new SimpleLineSymbol({
-    color: [100, 100, 100],      // Darker outline for visibility
+    color: [100, 100, 100], // Darker outline for visibility
     width: 1,
   }),
 });
 
 // MPIQ Green highlight symbol for selected precincts
 const HIGHLIGHT_SYMBOL = new SimpleFillSymbol({
-  color: [51, 168, 82, 0.3],      // MPIQ green with 30% opacity
+  color: [51, 168, 82, 0.3], // MPIQ green with 30% opacity
   outline: new SimpleLineSymbol({
-    color: [51, 168, 82, 1],      // Solid MPIQ green
+    color: [51, 168, 82, 1], // Solid MPIQ green
     width: 3,
   }),
 });
@@ -210,7 +374,7 @@ const HIGHLIGHT_SYMBOL = new SimpleFillSymbol({
 export interface TemporalConfig {
   enabled: boolean;
   electionYear: number;
-  metric: 'margin' | 'turnout' | 'demPct';
+  metric: "margin" | "turnout" | "demPct";
 }
 
 interface PrecinctChoroplethLayerProps {
@@ -226,6 +390,12 @@ interface PrecinctChoroplethLayerProps {
   enablePopup?: boolean;
   /** Temporal mode - when enabled, colors by election year data */
   temporalConfig?: TemporalConfig;
+  /**
+   * Optional URL for a custom GeoJSON boundaries file.
+   * Use this to visualize user-uploaded boundary data.
+   * Falls back to politicalDataService → local default if not provided or invalid.
+   */
+  boundariesUrl?: string | null;
 }
 
 // ============================================================================
@@ -243,6 +413,7 @@ export function PrecinctChoroplethLayer({
   showLabels = false,
   enablePopup = true,
   temporalConfig,
+  boundariesUrl = null,
 }: PrecinctChoroplethLayerProps) {
   // Support both prop names
   const effectiveSelectedName = selectedPrecinctName || selectedPrecinctId;
@@ -261,19 +432,21 @@ export function PrecinctChoroplethLayer({
 
   const createRenderer = useCallback(() => {
     const renderer = new UniqueValueRenderer({
-      field: 'targeting_strategy',
+      field: "targeting_strategy",
       defaultSymbol: DEFAULT_SYMBOL,
-      uniqueValueInfos: Object.entries(STRATEGY_COLORS).map(([strategy, colors]) => ({
-        value: strategy,
-        symbol: new SimpleFillSymbol({
-          color: colors.fill as [number, number, number, number],
-          outline: new SimpleLineSymbol({
-            color: colors.outline as [number, number, number, number],
-            width: 1,
+      uniqueValueInfos: Object.entries(STRATEGY_COLORS).map(
+        ([strategy, colors]) => ({
+          value: strategy,
+          symbol: new SimpleFillSymbol({
+            color: colors.fill as [number, number, number, number],
+            outline: new SimpleLineSymbol({
+              color: colors.outline as [number, number, number, number],
+              width: 1,
+            }),
           }),
+          label: colors.label,
         }),
-        label: colors.label,
-      })),
+      ),
     });
 
     return renderer;
@@ -283,39 +456,43 @@ export function PrecinctChoroplethLayer({
   // Create Temporal Renderer (when temporal mode is enabled)
   // ============================================================================
 
-  const createTemporalRenderer = useCallback((metric: 'margin' | 'turnout' | 'demPct', year: number) => {
-    const config = TEMPORAL_COLORS[metric];
-    const fieldName = `election_${year}_${metric}`;
+  const createTemporalRenderer = useCallback(
+    (metric: "margin" | "turnout" | "demPct", year: number) => {
+      const config = TEMPORAL_COLORS[metric];
+      const fieldName = `election_${year}_${metric}`;
 
-    const classBreakInfos = [];
-    for (let i = 0; i < config.breaks.length - 1; i++) {
-      const minVal = config.breaks[i];
-      const maxVal = config.breaks[i + 1];
-      const color = config.colors[i];
+      const classBreakInfos = [];
+      for (let i = 0; i < config.breaks.length - 1; i++) {
+        const minVal = config.breaks[i];
+        const maxVal = config.breaks[i + 1];
+        const color = config.colors[i];
 
-      classBreakInfos.push({
-        minValue: minVal,
-        maxValue: maxVal,
-        symbol: new SimpleFillSymbol({
-          color: color as [number, number, number, number],
-          outline: new SimpleLineSymbol({
-            color: [255, 255, 255, 0.6],
-            width: 0.75,
+        classBreakInfos.push({
+          minValue: minVal,
+          maxValue: maxVal,
+          symbol: new SimpleFillSymbol({
+            color: color as [number, number, number, number],
+            outline: new SimpleLineSymbol({
+              color: [255, 255, 255, 0.6],
+              width: 0.75,
+            }),
           }),
-        }),
-        label: metric === 'margin'
-          ? `${minVal >= 0 ? 'D+' : 'R+'}${Math.abs(minVal)} to ${maxVal >= 0 ? 'D+' : 'R+'}${Math.abs(maxVal)}`
-          : `${minVal}% - ${maxVal}%`,
-      });
-    }
+          label:
+            metric === "margin"
+              ? `${minVal >= 0 ? "D+" : "R+"}${Math.abs(minVal)} to ${maxVal >= 0 ? "D+" : "R+"}${Math.abs(maxVal)}`
+              : `${minVal}% - ${maxVal}%`,
+        });
+      }
 
-    return new ClassBreaksRenderer({
-      field: fieldName,
-      classBreakInfos,
-      defaultSymbol: DEFAULT_SYMBOL,
-      defaultLabel: 'No data',
-    });
-  }, []);
+      return new ClassBreaksRenderer({
+        field: fieldName,
+        classBreakInfos,
+        defaultSymbol: DEFAULT_SYMBOL,
+        defaultLabel: "No data",
+      });
+    },
+    [],
+  );
 
   // ============================================================================
   // Create Popup Template
@@ -323,7 +500,8 @@ export function PrecinctChoroplethLayer({
 
   const createPopupTemplate = useCallback(() => {
     return new PopupTemplate({
-      title: '<div style="font-size: 14px; font-weight: 600; color: #1f2937; font-family: Inter, system-ui, -apple-system, sans-serif;">{precinct_name}</div>',
+      title:
+        '<div style="font-size: 14px; font-weight: 600; color: #1f2937; font-family: Inter, system-ui, -apple-system, sans-serif;">{precinct_name}</div>',
       content: `
         <div style="font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5;">
           <!-- Strategy Badge -->
@@ -379,7 +557,7 @@ export function PrecinctChoroplethLayer({
   const createLabelClass = useCallback(() => {
     return new LabelClass({
       labelExpressionInfo: {
-        expression: '$feature.precinct_name',
+        expression: "$feature.precinct_name",
       },
       symbol: new TextSymbol({
         color: [0, 0, 0, 0.8],
@@ -387,7 +565,7 @@ export function PrecinctChoroplethLayer({
         haloSize: 2,
         font: {
           size: 10,
-          weight: 'bold',
+          weight: "bold",
         },
       }),
       minScale: 150000, // Only show labels when zoomed in
@@ -408,110 +586,194 @@ export function PrecinctChoroplethLayer({
       setError(null);
 
       try {
-        // Initialize service and load data
+        // Initialize service (needed for targeting scores, election data, and service-registered uploads)
         await politicalDataService.initialize();
 
-        // Load precinct boundaries, targeting scores, and election data in parallel
-        const [boundaries, targetingScores, electionResults] = await Promise.all([
-          politicalDataService.loadPrecinctBoundaries(),
-          politicalDataService.getAllTargetingScores(),
-          politicalDataService.getAllElectionResults(),
-        ]);
+        // Load municipality boundaries directly + targeting scores and election data
+        const [boundaryResponse, targetingScores, electionResults] =
+          await Promise.all([
+            fetch("/data/political/ingham_municipalities.geojson"),
+            politicalDataService.getAllTargetingScores(),
+            politicalDataService.getAllElectionResults(),
+          ]);
+        if (!boundaryResponse.ok)
+          throw new Error(
+            `Failed to load boundaries: ${boundaryResponse.status}`,
+          );
+        const boundaries: GeoJSON.FeatureCollection =
+          await boundaryResponse.json();
 
         if (!isMounted) return;
 
-        console.log(`[PrecinctChoroplethLayer] Loaded ${boundaries.features.length} precinct boundaries`);
-        console.log(`[PrecinctChoroplethLayer] Loaded ${Object.keys(targetingScores).length} targeting scores`);
-        console.log(`[PrecinctChoroplethLayer] Loaded election results: ${electionResults ? 'yes' : 'no'}`);
+        console.log(
+          `[PrecinctChoroplethLayer] Loaded ${boundaries.features.length} municipality boundaries`,
+        );
+        console.log(
+          `[PrecinctChoroplethLayer] Loaded ${Object.keys(targetingScores).length} targeting scores`,
+        );
+        console.log(
+          `[PrecinctChoroplethLayer] Loaded election results: ${electionResults ? "yes" : "no"}`,
+        );
+        if (boundaries.features.length > 0) {
+          console.log(
+            "[PrecinctChoroplethLayer] Boundary property keys:",
+            Object.keys(boundaries.features[0].properties || {}),
+          );
+        }
 
-        // Create name lookup for matching boundary names to targeting score keys
+        // Create normalized lookup for matching boundary names to targeting score keys
         const targetingScoreKeys = Object.keys(targetingScores);
-        const nameLookup = createPrecinctNameLookup(targetingScoreKeys);
+        const normalizedScoreKeys =
+          buildNormalizedScoreKeyMap(targetingScoreKeys);
 
-        // Debug: Log first few precinct names from boundaries
-        console.log('[PrecinctChoroplethLayer] Sample boundary precinct names:',
-          boundaries.features.slice(0, 3).map(f => f.properties?.PRECINCT_NAME || f.properties?.Precinct_Long_Name || f.properties?.NAME));
+        // Debug: Log first few municipality names from boundaries
+        console.log(
+          "[PrecinctChoroplethLayer] Sample boundary municipality names:",
+          boundaries.features
+            .slice(0, 3)
+            .map(
+              (f) =>
+                f.properties?.JURISDICTION_NAME ||
+                f.properties?.PRECINCT_NAME ||
+                f.properties?.NAME,
+            ),
+        );
 
         // Debug: Log first few keys from targeting scores
-        console.log('[PrecinctChoroplethLayer] Sample targeting score keys:',
-          targetingScoreKeys.slice(0, 3));
+        console.log(
+          "[PrecinctChoroplethLayer] Sample targeting score keys:",
+          targetingScoreKeys.slice(0, 3),
+        );
 
         // Date-to-year mapping for election results lookup
         const electionDateToYear: Record<string, number> = {
-          '2020-11-03': 2020,
-          '2022-11-08': 2022,
-          '2024-11-05': 2024,
+          "2020-11-03": 2020,
+          "2022-11-08": 2022,
+          "2024-11-05": 2024,
         };
 
-        // Join targeting data and election data to precinct features
+        // Join targeting data and election data to municipality features
+        // Each municipality (township/city) contains multiple precincts — we aggregate their scores
         let matchedCount = 0;
         let unmatchedCount = 0;
         const enrichedFeatures = boundaries.features.map((feature) => {
-          // Handle both local GeoJSON format (PRECINCT_NAME) and blob storage format (Precinct_Long_Name)
-          const boundaryName = feature.properties?.PRECINCT_NAME
-            || feature.properties?.Precinct_Long_Name
-            || feature.properties?.NAME;
+          // Municipality GeoJSON uses JURISDICTION_NAME (e.g. "Alaiedon", "East Lansing")
+          const jurisdictionName =
+            feature.properties?.JURISDICTION_NAME ||
+            feature.properties?.PRECINCT_NAME ||
+            feature.properties?.NAME;
+          const jurisdictionType = feature.properties?.JURISDICTION_TYPE || "";
 
-          // Try direct match first (local file names match targeting scores),
-          // then fallback to normalized lookup (for blob storage names)
-          let scores = targetingScores[boundaryName] as typeof targetingScores[string] | undefined;
-          if (!scores) {
-            const targetingKey = nameLookup.get(boundaryName);
-            scores = targetingKey ? targetingScores[targetingKey] : undefined;
-          }
+          // Find all precinct-level targeting score keys that belong to this municipality
+          const matchingKeys = findMunicipalityScoreKeys(
+            jurisdictionName,
+            jurisdictionType,
+            targetingScoreKeys,
+          );
+          const scoresList = matchingKeys
+            .map((k) => targetingScores[k])
+            .filter(Boolean);
+          const scores = aggregateMunicipalityScores(scoresList);
 
           // Debug: Track matches
           if (scores) {
             matchedCount++;
           } else {
             unmatchedCount++;
-            const normalized = normalizePrecinctName(boundaryName);
-            console.warn(`[PrecinctChoroplethLayer] No targeting scores found for precinct: "${boundaryName}" (normalized: "${normalized}")`);
+            console.warn(
+              `[PrecinctChoroplethLayer] No targeting scores found for municipality: "${jurisdictionName}" (matched ${matchingKeys.length} precinct keys)`,
+            );
           }
 
-          // Look up election data by precinct name (try direct match first, then normalized)
-          const electionPrecinctData = electionResults?.precincts?.[boundaryName]
-            || electionResults?.precincts?.[normalizePrecinctName(boundaryName)];
-          const electionsByDate = electionPrecinctData?.elections || {};
+          // Look up election data - aggregate across constituent precincts
+          const electionsByDate: Record<string, Record<string, any>> = {};
+          for (const key of matchingKeys) {
+            const electionPrecinctData = electionResults?.precincts?.[key];
+            if (electionPrecinctData?.elections) {
+              for (const [date, races] of Object.entries(
+                electionPrecinctData.elections,
+              )) {
+                if (!electionsByDate[date]) electionsByDate[date] = {};
+                for (const [race, data] of Object.entries(
+                  races as Record<string, any>,
+                )) {
+                  if (!electionsByDate[date][race]) {
+                    electionsByDate[date][race] = { ...data };
+                  } else {
+                    // Average numeric fields across precincts
+                    const existing = electionsByDate[date][race];
+                    ["dem_pct", "rep_pct", "turnout"].forEach((f) => {
+                      if (
+                        typeof data[f] === "number" &&
+                        typeof existing[f] === "number"
+                      ) {
+                        existing[f] = (existing[f] + data[f]) / 2;
+                      }
+                    });
+                    if (typeof data.total_votes === "number")
+                      existing.total_votes =
+                        (existing.total_votes || 0) + data.total_votes;
+                  }
+                }
+              }
+            }
+          }
 
           // Build election year fields for temporal rendering
           // Election data is keyed by date (e.g., "2020-11-03"), not year
           const electionFields: Record<string, number | null> = {};
           for (const year of [2020, 2022, 2024]) {
             // Find the election date for this year
-            const dateKey = Object.keys(electionDateToYear).find(d => electionDateToYear[d] === year);
+            const dateKey = Object.keys(electionDateToYear).find(
+              (d) => electionDateToYear[d] === year,
+            );
             const electionData = dateKey ? electionsByDate[dateKey] : null;
 
             // Extract presidential/gubernatorial race data
             // Data structure: { "President": { dem_pct, rep_pct, margin, turnout }, ... }
             const raceData = electionData
-              ? (electionData['President'] || electionData['Governor'] || Object.values(electionData)[0])
+              ? electionData["President"] ||
+                electionData["Governor"] ||
+                Object.values(electionData)[0]
               : null;
 
             if (raceData) {
               // Parse percentage strings like "55.2%" to numbers
-              const parsePercent = (val: string | number | null | undefined): number | null => {
+              const parsePercent = (
+                val: string | number | null | undefined,
+              ): number | null => {
                 if (val === null || val === undefined) return null;
-                if (typeof val === 'number') return val;
-                const parsed = parseFloat(val.replace('%', ''));
+                if (typeof val === "number") return val;
+                const parsed = parseFloat(val.replace("%", ""));
                 return isNaN(parsed) ? null : parsed;
               };
-              const parseMargin = (val: string | number | null | undefined): number | null => {
+              const parseMargin = (
+                val: string | number | null | undefined,
+              ): number | null => {
                 if (val === null || val === undefined) return null;
-                if (typeof val === 'number') return val;
+                if (typeof val === "number") return val;
                 // Margin format: "D+15" or "R+8" or "+15" etc
                 const match = val.toString().match(/([DR]?)[+]?([-\d.]+)/);
                 if (!match) return null;
                 const num = parseFloat(match[2]);
                 // D+ is positive, R+ is negative
-                return match[1] === 'R' ? -num : num;
+                return match[1] === "R" ? -num : num;
               };
 
-              electionFields[`election_${year}_margin`] = parseMargin(raceData.margin);
-              electionFields[`election_${year}_turnout`] = parsePercent(raceData.turnout);
-              electionFields[`election_${year}_demPct`] = parsePercent(raceData.dem_pct);
-              electionFields[`election_${year}_repPct`] = parsePercent(raceData.rep_pct);
-              electionFields[`election_${year}_ballotsCast`] = raceData.total_votes ?? null;
+              electionFields[`election_${year}_margin`] = parseMargin(
+                raceData.margin,
+              );
+              electionFields[`election_${year}_turnout`] = parsePercent(
+                raceData.turnout,
+              );
+              electionFields[`election_${year}_demPct`] = parsePercent(
+                raceData.dem_pct,
+              );
+              electionFields[`election_${year}_repPct`] = parsePercent(
+                raceData.rep_pct,
+              );
+              electionFields[`election_${year}_ballotsCast`] =
+                raceData.total_votes ?? null;
             } else {
               electionFields[`election_${year}_margin`] = null;
               electionFields[`election_${year}_turnout`] = null;
@@ -526,22 +788,36 @@ export function PrecinctChoroplethLayer({
             ...feature,
             properties: {
               ...feature.properties,
-              precinct_name: boundaryName,
-              targeting_strategy: scores?.targeting_strategy || 'Unknown',
+              precinct_name: jurisdictionName, // Use jurisdiction name as display name
+              jurisdiction_name: jurisdictionName,
+              jurisdiction_type: jurisdictionType,
+              precinct_ids: (feature.properties?.PRECINCT_IDS || []).join(", "),
+              precinct_count:
+                feature.properties?.PRECINCT_COUNT ?? matchingKeys.length,
+              targeting_strategy: scores?.targeting_strategy || "Unknown",
               gotv_priority: scores?.gotv_priority ?? null,
               persuasion_opportunity: scores?.persuasion_opportunity ?? null,
               combined_score: scores?.combined_score ?? null,
-              gotv_classification: scores?.gotv_classification || 'Unknown',
-              persuasion_classification: scores?.persuasion_classification || 'Unknown',
-              recommendation: scores?.recommendation || 'No data available',
+              gotv_classification: scores?.gotv_classification || "Unknown",
+              persuasion_classification:
+                scores?.persuasion_classification || "Unknown",
+              recommendation: scores?.recommendation || "No data available",
               // Include political scores if available
               partisan_lean: scores?.political_scores?.partisan_lean ?? null,
-              swing_potential: scores?.political_scores?.swing_potential ?? null,
-              // Voter metrics from targeting scores
-              registered_voters: scores?.registered_voters ?? null,
-              active_voters: scores?.active_voters ?? null,
+              swing_potential:
+                scores?.political_scores?.swing_potential ?? null,
+              // Voter metrics: prefer municipality-level GeoJSON fields (more accurate totals)
+              registered_voters:
+                feature.properties?.REGISTERED_VOTERS ??
+                scores?.registered_voters ??
+                null,
+              active_voters:
+                feature.properties?.ACTIVE_VOTERS ??
+                scores?.active_voters ??
+                null,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              turnout: (scores?.political_scores as any)?.turnout?.average ?? null,
+              turnout:
+                (scores?.political_scores as any)?.turnout?.average ?? null,
               // Demographics
               total_population: scores?.total_population ?? null,
               median_income: scores?.median_household_income ?? null,
@@ -554,19 +830,23 @@ export function PrecinctChoroplethLayer({
         });
 
         // Debug: Log join results
-        console.log(`[PrecinctChoroplethLayer] Join complete: ${matchedCount} matched, ${unmatchedCount} unmatched`);
+        console.log(
+          `[PrecinctChoroplethLayer] Join complete: ${matchedCount} matched, ${unmatchedCount} unmatched`,
+        );
 
         // Debug: Log sample of enriched features
         const sampleFeature = enrichedFeatures[0];
         if (sampleFeature) {
           const props = sampleFeature.properties as Record<string, unknown>;
-          console.log('[PrecinctChoroplethLayer] Sample enriched feature:', {
+          console.log("[PrecinctChoroplethLayer] Sample enriched feature:", {
             precinct_name: props?.precinct_name,
             targeting_strategy: props?.targeting_strategy,
             gotv_priority: props?.gotv_priority,
             persuasion_opportunity: props?.persuasion_opportunity,
             partisan_lean: props?.partisan_lean,
-            has_scores: !!props?.targeting_strategy && props.targeting_strategy !== 'Unknown',
+            has_scores:
+              !!props?.targeting_strategy &&
+              props.targeting_strategy !== "Unknown",
             // Election data for temporal mode
             election_2020_margin: props?.election_2020_margin,
             election_2024_margin: props?.election_2024_margin,
@@ -575,35 +855,47 @@ export function PrecinctChoroplethLayer({
         }
 
         // Debug: Count features with election data
-        const electionsCount = enrichedFeatures.filter(f => {
+        const electionsCount = enrichedFeatures.filter((f) => {
           const props = f.properties as Record<string, unknown>;
-          return props?.election_2020_margin !== null ||
+          return (
+            props?.election_2020_margin !== null ||
             props?.election_2022_margin !== null ||
-            props?.election_2024_margin !== null;
+            props?.election_2024_margin !== null
+          );
         }).length;
-        console.log(`[PrecinctChoroplethLayer] Features with election data: ${electionsCount}/${enrichedFeatures.length}`);
+        console.log(
+          `[PrecinctChoroplethLayer] Features with election data: ${electionsCount}/${enrichedFeatures.length}`,
+        );
 
         // Debug: Log ALL unique targeting strategies in enriched data
-        const strategies = new Set(enrichedFeatures.map(f => f.properties?.targeting_strategy));
-        console.log('[PrecinctChoroplethLayer] Unique targeting strategies in enriched data:', Array.from(strategies));
+        const strategies = new Set(
+          enrichedFeatures.map((f) => f.properties?.targeting_strategy),
+        );
+        console.log(
+          "[PrecinctChoroplethLayer] Unique targeting strategies in enriched data:",
+          Array.from(strategies),
+        );
 
         // Debug: Count features by strategy
         const strategyCount: Record<string, number> = {};
-        enrichedFeatures.forEach(f => {
-          const s = f.properties?.targeting_strategy || 'Unknown';
+        enrichedFeatures.forEach((f) => {
+          const s = f.properties?.targeting_strategy || "Unknown";
           strategyCount[s] = (strategyCount[s] || 0) + 1;
         });
-        console.log('[PrecinctChoroplethLayer] Features by strategy:', strategyCount);
+        console.log(
+          "[PrecinctChoroplethLayer] Features by strategy:",
+          strategyCount,
+        );
 
         // Create enriched GeoJSON
         const enrichedGeoJSON: GeoJSON.FeatureCollection = {
-          type: 'FeatureCollection',
+          type: "FeatureCollection",
           features: enrichedFeatures,
         };
 
         // Convert to Blob URL for GeoJSONLayer
         const blob = new Blob([JSON.stringify(enrichedGeoJSON)], {
-          type: 'application/json',
+          type: "application/json",
         });
         const blobUrl = URL.createObjectURL(blob);
 
@@ -621,17 +913,20 @@ export function PrecinctChoroplethLayer({
         // Create GeoJSON layer
         // Choose renderer based on temporal mode
         const renderer = temporalConfig?.enabled
-          ? createTemporalRenderer(temporalConfig.metric, temporalConfig.electionYear)
+          ? createTemporalRenderer(
+              temporalConfig.metric,
+              temporalConfig.electionYear,
+            )
           : createRenderer();
 
         const layer = new GeoJSONLayer({
           url: blobUrl,
           title: temporalConfig?.enabled
             ? `Election ${temporalConfig.electionYear} - ${temporalConfig.metric}`
-            : 'Precinct Targeting Strategies',
+            : "Precinct Targeting Strategies",
           visible,
           opacity,
-          outFields: ['*'],
+          outFields: ["*"],
           renderer,
           popupTemplate: enablePopup ? createPopupTemplate() : undefined,
           popupEnabled: enablePopup,
@@ -644,26 +939,32 @@ export function PrecinctChoroplethLayer({
 
         // Wait for layer to load
         await layer.load();
-        console.log('[PrecinctChoroplethLayer] Layer loaded');
+        console.log("[PrecinctChoroplethLayer] Layer loaded");
 
         // Query a feature to verify data was loaded correctly
         try {
           const query = layer.createQuery();
-          query.where = '1=1';
+          query.where = "1=1";
           query.num = 1;
-          query.outFields = ['*'];
+          query.outFields = ["*"];
           const result = await layer.queryFeatures(query);
           if (result.features.length > 0) {
             const f = result.features[0];
-            console.log('[PrecinctChoroplethLayer] Sample queried feature attributes:', {
-              precinct_name: f.getAttribute('precinct_name'),
-              targeting_strategy: f.getAttribute('targeting_strategy'),
-              gotv_priority: f.getAttribute('gotv_priority'),
-              all_keys: Object.keys(f.attributes || {}).join(', ')
-            });
+            console.log(
+              "[PrecinctChoroplethLayer] Sample queried feature attributes:",
+              {
+                precinct_name: f.getAttribute("precinct_name"),
+                targeting_strategy: f.getAttribute("targeting_strategy"),
+                gotv_priority: f.getAttribute("gotv_priority"),
+                all_keys: Object.keys(f.attributes || {}).join(", "),
+              },
+            );
           }
         } catch (queryErr) {
-          console.warn('[PrecinctChoroplethLayer] Query test failed:', queryErr);
+          console.warn(
+            "[PrecinctChoroplethLayer] Query test failed:",
+            queryErr,
+          );
         }
 
         // Wait for layer view to be ready before setting up click handler
@@ -672,31 +973,42 @@ export function PrecinctChoroplethLayer({
         // Set up click handler
         if (onPrecinctClick) {
           clickHandlerRef.current?.remove();
-          clickHandlerRef.current = view.on('click', async (event) => {
+          clickHandlerRef.current = view.on("click", async (event) => {
             try {
               // Use hit test with specific layer to improve accuracy
               const response = await view.hitTest(event, {
                 include: [layer],
               });
 
-              console.log('[PrecinctChoroplethLayer] Click hit test results:', response.results.length);
+              console.log(
+                "[PrecinctChoroplethLayer] Click hit test results:",
+                response.results.length,
+              );
 
               const hit = response.results.find(
-                (result) => result.type === 'graphic' && 'graphic' in result
+                (result) => result.type === "graphic" && "graphic" in result,
               ) as { graphic: __esri.Graphic } | undefined;
 
               if (hit) {
-                const precinctName = hit.graphic.getAttribute('precinct_name');
+                const precinctName = hit.graphic.getAttribute("precinct_name");
                 const attributes = hit.graphic.attributes;
-                console.log('[PrecinctChoroplethLayer] Precinct clicked:', precinctName);
+                console.log(
+                  "[PrecinctChoroplethLayer] Precinct clicked:",
+                  precinctName,
+                );
                 if (precinctName && onPrecinctClick) {
                   onPrecinctClick(precinctName, attributes);
                 }
               } else {
-                console.log('[PrecinctChoroplethLayer] No precinct found at click location');
+                console.log(
+                  "[PrecinctChoroplethLayer] No precinct found at click location",
+                );
               }
             } catch (err) {
-              console.error('[PrecinctChoroplethLayer] Click handler error:', err);
+              console.error(
+                "[PrecinctChoroplethLayer] Click handler error:",
+                err,
+              );
             }
           });
         }
@@ -704,28 +1016,28 @@ export function PrecinctChoroplethLayer({
         // Set up hover handler
         if (onPrecinctHover) {
           hoverHandlerRef.current?.remove();
-          hoverHandlerRef.current = view.on('pointer-move', async (event) => {
+          hoverHandlerRef.current = view.on("pointer-move", async (event) => {
             try {
               const response = await view.hitTest(event, {
                 include: [layer],
               });
 
               const hit = response.results.find(
-                (result) => result.type === 'graphic' && 'graphic' in result
+                (result) => result.type === "graphic" && "graphic" in result,
               ) as { graphic: __esri.Graphic } | undefined;
 
               if (hit) {
-                const precinctName = hit.graphic.getAttribute('precinct_name');
+                const precinctName = hit.graphic.getAttribute("precinct_name");
                 const attributes = hit.graphic.attributes;
                 if (view.container) {
-                  view.container.style.cursor = 'pointer';
+                  view.container.style.cursor = "pointer";
                 }
                 if (onPrecinctHover) {
                   onPrecinctHover(precinctName, attributes);
                 }
               } else {
                 if (view.container) {
-                  view.container.style.cursor = 'default';
+                  view.container.style.cursor = "default";
                 }
                 if (onPrecinctHover) {
                   onPrecinctHover(null);
@@ -742,9 +1054,11 @@ export function PrecinctChoroplethLayer({
         // Cleanup blob URL after layer is loaded
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
       } catch (err) {
-        console.error('[PrecinctChoroplethLayer] Error loading layer:', err);
+        console.error("[PrecinctChoroplethLayer] Error loading layer:", err);
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load precinct data');
+          setError(
+            err instanceof Error ? err.message : "Failed to load precinct data",
+          );
           setIsLoading(false);
         }
       }
@@ -867,7 +1181,10 @@ export function PrecinctChoroplethLayer({
           await view.goTo(result.features[0].geometry, { duration: 500 });
         }
       } catch (err) {
-        console.warn('[PrecinctChoroplethLayer] Error highlighting precinct:', err);
+        console.warn(
+          "[PrecinctChoroplethLayer] Error highlighting precinct:",
+          err,
+        );
       }
     };
 
@@ -880,7 +1197,7 @@ export function PrecinctChoroplethLayer({
 
   useEffect(() => {
     if (error) {
-      console.error('[PrecinctChoroplethLayer] Error:', error);
+      console.error("[PrecinctChoroplethLayer] Error:", error);
     }
   }, [error]);
 
@@ -898,7 +1215,7 @@ interface PrecinctChoroplethLegendProps {
 }
 
 export function PrecinctChoroplethLegend({
-  className = '',
+  className = "",
   onStrategyClick,
 }: PrecinctChoroplethLegendProps) {
   return (
@@ -921,7 +1238,7 @@ export function PrecinctChoroplethLegend({
                 style={{
                   backgroundColor: bgColor,
                   borderColor: borderColor,
-                  borderWidth: '1.5px',
+                  borderWidth: "1.5px",
                 }}
               />
               <span className="text-xs text-gray-700">{colors.label}</span>
