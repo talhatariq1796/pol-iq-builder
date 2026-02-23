@@ -342,9 +342,21 @@ export function analyzeInsightDataRatio(response: string): number {
  */
 const STRATEGIC_INSIGHTS: Record<string, (data: Record<string, unknown>) => string> = {
   segment_find: (data) => {
-    const count = Number(data.matchCount || data.precinctCount) || 0;
-    const voters = Number(data.totalVoters) || 0;
-    if (count === 0) return 'No precincts match your criteria - consider broadening your filters.';
+    // Try multiple paths to get the count
+    const results = data.results as Record<string, unknown> | undefined;
+    const countValue = data.matchCount ||
+      data.precinctCount ||
+      (results && typeof results === 'object' && 'precinctCount' in results ? results.precinctCount : undefined);
+    const count = Number(countValue) || 0;
+
+    const votersValue = data.totalVoters ||
+      data.estimatedVoters ||
+      (results && typeof results === 'object' && 'estimatedVoters' in results ? results.estimatedVoters : undefined);
+    const voters = Number(votersValue) || 0;
+
+    // Don't add error message if count is 0 - let the handler's own error message handle it
+    // Only add strategic insight when we have results
+    if (count === 0) return ''; // Return empty string to skip prepending error message
     return `**Strategic Opportunity:** ${count} precincts with ${voters.toLocaleString()} voters match your targeting criteria. Focus resources here for maximum impact.`;
   },
 
@@ -407,6 +419,11 @@ export function addSoWhatFraming(
   // Generate strategic insight based on intent
   const insightGenerator = STRATEGIC_INSIGHTS[intent] || STRATEGIC_INSIGHTS.default;
   const insight = insightGenerator(data || {});
+
+  // Only prepend insight if it's not empty (skip error messages)
+  if (!insight || insight.trim() === '') {
+    return response;
+  }
 
   // Prepend insight to response
   return `${insight}\n\n${response}`;

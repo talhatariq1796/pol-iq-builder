@@ -529,44 +529,50 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   const convertPresetToComponentFormat = (filters: SegmentFilters): SegmentFilters => {
     const converted: SegmentFilters = {};
 
-    // Handle demographic filters
-    if (filters.demographic) {
-      converted.demographic = {};
+    // Handle demographic filters (presets use 'demographic', SegmentEngine expects 'demographics')
+    const demographicSource = filters.demographic || filters.demographics;
+    if (demographicSource) {
+      converted.demographics = {};
 
       // Convert age_range to ageRange
-      if (filters.demographic.age_range) {
-        const min = filters.demographic.age_range.min_median_age ?? 0;
-        const max = filters.demographic.age_range.max_median_age ?? 100;
-        converted.demographic.ageRange = [min, max];
-        // Remove the old format
-        delete (converted.demographic as any).age_range;
+      if (demographicSource.age_range) {
+        const min = demographicSource.age_range.min_median_age ?? 0;
+        const max = demographicSource.age_range.max_median_age ?? 100;
+        converted.demographics!.ageRange = [min, max];
       }
 
       // Convert income_range to incomeRange
-      if (filters.demographic.income_range) {
-        const min = filters.demographic.income_range.min_median_hhi ?? 0;
-        const max = filters.demographic.income_range.max_median_hhi ?? 200000;
-        converted.demographic.incomeRange = [min, max];
-        // Remove the old format
-        delete (converted.demographic as any).income_range;
+      if (demographicSource.income_range) {
+        const min = demographicSource.income_range.min_median_hhi ?? 0;
+        const max = demographicSource.income_range.max_median_hhi ?? 200000;
+        converted.demographics!.incomeRange = [min, max];
       }
 
       // Convert diversity min/max to diversityRange
-      if (filters.demographic.min_diversity_index !== undefined || filters.demographic.max_diversity_index !== undefined) {
-        const min = filters.demographic.min_diversity_index ?? 0;
-        const max = filters.demographic.max_diversity_index ?? 100;
-        converted.demographic.diversityRange = [min, max];
-        // Remove old format
-        delete (converted.demographic as any).min_diversity_index;
-        delete (converted.demographic as any).max_diversity_index;
+      if (demographicSource.min_diversity_index !== undefined || demographicSource.max_diversity_index !== undefined) {
+        const min = demographicSource.min_diversity_index ?? 0;
+        const max = demographicSource.max_diversity_index ?? 100;
+        converted.demographics!.diversityRange = [min, max];
       }
 
       // Copy other demographic filters that don't need conversion
-      Object.keys(filters.demographic).forEach((key) => {
-        if (!['age_range', 'income_range', 'min_diversity_index', 'max_diversity_index'].includes(key)) {
-          (converted.demographic as any)[key] = (filters.demographic as any)[key];
-        }
-      });
+      if (demographicSource) {
+        Object.keys(demographicSource).forEach((key) => {
+          if (!['age_range', 'income_range', 'min_diversity_index', 'max_diversity_index'].includes(key)) {
+            // Handle density_type -> density array conversion
+            if (key === 'density_type') {
+              converted.demographics!.density = [demographicSource[key] as 'urban' | 'suburban' | 'rural'];
+            } else if (key === 'income_level') {
+              // Income level is handled separately, but we can keep it for compatibility
+              (converted.demographics as any)[key] = (demographicSource as any)[key];
+            } else if (key === 'min_college_pct') {
+              converted.demographics!.minCollegePct = demographicSource.min_college_pct;
+            } else {
+              (converted.demographics as any)[key] = (demographicSource as any)[key];
+            }
+          }
+        });
+      }
     }
 
     // Handle political filters
@@ -582,10 +588,15 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
         delete (converted.political as any).partisan_lean_range;
       }
 
-      // Copy other political filters
+      // Copy other political filters, converting preset format to component format
       Object.keys(filters.political).forEach((key) => {
         if (key !== 'partisan_lean_range') {
-          (converted.political as any)[key] = (filters.political as any)[key];
+          // Convert 'outlook' (preset) to 'politicalOutlook' (component)
+          if (key === 'outlook') {
+            converted.political!.politicalOutlook = (filters.political as any)[key];
+          } else {
+            (converted.political as any)[key] = (filters.political as any)[key];
+          }
         }
       });
     }
@@ -634,11 +645,17 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
         delete (converted.targeting as any).max_turnout;
       }
 
-      // Copy other targeting filters
+      // Copy other targeting filters (including targeting_strategy)
       Object.keys(filters.targeting).forEach((key) => {
         if (!['min_gotv_priority', 'max_gotv_priority', 'min_persuasion', 'max_persuasion',
-              'min_swing_potential', 'max_swing_potential', 'min_turnout', 'max_turnout'].includes(key)) {
+          'min_swing_potential', 'max_swing_potential', 'min_turnout', 'max_turnout'].includes(key)) {
           (converted.targeting as any)[key] = (filters.targeting as any)[key];
+
+          // SegmentEngine expects targeting_strategy at top level, so also set it there
+          if (key === 'targeting_strategy') {
+            (converted as any).targeting_strategy = (filters.targeting as any)[key];
+            (converted as any).strategy = (filters.targeting as any)[key];
+          }
         }
       });
     }

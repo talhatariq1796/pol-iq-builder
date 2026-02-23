@@ -129,6 +129,30 @@ export class SegmentEngine {
    * Check if a precinct matches all filter categories
    */
   private matchesAllFilters(precinct: PrecinctData, filters: SegmentFilters): boolean {
+    // Check top-level strategy filter if present (for compatibility)
+    const topLevelStrategy = (filters as any).targeting_strategy || (filters as any).strategy;
+    if (topLevelStrategy && topLevelStrategy.length > 0) {
+      const precinctStrategy = precinct.targeting.strategy;
+      
+      // If strategy is 'Unknown', derive it from scores instead of rejecting
+      if (precinctStrategy === 'Unknown' || !precinctStrategy) {
+        // Derive strategy from scores when strategy is unknown
+        const derivedStrategy = this.deriveStrategyFromScores(precinct);
+        const normalizedPrecinctStrategy = derivedStrategy?.toLowerCase().replace(/\s+/g, '_');
+        const normalizedFilters = topLevelStrategy.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
+        if (!normalizedFilters.includes(normalizedPrecinctStrategy)) {
+          return false;
+        }
+      } else {
+        // Normalize strategy values for comparison (handle both 'Persuasion Target' and 'persuasion_target')
+        const normalizedPrecinctStrategy = precinctStrategy?.toLowerCase().replace(/\s+/g, '_');
+        const normalizedFilters = topLevelStrategy.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
+        if (!normalizedFilters.includes(normalizedPrecinctStrategy)) {
+          return false;
+        }
+      }
+    }
+
     if (filters.demographics && !this.matchesDemographics(precinct, filters.demographics)) {
       return false;
     }
@@ -236,16 +260,32 @@ export class SegmentEngine {
       const income = demo.medianHHI;
       switch (filters.income_level) {
         case 'low':
-          if (income >= 40000) return false;
+          if (income >= 40000) {
+            console.log('[SegmentEngine] Demographics filter failed:', precinct.id, `income_level: ${income} >= 40000 (low)`);
+            return false;
+          }
           break;
         case 'middle':
-          if (income < 40000 || income >= 75000) return false;
+          if (income < 40000 || income >= 75000) {
+            console.log('[SegmentEngine] Demographics filter failed:', precinct.id, `income_level: ${income} not in [40000, 75000) (middle)`);
+            return false;
+          }
           break;
         case 'upper_middle':
-          if (income < 75000 || income >= 125000) return false;
+          if (income < 75000 || income >= 125000) {
+            console.log('[SegmentEngine] Demographics filter failed:', precinct.id, {
+              income,
+              filter: filters.income_level,
+              expectedRange: '[75000, 125000)',
+            });
+            return false;
+          }
           break;
         case 'high':
-          if (income < 125000) return false;
+          if (income < 125000) {
+            console.log('[SegmentEngine] Demographics filter failed:', precinct.id, `income_level: ${income} < 125000 (high)`);
+            return false;
+          }
           break;
       }
     }
@@ -289,10 +329,12 @@ export class SegmentEngine {
 
     // Min college percentage (component format)
     if (filters.minCollegePct !== undefined && demo.collegePct < filters.minCollegePct) {
+      console.log('[SegmentEngine] Demographics filter failed:', precinct.id, `minCollegePct: ${demo.collegePct} < ${filters.minCollegePct}`);
       return false;
     }
     // Min college percentage - preset format (min_college_pct)
     if (filters.min_college_pct !== undefined && demo.collegePct < filters.min_college_pct) {
+      console.log('[SegmentEngine] Demographics filter failed:', precinct.id, `min_college_pct: ${demo.collegePct} < ${filters.min_college_pct}`);
       return false;
     }
 
@@ -320,16 +362,34 @@ export class SegmentEngine {
 
     // Density type (component format - accepts array)
     if (filters.density && filters.density.length > 0) {
-      const densityType = this.categorizeDensity(demo.populationDensity);
-      if (!filters.density.includes(densityType)) {
-        return false;
+      // Skip density check if density is missing or zero (data quality issue)
+      if (demo.populationDensity && demo.populationDensity > 0) {
+        const densityType = this.categorizeDensity(demo.populationDensity);
+        if (!filters.density.includes(densityType)) {
+          console.log('[SegmentEngine] Demographics filter failed:', precinct.id, {
+            densityType,
+            filterDensity: filters.density,
+            populationDensity: demo.populationDensity,
+          });
+          return false;
+        }
+      } else {
+        // If density is missing/zero, skip this filter check (allow through)
+        // This handles data quality issues where density might not be available
+        console.log('[SegmentEngine] Skipping density filter for precinct with missing density:', precinct.id, 'populationDensity:', demo.populationDensity);
       }
     }
     // Density - preset format (density_type - single value)
     if (filters.density_type) {
-      const densityType = this.categorizeDensity(demo.populationDensity);
-      if (densityType !== filters.density_type) {
-        return false;
+      // Skip density check if density is missing or zero (data quality issue)
+      if (demo.populationDensity && demo.populationDensity > 0) {
+        const densityType = this.categorizeDensity(demo.populationDensity);
+        if (densityType !== filters.density_type) {
+          return false;
+        }
+      } else {
+        // If density is missing/zero, skip this filter check (allow through)
+        console.log('[SegmentEngine] Skipping density_type filter for precinct with missing density:', precinct.id);
       }
     }
 
@@ -395,6 +455,7 @@ export class SegmentEngine {
       return false;
     }
     if (filters.min_independent_pct !== undefined && pol.independentPct < filters.min_independent_pct) {
+      console.log('[SegmentEngine] Political filter failed:', precinct.id, `min_independent_pct: ${pol.independentPct} < ${filters.min_independent_pct}`);
       return false;
     }
 
@@ -440,7 +501,23 @@ export class SegmentEngine {
 
     // Competitiveness
     if (filters.competitiveness && filters.competitiveness.length > 0) {
-      if (!filters.competitiveness.includes(elec.competitiveness)) {
+      // Normalize competitiveness values for comparison
+      // Data uses: 'Safe D', 'Likely D', 'Lean D', 'Tossup', 'Lean R', 'Likely R', 'Safe R'
+      // Filters use: 'safe_d', 'likely_d', 'lean_d', 'toss_up', 'lean_r', 'likely_r', 'safe_r'
+      const normalizeCompetitiveness = (comp: string): string => {
+        return comp.toLowerCase().replace(/\s+/g, '_').replace('tossup', 'toss_up');
+      };
+      
+      const normalizedPrecinctComp = normalizeCompetitiveness(elec.competitiveness);
+      const normalizedFilters = filters.competitiveness.map(normalizeCompetitiveness);
+      
+      if (!normalizedFilters.includes(normalizedPrecinctComp)) {
+        console.log('[SegmentEngine] Political filter failed:', precinct.id, {
+          competitiveness: elec.competitiveness,
+          normalizedCompetitiveness: normalizedPrecinctComp,
+          filterCompetitiveness: filters.competitiveness,
+          normalizedFilters,
+        });
         return false;
       }
     }
@@ -504,9 +581,21 @@ export class SegmentEngine {
     }
 
     // Targeting strategy (accepts array)
+    // Note: Strategy filter is primarily handled at top level in matchesAllFilters
+    // to support deriving strategy from scores when it's 'Unknown'
+    // This check here is for backwards compatibility with filters.targeting.targeting_strategy
     const strategyFilter = filters.targeting_strategy || filters.strategy;
     if (strategyFilter && strategyFilter.length > 0) {
-      if (!strategyFilter.includes(tgt.strategy as any)) {
+      // If strategy is 'Unknown', skip this check - top level will handle derivation
+      if (tgt.strategy === 'Unknown' || !tgt.strategy) {
+        // Top-level check in matchesAllFilters will derive and check strategy
+        return true;
+      }
+      
+      // Normalize strategy values for comparison (handle both 'Persuasion Target' and 'persuasion_target')
+      const normalizedPrecinctStrategy = tgt.strategy?.toLowerCase().replace(/\s+/g, '_');
+      const normalizedFilters = strategyFilter.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
+      if (!normalizedFilters.includes(normalizedPrecinctStrategy)) {
         return false;
       }
     }
@@ -795,9 +884,46 @@ export class SegmentEngine {
    * Categorize population density into urban/suburban/rural
    */
   private categorizeDensity(density: number): DensityType {
+    // Handle missing or zero density - default to suburban if we can't determine
+    if (!density || density === 0) {
+      // If density is 0 or missing, we can't determine, so skip density filter
+      // Return a default that won't match any filter (will be handled by caller)
+      return 'rural'; // Default fallback, but this should be checked by the filter
+    }
     if (density >= 3000) return 'urban';
     if (density >= 500) return 'suburban';
     return 'rural';
+  }
+
+  /**
+   * Derive targeting strategy from scores when strategy is 'Unknown'
+   * Based on GOTV priority and persuasion opportunity scores
+   */
+  private deriveStrategyFromScores(precinct: PrecinctData): string {
+    const tgt = precinct.targeting;
+    const elec = precinct.electoral;
+    
+    // High persuasion opportunity (>60) suggests persuasion target
+    if (tgt.persuasionOpportunity >= 60) {
+      // If also competitive, it's a battleground
+      if (elec.competitiveness === 'toss_up' || elec.competitiveness === 'lean_d' || elec.competitiveness === 'lean_r') {
+        return 'Battleground';
+      }
+      return 'Persuasion Target';
+    }
+    
+    // High GOTV priority (>70) suggests base mobilization
+    if (tgt.gotvPriority >= 70) {
+      return 'Base Mobilization';
+    }
+    
+    // Competitive but low scores = battleground
+    if (elec.competitiveness === 'toss_up' || elec.competitiveness === 'lean_d' || elec.competitiveness === 'lean_r') {
+      return 'Battleground';
+    }
+    
+    // Default to low priority
+    return 'Low Priority';
   }
 
   /**

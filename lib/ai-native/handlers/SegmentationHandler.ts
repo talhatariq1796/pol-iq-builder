@@ -321,10 +321,17 @@ export class SegmentationHandler implements NLPHandler {
   ): Promise<HandlerResult> {
     // Extract entities and convert to filters
     const entities = this.extractEntities(query.originalQuery);
+    console.log('[SegmentationHandler] Extracted entities:', JSON.stringify(entities, null, 2));
     const filters = this.convertToFilters(entities);
+    console.log('[SegmentationHandler] Converted filters:', JSON.stringify(filters, null, 2));
 
     // Execute segment query
     const results = await this.executeSegmentQuery(filters);
+    console.log('[SegmentationHandler] Query results:', {
+      precinctCount: results.precinctCount,
+      totalPrecincts: results.totalPrecincts,
+      estimatedVoters: results.estimatedVoters,
+    });
 
     if (results.precinctCount === 0) {
       return {
@@ -368,7 +375,16 @@ export class SegmentationHandler implements NLPHandler {
       response,
       mapCommands,
       suggestedActions: this.generateSuggestedActions(results, segmentName),
-      data: { results, filters, segmentName },
+      // Pass results data in format expected by ResponseEnhancer
+      data: {
+        results,
+        filters,
+        segmentName,
+        matchCount: results.precinctCount,
+        precinctCount: results.precinctCount,
+        totalVoters: results.estimatedVoters,
+        estimatedVoters: results.estimatedVoters,
+      },
       metadata: this.buildMetadata('segment_find', startTime, query),
     };
   }
@@ -475,10 +491,44 @@ export class SegmentationHandler implements NLPHandler {
     const highMatch = query.match(SCORE_PATTERNS.high);
     if (highMatch) {
       const metric = highMatch[1].toLowerCase();
-      if (metric === 'gotv') entities.scoreThresholds.gotv = { min: 60 };
-      if (metric === 'persuasion') entities.scoreThresholds.persuasion = { min: 60 };
-      if (metric === 'swing') entities.scoreThresholds.swing = { min: 50 };
-      if (metric === 'turnout') entities.scoreThresholds.turnout = { min: 60 };
+      console.log('[SegmentationHandler] High match found:', { metric, query, existingStrategy: entities.strategy });
+
+      // Special handling for "high persuasion opportunity" - use strategy instead of threshold
+      if (metric === 'persuasion') {
+        const hasOpportunityContext = /\b(opportunity|target|potential)\b/i.test(query);
+        const hasExplicitNumber = SCORE_PATTERNS.naturalThreshold.test(query) ||
+          /\bpersuasion\s*[><=]+\s*\d+/i.test(query);
+        const alreadyHasStrategy = entities.strategy?.includes('persuasion');
+
+        console.log('[SegmentationHandler] Persuasion context check:', {
+          hasOpportunityContext,
+          hasExplicitNumber,
+          alreadyHasStrategy,
+          query
+        });
+
+        // If query has "opportunity" context and no explicit number, prefer strategy over threshold
+        // Also, if strategy is already set (from earlier extraction), don't override with threshold
+        if ((hasOpportunityContext && !hasExplicitNumber) || alreadyHasStrategy) {
+          // For "high persuasion opportunity", use strategy approach
+          // Strategy approach is more flexible and will return more results
+          entities.strategy = entities.strategy || [];
+          if (!entities.strategy.includes('persuasion')) {
+            entities.strategy.push('persuasion');
+          }
+          // Don't set threshold when using strategy - they conflict
+          console.log('[SegmentationHandler] Using strategy approach for persuasion opportunity (no threshold)');
+        } else {
+          // Use threshold for explicit numbers or when no opportunity context
+          entities.scoreThresholds.persuasion = { min: 60 };
+          console.log('[SegmentationHandler] Using threshold approach: persuasion >= 60');
+        }
+      } else {
+        // Other metrics use existing behavior
+        if (metric === 'gotv') entities.scoreThresholds.gotv = { min: 60 };
+        if (metric === 'swing') entities.scoreThresholds.swing = { min: 50 };
+        if (metric === 'turnout') entities.scoreThresholds.turnout = { min: 60 };
+      }
     }
 
     const lowMatch = query.match(SCORE_PATTERNS.low);
@@ -676,16 +726,29 @@ export class SegmentationHandler implements NLPHandler {
       }
 
       if (entities.strategy) {
-        // Map to actual data values (Title Case in precinct data)
+        // Map to actual data values used in precinct data
         const strategyMap: Record<string, string> = {
           gotv: 'Base Mobilization',
-          persuasion: 'Persuasion Focus',
+          persuasion: 'Persuasion Target', // Use 'Persuasion Target' to match presets and data
           battleground: 'Battleground',
           base: 'Base Mobilization',
         };
-        filters.targeting.strategy = entities.strategy.map(
-          (s) => strategyMap[s] as any
-        );
+        const strategyValues = entities.strategy.map((s) => strategyMap[s] as any);
+
+        // Set in targeting object (for type safety)
+        if (!filters.targeting) {
+          filters.targeting = {};
+        }
+        filters.targeting.targeting_strategy = strategyValues;
+
+        // Also set at top level for SegmentEngine compatibility (it checks filters.targeting_strategy || filters.strategy)
+        (filters as any).targeting_strategy = strategyValues;
+        (filters as any).strategy = strategyValues;
+
+        console.log('[SegmentationHandler] Set targeting_strategy:', strategyValues, 'in filters:', {
+          targeting: filters.targeting?.targeting_strategy,
+          topLevel: (filters as any).targeting_strategy
+        });
       }
     }
 
@@ -1621,8 +1684,8 @@ export class SegmentationHandler implements NLPHandler {
         const meetsTarget = isGOTV
           ? p.gotvPriority >= 70
           : isSwing
-          ? p.swingPotential >= 70
-          : p.gotvPriority >= 60 || p.swingPotential >= 60;
+            ? p.swingPotential >= 70
+            : p.gotvPriority >= 60 || p.swingPotential >= 60;
         return isHighDonor && meetsTarget;
       });
 

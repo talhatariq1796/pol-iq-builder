@@ -510,13 +510,6 @@ const MessageContentWithEntities: React.FC<{
         )}
       </div>
 
-      {/* DEBUG: Show section count */}
-      {process.env.NODE_ENV === 'development' && content.includes('[SECTION:') && (
-        <div className="text-xs text-orange-500 mt-2">
-          [DEBUG] Found {sections.length} collapsible sections
-          {sections.length === 0 && ' - BUG: Tags present but not parsed!'}
-        </div>
-      )}
 
       {/* Collapsible sections */}
       {sections.map((section, idx) => (
@@ -1326,7 +1319,7 @@ export default function UnifiedAIAssistant({
 
     return () => clearInterval(interval);
     */
-    return () => {}; // No-op cleanup
+    return () => { }; // No-op cleanup
   }, [isProcessing]);
 
   // ---------------------------------------------------------------------------
@@ -1876,8 +1869,8 @@ export default function UnifiedAIAssistant({
 
       // Get the current selection or context
       const currentEntity = selectedPrecinct?.precinctName ||
-                           state.selection.selectedIds[0] ||
-                           action.metadata?.entityId;
+        state.selection.selectedIds[0] ||
+        action.metadata?.entityId;
 
       if (currentEntity) {
         // We have a first entity - ask for the second one
@@ -2061,48 +2054,48 @@ export default function UnifiedAIAssistant({
                 ? allPrecincts.filter((p: any) => targetIds.includes(p.id))
                 : allPrecincts;
 
-          // Build CSV with real data
-          const headers = [
-            'Precinct ID',
-            'Precinct Name',
-            'Jurisdiction',
-            'Registered Voters',
-            'Swing Potential',
-            'GOTV Priority',
-            'Persuasion Score',
-            'Partisan Lean',
-            'Turnout Rate'
-          ];
+              // Build CSV with real data
+              const headers = [
+                'Precinct ID',
+                'Precinct Name',
+                'Jurisdiction',
+                'Registered Voters',
+                'Swing Potential',
+                'GOTV Priority',
+                'Persuasion Score',
+                'Partisan Lean',
+                'Turnout Rate'
+              ];
 
-          const rows = precinctsToExport.map((p: any) => [
-            p.id,
-            `"${p.name}"`,
-            `"${p.jurisdiction}"`,
-            p.demographics?.population18up || 0,
-            Math.round(p.targeting?.swingPotential || p.electoral?.swingPotential || 0),
-            Math.round(p.targeting?.gotvPriority || 0),
-            Math.round(p.targeting?.persuasionOpportunity || 0),
-            (p.electoral?.partisanLean || 0).toFixed(1),
-            ((p.electoral?.avgTurnout || 0) * 100).toFixed(1) + '%'
-          ].join(','));
+              const rows = precinctsToExport.map((p: any) => [
+                p.id,
+                `"${p.name}"`,
+                `"${p.jurisdiction}"`,
+                p.demographics?.population18up || 0,
+                Math.round(p.targeting?.swingPotential || p.electoral?.swingPotential || 0),
+                Math.round(p.targeting?.gotvPriority || 0),
+                Math.round(p.targeting?.persuasionOpportunity || 0),
+                (p.electoral?.partisanLean || 0).toFixed(1),
+                ((p.electoral?.avgTurnout || 0) * 100).toFixed(1) + '%'
+              ].join(','));
 
-          const csvContent = [headers.join(','), ...rows].join('\n');
+              const csvContent = [headers.join(','), ...rows].join('\n');
 
-          // Trigger download
-          const blob = new Blob([csvContent], { type: 'text/csv' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `ingham-precincts-${new Date().toISOString().split('T')[0]}.csv`;
-          link.click();
-          URL.revokeObjectURL(url);
+              // Trigger download
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `ingham-precincts-${new Date().toISOString().split('T')[0]}.csv`;
+              link.click();
+              URL.revokeObjectURL(url);
 
-          // Log and confirm
-          stateManager.logExploration({
-            tool: toolContext,
-            action: 'csv_exported',
-            metadata: { precinctCount: precinctsToExport.length },
-          });
+              // Log and confirm
+              stateManager.logExploration({
+                tool: toolContext,
+                action: 'csv_exported',
+                metadata: { precinctCount: precinctsToExport.length },
+              });
 
               setMessages((prev: Message[]) => [
                 ...prev,
@@ -2157,84 +2150,84 @@ export default function UnifiedAIAssistant({
                 ? allPrecincts.filter((p: any) => targetIds.includes(p.id))
                 : allPrecincts;
 
-          // Build VAN-compatible CSV
-          const headers = [
-            'PrecinctCode',
-            'PrecinctName',
-            'Jurisdiction',
-            'EstimatedVoters',
-            'SupportScore',
-            'TurnoutScore',
-            'PersuasionScore',
-            'Priority',
-            'ContactMethod',
-            'Notes'
-          ];
+              // Build VAN-compatible CSV
+              const headers = [
+                'PrecinctCode',
+                'PrecinctName',
+                'Jurisdiction',
+                'EstimatedVoters',
+                'SupportScore',
+                'TurnoutScore',
+                'PersuasionScore',
+                'Priority',
+                'ContactMethod',
+                'Notes'
+              ];
 
-          const rows = precinctsToExport.map((p: any) => {
-            // Convert partisan lean to support score (1-5 scale)
-            // Negative lean = Democratic = lower support score number
-            const lean = p.electoral?.partisanLean || 0;
-            let supportScore: number;
-            if (lean <= -15) supportScore = 1;      // Strong D
-            else if (lean <= -5) supportScore = 2;  // Lean D
-            else if (lean <= 5) supportScore = 3;   // Toss-up
-            else if (lean <= 15) supportScore = 4;  // Lean R
-            else supportScore = 5;                   // Strong R
+              const rows = precinctsToExport.map((p: any) => {
+                // Convert partisan lean to support score (1-5 scale)
+                // Negative lean = Democratic = lower support score number
+                const lean = p.electoral?.partisanLean || 0;
+                let supportScore: number;
+                if (lean <= -15) supportScore = 1;      // Strong D
+                else if (lean <= -5) supportScore = 2;  // Lean D
+                else if (lean <= 5) supportScore = 3;   // Toss-up
+                else if (lean <= 15) supportScore = 4;  // Lean R
+                else supportScore = 5;                   // Strong R
 
-            // Convert GOTV priority (0-100) to VAN turnout score (1-100)
-            const turnoutScore = Math.round(p.targeting?.gotvPriority || 50);
+                // Convert GOTV priority (0-100) to VAN turnout score (1-100)
+                const turnoutScore = Math.round(p.targeting?.gotvPriority || 50);
 
-            // Persuasion score (0-100)
-            const persuasionScore = Math.round(p.targeting?.persuasionOpportunity || 50);
+                // Persuasion score (0-100)
+                const persuasionScore = Math.round(p.targeting?.persuasionOpportunity || 50);
 
-            // Priority based on combined score
-            const matchScore = p.targeting?.combinedScore || 50;
-            const priority = matchScore >= 80 ? 'High'
-              : matchScore >= 60 ? 'Medium'
-              : 'Low';
+                // Priority based on combined score
+                const matchScore = p.targeting?.combinedScore || 50;
+                const priority = matchScore >= 80 ? 'High'
+                  : matchScore >= 60 ? 'Medium'
+                    : 'Low';
 
-            // Determine contact method based on targeting strategy
-            const strategy = p.targeting?.strategy || '';
-            let contactMethod = 'Door';
-            if (strategy.toLowerCase().includes('persuasion')) contactMethod = 'Door';
-            else if (strategy.toLowerCase().includes('gotv')) contactMethod = 'Phone';
-            else if (strategy.toLowerCase().includes('mail')) contactMethod = 'Mail';
+                // Determine contact method based on targeting strategy
+                const strategy = p.targeting?.strategy || '';
+                let contactMethod = 'Door';
+                if (strategy.toLowerCase().includes('persuasion')) contactMethod = 'Door';
+                else if (strategy.toLowerCase().includes('gotv')) contactMethod = 'Phone';
+                else if (strategy.toLowerCase().includes('mail')) contactMethod = 'Mail';
 
-            // Notes with targeting recommendation
-            const swingPotential = Math.round(p.targeting?.swingPotential || 0);
-            const notes = `Swing: ${swingPotential}, Strategy: ${strategy}`;
+                // Notes with targeting recommendation
+                const swingPotential = Math.round(p.targeting?.swingPotential || 0);
+                const notes = `Swing: ${swingPotential}, Strategy: ${strategy}`;
 
-            return [
-              p.id,
-              `"${p.name}"`,
-              `"${p.jurisdiction}"`,
-              p.demographics?.population18up || 0,
-              supportScore,
-              turnoutScore,
-              persuasionScore,
-              priority,
-              contactMethod,
-              `"${notes}"`
-            ].join(',');
-          });
+                return [
+                  p.id,
+                  `"${p.name}"`,
+                  `"${p.jurisdiction}"`,
+                  p.demographics?.population18up || 0,
+                  supportScore,
+                  turnoutScore,
+                  persuasionScore,
+                  priority,
+                  contactMethod,
+                  `"${notes}"`
+                ].join(',');
+              });
 
-          const csvContent = [headers.join(','), ...rows].join('\n');
+              const csvContent = [headers.join(','), ...rows].join('\n');
 
-          // Trigger download
-          const blob = new Blob([csvContent], { type: 'text/csv' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `van-export-${new Date().toISOString().split('T')[0]}.csv`;
-          link.click();
-          URL.revokeObjectURL(url);
+              // Trigger download
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `van-export-${new Date().toISOString().split('T')[0]}.csv`;
+              link.click();
+              URL.revokeObjectURL(url);
 
-          stateManager.logExploration({
-            tool: toolContext,
-            action: 'van_exported',
-            metadata: { precinctCount: precinctsToExport.length },
-          });
+              stateManager.logExploration({
+                tool: toolContext,
+                action: 'van_exported',
+                metadata: { precinctCount: precinctsToExport.length },
+              });
 
               setMessages((prev: Message[]) => [
                 ...prev,
@@ -2861,13 +2854,12 @@ export default function UnifiedAIAssistant({
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-                message.role === 'user'
+              className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.role === 'user'
                   ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
                   : message.isError
-                  ? 'bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 text-gray-900 border-2 border-red-300'
-                  : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
-              }`}
+                    ? 'bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 text-gray-900 border-2 border-red-300'
+                    : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
+                }`}
             >
               {message.role === 'user' ? (
                 <div className="text-xs leading-relaxed">
@@ -2889,11 +2881,10 @@ export default function UnifiedAIAssistant({
                   {/* Issue #16: Confidence indicators */}
                   {message.confidence && (
                     <div className="mt-2 flex items-center gap-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        message.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                        message.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${message.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                          message.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                        }`}>
                         {message.confidence} confidence
                       </span>
                     </div>
@@ -3102,11 +3093,10 @@ export default function UnifiedAIAssistant({
                 }
               }}
               placeholder={isProcessing ? "AI is thinking..." : config.placeholder}
-              className={`flex-1 min-w-0 px-4 py-3 text-sm border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#33a852] focus:border-[#33a852] transition-all min-h-[48px] ${
-                isProcessing
+              className={`flex-1 min-w-0 px-4 py-3 text-sm border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#33a852] focus:border-[#33a852] transition-all min-h-[48px] ${isProcessing
                   ? 'border-emerald-300 bg-emerald-50 cursor-not-allowed opacity-60'
                   : 'border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
-              }`}
+                }`}
               disabled={isProcessing}
             />
             <button
@@ -3228,11 +3218,10 @@ export default function UnifiedAIAssistant({
               </button>
               <button
                 onClick={confirmationModal.onConfirm}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  confirmationModal.isDangerous
+                className={`px-4 py-2 rounded-lg transition-colors ${confirmationModal.isDangerous
                     ? 'bg-red-600 hover:bg-red-700 text-white'
                     : 'bg-[#33a852] hover:bg-[#2d9944] text-white'
-                }`}
+                  }`}
               >
                 {confirmationModal.confirmLabel}
               </button>
