@@ -914,49 +914,49 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   return (
     <div className="w-full h-full flex gap-4 p-4 relative">
       {/* Left Panel: Filters */}
-      <Card className="w-1/3 flex flex-col">
+      <Card className="w-1/3 flex flex-col  p-0">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
               Voter Segmentation
             </CardTitle>
-            <div className="flex items-center gap-2">
-              {/* Wave 4A: Undo/Redo buttons */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleUndo}
-                disabled={!canUndo}
-                title="Undo (Cmd+Z)"
-              >
-                <Undo className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRedo}
-                disabled={!canRedo}
-                title="Redo (Cmd+Shift+Z)"
-              >
-                <Redo className="h-4 w-4" />
-              </Button>
-              {/* History position indicator */}
-              {historyPosition && historyPosition.total > 1 && (
-                <span className="text-xs text-muted-foreground px-1">
-                  {historyPosition.label}
-                </span>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearFilters}
-                disabled={filterCount === 0}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear
-              </Button>
-            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Wave 4A: Undo/Redo buttons */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              title="Undo (Cmd+Z)"
+            >
+              <Undo className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              title="Redo (Cmd+Shift+Z)"
+            >
+              <Redo className="h-4 w-4" />
+            </Button>
+            {/* History position indicator */}
+            {historyPosition && historyPosition.total > 1 && (
+              <span className="text-xs text-muted-foreground px-1">
+                {historyPosition.label}
+              </span>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearFilters}
+              disabled={filterCount === 0}
+            >
+              <Trash2 className="h-4 w-4 " />
+              Clear
+            </Button>
           </div>
 
           {/* Preset Selector */}
