@@ -409,6 +409,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     setFilters((prev: ExtendedSegmentFilters) => {
       const newFilters = {
         ...prev,
+        demographics: Object.keys(demographic).length > 0 ? demographic : undefined,
         demographic: Object.keys(demographic).length > 0 ? demographic : undefined,
       };
       // Push to history for undo/redo
@@ -900,7 +901,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   // Filter count
   const filterCount = useMemo(() => {
     let count = 0;
-    if (filters.demographic) count++;
+    if (filters.demographics || filters.demographic) count++;
     if (filters.political) count++;
     if (filters.targeting) count++;
     if (filters.engagement) count++;
@@ -982,13 +983,13 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
             <AccordionItem value="demographic">
               <AccordionTrigger>
                 Demographics
-                {filters.demographic && (
+                {(filters.demographics || filters.demographic) && (
                   <span className="ml-2 text-xs text-muted-foreground">(active)</span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
                 <DemographicFilters
-                  filters={filters.demographic || {}}
+                  filters={filters.demographics || filters.demographic || {}}
                   onChange={handleDemographicChange}
                 />
               </AccordionContent>
