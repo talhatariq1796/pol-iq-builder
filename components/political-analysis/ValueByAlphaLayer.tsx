@@ -264,7 +264,7 @@ function getBaseColorForValue(
 }
 
 /**
- * Calculate alpha based on alpha metric value
+ * Calculate alpha based on alpha metric 
  */
 function calculateAlpha(
   value: number | null,
