@@ -825,4 +825,8 @@ export interface UnifiedPrecinct {
     facebookPct: number;
     youtubePct: number;
   };
+
+  // Tapestry segment (when available from data source; used for segment filters)
+  tapestryCode?: string;
+  tapestrySegment?: string;
 }

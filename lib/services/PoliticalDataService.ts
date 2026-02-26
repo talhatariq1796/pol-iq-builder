@@ -133,6 +133,9 @@ interface TargetingScoresPrecinct {
   total_population?: number;
   population_age_18up?: number;
   median_household_income?: number;
+  median_age?: number;
+  owner_pct?: number;
+  population_density?: number;
   dem_affiliation_pct?: number;
   rep_affiliation_pct?: number;
   ind_affiliation_pct?: number;
