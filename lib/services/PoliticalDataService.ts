@@ -929,10 +929,12 @@ export class PoliticalDataService {
           totalPopulation: targetingData?.total_population || 0,
           population18up: targetingData?.population_age_18up || 0,
           registeredVoters: targetingData?.registered_voters,  // From election data
+          medianAge: targetingData?.median_age ?? undefined,
           medianHHI: targetingData?.median_household_income || 0,
           collegePct: targetingData?.college_pct || 0,
+          homeownerPct: targetingData?.owner_pct ?? undefined,
           diversityIndex: targetingData?.diversity_index || 0,
-          populationDensity: undefined, // Not available in current data
+          populationDensity: targetingData?.population_density ?? undefined,
         },
 
         // Political affiliation (from targeting scores / BA data)
@@ -989,6 +991,9 @@ export class PoliticalDataService {
               lowEngagement: targetingData.persuasion_components.low_engagement,
             }
           : undefined,
+
+        // Engagement / media (for segment News Preference and engagement filters)
+        engagement: this.buildEngagementFromTargeting(targetingData),
       };
     }
 
@@ -1188,12 +1193,12 @@ export class PoliticalDataService {
         demographics: {
           totalPopulation: p.demographics.totalPopulation,
           population18up: p.demographics.population18up,
-          medianAge: 35, // Not available in unified data, use default
+          medianAge: p.demographics.medianAge ?? 35, // From unified/BA data; fallback when missing
           medianHHI: p.demographics.medianHHI,
           collegePct: p.demographics.collegePct,
-          homeownerPct: 0, // Not available in unified data
+          homeownerPct: p.demographics.homeownerPct ?? 0,
           diversityIndex: p.demographics.diversityIndex,
-          populationDensity: p.demographics.populationDensity || 0,
+          populationDensity: p.demographics.populationDensity ?? 0,
         },
         political: {
           demAffiliationPct: p.political.demAffiliationPct,
@@ -1217,6 +1222,9 @@ export class PoliticalDataService {
           strategy: p.targeting.strategy,
         },
         elections: {}, // Election history not included in unified format
+        ...(p.engagement && { engagement: p.engagement }),
+        ...(p.tapestryCode && { tapestryCode: p.tapestryCode }),
+        ...(p.tapestrySegment && { tapestrySegment: p.tapestrySegment }),
       };
     }
 
@@ -1257,9 +1265,11 @@ export class PoliticalDataService {
    */
   async getSegmentEnginePrecincts(): Promise<any> {
     const data = await this.getPrecinctDataFileFormat();
+    const crosswalk = await this.loadDistrictCrosswalk();
+    const electionResults = await this.loadElectionResults();
+    const electionKeyByPrecinctName = await this.loadElectionHistoryPrecinctKeyMap();
+    const tapestrySegmentsMap = await this.loadTapestrySegmentsMap();
 
-    // Convert Record to array, casting competitiveness to the expected union type
-    // Remove engagement field if it doesn't have all required properties
     const precincts = Object.values(data.precincts).map((p: any) => {
       const result: any = {
         ...p,
@@ -1269,13 +1279,42 @@ export class PoliticalDataService {
         },
       };
 
+      // Merge district assignments from crosswalk (keyed by precinct name)
+      const assignment = crosswalk[p.name];
+      if (assignment) {
+        result.stateHouse = assignment.stateHouse ?? undefined;
+        result.stateSenate = assignment.stateSenate ?? undefined;
+        result.congressional = assignment.congressional ?? undefined;
+        result.municipality = assignment.municipality ?? undefined;
+        result.municipalityType = assignment.municipalityType ?? undefined;
+      }
+
+      // Merge election history (precinctHistory keyed by short id, e.g. el-pct-1)
+      const shortId = electionKeyByPrecinctName.get(this.normalizePrecinctNameForElection(p.name));
+      const rawHistory = shortId && electionResults.precinctHistory?.[shortId];
+      if (rawHistory) {
+        result.elections = this.convertToPrecinctElectionResults(rawHistory);
+      }
+
+      // Attach Tapestry segment metadata for Tapestry filters
+      const code = result.tapestryCode || p.tapestryCode;
+      if (code && tapestrySegmentsMap.size > 0) {
+        const seg = tapestrySegmentsMap.get(code);
+        if (seg) {
+          result.tapestryLifeModeGroup = seg.lifeModeGroup;
+          result.tapestryUrbanization = seg.urbanization;
+          result.tapestryLifestage = seg.lifestage;
+          result.tapestryAffluence = seg.affluence;
+          result.tapestryExpectedPartisanLean = seg.expectedPartisanLean;
+        }
+      }
+
       // Check if engagement has all required fields
       const hasCompleteEngagement = p.engagement &&
         'activistPct' in p.engagement &&
         'facebookPct' in p.engagement &&
         'youtubePct' in p.engagement;
 
-      // Remove incomplete engagement data
       if (!hasCompleteEngagement) {
         delete result.engagement;
       }
@@ -1283,10 +1322,145 @@ export class PoliticalDataService {
       return result;
     });
 
-    console.log(`[PoliticalDataService] getSegmentEnginePrecincts: Returning ${precincts.length} precincts`);
+    console.log(`[PoliticalDataService] getSegmentEnginePrecincts: Returning ${precincts.length} precincts with district and election data`);
 
-    // Type assertion needed because engagement field may be incomplete or missing
     return precincts as any;
+  }
+
+  /** Normalize precinct name for matching to boundaries/election-history keys */
+  private normalizePrecinctNameForElection(name: string): string {
+    return name
+      .replace(/^city of /i, '')
+      .replace(/^township of /i, '')
+      .toLowerCase()
+      .replace(/,/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Load map: normalized precinct name -> short precinct id (e.g. el-pct-1) for election-history lookup */
+  private async loadElectionHistoryPrecinctKeyMap(): Promise<Map<string, string>> {
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/data/boundaries/precinct_district_crosswalk.json');
+        if (!res.ok) return new Map();
+        const data = await res.json();
+        const crosswalk = data.crosswalk || [];
+        const map = new Map<string, string>();
+        for (const entry of crosswalk) {
+          const id = entry.precinctId;
+          const name = entry.precinctName;
+          if (id && name) map.set(this.normalizePrecinctNameForElection(name), id);
+        }
+        return map;
+      }
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const filePath = path.join(process.cwd(), 'public/data/boundaries/precinct_district_crosswalk.json');
+      const content = await fs.readFile(filePath, 'utf-8');
+      const data = JSON.parse(content);
+      const crosswalk = data.crosswalk || [];
+      const map = new Map<string, string>();
+      for (const entry of crosswalk) {
+        const id = entry.precinctId;
+        const name = entry.precinctName;
+        if (id && name) map.set(this.normalizePrecinctNameForElection(name), id);
+      }
+      return map;
+    } catch {
+      return new Map();
+    }
+  }
+
+  /** Load Tapestry segment definitions for filtering (code -> segment metadata) */
+  private async loadTapestrySegmentsMap(): Promise<Map<string, { lifeModeGroup: number; urbanization: string; lifestage: string; affluence: string; expectedPartisanLean: number }>> {
+    try {
+      let segments: Array<{ code: string; lifeModeGroup: number; lifeModeGroupName?: string; urbanization: string; lifestage: string; affluence: string; expectedPartisanLean: number }>;
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/data/tapestry/tapestry_segments.json');
+        if (!res.ok) return new Map();
+        segments = await res.json();
+      } else {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const filePath = path.join(process.cwd(), 'public/data/tapestry/tapestry_segments.json');
+        const content = await fs.readFile(filePath, 'utf-8');
+        segments = JSON.parse(content);
+      }
+      const map = new Map<string, { lifeModeGroup: number; urbanization: string; lifestage: string; affluence: string; expectedPartisanLean: number }>();
+      for (const s of segments || []) {
+        if (s.code) {
+          map.set(s.code, {
+            lifeModeGroup: s.lifeModeGroup,
+            urbanization: s.urbanization || '',
+            lifestage: s.lifestage || '',
+            affluence: s.affluence || '',
+            expectedPartisanLean: Number(s.expectedPartisanLean) || 0,
+          });
+        }
+      }
+      return map;
+    } catch {
+      return new Map();
+    }
+  }
+
+  /** Convert election-history raw format to PrecinctElectionResult (demPct/repPct 0-100, turnout 0-100) */
+  private convertToPrecinctElectionResults(
+    raw: Record<string, { turnout: number; demVoteShare: number; repVoteShare: number; margin: number }>
+  ): Record<string, { demPct: number; repPct: number; margin: number; turnout: number; ballotsCast: number }> {
+    const out: Record<string, { demPct: number; repPct: number; margin: number; turnout: number; ballotsCast: number }> = {};
+    for (const [year, e] of Object.entries(raw)) {
+      out[year] = {
+        demPct: (e.demVoteShare ?? 0) * 100,
+        repPct: (e.repVoteShare ?? 0) * 100,
+        margin: e.margin ?? 0,
+        turnout: (e.turnout ?? 0) * 100,
+        ballotsCast: 0,
+      };
+    }
+    return out;
+  }
+
+  /**
+   * Build engagement metrics from raw targeting/BA precinct data for segment filters.
+   * Converts counts to percentages of population 18+ for News Preference and engagement filters.
+   */
+  private buildEngagementFromTargeting(targetingData: any): UnifiedPrecinct['engagement'] | undefined {
+    if (!targetingData?.population_age_18up) return undefined;
+    const pop18 = Number(targetingData.population_age_18up) || 1;
+    const n = (key: string) => Number((targetingData as Record<string, number>)[key]) || 0;
+    const pct = (count: number) => (count / pop18) * 100;
+
+    const cnnMsnbc = pct(n('watched_cnn_cable_news_network_last_week') + n('watched_msnbc_last_wk'));
+    const foxNewsmax = pct(n('watched_fox_news_channel_last_wk') + n('watched_newsmax_tv_last_wk'));
+    const nprPct = pct(n('listen_to_public_radio_format'));
+    // Social media usage: use the maximum single-platform reach so precincts differentiate
+    // (sum of platforms caps at 100% for almost everyone; max gives "leading platform %" per precinct)
+    const facebookPct = pct(n('social_media_used_facebook_30_days'));
+    const youtubePct = pct(n('social_media_used_youtube_30_days'));
+    const instagramPct = pct(n('social_media_used_instagram_30_days'));
+    const linkedinPct = pct(n('social_media_used_linkedin_30_days'));
+    const redditPct = pct(n('social_media_used_reddit_30_days'));
+    const twitterPct = pct(n('social_media_used_x_formerly_twitter'));
+    const socialMediaPct = Math.min(
+      100,
+      Math.max(facebookPct, youtubePct, instagramPct, linkedinPct, redditPct, twitterPct)
+    );
+
+    const politicalDonorPct = pct(n('contributed_to_political_org_12_mo'));
+    const activistPct = pct(n('wrote_or_called_a_politician_12_mo'));
+
+    return {
+      politicalDonorPct,
+      activistPct,
+      cnnMsnbcPct: cnnMsnbc,
+      foxNewsmaxPct: foxNewsmax,
+      nprPct: nprPct,
+      socialMediaPct,
+      facebookPct,
+      youtubePct,
+    };
   }
 
   /**

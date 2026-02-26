@@ -762,10 +762,12 @@ export interface UnifiedPrecinct {
     totalPopulation: number;
     population18up: number;
     registeredVoters?: number;  // From election data
+    medianAge?: number;         // Median age (from targeting/BA data)
     medianHHI: number;
     collegePct: number;
+    homeownerPct?: number;      // Owner-occupied % (from targeting/BA data)
     diversityIndex: number;
-    populationDensity?: number;
+    populationDensity?: number; // Per sq mi or sq km (for urban/suburban/rural)
   };
 
   // Political affiliation (from targeting scores / BA data)
@@ -810,5 +812,17 @@ export interface UnifiedPrecinct {
     moderateFactor: number;
     independentFactor: number;
     lowEngagement: number;
+  };
+
+  // Engagement / media (from targeting scores / BA data, for segment filters)
+  engagement?: {
+    politicalDonorPct: number;
+    activistPct: number;
+    cnnMsnbcPct: number;
+    foxNewsmaxPct: number;
+    nprPct: number;
+    socialMediaPct: number;
+    facebookPct: number;
+    youtubePct: number;
   };
 }
