@@ -5,6 +5,7 @@
 
 import type {
   SegmentFilters,
+  ExtendedSegmentFilters,
   SegmentResults,
   PrecinctMatch,
   DemographicFilters,
@@ -107,10 +108,10 @@ export class SegmentEngine {
 
   /**
    * Execute a segment query with the given filters
-   * @param filters - Multi-dimensional filter criteria
+   * @param filters - Multi-dimensional filter criteria (includes electoral, electionHistory, tapestry)
    * @returns Matching precincts and aggregate statistics
    */
-  query(filters: SegmentFilters): SegmentResults {
+  query(filters: ExtendedSegmentFilters): SegmentResults {
     const matchingPrecincts: PrecinctMatch[] = [];
 
     for (const precinct of this.precincts) {
@@ -150,7 +151,7 @@ export class SegmentEngine {
   /**
    * Check if a precinct matches all filter categories
    */
-  private matchesAllFilters(precinct: PrecinctData, filters: SegmentFilters): boolean {
+  private matchesAllFilters(precinct: PrecinctData, filters: ExtendedSegmentFilters): boolean {
     // Check top-level strategy filter if present (for compatibility)
     const topLevelStrategy = (filters as any).targeting_strategy || (filters as any).strategy;
     if (topLevelStrategy && topLevelStrategy.length > 0) {
@@ -193,7 +194,7 @@ export class SegmentEngine {
     if (filters.electionHistory && !this.matchesElectionHistory(precinct, filters.electionHistory)) {
       return false;
     }
-    const tapestryFilters = (filters as { tapestry?: TapestryFilters }).tapestry;
+    const tapestryFilters = filters.tapestry;
     if (tapestryFilters && !this.matchesTapestry(precinct, tapestryFilters)) {
       return false;
     }
