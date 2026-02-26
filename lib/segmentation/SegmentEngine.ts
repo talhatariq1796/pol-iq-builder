@@ -205,16 +205,16 @@ export class SegmentEngine {
    */
   private matchesTapestry(precinct: PrecinctData, filters: TapestryFilters): boolean {
     const code = precinct.tapestryCode;
-    if (!code) return false;
 
+    // Require tapestryCode only when filtering by segment code or life mode group
     if (filters.tapestrySegments && filters.tapestrySegments.length > 0) {
-      if (!filters.tapestrySegments.includes(code)) return false;
+      if (!code || !filters.tapestrySegments.includes(code)) return false;
+    }
+    if (filters.lifeModeGroups && filters.lifeModeGroups.length > 0) {
+      if (precinct.tapestryLifeModeGroup === undefined || !filters.lifeModeGroups.includes(precinct.tapestryLifeModeGroup)) return false;
     }
 
-    if (filters.lifeModeGroups && filters.lifeModeGroups.length > 0 && precinct.tapestryLifeModeGroup !== undefined) {
-      if (!filters.lifeModeGroups.includes(precinct.tapestryLifeModeGroup)) return false;
-    }
-
+    // Characteristic filters (urbanization, lifestage, affluence) use real or inferred values
     if (filters.urbanization && filters.urbanization.length > 0 && precinct.tapestryUrbanization) {
       if (!filters.urbanization.includes(precinct.tapestryUrbanization as 'urban' | 'suburban' | 'exurban' | 'rural')) return false;
     }

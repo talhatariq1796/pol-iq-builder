@@ -1309,6 +1309,17 @@ export class PoliticalDataService {
         }
       }
 
+      // When no Tapestry code is present, infer urbanization/lifestage/affluence from demographics
+      // so that Tapestry characteristic filters (Urbanization, Life Stage, Affluence) still work.
+      if (!result.tapestryUrbanization || !result.tapestryLifestage || !result.tapestryAffluence) {
+        const inferred = this.inferTapestryFromDemographics(result);
+        if (inferred) {
+          if (!result.tapestryUrbanization) result.tapestryUrbanization = inferred.urbanization;
+          if (!result.tapestryLifestage) result.tapestryLifestage = inferred.lifestage;
+          if (!result.tapestryAffluence) result.tapestryAffluence = inferred.affluence;
+        }
+      }
+
       // Check if engagement has all required fields
       const hasCompleteEngagement = p.engagement &&
         'activistPct' in p.engagement &&
@@ -1370,6 +1381,37 @@ export class PoliticalDataService {
     } catch {
       return new Map();
     }
+  }
+
+  /** Infer Tapestry urbanization/lifestage/affluence from demographics when precinct has no Tapestry code */
+  private inferTapestryFromDemographics(p: { demographics?: { populationDensity?: number; medianAge?: number; medianHHI?: number } }): { urbanization: 'urban' | 'suburban' | 'exurban' | 'rural'; lifestage: 'young_singles' | 'young_families' | 'middle_age' | 'empty_nesters' | 'seniors'; affluence: 'high' | 'upper_middle' | 'middle' | 'modest' | 'low' } | null {
+    const d = p.demographics;
+    if (!d) return null;
+    const density = d.populationDensity ?? 0;
+    const age = d.medianAge ?? 40;
+    const income = d.medianHHI ?? 55000;
+
+    let urbanization: 'urban' | 'suburban' | 'exurban' | 'rural' = 'suburban';
+    if (density >= 3000) urbanization = 'urban';
+    else if (density >= 1000) urbanization = 'suburban';
+    else if (density >= 200) urbanization = 'exurban';
+    else urbanization = 'rural';
+
+    let lifestage: 'young_singles' | 'young_families' | 'middle_age' | 'empty_nesters' | 'seniors' = 'middle_age';
+    if (age < 28) lifestage = 'young_singles';
+    else if (age < 38) lifestage = 'young_families';
+    else if (age < 52) lifestage = 'middle_age';
+    else if (age < 65) lifestage = 'empty_nesters';
+    else lifestage = 'seniors';
+
+    let affluence: 'high' | 'upper_middle' | 'middle' | 'modest' | 'low' = 'middle';
+    if (income >= 100000) affluence = 'high';
+    else if (income >= 75000) affluence = 'upper_middle';
+    else if (income >= 50000) affluence = 'middle';
+    else if (income >= 35000) affluence = 'modest';
+    else affluence = 'low';
+
+    return { urbanization, lifestage, affluence };
   }
 
   /** Load Tapestry segment definitions for filtering (code -> segment metadata) */
