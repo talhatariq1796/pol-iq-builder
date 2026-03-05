@@ -11,6 +11,8 @@ node_modules/
 .env.production.local
 .env*.local
 
+public/assets/
+
 # Next.js
 .next/
 out/
