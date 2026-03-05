@@ -646,7 +646,7 @@ export const crossToolHelp: HelpSection[] = [
       <HelpContent.Paragraph>
         Your analysis context travels with you as you navigate between tools. When you identify
         interesting precincts or build a segment, that selection can be carried to other tools
-        like Canvassing, Donors, or Comparison. Look for "Continue in..." buttons or ask the
+        like Canvassing, Donors, or Comparison. Look for &quot;Continue in...&quot; buttons or ask the
         AI to take your selection to another tool.
       </HelpContent.Paragraph>
     ),

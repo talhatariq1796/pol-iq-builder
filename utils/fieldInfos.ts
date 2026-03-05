@@ -1,4 +1,3 @@
-//import type { Field } from '../components/LayerController/LayerController';
 
 export const createDemographicFieldInfos = () => {
   const fieldInfos = [

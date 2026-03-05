@@ -1,6 +1,6 @@
 "use client";
 
-import type { CMAProperty, CMAFilters, CMAStats, AreaSelection } from '../types';
+import type { CMAProperty } from '../types';
 import { InvestmentMetricsCalculator } from '@/lib/analysis/InvestmentMetricsCalculator';
 import { PropertyTypeClassifier } from '@/lib/analysis/PropertyTypeClassifier';
 
@@ -11,7 +11,7 @@ export class PropertyDataService {
   private cacheTimestamp: number | null = null;
   private readonly cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): PropertyDataService {
     if (!PropertyDataService.instance) {
@@ -88,7 +88,7 @@ export class PropertyDataService {
       ];
 
       const allFeatures: any[] = [];
-      
+
       // Fetch all property types in parallel
       await Promise.all(
         propertyUrls.map(async ({ url, type }) => {
@@ -97,13 +97,13 @@ export class PropertyDataService {
             if (response.ok) {
               const geojsonData = await response.json();
               const features = geojsonData.features || [];
-              
+
               // Tag each feature with its source type for filtering
               const taggedFeatures = features.map((f: any) => ({
                 ...f,
                 _sourceType: type // house_active, condo_active, revenue_active, etc.
               }));
-              
+
               console.log(`[PropertyDataService] Loaded ${features.length} properties from ${type}`);
               allFeatures.push(...taggedFeatures);
             } else {
@@ -139,7 +139,7 @@ export class PropertyDataService {
     const transformed = features.map(feature => {
       const props = feature.properties;
       const coords = feature.geometry?.coordinates || [];
-      
+
       // Extract propertyCategory and sourcePropertyType from source type
       const sourceType = feature._sourceType || '';
       let propertyCategory: 'residential' | 'revenue' = 'residential';
@@ -165,7 +165,7 @@ export class PropertyDataService {
         property_type: props.property_type,
         pt: props.pt,
       });
-      
+
       // Debug first 3 properties
       const idx = features.indexOf(feature);
       if (idx < 3) {
@@ -229,18 +229,18 @@ export class PropertyDataService {
         sourcePropertyType: sourcePropertyType, // Specific type from data source (house/condo/multiplex)
       };
     })
-    .filter(property => {
-      // Exclude rental properties (price = 0.0)
-      // These will be added as a separate property type later
-      const price = property.price || property.askedsold_price || 0;
-      const isRental = price === 0;
+      .filter(property => {
+        // Exclude rental properties (price = 0.0)
+        // These will be added as a separate property type later
+        const price = property.price || property.askedsold_price || 0;
+        const isRental = price === 0;
 
-      if (isRental) {
-        console.log(`[PropertyDataService] Filtering out rental property (price=0): ${property.address}`);
-      }
+        if (isRental) {
+          console.log(`[PropertyDataService] Filtering out rental property (price=0): ${property.address}`);
+        }
 
-      return !isRental;
-    });
+        return !isRental;
+      });
 
     // Summary statistics
     const revenueCount = transformed.filter(p => p.isRevenueProperty).length;
@@ -261,7 +261,7 @@ export class PropertyDataService {
       st: item.st || 'AC', // Default to active
       pt: item.pt || 'CT', // Default to condo/townhouse
       mls_number: item.mls_number || item.centris_no,
-      
+
       // Add computed fields
       square_footage: this.extractSquareFootage(item.living_area_imperial),
       time_on_market: this.calculateDaysOnMarket(item),
@@ -271,14 +271,14 @@ export class PropertyDataService {
 
   private extractSquareFootage(livingAreaImperial?: string): number | undefined {
     if (!livingAreaImperial) return undefined;
-    
+
     const match = livingAreaImperial.match(/[\d,]+/);
     if (match) {
       const numStr = match[0].replace(/,/g, '');
       const num = parseInt(numStr, 10);
       return isNaN(num) ? undefined : num;
     }
-    
+
     return undefined;
   }
 
@@ -290,7 +290,7 @@ export class PropertyDataService {
         const soldDate = new Date(item.date_pp_acpt_expiration);
         const diffTime = soldDate.getTime() - listingDate.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         // Sanity check: DOM should be positive and reasonable (< 2 years)
         if (diffDays > 0 && diffDays < 730) {
           return diffDays;
@@ -299,7 +299,7 @@ export class PropertyDataService {
         console.warn('[PropertyDataService] Failed to parse dates for DOM calculation:', error);
       }
     }
-    
+
     // If dates are missing or invalid, return undefined (not a mock value)
     return undefined;
   }
@@ -312,7 +312,7 @@ export class PropertyDataService {
         return parseInt(yearMatch[0], 10);
       }
     }
-    
+
     // Generate reasonable year based on property type and location
     const currentYear = new Date().getFullYear();
     return Math.floor(Math.random() * 60) + (currentYear - 60); // Random year in last 60 years
@@ -324,7 +324,7 @@ export class PropertyDataService {
       'Montreal', 'Pointe-Claire', 'Laval', 'Longueuil', 'Brossard',
       'Saint-Laurent', 'Dollard-Des Ormeaux', 'Pierrefonds-Roxboro', 'Westmount', 'Verdun'
     ];
-    
+
     const propertyTypes = ['CT', 'SF', 'TH', 'CO', 'DP']; // Condo, Single Family, Townhouse, Coop, Duplex
     const statuses = ['SO', 'AC', 'EX', 'WD']; // Sold, Active, Expired, Withdrawn
 
@@ -335,7 +335,7 @@ export class PropertyDataService {
       const pricePerSqft = Math.floor(Math.random() * 200) + 150;
       const price = sqft * pricePerSqft;
       const yearBuilt = Math.floor(Math.random() * 60) + 1964;
-      
+
       const property: CMAProperty = {
         id: `cma-${10000000 + i}`,
         address: `${Math.floor(Math.random() * 9999) + 1} ${['Main', 'Oak', 'Pine', 'Elm', 'Maple'][Math.floor(Math.random() * 5)]} ${['St', 'Ave', 'Blvd', 'Dr', 'Ct'][Math.floor(Math.random() * 5)]}`,
@@ -380,9 +380,9 @@ export class PropertyDataService {
 
       // Check if property is within bounds
       return lat >= bounds.south &&
-             lat <= bounds.north &&
-             lon >= bounds.west &&
-             lon <= bounds.east;
+        lat <= bounds.north &&
+        lon >= bounds.west &&
+        lon <= bounds.east;
     });
 
     console.log(`[PropertyDataService] Spatial filter: ${filteredProperties.length} of ${allProperties.length} properties within bounds`);
@@ -392,13 +392,13 @@ export class PropertyDataService {
 
   async searchProperties(query: string): Promise<CMAProperty[]> {
     const allProperties = await this.loadProperties();
-    
+
     if (!query.trim()) {
       return allProperties;
     }
 
     const searchLower = query.toLowerCase();
-    return allProperties.filter(property => 
+    return allProperties.filter(property =>
       property.address.toLowerCase().includes(searchLower) ||
       property.id.toLowerCase().includes(searchLower)
     );

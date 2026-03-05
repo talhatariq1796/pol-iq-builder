@@ -29,13 +29,10 @@ esriConfig.assetsPath = "/assets";
 intl.setLocale("en");
 
 // Dynamic imports
-const ResizableSidebar = dynamic(() => import('@/components/ResizableSidebar'), { 
-  ssr: false 
+const ResizableSidebar = dynamic(() => import('@/components/ResizableSidebar'), {
+  ssr: false
 });
 
-const DynamicGeospatialChat = dynamic(() => import('@/components/geospatial-chat-interface').then(mod => ({ default: mod.EnhancedGeospatialChat })), { 
-  ssr: false 
-});
 
 const DynamicMapWidgets = dynamic(() => import('@/components/MapWidgets'), {
   ssr: false
@@ -95,7 +92,7 @@ export const MapApp: React.FC = memo(() => {
     items: [],
     visible: false
   });
-  const [layerStates, setLayerStates] = useState<{[key: string]: any}>({});
+  const [layerStates, setLayerStates] = useState<{ [key: string]: any }>({});
   const [formattedLegendData, setFormattedLegendData] = useState<any>(null);
   const [visualizationResult, setVisualizationResult] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<SampleHotspot | null>(null);
@@ -104,11 +101,11 @@ export const MapApp: React.FC = memo(() => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertiesLoaded, setPropertiesLoaded] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<__esri.Graphic | null>(null);
-  
+
   // CMA Area Selection State
   const [selectedArea, setSelectedArea] = useState<AreaSelection | null>(null);
   const [areaSelectionMode, setAreaSelectionMode] = useState(false);
-  
+
   // CMA Buffer Selection State
   const [showCMABufferDialog, setShowCMABufferDialog] = useState(false);
   const [pendingCMAProperty, setPendingCMAProperty] = useState<PropertyParams | null>(null);
@@ -130,7 +127,7 @@ export const MapApp: React.FC = memo(() => {
           shape: item.shape
         }))
       });
-      
+
       setMapLegend({
         title: formattedLegendData.title || '',
         type: formattedLegendData.type || 'standard',
@@ -162,7 +159,7 @@ export const MapApp: React.FC = memo(() => {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Cleanup layer protection on unmount
     return () => {
       if ((window as any).mapView) {
@@ -196,7 +193,7 @@ export const MapApp: React.FC = memo(() => {
     setMapView(view);
     // Store global reference for theme switch debugging
     (window as any).mapView = view;
-    
+
     // Activate layer protection system
     import('../utils/layer-protection').then(({ activateLayerProtection }) => {
       activateLayerProtection(view);
@@ -236,8 +233,8 @@ export const MapApp: React.FC = memo(() => {
     console.log('[MapApp] LayerController layers created for CustomPopupManager:', layers.length);
     setFeatureLayers((prevLayers: __esri.FeatureLayer[]) => {
       // Remove any existing LayerController layers and add new ones
-      const nonLayerControllerLayers = prevLayers.filter(layer => 
-        !layer.id.includes('layer-controller') && 
+      const nonLayerControllerLayers = prevLayers.filter(layer =>
+        !layer.id.includes('layer-controller') &&
         !layers.some(newLayer => newLayer.id === layer.id)
       );
       return [...nonLayerControllerLayers, ...layers];
@@ -249,8 +246,8 @@ export const MapApp: React.FC = memo(() => {
     console.log('[MapApp] SampleAreasPanel layers created for CustomPopupManager:', layers.length);
     setFeatureLayers((prevLayers: __esri.FeatureLayer[]) => {
       // Remove any existing sample area layers and add new ones
-      const nonSampleAreaLayers = prevLayers.filter(layer => 
-        !layer.title?.includes('ZIP Codes') && 
+      const nonSampleAreaLayers = prevLayers.filter(layer =>
+        !layer.title?.includes('ZIP Codes') &&
         !layers.some(newLayer => newLayer.id === layer.id)
       );
       return [...nonSampleAreaLayers, ...layers];
@@ -268,13 +265,13 @@ export const MapApp: React.FC = memo(() => {
       const currentFeatureLayers = mapView.map.allLayers
         .filter(layer => layer.type === 'feature')
         .toArray() as __esri.FeatureLayer[];
-      
+
       console.log('[MapApp] Updating featureLayers for CustomPopupManager:', {
         totalLayers: currentFeatureLayers.length,
         layerIds: currentFeatureLayers.map(l => l.id),
         layerTitles: currentFeatureLayers.map(l => l.title)
       });
-      
+
       setFeatureLayers(currentFeatureLayers);
     }
   }, [mapView]);
@@ -293,26 +290,26 @@ export const MapApp: React.FC = memo(() => {
       layerTitle: layer?.title,
       shouldReplace
     });
-    
+
     if (layer) {
       setFeatureLayers((prevLayers: __esri.FeatureLayer[]) => {
         // Remove any existing analysis layers if shouldReplace is true
-        const filteredLayers = shouldReplace 
+        const filteredLayers = shouldReplace
           ? prevLayers.filter(l => !l.title?.includes('AnalysisEngine') && !l.title?.includes('Analysis'))
           : prevLayers;
-        
+
         // Add the new layer if it's not already in the list
         const layerExists = filteredLayers.some(l => l.id === layer.id);
         if (!layerExists) {
           console.log('[MapApp] Adding visualization layer to featureLayers for CustomPopupManager:', layer.id);
           return [...filteredLayers, layer];
         }
-        
+
         return filteredLayers;
       });
     } else if (shouldReplace) {
       // Remove all analysis layers
-      setFeatureLayers((prevLayers: __esri.FeatureLayer[]) => 
+      setFeatureLayers((prevLayers: __esri.FeatureLayer[]) =>
         prevLayers.filter(l => !l.title?.includes('AnalysisEngine') && !l.title?.includes('Analysis'))
       );
     }
@@ -322,7 +319,7 @@ export const MapApp: React.FC = memo(() => {
   const handleUnifiedAnalysisComplete = useCallback(async (_result: any) => {
     console.log('[MapApp] ★★★ handleUnifiedAnalysisComplete CALLED ★★★');
     console.log('[MapApp] Analysis complete - UnifiedAnalysisWorkflow handles visualization now');
-    
+
     // No need to handle visualization here anymore since UnifiedAnalysisWorkflow does it
     // This callback is kept for any future needs like additional processing
   }, []);
@@ -631,10 +628,10 @@ export const MapApp: React.FC = memo(() => {
       // Zoom and center to buffer area with proper error handling
       console.log('[DEBUG CMA ZOOM] ======= STARTING ZOOM OPERATION =======');
       console.log('[DEBUG CMA ZOOM] Checking if bufferedGeometry.extent exists...');
-      
+
       if (bufferedGeometry.extent) {
         console.log('[DEBUG CMA ZOOM] ✅ Extent exists, proceeding with zoom');
-        
+
         try {
           console.log('[DEBUG CMA ZOOM] MapView current extent before zoom:', {
             xmin: mapView.extent?.xmin,
@@ -642,21 +639,21 @@ export const MapApp: React.FC = memo(() => {
             xmax: mapView.extent?.xmax,
             ymax: mapView.extent?.ymax
           });
-          
+
           // Calculate proper expansion factor based on buffer size
           const bufferExtent = bufferedGeometry.extent;
           const extentWidth = bufferExtent.xmax - bufferExtent.xmin;
           const extentHeight = bufferExtent.ymax - bufferExtent.ymin;
-          
+
           // Use larger expansion for small buffers, smaller for large buffers
           const expansionFactor = Math.max(1.5, Math.min(3.0, 1000 / Math.max(extentWidth, extentHeight)));
-          
+
           console.log('[DEBUG CMA ZOOM] Buffer dimensions:', {
             width: extentWidth,
             height: extentHeight,
             expansionFactor: expansionFactor
           });
-          
+
           const expandedExtent = bufferExtent.expand(expansionFactor);
           console.log('[DEBUG CMA ZOOM] Expanded extent:', {
             xmin: expandedExtent.xmin,
@@ -665,7 +662,7 @@ export const MapApp: React.FC = memo(() => {
             ymax: expandedExtent.ymax,
             spatialReference: expandedExtent.spatialReference
           });
-          
+
           // Use animation for smoother zoom experience
           console.log('[DEBUG CMA ZOOM] Calling mapView.goTo() with animation...');
           const goToOptions = {
@@ -673,10 +670,10 @@ export const MapApp: React.FC = memo(() => {
             duration: 1500, // 1.5 second animation
             easing: 'ease-in-out'
           };
-          
+
           const result = await mapView.goTo(goToOptions);
           console.log('[DEBUG CMA ZOOM] ✅ goTo completed successfully:', result);
-          
+
           // Wait a bit for the view to settle before logging final extent
           setTimeout(() => {
             console.log('[DEBUG CMA ZOOM] MapView extent after zoom (settled):', {
@@ -686,7 +683,7 @@ export const MapApp: React.FC = memo(() => {
               ymax: mapView.extent?.ymax
             });
           }, 2000);
-          
+
         } catch (zoomError) {
           console.error('[DEBUG CMA ZOOM] ❌ Error during zoom operation:', zoomError);
           console.error('[DEBUG CMA ZOOM] Error details:', {
@@ -694,7 +691,7 @@ export const MapApp: React.FC = memo(() => {
             message: zoomError instanceof Error ? zoomError.message : String(zoomError),
             stack: zoomError instanceof Error ? zoomError.stack : undefined
           });
-          
+
           // Fallback: try simpler zoom to center point
           try {
             const center = bufferedGeometry.extent.center;
@@ -711,7 +708,7 @@ export const MapApp: React.FC = memo(() => {
         }
       } else {
         console.error('[DEBUG CMA ZOOM] ❌ No extent available for zoom operation');
-        
+
         // Try using buffered geometry directly if extent is missing
         try {
           console.log('[DEBUG CMA ZOOM] Fallback: using buffered geometry directly');
@@ -724,7 +721,7 @@ export const MapApp: React.FC = memo(() => {
           console.error('[DEBUG CMA ZOOM] ❌ Direct geometry zoom failed:', directZoomError instanceof Error ? directZoomError.message : String(directZoomError));
         }
       }
-      
+
       console.log('[DEBUG CMA ZOOM] ======= ZOOM OPERATION COMPLETE =======');
 
       // Create area selection with buffered geometry (not original point)
@@ -783,7 +780,7 @@ export const MapApp: React.FC = memo(() => {
       return;
     }
   }, [pendingCMAProperty, mapView, setSelectedArea, setShowCMABufferDialog, setPendingCMAProperty]);
-  
+
   const handleCMABufferDialogClose = useCallback(() => {
     setShowCMABufferDialog(false);
     // Don't clear pendingCMAProperty yet - it's needed for filter initialization
@@ -803,7 +800,7 @@ export const MapApp: React.FC = memo(() => {
     <>
       {/* Show LoadingModal until MapContainer takes over */}
       {(!mapView || !mapContainerReady) && <LoadingModal progress={0} show={true} />}
-      
+
       <div className="fixed inset-0 flex">
         {/* Left Toolbar */}
         <div className="w-16 flex flex-col z-[9999]" style={{
@@ -833,8 +830,8 @@ export const MapApp: React.FC = memo(() => {
         </div>
 
         {/* Main Map Container */}
-        <div 
-          className="flex-1 relative" 
+        <div
+          className="flex-1 relative"
           style={{
             marginRight: `${Math.max(0, (sidebarWidth - 64) / 2)}px`,
             transition: 'margin-right 0.2s ease'
@@ -850,7 +847,7 @@ export const MapApp: React.FC = memo(() => {
             onSampleHotspotClick={handleSampleHotspotClick}
             showSampleHotspots={false}
           />
-          
+
 
           {/* Sample Areas Panel */}
           {/* {mapView && (
@@ -860,7 +857,7 @@ export const MapApp: React.FC = memo(() => {
               visible={showSampleAreasPanel}
             />
           )} */}
-          
+
           {/* Layer Controller and Management - now includes composite index layers */}
           {mapView && (
             <MapContainer
@@ -869,7 +866,7 @@ export const MapApp: React.FC = memo(() => {
               onReady={handleMapContainerReady}
             />
           )}
-          
+
           {/* Custom popup handler for each feature layer */}
           {mapView && mapView.map && featureLayers.map(layer => {
             console.log('[MapApp] Creating popup manager for layer:', {
@@ -878,16 +875,16 @@ export const MapApp: React.FC = memo(() => {
               layerType: layer.type,
               popupEnabled: layer.popupEnabled
             });
-            
+
             // Use PropertyPopupManager for property layers
             const isPropertyLayer = layer.id === 'active_properties_layer' ||
-                                   layer.id === 'sold_properties_layer' ||
-                                   layer.id?.includes('_properties') ||  // Matches: active_house_properties, sold_condo_properties, etc.
-                                   layer.title?.includes('Properties') ||
-                                   layer.title?.includes('Houses') ||
-                                   layer.title?.includes('Condos') ||
-                                   layer.title?.includes('Revenue');
-            
+              layer.id === 'sold_properties_layer' ||
+              layer.id?.includes('_properties') ||  // Matches: active_house_properties, sold_condo_properties, etc.
+              layer.title?.includes('Properties') ||
+              layer.title?.includes('Houses') ||
+              layer.title?.includes('Condos') ||
+              layer.title?.includes('Revenue');
+
             if (isPropertyLayer) {
               console.log('[MapApp] Using PropertyPopupManager for property layer:', layer.id);
               return (
@@ -909,7 +906,7 @@ export const MapApp: React.FC = memo(() => {
               );
             }
           })}
-          
+
           {/* Custom zoom controls */}
           {mapView && (
             <CustomZoom
@@ -974,7 +971,7 @@ export const MapApp: React.FC = memo(() => {
             />
           </div>
         )}
-        
+
         {/* CMA Buffer Selection Dialog - Shows when property CMA is requested */}
         <CMABufferSelectionDialog
           isOpen={showCMABufferDialog}

@@ -27,7 +27,6 @@ import {
   PrecinctChoroplethLayer,
   PrecinctChoroplethLegend,
   H3HeatmapLayer,
-  H3HeatmapControls,
   BoundaryMapLayer,
   BivariateChoroplethLayer,
   BivariateLegend,
@@ -44,7 +43,7 @@ import type { H3Metric, BivariateConfig, ProportionalConfig, ValueByAlphaConfig 
 import type { BoundaryLayerType } from '@/types/political';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
-import { resolveHeatmapMetric, DEFAULT_HEATMAP_METRIC } from '@/lib/map/heatmapMetrics';
+import { resolveHeatmapMetric } from '@/lib/map/heatmapMetrics';
 import GeoFileUploader, { type UploadedLayer } from './GeoFileUploader';
 import UploadedLayersPanel from './UploadedLayersPanel';
 import UploadedLayerRenderer from './UploadedLayerRenderer';
@@ -131,8 +130,6 @@ type LayerType = 'choropleth' | 'h3' | 'bivariate' | 'proportional' | 'valueByAl
 const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
   height = '100%',
   basemap = 'gray-vector',
-  center,  // Deprecated: extent takes precedence
-  zoom,    // Deprecated: extent takes precedence
   onPrecinctSelect,
   onAreaAnalysis,
   mapCommand,
@@ -520,7 +517,7 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
     if (layerType && selectedIds.length > 0) {
       // Load boundary data to get precinct info
       let precinctIds: string[] = [];
-      let aggregatedStats = {};
+      const aggregatedStats = {};
 
       try {
         // Get precinct IDs - for boundary selections, use the selected IDs directly
@@ -754,26 +751,6 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
     }
   }, [segmentPrecinctIds, mapState.view, mapState.isLoading, highlightSegmentPrecincts]);
 
-  if (mapState.error) {
-    return (
-      <div className="flex items-center justify-center h-full bg-red-50 text-red-700 p-4">
-        <div className="text-center">
-          <p className="font-semibold">Map Error</p>
-          <p className="text-xs">{mapState.error}</p>
-          <button
-            onClick={() => {
-              initializeMap().catch((err) => {
-                console.error('[PoliticalMapContainer] Retry failed:', err);
-              });
-            }}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Notify parent when map is ready (pass view for external panel use)
   useEffect(() => {
@@ -2052,6 +2029,28 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
   // Compute height style
   const heightStyle = typeof height === 'number' ? `${height}px` : height;
 
+  if (mapState.error) {
+    return (
+      <div className="flex items-center justify-center h-full bg-red-50 text-red-700 p-4">
+        <div className="text-center">
+          <p className="font-semibold">Map Error</p>
+          <p className="text-xs">{mapState.error}</p>
+          <button
+            onClick={() => {
+              initializeMap().catch((err) => {
+                console.error('[PoliticalMapContainer] Retry failed:', err);
+              });
+            }}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="relative w-full h-full" style={{ height: heightStyle }}>
       {/* Map container */}
@@ -2185,66 +2184,60 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
             <div className="flex bg-gray-100 rounded-md p-0.5">
               <button
                 onClick={() => handleLayerToggle('choropleth')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  activeLayer === 'choropleth'
-                    ? 'bg-[#33a852] text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'choropleth'
+                  ? 'bg-[#33a852] text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 title="Precinct boundaries colored by targeting strategy"
               >
                 Precincts
               </button>
               <button
                 onClick={() => handleLayerToggle('h3')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  activeLayer === 'h3'
-                    ? 'bg-[#33a852] text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'h3'
+                  ? 'bg-[#33a852] text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 title="H3 hexagonal heatmap for uniform visualization"
               >
                 H3 Hexagons
               </button>
               <button
                 onClick={() => handleLayerToggle('bivariate')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  activeLayer === 'bivariate'
-                    ? 'bg-purple-500 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'bivariate'
+                  ? 'bg-purple-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 title="Two variables in 3×3 color matrix"
               >
                 Bivariate
               </button>
               <button
                 onClick={() => handleLayerToggle('proportional')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  activeLayer === 'proportional'
-                    ? 'bg-blue-500 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'proportional'
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 title="Proportional symbols: Size + Color"
               >
                 Symbols
               </button>
               <button
                 onClick={() => handleLayerToggle('valueByAlpha')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  activeLayer === 'valueByAlpha'
-                    ? 'bg-amber-500 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'valueByAlpha'
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 title="Value by Alpha: Opacity shows confidence"
               >
                 VxA
               </button>
               <button
                 onClick={() => handleLayerToggle('none')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  activeLayer === 'none'
-                    ? 'bg-gray-500 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'none'
+                  ? 'bg-gray-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 title="Hide all layers"
               >
                 Off
@@ -2371,7 +2364,8 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
                   }}
                 />
                 <span className="text-gray-600 w-8">{Math.round((activeLayer === 'h3' ? h3Opacity : choroplethOpacity) * 100)}%</span>
-                <style dangerouslySetInnerHTML={{ __html: `
+                <style dangerouslySetInnerHTML={{
+                  __html: `
                   input[type="range"]::-webkit-slider-thumb {
                     appearance: none;
                     width: 12px;
@@ -2417,11 +2411,10 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
             <>
               <button
                 onClick={handleTemporalToggle}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  isTemporalMode
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${isTemporalMode
+                  ? 'bg-purple-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
                 title="Toggle time-series mode to show election data by year"
                 data-tour="temporal-toggle"
               >
@@ -2488,11 +2481,10 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
                     </button>
                     <button
                       onClick={handleTemporalPlayPause}
-                      className={`p-1 rounded ${
-                        isPlaying
-                          ? 'bg-purple-500 text-white'
-                          : 'text-gray-600 hover:text-gray-700 hover:bg-gray-100'
-                      }`}
+                      className={`p-1 rounded ${isPlaying
+                        ? 'bg-purple-500 text-white'
+                        : 'text-gray-600 hover:text-gray-700 hover:bg-gray-100'
+                        }`}
                       title={isPlaying ? 'Pause' : 'Play animation'}
                     >
                       {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -2592,11 +2584,10 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
           {/* Upload Button */}
           <button
             onClick={() => setShowUploader(!showUploader)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-              showUploader
-                ? 'bg-[#33a852] text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${showUploader
+              ? 'bg-[#33a852] text-white'
+              : 'text-gray-600 hover:bg-gray-100'
+              }`}
             title="Upload Data File"
             data-tour="upload-button"
           >
@@ -2657,13 +2648,13 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
               <span className="text-xs font-medium text-gray-700">
                 {activeLayer === 'choropleth' ? 'Target Strategies' :
                   activeLayer === 'bivariate' ? `${bivariateConfig.xLabel} × ${bivariateConfig.yLabel}` :
-                  activeLayer === 'proportional' ? `${proportionalConfig.sizeLabel} × ${proportionalConfig.colorLabel}` :
-                  activeLayer === 'valueByAlpha' ? `${valueByAlphaConfig.valueLabel} (by ${valueByAlphaConfig.alphaLabel})` :
-                  h3Metric === 'partisan_lean' ? 'Partisan Lean' :
-                  h3Metric === 'swing_potential' ? 'Swing Potential' :
-                  h3Metric === 'gotv_priority' ? 'GOTV Priority' :
-                  h3Metric === 'persuasion_opportunity' ? 'Persuasion Opportunity' :
-                  'Combined Score'}
+                    activeLayer === 'proportional' ? `${proportionalConfig.sizeLabel} × ${proportionalConfig.colorLabel}` :
+                      activeLayer === 'valueByAlpha' ? `${valueByAlphaConfig.valueLabel} (by ${valueByAlphaConfig.alphaLabel})` :
+                        h3Metric === 'partisan_lean' ? 'Partisan Lean' :
+                          h3Metric === 'swing_potential' ? 'Swing Potential' :
+                            h3Metric === 'gotv_priority' ? 'GOTV Priority' :
+                              h3Metric === 'persuasion_opportunity' ? 'Persuasion Opportunity' :
+                                'Combined Score'}
               </span>
               <button
                 onClick={() => setShowLegend(false)}
@@ -2701,10 +2692,10 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
                             h3Metric === 'swing_potential'
                               ? 'linear-gradient(to right, #c084fc, #9333ea, #6b21a8)'
                               : h3Metric === 'gotv_priority'
-                              ? 'linear-gradient(to right, #fef3c7, #f59e0b, #b45309)'
-                              : h3Metric === 'persuasion_opportunity'
-                                ? 'linear-gradient(to right, #faf5ff, #a855f7, #6b21a8)'
-                                : 'linear-gradient(to right, #f0f9ff, #38bdf8, #0369a1)',
+                                ? 'linear-gradient(to right, #fef3c7, #f59e0b, #b45309)'
+                                : h3Metric === 'persuasion_opportunity'
+                                  ? 'linear-gradient(to right, #faf5ff, #a855f7, #6b21a8)'
+                                  : 'linear-gradient(to right, #f0f9ff, #38bdf8, #0369a1)',
                         }}
                       />
                       <span>100</span>

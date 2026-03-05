@@ -20,7 +20,6 @@ import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
 import PopupTemplate from "@arcgis/core/PopupTemplate";
 import { politicalDataService } from "@/lib/services/PoliticalDataService";
-import { loadBoundariesWithFallback } from "@/lib/map/boundariesLoader";
 
 // ============================================================================
 // Name Normalization Helpers (shared logic with PrecinctChoroplethLayer)
@@ -577,21 +576,21 @@ export function BivariateChoroplethLayer({
               // Include full targeting scores for AI card generation
               ...(scores
                 ? {
-                    registered_voters:
-                      feature.properties?.REGISTERED_VOTERS ??
-                      scores.registered_voters ??
-                      scores.population_age_18up ??
-                      scores.total_population,
-                    total_population: scores.total_population,
-                    turnout:
-                      scores.gotv_components?.turnout_opportunity != null
-                        ? 100 - scores.gotv_components.turnout_opportunity
-                        : undefined,
-                    partisan_lean: scores.political_scores?.partisan_lean,
-                    swing_potential: scores.political_scores?.swing_potential,
-                    gotv_priority: scores.gotv_priority,
-                    persuasion_opportunity: scores.persuasion_opportunity,
-                  }
+                  registered_voters:
+                    feature.properties?.REGISTERED_VOTERS ??
+                    scores.registered_voters ??
+                    scores.population_age_18up ??
+                    scores.total_population,
+                  total_population: scores.total_population,
+                  turnout:
+                    scores.gotv_components?.turnout_opportunity != null
+                      ? 100 - scores.gotv_components.turnout_opportunity
+                      : undefined,
+                  partisan_lean: scores.political_scores?.partisan_lean,
+                  swing_potential: scores.political_scores?.swing_potential,
+                  gotv_priority: scores.gotv_priority,
+                  persuasion_opportunity: scores.persuasion_opportunity,
+                }
                 : {}),
             },
           };

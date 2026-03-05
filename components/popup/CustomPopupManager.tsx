@@ -13,7 +13,6 @@ import { getLayerConfigById } from '../../config/layers';
 import { FIELD_ALIASES } from '../../utils/field-aliases';
 import { FieldMappingHelper } from '../../utils/visualizations/field-mapping-helper';
 import { determinePopupTitle, createStandardizedPopupTemplate, StandardizedPopupConfig } from '../../utils/popup-utils';
-import Graphic from '@arcgis/core/Graphic';
 import { BrandNameResolver } from '../../lib/analysis/utils/BrandNameResolver';
 import { extractPropertyParams } from '../cma/utils/autoFilterUtils';
 import type { PropertyParams } from '../cma/types';
@@ -37,17 +36,17 @@ interface CustomPopupManagerProps {
 
 // Removed unused internal interfaces and imports
 
-interface Metric { 
-  label: string; 
-  value: number; 
-  color: string; 
-  isPercent?: boolean; 
-  percentage?: number; 
-  statistics?: { 
-    min: number; 
-    max: number; 
-    median: number; 
-  }; 
+interface Metric {
+  label: string;
+  value: number;
+  color: string;
+  isPercent?: boolean;
+  percentage?: number;
+  statistics?: {
+    min: number;
+    max: number;
+    median: number;
+  };
 }
 
 const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
@@ -77,51 +76,51 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
 
     try {
       console.log('[CustomPopupManager] Applying standardized popup to layer:', featureLayer.title);
-      
+
       // Check if this is a point layer (location layer)
       const isPointLayer = featureLayer.geometryType === 'point';
-      const isLocationLayer = featureLayer.title?.toLowerCase().includes('locations') || 
-                             featureLayer.title?.toLowerCase().includes('points');
-      
+      const isLocationLayer = featureLayer.title?.toLowerCase().includes('locations') ||
+        featureLayer.title?.toLowerCase().includes('points');
+
       if (isPointLayer || isLocationLayer) {
         console.log('[CustomPopupManager] 📍 Configuring simplified popup for point/location layer');
-        
+
         // For point layers, include property-specific fields for enhanced display
         const pointFields: string[] = [];
         const availableFieldNames = featureLayer.fields?.map(f => f.name) || [];
-        
+
         console.log('[CustomPopupManager] 🔍 Available fields for point layer:', availableFieldNames);
-        
+
         // Priority fields for property points
         const propertyFields = [
-          'address', 'ADDRESS', 'ADDR', 
+          'address', 'ADDRESS', 'ADDR',
           'price_display', 'price', 'askedsold_price',
           'status', 'STATUS',
           'bedrooms_number', 'bathrooms_number',
           'municipalityborough', 'postal_code',
           'centris_no'
         ];
-        
+
         // Add available property fields in priority order
         propertyFields.forEach(fieldName => {
           if (availableFieldNames.includes(fieldName)) {
             pointFields.push(fieldName);
           }
         });
-        
+
         // Fall back to address-related fields if no property fields found
         if (pointFields.length === 0) {
           const addressFields = featureLayer.fields
             ?.filter(field => {
               const fieldName = field.name.toLowerCase();
               const fieldAlias = (field.alias || '').toLowerCase();
-              
+
               return (fieldName.includes('address') || fieldAlias.includes('address') ||
-                     fieldName.includes('addr') || fieldAlias.includes('addr')) &&
-                     !['OBJECTID', 'FID', 'Shape__Area', 'Shape__Length'].includes(field.name);
+                fieldName.includes('addr') || fieldAlias.includes('addr')) &&
+                !['OBJECTID', 'FID', 'Shape__Area', 'Shape__Length'].includes(field.name);
             })
             .map(field => field.name) || [];
-          
+
           pointFields.push(...addressFields);
         }
 
@@ -131,10 +130,10 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           listFields: pointFields, // Property-specific fields
           visualizationType: 'point-location'
         };
-        
+
         const popupTemplate = createStandardizedPopupTemplate(config);
         featureLayer.popupTemplate = popupTemplate;
-        
+
         console.log('[CustomPopupManager] ✅ Applied enhanced popup for point layer', {
           pointFields,
           availableFields: featureLayer.fields?.map(f => f.name)
@@ -142,27 +141,27 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       } else {
         // Regular behavior for polygon/other layers
         console.log('[CustomPopupManager] Configuring standard popup with value bars');
-        
+
         // Get numeric fields for bar chart display - prioritize analysis score fields
         const allNumericFields = featureLayer.fields
-          ?.filter(field => 
+          ?.filter(field =>
             ['double', 'single', 'integer', 'small-integer'].includes(field.type) &&
             !['OBJECTID', 'FID', 'Shape__Area', 'Shape__Length'].includes(field.name)
           ) || [];
 
         // For analysis layers, prioritize primary score fields and avoid showing multiple scores
-        const isAnalysisLayer = featureLayer.title?.includes('AnalysisEngine') || 
-                               (featureLayer as any).__isAnalysisLayer === true;
-        
+        const isAnalysisLayer = featureLayer.title?.includes('AnalysisEngine') ||
+          (featureLayer as any).__isAnalysisLayer === true;
+
         let barChartFields: string[] = [];
-        
+
         if (isAnalysisLayer) {
           // For analysis layers, only show the primary score field to avoid confusion
           const scoreFields = ['strategic_analysis_score', 'strategic_score', 'strategic_value_score', 'target_value', 'value', 'score'];
-          const primaryScoreField = scoreFields.find(field => 
+          const primaryScoreField = scoreFields.find(field =>
             allNumericFields.some(f => f.name === field)
           );
-          
+
           if (primaryScoreField) {
             barChartFields = [primaryScoreField];
             console.log('[CustomPopupManager] 🎯 Analysis layer: showing only primary score field:', primaryScoreField);
@@ -177,7 +176,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
 
         // Get all other fields for list display
         const listFields = featureLayer.fields
-          ?.filter(field => 
+          ?.filter(field =>
             !['OBJECTID', 'FID', 'Shape__Area', 'Shape__Length'].includes(field.name) &&
             !barChartFields.includes(field.name)
           )
@@ -193,7 +192,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
 
         const popupTemplate = createStandardizedPopupTemplate(config);
         featureLayer.popupTemplate = popupTemplate;
-        
+
         console.log('[CustomPopupManager] ✅ Applied standard popup with value bars');
       }
     } catch (error) {
@@ -221,16 +220,16 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
 
     initializedRef.current = true;
     viewRef.current = mapView;
-    
+
     if (layer.type === 'feature') {
       featureLayerRef.current = layer as __esri.FeatureLayer;
-      
+
       // **UPDATED: Apply standardized popup template but disable default popup behavior**
       applyStandardizedPopup(featureLayerRef.current);
-      
+
       // Ensure this layer doesn't trigger default ESRI popups
       featureLayerRef.current.popupEnabled = false;
-      
+
       // Initialize popup monitoring if it exists
       if (mapView.popup) {
         // Ensure default popup stays disabled
@@ -243,11 +242,11 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
         const popupWatchHandle = reactiveUtils.watch(
           () => mapView.popup?.visible,
           (newValue) => {
-          if (newValue && mapView.popup?.selectedFeature) {
-            onPopupOpen?.(mapView.popup.selectedFeature);
-          } else {
-            onPopupClose?.();
-          }
+            if (newValue && mapView.popup?.selectedFeature) {
+              onPopupOpen?.(mapView.popup.selectedFeature);
+            } else {
+              onPopupClose?.();
+            }
           }
         );
 
@@ -278,7 +277,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
               return;
             }
 
-            const isPopupElement = popupClassNames.some(className => 
+            const isPopupElement = popupClassNames.some(className =>
               node.className && node.className.includes(className)
             );
 
@@ -308,8 +307,8 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       observerRef.current = popupRemoverObserver;
     }
 
-      // Cleanup function
-      return () => {
+    // Cleanup function
+    return () => {
       if (clickHandleRef.current) {
         clickHandleRef.current.remove();
         clickHandleRef.current = null;
@@ -317,33 +316,33 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       if (visibilityHandleRef.current) {
         visibilityHandleRef.current.remove();
         visibilityHandleRef.current = null;
-        }
-        if (observerRef.current) {
-          observerRef.current.disconnect();
-        }
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-        viewRef.current = null;
-        featureLayerRef.current = null;
+      }
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      viewRef.current = null;
+      featureLayerRef.current = null;
       initializedRef.current = false;
-      };
+    };
   }, [mapView, layer, config, onPopupOpen, onPopupClose, onFeatureSelect, zoomToFeature, onPropertyCMA]);
 
   // 2. Disable popup functionality globally to prevent default ESRI popups
   useEffect(() => {
     if (mapView.popup) {
-      mapView.popup.autoCloseEnabled = false; 
+      mapView.popup.autoCloseEnabled = false;
       mapView.popup.dockEnabled = false;
       mapView.popup.visible = false;
       mapView.popup.actions = [];
-      
+
       // 3. Completely disable the default popup to prevent double popups
-      mapView.popup.open = function() {
+      mapView.popup.open = function () {
         console.log('[CustomPopupManager] Blocked default ESRI popup - using custom popups instead');
         return null;
       };
-      
+
       // Simple way to prevent popup features being set
       try {
         mapView.popup.features = [];
@@ -352,7 +351,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       }
     }
   }, [mapView]);
-  
+
   // 4. Disable native popups on ALL feature layers - custom managers will handle them
   useEffect(() => {
     if (mapView.map) {
@@ -364,7 +363,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           console.log('[CustomPopupManager] Disabled default popup for layer:', layer.title || layer.id);
         }
       });
-      
+
       // Also watch for new layers being added
       const layerWatcher = mapView.map.allLayers.on('change', (event) => {
         event.added.forEach(layer => {
@@ -374,19 +373,19 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           }
         });
       });
-      
+
       return () => {
         layerWatcher.remove();
       };
     }
   }, [mapView]);
   // Removed unused visibility effect
-  
+
   // Define classes that should be protected (never modified)
   const protectedClassNames = [
-    'layer', 
-    'widget', 
-    'esri-ui', 
+    'layer',
+    'widget',
+    'esri-ui',
     'esri-component',
     'list',
     'toggle',
@@ -398,7 +397,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
     'button',
     'control'
   ];
-  
+
   // Define classes that are specifically for popups we want to handle
   const popupClassNames = [
     'esri-popup',
@@ -407,14 +406,14 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
     'esri-popup__footer',
     'esri-popup__header'
   ];
-  
+
   // Helper function to check if an element has a protected parent
   const hasProtectedParentClass = (element: Element): boolean => {
     let current = element;
     // Check up to 10 levels of parents to avoid infinite loops
     for (let i = 0; i < 10; i++) {
       if (!current || current === document.body) return false;
-      
+
       // Check if this element has any protected class
       for (const className of protectedClassNames) {
         if (current.className && current.className.includes(className)) {
@@ -422,26 +421,26 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           return true;
         }
       }
-      
+
       if (!current.parentElement) return false;
       current = current.parentElement;
     }
     return false;
   };
-  
+
   // Add padding to the top of the map to prevent popup from being cut off
   const currentPadding = mapView.padding || { top: 0, right: 0, bottom: 0, left: 0 };
   const topPadding = typeof currentPadding.top === 'number' ? currentPadding.top : 0;
   const rightPadding = typeof currentPadding.right === 'number' ? currentPadding.right : 0;
   const popupWidth = 320; // Width of the custom popup
   const paddingBuffer = 15; // Space between popup and edge/other UI
-  
+
   mapView.padding = {
     ...currentPadding,
     top: Math.max(topPadding, 15), // Reset top padding, docking handles overlap
     right: Math.max(rightPadding, popupWidth + paddingBuffer) // Add right padding for docked popup
   };
-  
+
   // Track clicks on the map which may open popups
   const clickHandler = mapView.on('click', (event: __esri.ViewClickEvent) => {
     // Remove any existing popups first
@@ -480,22 +479,22 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
             }).then(queryResponse => {
               if (queryResponse.features.length > 0) {
                 const fullFeature = queryResponse.features[0];
-                
+
                 // Check if this is a property layer - if so, skip to let PropertyPopupManager handle it
-                const isPropertyLayer = targetLayer.id?.includes('active-properties') || 
-                                       targetLayer.id?.includes('sold-properties') ||
-                                       targetLayer.id?.includes('real-estate-properties') ||
-                                       targetLayer.id?.includes('properties') || 
-                                       targetLayer.id?.includes('property') ||
-                                       targetLayer.title?.toLowerCase().includes('property') ||
-                                       targetLayer.title?.toLowerCase().includes('listing') ||
-                                       targetLayer.title?.toLowerCase().includes('real estate');
-                
+                const isPropertyLayer = targetLayer.id?.includes('active-properties') ||
+                  targetLayer.id?.includes('sold-properties') ||
+                  targetLayer.id?.includes('real-estate-properties') ||
+                  targetLayer.id?.includes('properties') ||
+                  targetLayer.id?.includes('property') ||
+                  targetLayer.title?.toLowerCase().includes('property') ||
+                  targetLayer.title?.toLowerCase().includes('listing') ||
+                  targetLayer.title?.toLowerCase().includes('real estate');
+
                 if (isPropertyLayer) {
                   console.log('[CustomPopupManager] 🏠 Skipping property layer popup - PropertyPopupManager will handle:', targetLayer.title || targetLayer.id);
                   return; // Let PropertyPopupManager handle this
                 }
-                
+
                 // 🔍 DEBUG: Log attribute comparison with specific field checks
                 const attrs = fullFeature.attributes || {};
                 console.log('[CustomPopupManager] 🔍 Popup Attribute Debug:', {
@@ -514,53 +513,53 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
                   addressValue: attrs.address,
                   ADDRESSValue: attrs.ADDRESS
                 });
-                
+
                 createCustomPopup(fullFeature);
               }
             }).catch(queryError => {
               console.error('[CustomPopupManager] Failed to query for full feature:', queryError);
-              
+
               // Check if this is a property layer - if so, skip to let PropertyPopupManager handle it
-              const isPropertyLayer = targetLayer.id?.includes('active-properties') || 
-                                     targetLayer.id?.includes('sold-properties') ||
-                                     targetLayer.id?.includes('real-estate-properties') ||
-                                     targetLayer.id?.includes('properties') || 
-                                     targetLayer.id?.includes('property') ||
-                                     targetLayer.title?.toLowerCase().includes('property') ||
-                                     targetLayer.title?.toLowerCase().includes('listing') ||
-                                     targetLayer.title?.toLowerCase().includes('real estate');
-              
+              const isPropertyLayer = targetLayer.id?.includes('active-properties') ||
+                targetLayer.id?.includes('sold-properties') ||
+                targetLayer.id?.includes('real-estate-properties') ||
+                targetLayer.id?.includes('properties') ||
+                targetLayer.id?.includes('property') ||
+                targetLayer.title?.toLowerCase().includes('property') ||
+                targetLayer.title?.toLowerCase().includes('listing') ||
+                targetLayer.title?.toLowerCase().includes('real estate');
+
               if (isPropertyLayer) {
                 console.log('[CustomPopupManager] 🏠 Fallback: Skipping property layer popup - PropertyPopupManager will handle:', targetLayer.title || targetLayer.id);
                 return; // Let PropertyPopupManager handle this
               }
-              
+
               // 🔍 DEBUG: Log fallback scenario
               console.log('[CustomPopupManager] 🔍 Using fallback feature attributes:', {
                 attributes: hitFeature.attributes,
                 hasAttributes: !!hitFeature.attributes,
                 attributeCount: hitFeature.attributes ? Object.keys(hitFeature.attributes).length : 0
               });
-              
+
               // Fallback to the original hit feature if the query fails for some reason
               createCustomPopup(hitFeature);
             });
           } else {
             // Check if this is a property layer - if so, skip to let PropertyPopupManager handle it
-            const isPropertyLayer = targetLayer.id?.includes('active-properties') || 
-                                   targetLayer.id?.includes('sold-properties') ||
-                                   targetLayer.id?.includes('real-estate-properties') ||
-                                   targetLayer.id?.includes('properties') || 
-                                   targetLayer.id?.includes('property') ||
-                                   targetLayer.title?.toLowerCase().includes('property') ||
-                                   targetLayer.title?.toLowerCase().includes('listing') ||
-                                   targetLayer.title?.toLowerCase().includes('real estate');
-            
+            const isPropertyLayer = targetLayer.id?.includes('active-properties') ||
+              targetLayer.id?.includes('sold-properties') ||
+              targetLayer.id?.includes('real-estate-properties') ||
+              targetLayer.id?.includes('properties') ||
+              targetLayer.id?.includes('property') ||
+              targetLayer.title?.toLowerCase().includes('property') ||
+              targetLayer.title?.toLowerCase().includes('listing') ||
+              targetLayer.title?.toLowerCase().includes('real estate');
+
             if (isPropertyLayer) {
               console.log('[CustomPopupManager] 🏠 No ObjectId: Skipping property layer popup - PropertyPopupManager will handle:', targetLayer.title || targetLayer.id);
               return; // Let PropertyPopupManager handle this
             }
-            
+
             // If there's no objectId for some reason, just use the hit feature
             createCustomPopup(hitFeature);
           }
@@ -570,38 +569,38 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       console.error('[CustomPopupManager] Error in hit test:', error);
     });
   });
-  
+
   // Function to create a custom popup for a feature
   const createCustomPopup = (feature: __esri.Graphic) => {
     // Create the popup container
     const popupContainer = document.createElement('div');
     popupContainer.className = 'custom-popup theme-popup-container';
-    
+
     // Create the popup header
     const popupHeader = document.createElement('div');
     popupHeader.className = 'theme-popup-title';
     popupHeader.style.display = 'flex';
     popupHeader.style.justifyContent = 'space-between';
     popupHeader.style.alignItems = 'center';
-    
+
     // Create title
     const title = document.createElement('h3');
     title.style.margin = '0';
-    
+
     // Determine title from feature attributes, prioritizing DESCRIPTION field
     let titleText = 'Feature Information';
     if (feature.attributes) {
       const attributes = feature.attributes;
-      
 
-      
 
-      
+
+
+
       // Use standardized title determination logic
       titleText = determinePopupTitle(attributes);
     }
     title.textContent = titleText.toString().trim();
-    
+
     // Create close button
     const closeButton = document.createElement('button');
     closeButton.className = 'theme-popup-close';
@@ -618,28 +617,28 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
         onPopupClose();
       }
     };
-    
+
     // Add title and close button to header
     popupHeader.appendChild(title);
     popupHeader.appendChild(closeButton);
-    
+
     // Create popup content
     const popupContent = document.createElement('div');
     popupContent.className = 'theme-popup-content';
     popupContent.style.maxHeight = '400px';
     popupContent.style.overflow = 'auto';
-    
+
     // Create chart container
     const chartContainer = document.createElement('div');
     chartContainer.className = 'theme-popup-chart';
     // Hide chart until data is loaded to avoid blank overlay
     chartContainer.style.display = 'none';
     chartContainer.style.marginBottom = '16px';
-    
+
     // Add action buttons
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'theme-popup-actions';
-    
+
     // Create Zoom to button (green, with icon)
     const zoomButton = document.createElement('button');
     zoomButton.className = 'theme-popup-button';
@@ -650,7 +649,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
     zoomIconNode.style.marginRight = '4px';
     zoomButton.appendChild(zoomIconNode);
     zoomButton.appendChild(document.createTextNode('Zoom to'));
-    
+
     zoomButton.onclick = () => {
       // Check if the feature has a geometry
       if (feature.geometry) {
@@ -665,7 +664,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
               addFlashEffect(mapView, feature.geometry, 'point');
             }
           });
-        } 
+        }
         // For polygons and polylines, go to the extent
         else {
           if (feature.geometry.extent) {
@@ -678,7 +677,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           }
         }
       }
-      
+
       // If there's a custom zoom action defined in config, also call that
       if (config?.actions) {
         const zoomAction = config.actions.find(a => a.label === 'Zoom to');
@@ -687,29 +686,29 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
         }
       }
     };
-    
+
     // Check if this is a point layer to determine whether to show infographics button
     // IMPORTANT: Exclude analysis layers from point layer treatment - they need bar charts
     const isAnalysisLayerCheck = layer.id?.startsWith('analysis-layer-') || layer.title?.includes('AnalysisEngine');
     const isPointLayer = feature.geometry?.type === 'point' && !isAnalysisLayerCheck;
     const isLocationLayer = (layer.title?.toLowerCase().includes('locations') ||
-                           layer.title?.toLowerCase().includes('points')) && !isAnalysisLayerCheck;
+      layer.title?.toLowerCase().includes('points')) && !isAnalysisLayerCheck;
     const shouldShowInfographicsButton = !(isPointLayer || isLocationLayer);
-    
+
     console.log('[CustomPopupManager] 📍 Popup button decision:', {
       isPointLayer,
-      isLocationLayer, 
+      isLocationLayer,
       shouldShowInfographicsButton,
       layerTitle: layer.title,
       geometryType: feature.geometry?.type
     });
-    
+
     let infoButton: HTMLButtonElement | null = null;
-    
+
     // Only create Infographics button for non-point layers
     if (shouldShowInfographicsButton) {
       console.log('[CustomPopupManager] Creating infographics button for non-point layer');
-      
+
       infoButton = document.createElement('button');
       infoButton.className = 'theme-popup-button';
       infoButton.innerHTML = '';
@@ -719,7 +718,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       infoIconNode.style.marginRight = '4px';
       infoButton.appendChild(infoIconNode);
       infoButton.appendChild(document.createTextNode('Infographics'));
-      
+
       infoButton.onclick = () => {
         console.log('[CustomPopupManager] Infographics button clicked!');
         const geometry = feature.geometry; // Get geometry first
@@ -727,7 +726,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
 
         if (geometry) {
           console.log('[CustomPopupManager] Geometry type:', geometry.type);
-          
+
           // Store geometry in localStorage for InfographicsTab to pick up
           const geometryData = {
             type: geometry.type,
@@ -736,11 +735,11 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
             y: geometry.type === 'point' ? (geometry as __esri.Point).y : undefined,
             spatialReference: geometry.spatialReference.toJSON()
           };
-          
+
           console.log('[CustomPopupManager] Geometry data to store:', geometryData);
           localStorage.setItem('emergencyGeometry', JSON.stringify(geometryData));
           console.log('[CustomPopupManager] Stored geometry in localStorage');
-          
+
           // Verify storage worked
           const stored = localStorage.getItem('emergencyGeometry');
           console.log('[CustomPopupManager] Verification - stored data exists:', !!stored);
@@ -753,33 +752,33 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           composed: true
         });
         document.dispatchEvent(infographicsEvent);
-        
+
         // 3. Call original configured action if exists
         if (config?.actions) {
           const infoAction = config.actions.find(a => a.label === 'Infographics');
           if (infoAction) {
-            infoAction.onClick(feature); 
+            infoAction.onClick(feature);
           }
         }
       };
     } else {
       console.log('[CustomPopupManager] 📍 Skipping infographics button for point/location layer');
     }
-    
+
     // Check if this is a property/real estate layer to show CMA button
-    const isPropertyLayer = layer.title?.toLowerCase().includes('property') || 
-                            layer.title?.toLowerCase().includes('real estate') ||
-                            layer.title?.toLowerCase().includes('listing') ||
-                            (feature.attributes && (feature.attributes.address || feature.attributes.ADDRESS || 
-                             feature.attributes.price || feature.attributes.askedsold_price ||
-                             feature.attributes.centris_no));
+    const isPropertyLayer = layer.title?.toLowerCase().includes('property') ||
+      layer.title?.toLowerCase().includes('real estate') ||
+      layer.title?.toLowerCase().includes('listing') ||
+      (feature.attributes && (feature.attributes.address || feature.attributes.ADDRESS ||
+        feature.attributes.price || feature.attributes.askedsold_price ||
+        feature.attributes.centris_no));
 
     let cmaButton: HTMLButtonElement | null = null;
-    
+
     // Create CMA button for property layers
     if (isPropertyLayer && onPropertyCMA) {
       console.log('[CustomPopupManager] Creating CMA button for property layer');
-      
+
       cmaButton = document.createElement('button');
       cmaButton.className = 'theme-popup-button';
       cmaButton.innerHTML = '';
@@ -789,7 +788,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       cmaIconNode.style.marginRight = '4px';
       cmaButton.appendChild(cmaIconNode);
       cmaButton.appendChild(document.createTextNode('CMA Report'));
-      
+
       cmaButton.onclick = () => {
         console.log('[CustomPopupManager] CMA button clicked for property:', feature.attributes);
         if (onPropertyCMA) {
@@ -813,23 +812,23 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
     if (infoButton) {
       actionsContainer.appendChild(infoButton);
     }
-    
+
     // Add buttons and chart container to content: buttons first, then chart
     // Center and justify buttons
     actionsContainer.style.justifyContent = 'center';
     actionsContainer.style.alignItems = 'center';
     popupContent.appendChild(actionsContainer);
     popupContent.appendChild(chartContainer);
-    
+
     // For point/location layers, show simple field content instead of bar chart
     if (isPointLayer || isLocationLayer) {
       console.log('[CustomPopupManager] 📍 Creating simple content for point/location layer');
-      
+
       // Create simple content container for point layers
       const fieldContainer = document.createElement('div');
       fieldContainer.className = 'popup-field-container';
       fieldContainer.style.padding = '12px 0';
-      
+
       // Show address field if available
       const attrs = feature.attributes || {};
       if (attrs.address) {
@@ -840,7 +839,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
         addressDiv.innerHTML = `<strong>Address:</strong> ${attrs.address}`;
         fieldContainer.appendChild(addressDiv);
       }
-      
+
       // Show any additional relevant fields for points
       const relevantFields = ['locality', 'region', 'postcode'];
       relevantFields.forEach(fieldName => {
@@ -853,19 +852,19 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
           fieldContainer.appendChild(fieldDiv);
         }
       });
-      
+
       popupContent.appendChild(fieldContainer);
-      
+
       // Hide the chart container since we're showing simple content
       chartContainer.style.display = 'none';
     } else {
       // For polygon layers, generate bar chart as usual
       generateBarChart(feature, chartContainer, mapView);
     }
-    
+
     // ----------------- SHAP FEATURE IMPORTANCE (optional) -----------------
-  const shapLayer = layer as FeatureLayer & { shapFeatureImportance?: Array<{ feature: string; importance: number }> };
-  const shapImportanceData = shapLayer.shapFeatureImportance;
+    const shapLayer = layer as FeatureLayer & { shapFeatureImportance?: Array<{ feature: string; importance: number }> };
+    const shapImportanceData = shapLayer.shapFeatureImportance;
     if (shapImportanceData && shapImportanceData.length > 0) {
       const shapContainer = document.createElement('div');
       shapContainer.style.marginTop = '12px';
@@ -916,15 +915,15 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
       popupContent.appendChild(shapContainer);
     }
     // ----------------------------------------------------------------------
-    
+
     // Add header and content to container
     popupContainer.appendChild(popupHeader);
     popupContainer.appendChild(popupContent);
-    
+
     // Position the popup on screen
     // Convert map point to screen point
     // const screenPoint = mapView.toScreen(location);
-    
+
     // Position popup slightly above the click point
     popupContainer.style.position = 'absolute';
     // Dock to top-right corner
@@ -938,14 +937,14 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
     // popupContainer.style.borderRadius = '8px';
     // popupContainer.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.15)';
     popupContainer.style.zIndex = '1000';
-    
+
     // Add the popup to the map view container instead of the document body
     // document.body.appendChild(popupContainer); 
     if (mapView.container) {
-        mapView.container.appendChild(popupContainer);
+      mapView.container.appendChild(popupContainer);
     } else {
       //  console.error("[CustomPopupManager] MapView container not found!");
-        return; // Don't proceed if container is missing
+      return; // Don't proceed if container is missing
     }
 
     // Add a click event listener to close the popup when clicking outside
@@ -970,15 +969,15 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
     setTimeout(() => {
       document.addEventListener('click', handleOutsideClick);
     }, 10);
-    
+
     // console.log('[CustomPopupManager] Custom popup created and added to DOM');
-    
+
     // Notify about popup open via callback
     if (onPopupOpen) {
       onPopupOpen(feature);
     }
   };
-  
+
   clickHandleRef.current = clickHandler;
 
   // Removed debug monitoring and repair logic to prevent loading loops
@@ -994,7 +993,7 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
   // Add event listeners
   window.addEventListener('zoom-to-feature', zoomToFeatureHandler);
   // NOTE: show-infographics handler removed - now handled directly in popup button
-  
+
   // No local alias for view needed
 
   const resizeObserver = new ResizeObserver(() => {
@@ -1005,26 +1004,26 @@ const CustomPopupManager: React.FC<CustomPopupManagerProps> = ({
   if (popupNode) {
     resizeObserver.observe(popupNode);
   }
-  
+
   return null;
 };
 
 // Function to apply custom popup templates to all feature layers
 const applyCustomPopupTemplates = (view: __esri.MapView, config?: PopupConfig) => {
   if (!view || !view.map) return;
-  
+
   view.map.allLayers.forEach(layer => {
     if (layer.type === 'feature') {
       const featureLayer = layer as __esri.FeatureLayer;
-    //  console.log(`[CustomPopupManager] Configuring custom popup for layer: ${featureLayer.title}`);
-      
+      //  console.log(`[CustomPopupManager] Configuring custom popup for layer: ${featureLayer.title}`);
+
       // Use the provided config title or generate a default one
-      const title = config?.title ? 
-        (typeof config.title === 'function' ? 
-          '{expression/titleExpression}' : 
+      const title = config?.title ?
+        (typeof config.title === 'function' ?
+          '{expression/titleExpression}' :
           config.title) :
         '{expression/defaultTitle}';
-        
+
       // Create a custom popup template with bar chart and action buttons
       const popupTemplate = new PopupTemplate({
         title: title,
@@ -1048,32 +1047,32 @@ const applyCustomPopupTemplates = (view: __esri.MapView, config?: PopupConfig) =
               // Create container element
               const container = document.createElement("div");
               container.className = "custom-popup-container";
-              
+
               // Create chart container
               const chartContainer = document.createElement("div");
               chartContainer.className = "popup-chart-container";
-              
+
               // Create action buttons container
               const actionsContainer = document.createElement("div");
               actionsContainer.className = "popup-actions";
-              
+
               // Create zoom button
               const zoomButton = document.createElement("button");
               zoomButton.textContent = "Zoom to";
               zoomButton.className = "popup-action-button";
               zoomButton.style.backgroundColor = "var(--theme-accent-secondary)";
               zoomButton.style.color = "white";
-              
+
               // Create infographics button
               const infoButton = document.createElement("button");
               infoButton.textContent = "Infographics";
               infoButton.className = "popup-action-button";
               infoButton.style.backgroundColor = "var(--theme-accent-primary)";
               infoButton.style.color = "white";
-              
+
               // Get the graphic from the event if available
               const graphic = event?.graphic;
-              
+
               // Add event listeners to buttons
               zoomButton.addEventListener("click", () => {
                 if (config?.actions && config.actions.length > 0 && graphic) {
@@ -1083,7 +1082,7 @@ const applyCustomPopupTemplates = (view: __esri.MapView, config?: PopupConfig) =
                   }
                 }
               });
-              
+
               infoButton.addEventListener("click", () => {
                 if (config?.actions && config.actions.length > 1 && graphic) {
                   const infoAction = config.actions.find(a => a.label === 'Infographics');
@@ -1092,28 +1091,28 @@ const applyCustomPopupTemplates = (view: __esri.MapView, config?: PopupConfig) =
                   }
                 }
               });
-              
+
               // Add buttons to actions container
               actionsContainer.appendChild(zoomButton);
               actionsContainer.appendChild(infoButton);
-              
+
               // Add chart container to main container
               container.appendChild(chartContainer);
-              
+
               // Add actions container to main container
               container.appendChild(actionsContainer);
-              
+
               // Generate the chart for the current feature
               if (graphic) {
                 generateBarChart(graphic, chartContainer, view);
               }
-              
+
               return container;
             }
           })
         ]
       });
-      
+
       featureLayer.popupTemplate = popupTemplate;
       featureLayer.popupEnabled = true;
     }
@@ -1122,30 +1121,30 @@ const applyCustomPopupTemplates = (view: __esri.MapView, config?: PopupConfig) =
 
 // Function to generate a bar chart showing all visible layers in the layer list widget
 const generateBarChart = (
-  feature: __esri.Graphic, 
-  container: HTMLElement, 
+  feature: __esri.Graphic,
+  container: HTMLElement,
   view: __esri.MapView
 ) => {
   // Define Firefly bar colors using CSS custom properties
   const colors = [
-    'var(--firefly-11)', 'var(--firefly-8)', 'var(--firefly-15)', 'var(--firefly-1)', 
+    'var(--firefly-11)', 'var(--firefly-8)', 'var(--firefly-15)', 'var(--firefly-1)',
     'var(--firefly-5)', 'var(--firefly-10)', 'var(--firefly-6)', 'var(--firefly-13)',
     'var(--firefly-18)', 'var(--firefly-20)', 'var(--firefly-19)', 'var(--firefly-2)'
   ];
-  
+
   // Removed unused helper functions and interfaces
 
   // Clear the container
   container.innerHTML = "";
-  
+
   // Special case for AI visualization layers and analysis layers
   const isAiVisualizationLayer = feature.layer &&
     (typeof feature.layer.id === 'string' &&
-     (feature.layer.id.startsWith('viz_') || feature.layer.id.includes('correlation')));
+      (feature.layer.id.startsWith('viz_') || feature.layer.id.includes('correlation')));
 
   const isAnalysisLayer = feature.layer &&
     (typeof feature.layer.id === 'string' &&
-     feature.layer.id.startsWith('analysis-layer-'));
+      feature.layer.id.startsWith('analysis-layer-'));
 
   console.log('[CustomPopupManager] 🔍 Layer type check:', {
     layerId: feature.layer?.id,
@@ -1158,34 +1157,34 @@ const generateBarChart = (
   if (isAnalysisLayer) {
     // Handle unified analysis layers with proper bar chart
     const attrs = feature.attributes || {};
-    
+
     // Initialize BrandNameResolver to handle brand field detection
     const brandResolver = new BrandNameResolver(FIELD_ALIASES);
     const brandFields = brandResolver.detectBrandFields(attrs);
     const isBrandAnalysis = brandFields.length > 0 || attrs.brand_difference_score !== undefined;
-    
+
     // 🔍 DEBUG: Log all attributes for analysis layer popup
     console.log('[CustomPopupManager] 🔍 Analysis Layer Popup Debug:', {
       layerId: feature.layer?.id,
       hasAttributes: !!attrs,
       attributeKeys: Object.keys(attrs),
       attributeValues: attrs,
-  nonZeroValues: Object.entries(attrs).filter(([, value]) => typeof value === 'number' && value !== 0),
-  allNumericValues: Object.entries(attrs).filter(([, value]) => typeof value === 'number'),
+      nonZeroValues: Object.entries(attrs).filter(([, value]) => typeof value === 'number' && value !== 0),
+      allNumericValues: Object.entries(attrs).filter(([, value]) => typeof value === 'number'),
       brandFields: brandFields.map(bf => ({ field: bf.fieldName, brand: (bf as any).brandName, value: bf.value })),
       isBrandAnalysis: isBrandAnalysis
     });
-    
-  const metrics: Metric[] = [];
-    
-  // Prefer the renderer's active field when available
-  let rendererField: string | undefined;
-  const layerRendererUnknown = (feature.layer as __esri.FeatureLayer).renderer as unknown;
-  if (layerRendererUnknown && typeof layerRendererUnknown === 'object' && 'field' in (layerRendererUnknown as Record<string, unknown>)) {
-    rendererField = (layerRendererUnknown as { field?: string }).field;
-  }
 
-  // Find the main score field - prefer renderer.field, then known analysis-specific score fields
+    const metrics: Metric[] = [];
+
+    // Prefer the renderer's active field when available
+    let rendererField: string | undefined;
+    const layerRendererUnknown = (feature.layer as __esri.FeatureLayer).renderer as unknown;
+    if (layerRendererUnknown && typeof layerRendererUnknown === 'object' && 'field' in (layerRendererUnknown as Record<string, unknown>)) {
+      rendererField = (layerRendererUnknown as { field?: string }).field;
+    }
+
+    // Find the main score field - prefer renderer.field, then known analysis-specific score fields
     const scoreFields = [
       'strategic_analysis_score',      // Strategic analysis (preferred)
       'strategic_score',               // Strategic analysis (alternative)
@@ -1230,7 +1229,7 @@ const generateBarChart = (
         }
       }
     }
-    
+
     if (mainScoreField && mainScoreValue >= 0) {
       // Get all features from the layer to calculate statistics
       const layer = feature.layer as __esri.FeatureLayer;
@@ -1250,7 +1249,7 @@ const generateBarChart = (
         const minValue = Math.min(...allValues);
         const sortedValues = [...allValues].sort((a, b) => a - b);
         const medianValue = sortedValues.length > 0 ? sortedValues[Math.floor(sortedValues.length / 2)] : 0;
-        
+
         metrics.push({
           label: FieldMappingHelper.getFriendlyFieldName(mainScoreField),
           value: mainScoreValue,
@@ -1264,7 +1263,7 @@ const generateBarChart = (
         });
       }
     }
-    
+
     // Add contributing fields, excluding unwanted system fields and main score fields
     const excludedFields = [
       'OBJECTID', 'value', 'rank', 'ID', 'DESCRIPTION', 'area_name',
@@ -1278,12 +1277,12 @@ const generateBarChart = (
       'predictive_modeling_score', 'risk_adjusted_score', 'expansion_opportunity_score',
       'cluster_performance_score', 'comparison_score', 'trend_strength', 'scenario_analysis_score'
     ];
-    
+
     // Fields from other unrelated projects that should be excluded
     const excludedProjectFields = [
       'footwear_sales', 'athletic_shoes', 'running_shoes', 'basketball_shoes'
     ];
-    
+
     // Add brand fields first if this is a brand analysis
     if (isBrandAnalysis && brandFields.length > 0) {
       brandFields.forEach(brandField => {
@@ -1297,17 +1296,17 @@ const generateBarChart = (
         }
       });
     }
-    
+
     // Get all available numeric fields that could be contributing factors
     const brandFieldNames = brandFields.map(bf => bf.fieldName);
     Object.keys(attrs).forEach(key => {
-      if (key !== mainScoreField && 
-          !excludedFields.includes(key) && 
-          !excludedProjectFields.includes(key) && 
-          !brandFieldNames.includes(key) && // Skip brand fields as we handled them above
-          typeof attrs[key] === 'number' && 
-          attrs[key] !== 0) { // Show fields with non-zero values (including negative for brand differences)
-        
+      if (key !== mainScoreField &&
+        !excludedFields.includes(key) &&
+        !excludedProjectFields.includes(key) &&
+        !brandFieldNames.includes(key) && // Skip brand fields as we handled them above
+        typeof attrs[key] === 'number' &&
+        attrs[key] !== 0) { // Show fields with non-zero values (including negative for brand differences)
+
         // Determine color based on field type (no hardcoded brand colors)
         let color = 'var(--theme-text-muted)'; // Default gray
         if (key.includes('score')) {
@@ -1317,7 +1316,7 @@ const generateBarChart = (
         } else if (key.includes('market') || key.includes('gap')) {
           color = 'var(--firefly-19)'; // Orange for market metrics
         }
-        
+
         metrics.push({
           label: FieldMappingHelper.getFriendlyFieldName(key),
           value: attrs[key],
@@ -1325,7 +1324,7 @@ const generateBarChart = (
         });
       }
     });
-    
+
     // Render metrics
     if (metrics.length > 0) {
       const chartTitle = document.createElement('h4');
@@ -1335,14 +1334,14 @@ const generateBarChart = (
       chartTitle.style.margin = '0 0 12px 0';
       chartTitle.style.color = 'var(--theme-text-primary)';
       container.appendChild(chartTitle);
-      
+
       metrics.forEach(metric => {
         const row = document.createElement('div');
         row.style.display = 'flex';
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
         row.style.padding = '4px 0';
-        
+
         // Label
         const label = document.createElement('div');
         label.textContent = metric.label;
@@ -1351,7 +1350,7 @@ const generateBarChart = (
         label.style.fontWeight = '500';
         label.style.color = 'var(--theme-text-primary)';
         label.style.flexShrink = '0';
-        
+
         // Bar wrapper
         const barWrapper = document.createElement('div');
         barWrapper.style.flex = '1';
@@ -1360,7 +1359,7 @@ const generateBarChart = (
         barWrapper.style.borderRadius = '9px';
         barWrapper.style.margin = '0 8px';
         barWrapper.style.position = 'relative';
-        
+
         const barFill = document.createElement('div');
         let widthPercent = 0;
         if (metric.statistics) {
@@ -1376,12 +1375,12 @@ const generateBarChart = (
         } else {
           widthPercent = Math.min((metric.value / 100) * 100, 100);
         }
-        
+
         barFill.style.width = `${widthPercent}%`;
         barFill.style.height = '100%';
         barFill.style.backgroundColor = metric.color;
         barFill.style.borderRadius = '9px';
-        
+
         // Value text
         const valueText = document.createElement('div');
         valueText.textContent = metric.value.toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -1390,14 +1389,14 @@ const generateBarChart = (
         valueText.style.fontSize = '12px';
         valueText.style.fontWeight = '600';
         valueText.style.color = 'var(--theme-text-primary)';
-        
+
         barWrapper.appendChild(barFill);
         row.appendChild(label);
         row.appendChild(barWrapper);
         row.appendChild(valueText);
         container.appendChild(row);
       });
-      
+
       // Add statistics summary if we have main score statistics
       const mainMetric = metrics.find(m => m.statistics);
       if (mainMetric && mainMetric.statistics) {
@@ -1407,14 +1406,14 @@ const generateBarChart = (
         statsContainer.style.backgroundColor = 'var(--theme-bg-secondary)';
         statsContainer.style.borderRadius = '4px';
         statsContainer.style.borderLeft = '3px solid var(--theme-accent-primary)';
-        
+
         const statsTitle = document.createElement('div');
         statsTitle.textContent = 'All Areas';
         statsTitle.style.fontSize = '11px';
         statsTitle.style.fontWeight = 'bold';
         statsTitle.style.color = 'var(--theme-text-primary)';
         statsTitle.style.marginBottom = '4px';
-        
+
         const statsText = document.createElement('div');
         statsText.innerHTML = `
           <div style="font-size: 10px; color: var(--theme-text-secondary); line-height: 1.4;">
@@ -1422,19 +1421,19 @@ const generateBarChart = (
             <div>Range: <strong style="color: var(--theme-text-primary);">${mainMetric.statistics.min.toFixed(1)} - ${mainMetric.statistics.max.toFixed(1)}</strong></div>
           </div>
         `;
-        
+
         statsContainer.appendChild(statsTitle);
         statsContainer.appendChild(statsText);
         container.appendChild(statsContainer);
       }
-      
+
       // Show chart
       container.style.display = 'block';
     }
 
     // Add action buttons for aggregate views that support drilldown
     const isAggregateView = (feature.layer as any)?.metadata?.viewMode === 'aggregate' ||
-                           attrs.area_id || attrs.ID;
+      attrs.area_id || attrs.ID;
 
     console.log('[CustomPopupManager] 🔍 Drilldown button check:', {
       isAggregateView,
@@ -1508,9 +1507,9 @@ const generateBarChart = (
     }
 
     // Retrieve friendly names for the underlying fields, if stored on the layer
-  const layerWithFields = feature.layer as FeatureLayer & { primaryField?: string; comparisonField?: string };
-  const rawPrimaryField = layerWithFields?.primaryField || 'primary_value';
-  const rawComparisonField = layerWithFields?.comparisonField || 'comparison_value';
+    const layerWithFields = feature.layer as FeatureLayer & { primaryField?: string; comparisonField?: string };
+    const rawPrimaryField = layerWithFields?.primaryField || 'primary_value';
+    const rawComparisonField = layerWithFields?.comparisonField || 'comparison_value';
 
     // 2) Primary metric
     if (typeof attrs[rawPrimaryField] === 'number') {
@@ -1616,7 +1615,7 @@ const generateBarChart = (
 
           // Find a numeric field (exclude the object ID field)
           const oidField = layer.objectIdField;
-          
+
           // Prefer the actual renderer.field when present, then config, then first numeric (safe access)
           let activeRendererField: string | undefined;
           const layerRendererUnknown = layer.renderer as unknown;
@@ -1634,18 +1633,18 @@ const generateBarChart = (
 
           if (!numericFieldInfo) {
             numericFieldInfo = layer.fields?.find(f =>
-              ['small-integer','integer','single','double'].includes(f.type) &&
+              ['small-integer', 'integer', 'single', 'double'].includes(f.type) &&
               f.name !== oidField
             );
           }
-          
+
           if (!numericFieldInfo || !numericFieldInfo.name) {
-            return { id: layer.id, name: layer.title || `Layer ${idx+1}`, value: NaN, min: NaN, max: NaN, median: NaN, color: colors[idx % colors.length] };
+            return { id: layer.id, name: layer.title || `Layer ${idx + 1}`, value: NaN, min: NaN, max: NaN, median: NaN, color: colors[idx % colors.length] };
           }
 
           const numericField = numericFieldInfo.name;
           const labelText = FieldMappingHelper.getFriendlyFieldName(numericField);
-          
+
           // Query all feature values for numericField to get stats
           const q = layer.createQuery();
           q.where = '1=1';
@@ -1659,7 +1658,7 @@ const generateBarChart = (
           const min = sorted[0] ?? 0;
           const max = sorted[sorted.length - 1] ?? 0;
           const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
-          
+
           // Determine this feature's value using a spatial query on its geometry
           let featureValue = NaN;
           if (feature.geometry) {
@@ -1693,7 +1692,7 @@ const generateBarChart = (
         } else if (stat.id === 'conversionRate') {
           displayName = 'Conversion Rate';
         }
-        
+
         const barContainer = document.createElement('div');
         barContainer.style.display = 'flex';
         barContainer.style.alignItems = 'center';
@@ -1739,7 +1738,7 @@ const addFlashEffect = (mapView: __esri.MapView, geometry: __esri.Geometry, geom
       import('@arcgis/core/symbols/SimpleFillSymbol').then(({ default: SimpleFillSymbol }) => {
         import('@arcgis/core/symbols/SimpleMarkerSymbol').then(({ default: SimpleMarkerSymbol }) => {
           let flashGraphic: __esri.Graphic;
-          
+
           if (geometryType === 'point') {
             // Flash effect for points
             flashGraphic = new Graphic({
@@ -1766,14 +1765,14 @@ const addFlashEffect = (mapView: __esri.MapView, geometry: __esri.Geometry, geom
               })
             });
           }
-          
+
           mapView.graphics.add(flashGraphic);
-          
+
           // Create pulsing effect
           let opacity = 0.8;
           let size = geometryType === 'point' ? 20 : undefined;
           let fadeOut = false;
-          
+
           const pulseInterval = setInterval(() => {
             if (!fadeOut) {
               opacity -= 0.15;
@@ -1784,7 +1783,7 @@ const addFlashEffect = (mapView: __esri.MapView, geometry: __esri.Geometry, geom
               if (geometryType === 'point' && size) size -= 2;
               if (opacity >= 0.8) fadeOut = false;
             }
-            
+
             if (geometryType === 'point') {
               flashGraphic.symbol = new SimpleMarkerSymbol({
                 color: [255, 255, 255, opacity],
@@ -1804,7 +1803,7 @@ const addFlashEffect = (mapView: __esri.MapView, geometry: __esri.Geometry, geom
               });
             }
           }, 200);
-          
+
           // Remove flash after animation
           setTimeout(() => {
             clearInterval(pulseInterval);

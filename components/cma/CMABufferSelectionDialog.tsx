@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -68,9 +67,9 @@ const CMABufferSelectionDialog: React.FC<CMABufferSelectionDialogProps> = ({
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }, []);
@@ -266,181 +265,177 @@ const CMABufferSelectionDialog: React.FC<CMABufferSelectionDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto min-h-0 px-1"
-             style={{ maxHeight: 'calc(85vh - 120px)' }}>
+          style={{ maxHeight: 'calc(85vh - 120px)' }}>
           <div className="space-y-6 py-4">
-          {/* Buffer Type Selection */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium text-[#484247] font-montserrat">Buffer Type</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {(['radius', 'drivetime', 'walktime'] as const).map((type) => (
-                <Card
-                  key={type}
-                  className={`cursor-pointer transition-all border-2 ${
-                    bufferType === type
-                      ? 'border-[#660D39] bg-[#660D39]/10 shadow-md'
-                      : 'border-gray-200 hover:border-[#660D39]/50'
-                  }`}
-                  onClick={() => setBufferType(type)}
-                >
-                  <CardContent className="p-4 text-center">
-                    <div className={`mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center ${
-                      bufferType === type ? 'bg-[#660D39] text-white font-bold' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {getBufferTypeIcon(type)}
-                    </div>
-                    <h3 className="font-medium text-sm mb-1 font-montserrat">
-                      {getBufferTypeLabel(type)}
-                    </h3>
-                    <p className="text-xs text-gray-600 font-montserrat">
-                      {getBufferTypeDescription(type)}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Selection Options */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium flex items-center gap-2 text-[#484247] font-montserrat">
-              {bufferType === 'radius' ? <Ruler className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-              Quick Selection
-              {isCountingProperties && bufferType === 'radius' && (
-                <span className="ml-2 text-xs text-[#484247]/60 flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Counting properties...
-                </span>
-              )}
-            </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {getCurrentOptions().map((option) => {
-                const count = propertyCounts[option.value];
-                const showCount = bufferType === 'radius' && count !== undefined;
-
-                return (
-                  <Button
-                    key={option.value}
-                    variant={bufferValue === option.value ? "default" : "outline"}
-                    size="sm"
-                    className={`text-sm h-auto py-2 font-montserrat flex flex-col gap-1 ${
-                      bufferValue === option.value
-                        ? 'bg-[#660D39] hover:bg-[#670038] text-white'
-                        : 'border-[#660D39] text-[#484247] hover:bg-[#660D39]/10'
-                    }`}
-                    onClick={() => handleQuickSelect(option.value)}
+            {/* Buffer Type Selection */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium text-[#484247] font-montserrat">Buffer Type</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {(['radius', 'drivetime', 'walktime'] as const).map((type) => (
+                  <Card
+                    key={type}
+                    className={`cursor-pointer transition-all border-2 ${bufferType === type
+                        ? 'border-[#660D39] bg-[#660D39]/10 shadow-md'
+                        : 'border-gray-200 hover:border-[#660D39]/50'
+                      }`}
+                    onClick={() => setBufferType(type)}
                   >
-                    <span>{option.label}</span>
-                    {showCount && (
-                      <span className={`text-xs font-normal ${
-                        bufferValue === option.value ? 'text-white/80' : 'text-[#484247]/70'
-                      }`}>
-                        ~{count.toLocaleString()} {count === 1 ? 'property' : 'properties'}
-                      </span>
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
-            {bufferType !== 'radius' && (
-              <p className="text-xs text-[#484247]/70 font-montserrat italic">
-                Property counts are only available for radius buffers. Drive time and walk time counts will be calculated after selection.
-              </p>
-            )}
-          </div>
-
-          {/* Custom Value Input */}
-          <div className="space-y-2">
-            <Label htmlFor="custom-value" className="text-base font-medium text-[#484247] font-montserrat">
-              Custom Value
-            </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="custom-value"
-                type="number"
-                value={bufferValue}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBufferValue(e.target.value)}
-                placeholder={`Enter ${getCurrentUnit()}`}
-                min="0.1"
-                max={bufferType === 'radius' ? "50" : "120"}
-                step="0.1"
-                className="flex-1 border-[#660D39] focus:ring-[#660D39] focus:border-[#660D39] font-montserrat"
-              />
-              <span className="text-sm text-[#484247] min-w-[60px] font-montserrat">
-                {getCurrentUnit()}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 font-montserrat">
-              {bufferType === 'radius'
-                ? 'Maximum: 50 km'
-                : 'Maximum: 120 minutes'}
-            </p>
-          </div>
-
-          {/* Auto-Filter Preview */}
-          {propertyParams && autoFilterPreview && (
-            <div className="bg-[#660D39]/10 border-2 border-[#660D39] rounded-lg p-4">
-              <h4 className="font-medium text-[#484247] mb-2 flex items-center gap-2 font-montserrat">
-                <Filter className="w-4 h-4" />
-                Auto-Applied Filters
-              </h4>
-              <div className="text-sm text-[#484247] mb-2">
-                <span className="font-medium">Based on:</span> <span className="break-words">{propertyParams.address || 'Selected property'}</span>
-              </div>
-              <div className="text-sm text-[#484247] mb-3 leading-relaxed">
-                {autoFilterPreview.description}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {autoFilterPreview.propertyParams.bedrooms && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-[#484247] font-medium">Bedrooms:</span>
-                    <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
-                      {autoFilterPreview.filters.bedrooms.min}-{autoFilterPreview.filters.bedrooms.max}
-                    </span>
-                  </div>
-                )}
-                {autoFilterPreview.propertyParams.bathrooms && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-[#484247] font-medium">Bathrooms:</span>
-                    <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
-                      {autoFilterPreview.filters.bathrooms.min}-{autoFilterPreview.filters.bathrooms.max}
-                    </span>
-                  </div>
-                )}
-                {autoFilterPreview.propertyParams.squareFootage && (
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[#484247] font-medium">Sq Ft:</span>
-                    <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
-                      {(autoFilterPreview.filters.squareFootage?.min ?? 0).toLocaleString()}-{(autoFilterPreview.filters.squareFootage?.max ?? 10000).toLocaleString()}
-                    </span>
-                  </div>
-                )}
-                {autoFilterPreview.propertyParams.price && (
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[#484247] font-medium">Price:</span>
-                    <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
-                      ${(autoFilterPreview.filters.priceRange?.min ?? 0).toLocaleString()}-${(autoFilterPreview.filters.priceRange?.max ?? 2000000).toLocaleString()}
-                    </span>
-                  </div>
-                )}
+                    <CardContent className="p-4 text-center">
+                      <div className={`mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center ${bufferType === type ? 'bg-[#660D39] text-white font-bold' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        {getBufferTypeIcon(type)}
+                      </div>
+                      <h3 className="font-medium text-sm mb-1 font-montserrat">
+                        {getBufferTypeLabel(type)}
+                      </h3>
+                      <p className="text-xs text-gray-600 font-montserrat">
+                        {getBufferTypeDescription(type)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* Preview Information */}
-          {isValidValue() && (
-            <div className="bg-[#660D39]/10 border border-[#660D39] rounded-lg p-4">
-              <h4 className="font-medium text-[#484247] mb-2">Selected Buffer</h4>
-              <div className="flex items-center gap-2 text-sm text-[#484247]">
-                {getBufferTypeIcon(bufferType)}
-                <span>
-                  {bufferValue} {getCurrentUnit()} {getBufferTypeLabel(bufferType).toLowerCase()}
+            {/* Quick Selection Options */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium flex items-center gap-2 text-[#484247] font-montserrat">
+                {bufferType === 'radius' ? <Ruler className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                Quick Selection
+                {isCountingProperties && bufferType === 'radius' && (
+                  <span className="ml-2 text-xs text-[#484247]/60 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Counting properties...
+                  </span>
+                )}
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {getCurrentOptions().map((option) => {
+                  const count = propertyCounts[option.value];
+                  const showCount = bufferType === 'radius' && count !== undefined;
+
+                  return (
+                    <Button
+                      key={option.value}
+                      variant={bufferValue === option.value ? "default" : "outline"}
+                      size="sm"
+                      className={`text-sm h-auto py-2 font-montserrat flex flex-col gap-1 ${bufferValue === option.value
+                          ? 'bg-[#660D39] hover:bg-[#670038] text-white'
+                          : 'border-[#660D39] text-[#484247] hover:bg-[#660D39]/10'
+                        }`}
+                      onClick={() => handleQuickSelect(option.value)}
+                    >
+                      <span>{option.label}</span>
+                      {showCount && (
+                        <span className={`text-xs font-normal ${bufferValue === option.value ? 'text-white/80' : 'text-[#484247]/70'
+                          }`}>
+                          ~{count.toLocaleString()} {count === 1 ? 'property' : 'properties'}
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+              {bufferType !== 'radius' && (
+                <p className="text-xs text-[#484247]/70 font-montserrat italic">
+                  Property counts are only available for radius buffers. Drive time and walk time counts will be calculated after selection.
+                </p>
+              )}
+            </div>
+
+            {/* Custom Value Input */}
+            <div className="space-y-2">
+              <Label htmlFor="custom-value" className="text-base font-medium text-[#484247] font-montserrat">
+                Custom Value
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="custom-value"
+                  type="number"
+                  value={bufferValue}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBufferValue(e.target.value)}
+                  placeholder={`Enter ${getCurrentUnit()}`}
+                  min="0.1"
+                  max={bufferType === 'radius' ? "50" : "120"}
+                  step="0.1"
+                  className="flex-1 border-[#660D39] focus:ring-[#660D39] focus:border-[#660D39] font-montserrat"
+                />
+                <span className="text-sm text-[#484247] min-w-[60px] font-montserrat">
+                  {getCurrentUnit()}
                 </span>
               </div>
-              <p className="text-xs text-[#484247]/80 mt-2">
-                This will analyze comparable properties within this area{propertyParams ? ' using the filters shown above' : ''}.
+              <p className="text-xs text-gray-500 font-montserrat">
+                {bufferType === 'radius'
+                  ? 'Maximum: 50 km'
+                  : 'Maximum: 120 minutes'}
               </p>
             </div>
-          )}
+
+            {/* Auto-Filter Preview */}
+            {propertyParams && autoFilterPreview && (
+              <div className="bg-[#660D39]/10 border-2 border-[#660D39] rounded-lg p-4">
+                <h4 className="font-medium text-[#484247] mb-2 flex items-center gap-2 font-montserrat">
+                  <Filter className="w-4 h-4" />
+                  Auto-Applied Filters
+                </h4>
+                <div className="text-sm text-[#484247] mb-2">
+                  <span className="font-medium">Based on:</span> <span className="break-words">{propertyParams.address || 'Selected property'}</span>
+                </div>
+                <div className="text-sm text-[#484247] mb-3 leading-relaxed">
+                  {autoFilterPreview.description}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {autoFilterPreview.propertyParams.bedrooms && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#484247] font-medium">Bedrooms:</span>
+                      <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
+                        {autoFilterPreview.filters.bedrooms.min}-{autoFilterPreview.filters.bedrooms.max}
+                      </span>
+                    </div>
+                  )}
+                  {autoFilterPreview.propertyParams.bathrooms && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#484247] font-medium">Bathrooms:</span>
+                      <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
+                        {autoFilterPreview.filters.bathrooms.min}-{autoFilterPreview.filters.bathrooms.max}
+                      </span>
+                    </div>
+                  )}
+                  {autoFilterPreview.propertyParams.squareFootage && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[#484247] font-medium">Sq Ft:</span>
+                      <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
+                        {(autoFilterPreview.filters.squareFootage?.min ?? 0).toLocaleString()}-{(autoFilterPreview.filters.squareFootage?.max ?? 10000).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {autoFilterPreview.propertyParams.price && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[#484247] font-medium">Price:</span>
+                      <span className="bg-[#E0E0E0] px-2 py-1 rounded text-[#484247]">
+                        ${(autoFilterPreview.filters.priceRange?.min ?? 0).toLocaleString()}-${(autoFilterPreview.filters.priceRange?.max ?? 2000000).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Preview Information */}
+            {isValidValue() && (
+              <div className="bg-[#660D39]/10 border border-[#660D39] rounded-lg p-4">
+                <h4 className="font-medium text-[#484247] mb-2">Selected Buffer</h4>
+                <div className="flex items-center gap-2 text-sm text-[#484247]">
+                  {getBufferTypeIcon(bufferType)}
+                  <span>
+                    {bufferValue} {getCurrentUnit()} {getBufferTypeLabel(bufferType).toLowerCase()}
+                  </span>
+                </div>
+                <p className="text-xs text-[#484247]/80 mt-2">
+                  This will analyze comparable properties within this area{propertyParams ? ' using the filters shown above' : ''}.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

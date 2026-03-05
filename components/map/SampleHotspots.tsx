@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import Graphic from "@arcgis/core/Graphic";
 import Point from "@arcgis/core/geometry/Point";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
@@ -80,10 +80,10 @@ interface SampleHotspotsProps {
   showWelcomeOverlay?: boolean;
 }
 
-export default function SampleHotspots({ 
-  view, 
+export default function SampleHotspots({
+  view,
   onHotspotClick,
-  showWelcomeOverlay = true 
+  showWelcomeOverlay = true
 }: SampleHotspotsProps) {
   const [hotspotGraphics, setHotspotGraphics] = useState<__esri.Graphic[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -176,8 +176,8 @@ export default function SampleHotspots({
         view.on("click", (event) => {
           view.hitTest(event).then((response) => {
             const hotspotHit = response.results.find(
-              result => result.type === 'graphic' && 
-                       (result as __esri.GraphicHit).graphic?.attributes?.type === 'sample-hotspot'
+              result => result.type === 'graphic' &&
+                (result as __esri.GraphicHit).graphic?.attributes?.type === 'sample-hotspot'
             );
 
             if (hotspotHit && hotspotHit.type === 'graphic') {
@@ -197,8 +197,8 @@ export default function SampleHotspots({
         view.on("pointer-move", (event) => {
           view.hitTest(event).then((response) => {
             const hotspotHit = response.results.find(
-              result => result.type === 'graphic' && 
-                       (result as __esri.GraphicHit).graphic?.attributes?.type === 'sample-hotspot'
+              result => result.type === 'graphic' &&
+                (result as __esri.GraphicHit).graphic?.attributes?.type === 'sample-hotspot'
             );
 
             if (hotspotHit && hotspotHit.type === 'graphic') {
@@ -250,11 +250,11 @@ export default function SampleHotspots({
           const baseSize = 12;
           const pulse = Math.sin(Date.now() * 0.001 + index) * 2;
           const isHovered = graphic.attributes.id === hoveredHotspot;
-          
+
           if (graphic.symbol && graphic.symbol.type === 'simple-marker') {
             const symbol = graphic.symbol as __esri.SimpleMarkerSymbol;
             graphic.symbol = symbol.clone();
-            (graphic.symbol as __esri.SimpleMarkerSymbol).size = 
+            (graphic.symbol as __esri.SimpleMarkerSymbol).size =
               isHovered ? baseSize + 6 : baseSize + pulse;
           }
         }
@@ -304,12 +304,12 @@ export default function SampleHotspots({
           {FLORIDA_HOTSPOTS.map(hotspot => {
             const Icon = hotspot.icon;
             return (
-              <div 
+              <div
                 key={hotspot.id}
                 className="flex items-center space-x-2 text-xs cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors"
                 onClick={() => onHotspotClick?.(hotspot)}
               >
-                <div 
+                <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: hotspot.color }}
                 />

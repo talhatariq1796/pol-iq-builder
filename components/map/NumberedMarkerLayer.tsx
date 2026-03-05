@@ -1,11 +1,3 @@
-/**
- * Numbered Marker Layer
- *
- * Displays numbered markers on the map that correspond to numbered lists in AI responses.
- * When AI says "Top 3 swing precincts: 1. East Lansing Precinct 3...",
- * this component shows markers labeled "1", "2", "3" at those precincts.
- */
-
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -28,33 +20,13 @@ interface NumberedMarkerLayerProps {
   visible?: boolean;
 }
 
-/**
- * Compute centroid from GeoJSON polygon coordinates
- */
-function computePolygonCentroid(coordinates: number[][][]): [number, number] {
-  // For simple polygons, average all points in the first ring
-  const ring = coordinates[0];
-  if (!ring || ring.length === 0) return [0, 0];
 
-  let sumLng = 0;
-  let sumLat = 0;
-  let count = 0;
-
-  for (const coord of ring) {
-    sumLng += coord[0];
-    sumLat += coord[1];
-    count++;
-  }
-
-  return [sumLng / count, sumLat / count];
-}
-
-export function NumberedMarkerLayer({
+const NumberedMarkerLayer = ({
   view,
   markers,
   precinctCentroids,
   visible = true,
-}: NumberedMarkerLayerProps) {
+}: NumberedMarkerLayerProps) => {
   const layerRef = useRef<GraphicsLayer | null>(null);
 
   useEffect(() => {

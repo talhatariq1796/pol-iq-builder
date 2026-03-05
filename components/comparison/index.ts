@@ -4,7 +4,6 @@
  * Exports all components for side-by-side comparison of precincts or jurisdictions.
  */
 
-export { MetricRow } from './MetricRow';
 export { ComparisonPane } from './ComparisonPane';
 export { EntitySelector } from './EntitySelector';
 export { InsightsSummary } from './InsightsSummary';

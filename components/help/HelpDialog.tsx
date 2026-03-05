@@ -511,7 +511,7 @@ export const HelpContent = {
       <p className="text-slate-700 mb-3">The AI assistant can help you. Try asking:</p>
       <ul className="text-slate-600 space-y-1">
         {examples.map((ex, i) => (
-          <li key={i}>"{ex}"</li>
+          <li key={i}>&quot;{ex}&quot;</li>
         ))}
       </ul>
     </div>

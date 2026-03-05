@@ -8,7 +8,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -22,11 +21,11 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Settings, 
-  Target, 
-  Users, 
-  MapPin, 
+import {
+  Settings,
+  Target,
+  Users,
+  MapPin,
   Radius,
   Info,
   AlertTriangle,
@@ -34,10 +33,9 @@ import {
   Eye
 } from 'lucide-react';
 
-import { 
-  ClusterConfig, 
-  DEFAULT_CLUSTER_CONFIG, 
-  CAMPAIGN_PRESETS 
+import {
+  ClusterConfig,
+  CAMPAIGN_PRESETS
 } from '@/lib/clustering/types';
 import { validateClusterConfig } from '@/lib/clustering/utils/cluster-validation';
 
@@ -98,7 +96,7 @@ export function ClusterConfigPanel({
   const handleConfigChange = useCallback((updates: Partial<ClusterConfig>) => {
     const newConfig = { ...config, ...updates };
     onConfigChange(newConfig);
-    
+
     // Reset preset selection if manually changing config
     if (selectedPreset !== 'custom') {
       setSelectedPreset('custom');
@@ -107,11 +105,11 @@ export function ClusterConfigPanel({
 
   const handlePresetChange = useCallback((presetKey: string) => {
     setSelectedPreset(presetKey);
-    
+
     if (presetKey === 'custom') {
       return;
     }
-    
+
     const preset = CAMPAIGN_PRESETS[presetKey];
     if (preset) {
       const newConfig = { ...config, ...preset };
@@ -145,7 +143,7 @@ export function ClusterConfigPanel({
             />
           </div>
         </div>
-        
+
         {config.enabled && (
           <Alert>
             <Info className="h-4 w-4" />
@@ -157,246 +155,246 @@ export function ClusterConfigPanel({
       </CardHeader>
 
       <CardContent className="space-y-6">
-          {/* Disabled state message */}
-          {!config.enabled && (
-            <Alert className="bg-amber-50 border-amber-200">
-              <Info className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                Enable clustering using the toggle above to configure territory settings.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {/* Preset Selection */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Configuration Preset</Label>
-            <Select value={selectedPreset} onValueChange={handlePresetChange} disabled={!config.enabled}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a preset configuration" />
-              </SelectTrigger>
-              <SelectContent>
-                {PRESET_OPTIONS.map((preset) => (
-                  <SelectItem key={preset.key} value={preset.key}>
-                    {preset.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Disabled state message */}
+        {!config.enabled && (
+          <Alert className="bg-amber-50 border-amber-200">
+            <Info className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Enable clustering using the toggle above to configure territory settings.
+            </AlertDescription>
+          </Alert>
+        )}
 
-          <Separator />
+        {/* Preset Selection */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Configuration Preset</Label>
+          <Select value={selectedPreset} onValueChange={handlePresetChange} disabled={!config.enabled}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a preset configuration" />
+            </SelectTrigger>
+            <SelectContent>
+              {PRESET_OPTIONS.map((preset) => (
+                <SelectItem key={preset.key} value={preset.key}>
+                  {preset.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          {/* Clustering Method Info - Now Auto-Detected */}
-          {config.enabled && (
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Clustering Method</Label>
-              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <Target className="h-5 w-5 text-green-600" />
-                <div className="flex-1">
-                  <div className="font-medium text-green-800">Auto-Detected from Analysis</div>
-                  <div className="text-sm text-green-600">
-                    The clustering method is automatically optimized based on your selected analysis endpoint, combining analysis scores with geographic proximity for balanced territories.
-                  </div>
+        <Separator />
+
+        {/* Clustering Method Info - Now Auto-Detected */}
+        {config.enabled && (
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Clustering Method</Label>
+            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <Target className="h-5 w-5 text-green-600" />
+              <div className="flex-1">
+                <div className="font-medium text-green-800">Auto-Detected from Analysis</div>
+                <div className="text-sm text-green-600">
+                  The clustering method is automatically optimized based on your selected analysis endpoint, combining analysis scores with geographic proximity for balanced territories.
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          <Separator />
+        <Separator />
 
-          {/* Territory Parameters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Number of Clusters */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Number of Territories
-                </Label>
-                <Badge variant="outline">{config.numClusters}</Badge>
-              </div>
-              <Slider
-                value={config.numClusters}
-                onValueChange={(value: number[]) => handleConfigChange({ numClusters: value[0] })}
-                min={1}
-                max={20}
-                step={1}
-                className="w-full"
-                disabled={!config.enabled}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>1 territory</span>
-                <span>20 territories</span>
-              </div>
+        {/* Territory Parameters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Number of Clusters */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Number of Territories
+              </Label>
+              <Badge variant="outline">{config.numClusters}</Badge>
             </div>
-
-            {/* Min Zip Codes */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Min Zip Codes per Territory
-                </Label>
-                <Badge variant="outline">{config.minZipCodes}</Badge>
-              </div>
-              <Slider
-                value={config.minZipCodes}
-                onValueChange={(value: number[]) => handleConfigChange({ minZipCodes: value[0] })}
-                min={5}
-                max={50}
-                step={1}
-                className="w-full"
-                disabled={!config.enabled}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>5 zip codes</span>
-                <span>50 zip codes</span>
-              </div>
-            </div>
-
-            {/* Min Population */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Min Combined Population
-                </Label>
-                <Badge variant="outline">{config.minPopulation.toLocaleString()}</Badge>
-              </div>
-              <Slider
-                value={config.minPopulation}
-                onValueChange={(value: number[]) => handleConfigChange({ minPopulation: value[0] })}
-                min={10000}
-                max={1000000}
-                step={5000}
-                className="w-full"
-                disabled={!config.enabled}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>10K</span>
-                <span>1M</span>
-              </div>
-            </div>
-
-            {/* Max Radius */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Radius className="h-4 w-4" />
-                  Max Territory Radius
-                </Label>
-                <Badge variant="outline">{config.maxRadiusMiles} miles</Badge>
-              </div>
-              <Slider
-                value={config.maxRadiusMiles}
-                onValueChange={(value: number[]) => handleConfigChange({ maxRadiusMiles: value[0] })}
-                min={20}
-                max={100}
-                step={5}
-                className="w-full"
-                disabled={!config.enabled}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>20 miles</span>
-                <span>100 miles</span>
-              </div>
-            </div>
-
-            {/* Min Score Percentile */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Zap className="h-4 w-4" />
-                  Min Score Percentile
-                </Label>
-                <Badge variant="outline">Top {100 - (config.minScorePercentile ?? 70)}%</Badge>
-              </div>
-              <Slider
-                value={config.minScorePercentile ?? 70}
-                onValueChange={(value: number[]) => handleConfigChange({ minScorePercentile: value[0] })}
-                min={50}
-                max={90}
-                step={5}
-                className="w-full"
-                disabled={!config.enabled}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Top 50%</span>
-                <span>Top 10%</span>
-              </div>
+            <Slider
+              value={config.numClusters}
+              onValueChange={(value: number[]) => handleConfigChange({ numClusters: value[0] })}
+              min={1}
+              max={20}
+              step={1}
+              className="w-full"
+              disabled={!config.enabled}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>1 territory</span>
+              <span>20 territories</span>
             </div>
           </div>
 
-          {/* Validation Messages */}
-          {validationResult && (
-            <div className="space-y-2">
-              {validationResult.errors.length > 0 && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="space-y-1">
-                      <div className="font-medium">Configuration Issues:</div>
-                      {validationResult.errors.map((error, index) => (
-                        <div key={index} className="text-sm">• {error}</div>
-                      ))}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {validationResult.warnings.length > 0 && (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="space-y-1">
-                      <div className="font-medium">Warnings:</div>
-                      {validationResult.warnings.map((warning, index) => (
-                        <div key={index} className="text-sm">• {warning}</div>
-                      ))}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
+          {/* Min Zip Codes */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Min Zip Codes per Territory
+              </Label>
+              <Badge variant="outline">{config.minZipCodes}</Badge>
             </div>
-          )}
-
-          {/* Dataset Information */}
-          {datasetInfo && (
-            <div className="bg-muted/50 rounded-lg p-3">
-              <div className="text-sm font-medium mb-2">Dataset Information</div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>Total Zip Codes: {datasetInfo.totalZipCodes.toLocaleString()}</div>
-                <div>Total Population: {datasetInfo.totalPopulation.toLocaleString()}</div>
-                <div>Geographic Span: {datasetInfo.geographicSpread.maxDistance.toFixed(1)} miles</div>
-                <div>Avg per Territory: {Math.floor(datasetInfo.totalZipCodes / config.numClusters)} zip codes</div>
-              </div>
+            <Slider
+              value={config.minZipCodes}
+              onValueChange={(value: number[]) => handleConfigChange({ minZipCodes: value[0] })}
+              min={5}
+              max={50}
+              step={1}
+              className="w-full"
+              disabled={!config.enabled}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>5 zip codes</span>
+              <span>50 zip codes</span>
             </div>
-          )}
+          </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            {onPreviewClusters && (
-              <Button 
-                onClick={onPreviewClusters}
-                disabled={!validationResult?.isValid || isPreviewLoading}
-                className="flex-1"
-                variant="outline"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                {isPreviewLoading ? 'Generating Preview...' : 'Preview Territories'}
-              </Button>
+          {/* Min Population */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Min Combined Population
+              </Label>
+              <Badge variant="outline">{config.minPopulation.toLocaleString()}</Badge>
+            </div>
+            <Slider
+              value={config.minPopulation}
+              onValueChange={(value: number[]) => handleConfigChange({ minPopulation: value[0] })}
+              min={10000}
+              max={1000000}
+              step={5000}
+              className="w-full"
+              disabled={!config.enabled}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>10K</span>
+              <span>1M</span>
+            </div>
+          </div>
+
+          {/* Max Radius */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Radius className="h-4 w-4" />
+                Max Territory Radius
+              </Label>
+              <Badge variant="outline">{config.maxRadiusMiles} miles</Badge>
+            </div>
+            <Slider
+              value={config.maxRadiusMiles}
+              onValueChange={(value: number[]) => handleConfigChange({ maxRadiusMiles: value[0] })}
+              min={20}
+              max={100}
+              step={5}
+              className="w-full"
+              disabled={!config.enabled}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>20 miles</span>
+              <span>100 miles</span>
+            </div>
+          </div>
+
+          {/* Min Score Percentile */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Min Score Percentile
+              </Label>
+              <Badge variant="outline">Top {100 - (config.minScorePercentile ?? 70)}%</Badge>
+            </div>
+            <Slider
+              value={config.minScorePercentile ?? 70}
+              onValueChange={(value: number[]) => handleConfigChange({ minScorePercentile: value[0] })}
+              min={50}
+              max={90}
+              step={5}
+              className="w-full"
+              disabled={!config.enabled}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Top 50%</span>
+              <span>Top 10%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Validation Messages */}
+        {validationResult && (
+          <div className="space-y-2">
+            {validationResult.errors.length > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <div className="font-medium">Configuration Issues:</div>
+                    {validationResult.errors.map((error, index) => (
+                      <div key={index} className="text-sm">• {error}</div>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
             )}
-            
-            {onSave && (
-              <Button 
-                onClick={onSave}
-                className="flex-1 bg-[#33a852] hover:bg-[#2d8f46] text-white"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Save Configuration
-              </Button>
+
+            {validationResult.warnings.length > 0 && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <div className="font-medium">Warnings:</div>
+                    {validationResult.warnings.map((warning, index) => (
+                      <div key={index} className="text-sm">• {warning}</div>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
             )}
           </div>
+        )}
+
+        {/* Dataset Information */}
+        {datasetInfo && (
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="text-sm font-medium mb-2">Dataset Information</div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+              <div>Total Zip Codes: {datasetInfo.totalZipCodes.toLocaleString()}</div>
+              <div>Total Population: {datasetInfo.totalPopulation.toLocaleString()}</div>
+              <div>Geographic Span: {datasetInfo.geographicSpread.maxDistance.toFixed(1)} miles</div>
+              <div>Avg per Territory: {Math.floor(datasetInfo.totalZipCodes / config.numClusters)} zip codes</div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          {onPreviewClusters && (
+            <Button
+              onClick={onPreviewClusters}
+              disabled={!validationResult?.isValid || isPreviewLoading}
+              className="flex-1"
+              variant="outline"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              {isPreviewLoading ? 'Generating Preview...' : 'Preview Territories'}
+            </Button>
+          )}
+
+          {onSave && (
+            <Button
+              onClick={onSave}
+              className="flex-1 bg-[#33a852] hover:bg-[#2d8f46] text-white"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Save Configuration
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

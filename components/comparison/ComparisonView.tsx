@@ -15,12 +15,9 @@ import {
 import {
   ArrowLeftRight,
   X,
-  Info,
   Loader2,
-  AlertCircle,
   Building2,
   MapPin,
-  ChevronDown,
   GitCompare,
   ArrowRight,
   Save,
@@ -39,8 +36,6 @@ import {
   BOUNDARY_TYPES,
   getBoundaryTypeInfo,
   type BoundaryType,
-  type BoundaryTypeInfo,
-  type ComparisonEntity,
   type ComparisonResult,
   type EntityType,
 } from '@/lib/comparison';

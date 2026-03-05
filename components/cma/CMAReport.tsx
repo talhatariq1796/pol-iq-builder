@@ -13,11 +13,9 @@ import {
   Calendar,
   Download,
   BarChart3,
-  PieChart as PieChartIcon,
   Activity,
   DollarSign
 } from 'lucide-react';
-import Image from 'next/image';
 import { captureMultipleCharts } from '@/lib/utils/chartCapture';
 import {
   LineChart,
@@ -42,8 +40,6 @@ import EnhancedAIAnalysis from './EnhancedAIAnalysis';
 import { RevenuePropertyDialog } from './dialogs/RevenuePropertyDialog';
 import { RevenuePropertyMetrics } from './RevenuePropertyMetrics';
 import { RevenueAIAnalysis } from './RevenueAIAnalysis';
-// PDF generation now happens server-side via /api/cma-pdf
-// import { CMAReportPDFGenerator } from '@/lib/pdf/CMAReportPDFGenerator';
 import { CMAStatisticsCalculator, formatCurrency, formatLargeNumber, type ComprehensiveStats } from '@/lib/utils/cmaStatistics';
 import type { CMAProperty, CMAFilters, CMAStats, AreaSelection, PropertyParams } from './types';
 
@@ -122,7 +118,7 @@ async function addPropertyImages(
 
     // Create centris_no from available ID fields (same as PropertyDataService)
     const centris_no = propAny.centris_no || propAny.id || propAny.mls || propAny.mls_number ||
-                       Math.floor(Math.random() * 10000000);
+      Math.floor(Math.random() * 10000000);
 
     // Construct full address (same format as popup: address, municipality, postal_code)
     const baseAddress = [
@@ -491,8 +487,8 @@ const CMAReport: React.FC<CMAReportProps> = ({
   const neighborhoodData = useMemo(() => {
     const areas = properties.reduce((acc, property) => {
       // Extract city from address (format: "123 Street, City, State ZIP")
-      const areaName = (property.address ? property.address.split(',').slice(-2,-1)[0]?.trim() : null) ||
-                      'Unknown Area';
+      const areaName = (property.address ? property.address.split(',').slice(-2, -1)[0]?.trim() : null) ||
+        'Unknown Area';
 
       if (!acc[areaName]) {
         acc[areaName] = {
@@ -561,7 +557,7 @@ const CMAReport: React.FC<CMAReportProps> = ({
         console.log('[CMAReport] Capturing area map from MapView...');
         try {
           const { captureAreaMap } = await import('@/lib/utils/mapCapture');
-          
+
           // Check if this is property-based (popup pipeline) or area-based (UI pipeline)
           if (propertyParams?.coordinates) {
             // Popup pipeline: Show property location with buffer
@@ -589,12 +585,12 @@ const CMAReport: React.FC<CMAReportProps> = ({
               quality: 75, // Reduced from 95 to avoid 413 error
               format: 'jpg' // Changed from png to jpg for smaller size
             });
-            
+
             areaMapImage = result.dataUrl;
           } else if (selectedArea.geometry?.extent) {
             // UI pipeline: Show selected area using its extent
             console.log('[CMAReport] Capturing area-based map...', selectedArea.displayName);
-            
+
             const result = await captureAreaMap(mapView, {
               extent: selectedArea.geometry.extent,
               width: 800,  // Reduced from 1800 to avoid 413 error
@@ -602,7 +598,7 @@ const CMAReport: React.FC<CMAReportProps> = ({
               quality: 75, // Reduced from 95 to avoid 413 error
               format: 'jpg' // Changed from png to jpg for smaller size
             });
-            
+
             areaMapImage = result.dataUrl;
           } else {
             // Fallback: capture current view
@@ -615,7 +611,7 @@ const CMAReport: React.FC<CMAReportProps> = ({
             });
             areaMapImage = result.dataUrl;
           }
-          
+
           console.log('[CMAReport] Area map captured successfully', {
             dataUrlLength: areaMapImage.length,
             preview: areaMapImage.substring(0, 100)
@@ -638,11 +634,11 @@ const CMAReport: React.FC<CMAReportProps> = ({
 
       // Prepare property images including area map and individual property photos
       const propertyImages: Record<string, string> = {};
-      
+
       // Add BHHS logo (import from PDF assets)
       const { BHHS_LOGO_BASE64 } = await import('@/lib/pdf/assets/bhhs-logo.base64');
       propertyImages.logo = BHHS_LOGO_BASE64;
-      
+
       if (areaMapImage) {
         propertyImages.areaMap = areaMapImage;
         propertyImages.map = areaMapImage; // Alternative key

@@ -2,7 +2,6 @@ import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer";
 import { LayerConfig } from "@/types/layers";
 import { LayerGroup } from "@/types/layers";
-import { VisualizationType } from "@/config/dynamic-layers";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 
 class LayerController {
@@ -65,7 +64,7 @@ class LayerController {
           isGoogleTrends: layerConfig.id.includes('google-trends'),
           group: groupId
         });
-        
+
         // Special handling for Google Trends layers
         if (layerConfig.id.includes('google-trends')) {
           console.log(`Processing Google Trends layer: ${layerConfig.name}`);
@@ -116,7 +115,7 @@ class LayerController {
     // Wait for all layers to initialize
     await Promise.all(layerPromises);
     this.layerStates = newLayerStates;
-    
+
     // Log final state of Google Trends layers
     const googleTrendsLayers = Object.entries(newLayerStates)
       .filter(([_, state]) => state.layer?.title?.includes('google-trends'))

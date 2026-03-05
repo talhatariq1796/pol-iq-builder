@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Eye, EyeOff, ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import { Eye, EyeOff, Settings } from 'lucide-react';
 import { VisualizationControls } from './VisualizationControls';
 import type { BlendMode } from '../types/visualization';
 
@@ -84,7 +84,7 @@ export const DraggableLayer: React.FC<DraggableLayerProps> = ({
         >
           {isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
         </button>
-        
+
         <div className="flex-1">
           <h3 className="text-sm font-medium">{title}</h3>
           {description && (

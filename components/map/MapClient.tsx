@@ -43,22 +43,22 @@ interface MapClientProps {
 }
 
 // Simple Legend component
-const MapLegend: React.FC<MapLegendProps> = ({ 
-  title, 
-  items, 
-  visible, 
-  type = 'standard', 
-  ternaryData, 
+const MapLegend: React.FC<MapLegendProps> = ({
+  title,
+  items,
+  visible,
+  type = 'standard',
+  ternaryData,
   labels,
   components,
-  onFeatureClick, 
-  onFeatureHover 
+  onFeatureClick,
+  onFeatureHover
 }) => {
   const isVisible = visible !== false; // default to true when undefined
-  
+
   // Always call hooks at the top level
   const [TernaryPlot, setTernaryPlot] = useState<React.ComponentType<any> | null>(null);
-  
+
   React.useEffect(() => {
     if (type === 'ternary-plot') {
       import('@/components/TernaryPlot').then((module) => {
@@ -66,7 +66,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
       });
     }
   }, [type]);
-  
+
   // Debug logging for legend items
   console.log('[MapClient MapLegend] Rendering legend:', {
     title,
@@ -80,7 +80,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
       shape: item.shape
     }))
   });
-  
+
   // Additional debug: check if size property exists
   if (items && items.length > 0) {
     console.log('[MapClient MapLegend] Size values check:', items.map((item, index) => ({
@@ -102,7 +102,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
     if (!TernaryPlot) return null;
 
     return (
-      <div 
+      <div
         style={{
           position: 'absolute',
           bottom: '20px',
@@ -128,7 +128,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
   // Handle dual-variable legend
   if (type === 'dual-variable' && components && components.length > 0) {
     return (
-      <div 
+      <div
         style={{
           position: 'absolute',
           bottom: '20px',
@@ -159,7 +159,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
                   <div key={itemIndex} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {component.type === 'size' ? (
                       // Size legend items - show varying circle sizes
-                      <div 
+                      <div
                         style={{
                           width: `${item.size || 16}px`,
                           height: `${item.size || 16}px`,
@@ -171,7 +171,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
                       />
                     ) : (
                       // Color legend items - show color swatches
-                      <div 
+                      <div
                         style={{
                           width: '16px',
                           height: '16px',
@@ -201,7 +201,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
   }
 
   return (
-    <div 
+    <div
       style={{
         position: 'absolute',
         bottom: '20px',
@@ -222,10 +222,10 @@ const MapLegend: React.FC<MapLegendProps> = ({
       className="custom-legend"
     >
       {title && (
-        <div 
-          style={{ 
-            fontWeight: '600', 
-            marginBottom: '8px', 
+        <div
+          style={{
+            fontWeight: '600',
+            marginBottom: '8px',
             fontSize: '13px',
             color: '#333'
           }}
@@ -238,9 +238,9 @@ const MapLegend: React.FC<MapLegendProps> = ({
           // Handle header items
           if (item.isHeader) {
             return (
-              <div 
-                key={index} 
-                style={{ 
+              <div
+                key={index}
+                style={{
                   fontWeight: 'bold',
                   fontSize: '12px',
                   color: '#333',
@@ -255,21 +255,21 @@ const MapLegend: React.FC<MapLegendProps> = ({
               </div>
             );
           }
-          
+
           // Handle normal legend items
           return (
-            <div 
-              key={index} 
-              style={{ 
-                display: 'flex', 
+            <div
+              key={index}
+              style={{
+                display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
             >
-              <div 
-                style={{ 
-                  width: `${item.size || 16}px`, 
-                  height: `${item.size || 16}px`, 
+              <div
+                style={{
+                  width: `${item.size || 16}px`,
+                  height: `${item.size || 16}px`,
                   backgroundColor: item.color,
                   border: item.outlineColor ? `1px solid ${item.outlineColor}` : 'none',
                   borderRadius: item.shape === 'circle' ? '50%' : '2px',
@@ -279,10 +279,10 @@ const MapLegend: React.FC<MapLegendProps> = ({
                   maxWidth: `${item.size || 16}px`,
                   maxHeight: `${item.size || 16}px`,
                   boxSizing: 'border-box'
-                }} 
+                }}
               />
-              <div 
-                style={{ 
+              <div
+                style={{
                   fontSize: '12px',
                   color: '#666',
                   lineHeight: '1.2'
@@ -299,10 +299,10 @@ const MapLegend: React.FC<MapLegendProps> = ({
 };
 
 // eslint-disable-next-line react/display-name
-const MapClient = memo(({ 
-  onMapLoad, 
-  onError, 
-  sidebarWidth, 
+const MapClient = memo(({
+  onMapLoad,
+  onError,
+  sidebarWidth,
   showLabels = false,
   legend,
   onSampleHotspotClick,
@@ -316,7 +316,7 @@ const MapClient = memo(({
   } catch {
     // Silently use default theme if context not available
   }
-  
+
   const mapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<__esri.MapView | null>(null);
   const isInitialized = useRef(false);
@@ -330,7 +330,7 @@ const MapClient = memo(({
 
   const handleFeatureHover = useCallback(async (featureId: string | null) => {
     if (!viewRef.current) return;
-    
+
     if (featureId) {
       // Could add subtle highlight for hover if desired
     } else {
@@ -370,19 +370,19 @@ const MapClient = memo(({
           console.error('[MapClient] Map container ref is null');
           return;
         }
-        
+
         console.log('[MapClient] Creating MapView...');
-        
+
         // Use Montreal coordinates - center of Quebec housing market
         // Montreal metropolitan area coordinates
         const montrealCenter = [-73.567, 45.501]; // Center of Montreal
         const montrealZoom = 10; // Zoom level to focus on Montreal area
-        
+
         console.log('[MapClient] Using Montreal center and zoom for Quebec housing market:', {
           center: montrealCenter,
           zoom: montrealZoom
         });
-        
+
         const view = new MapView({
           container: mapRef.current,
           map: map,
@@ -401,7 +401,7 @@ const MapClient = memo(({
             dataExtent: DATA_EXTENT,
             rotationEnabled: MAP_CONSTRAINTS.rotationEnabled
           });
-          
+
           // Add a small delay to ensure basemap is loaded  
           setTimeout(() => {
             try {
@@ -433,20 +433,12 @@ const MapClient = memo(({
         console.log('[MapClient] MapView is ready');
         console.log('[MapClient] Actual view extent after creation:', {
           xmin: view.extent?.xmin,
-          ymin: view.extent?.ymin, 
+          ymin: view.extent?.ymin,
           xmax: view.extent?.xmax,
           ymax: view.extent?.ymax,
           center: view.center ? [view.center.longitude, view.center.latitude] : null,
           zoom: view.zoom
         });
-
-        // Store map view reference globally for debugging
-        try {
-          const { storeMapViewReference } = await import('../LayerController/enhancedLayerCreation');
-          storeMapViewReference(view);
-        } catch {
-          // Could not store map view reference - ignore in production
-        }
 
         viewRef.current = view;
         isInitialized.current = true;
@@ -476,12 +468,12 @@ const MapClient = memo(({
 
     const view = viewRef.current;
     const basemapId = theme === 'light' ? "gray-vector" : "dark-gray-vector";
-    
+
     console.log(`[MapClient] Theme changed to ${theme}, updating basemap to: ${basemapId}`);
-    
+
     // Update basemap when theme changes
     view.map.basemap = basemapId;
-    
+
   }, [theme]);
 
   // Handle sidebar width changes - just notify the container to resize
@@ -499,21 +491,21 @@ const MapClient = memo(({
             window.dispatchEvent(resizeEvent);
           }
         }, 10);
-        
+
         console.log('[MapClient] Notified map of sidebar width change:', sidebarWidth);
       }
     };
 
     // Small delay to ensure DOM has updated
     const timeoutId = setTimeout(notifyResize, 100);
-    
+
     return () => clearTimeout(timeoutId);
   }, [sidebarWidth]);
 
   useEffect(() => {
     const view = viewRef.current;
     if (!view?.map?.basemap) return;
-    
+
     const basemap = view.map.basemap as unknown as __esri.Basemap;
     if (!basemap.referenceLayers) return;
 
@@ -525,18 +517,18 @@ const MapClient = memo(({
 
   // Add useEffect to log legend props when they change
   useEffect(() => {
-   /* console.log('MapClient Legend Props:', { 
-      title: legend?.title, 
-      itemsCount: legend?.items?.length || 0,
-      visible: legend?.visible,
-      hasLegend: !!legend
-    });*/
+    /* console.log('MapClient Legend Props:', { 
+       title: legend?.title, 
+       itemsCount: legend?.items?.length || 0,
+       visible: legend?.visible,
+       hasLegend: !!legend
+     });*/
   }, [legend]);
 
   // Handle hotspot click
   const handleHotspotClick = useCallback((hotspot: SampleHotspot) => {
     console.log('[MapClient] Sample hotspot clicked:', hotspot);
-    
+
     // Zoom to the hotspot with offset compensation for sidebar positioning
     if (viewRef.current) {
       // Calculate offset to compensate for the map being visually shifted by sidebars
@@ -544,25 +536,25 @@ const MapClient = memo(({
       const view = viewRef.current;
       const extent = view.extent;
       const mapWidth = extent.width;
-      
+
       // Estimate the sidebar offset effect - typical sidebar is ~640px, map shifts right by ~288px
       // This creates a visual center offset that needs compensation
       const offsetFactor = 0.15; // Adjust this value to fine-tune centering
       const longitudeOffset = mapWidth * offsetFactor;
-      
+
       // Adjust the longitude (x-coordinate) to compensate for visual shift
       const adjustedCenter = [
         hotspot.coordinates[0] - longitudeOffset,
         hotspot.coordinates[1]
       ] as [number, number];
-      
+
       console.log('[MapClient] Centering with offset compensation:', {
         original: hotspot.coordinates,
         adjusted: adjustedCenter,
         offsetFactor,
         longitudeOffset
       });
-      
+
       viewRef.current.goTo({
         center: adjustedCenter,
         zoom: 12
@@ -574,7 +566,7 @@ const MapClient = memo(({
 
     // Hide hotspots after selection
     setShowHotspots(false);
-    
+
     // Notify parent component
     onSampleHotspotClick?.(hotspot);
   }, [onSampleHotspotClick]);
@@ -583,14 +575,14 @@ const MapClient = memo(({
     <div className="relative w-full h-full">
       <div ref={mapRef} className="w-full h-full" />
       {viewRef.current && showHotspots && (
-        <SampleHotspots 
+        <SampleHotspots
           view={viewRef.current}
           onHotspotClick={handleHotspotClick}
           showWelcomeOverlay={true}
         />
       )}
-      <MapLegend 
-        {...legend} 
+      <MapLegend
+        {...legend}
         onFeatureClick={handleFeatureClick}
         onFeatureHover={handleFeatureHover}
       />

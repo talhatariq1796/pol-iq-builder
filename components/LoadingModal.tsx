@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useProjectStats, formatProjectFacts } from '@/hooks/useProjectStats';
-import { ParticleEffectManager } from './particles/ParticleEffectManager';
 import Image from 'next/image';
-import { 
-  BarChart3, 
-  Car, 
-  Brain, 
-  Target, 
-  Layers, 
+import {
+  BarChart3,
+  Car,
+  Brain,
+  Target,
+  Layers,
   Zap,
   TrendingUp
 } from 'lucide-react';
@@ -45,33 +44,33 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
   const [allFacts, setAllFacts] = useState<LoadingFact[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const factIntervalRef = useRef<NodeJS.Timeout>();
-  
+
   // Fetch project stats
   const { stats: projectStats } = useProjectStats();
-  
+
   console.log('[LoadingModal] Render:', { show, externalProgress, internalProgress });
-  
+
   // Simplified useEffect to avoid loops - only update when external progress increases
   useEffect(() => {
     if (externalProgress > internalProgress) {
       setInternalProgress(externalProgress);
     }
   }, [externalProgress, internalProgress]); // Add internalProgress to dependencies
-  
-  
+
+
   // Load facts
   useEffect(() => {
     if (!show) return;
-    
+
     const loadFacts = () => {
-      const projectFacts: LoadingFact[] = projectStats 
+      const projectFacts: LoadingFact[] = projectStats
         ? formatProjectFacts(projectStats).map(text => ({
-            type: 'project' as const,
-            text,
-            icon: <TrendingUp className="w-5 h-5" />
-          }))
+          type: 'project' as const,
+          text,
+          icon: <TrendingUp className="w-5 h-5" />
+        }))
         : [];
-      
+
       const combinedFacts = [...GENERAL_FACTS, ...projectFacts];
       // Shuffle facts for variety
       const shuffled = combinedFacts.sort(() => Math.random() - 0.5);
@@ -82,7 +81,7 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
     };
     loadFacts();
   }, [projectStats, show]);
-  
+
   // Rotate facts - start after animation and progress are both active
   useEffect(() => {
     if (!show || allFacts.length === 0) return;
@@ -103,15 +102,15 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
       }
     };
   }, [allFacts, show]);
-  
-  
+
+
   if (!show) {
     console.log('[LoadingModal] Not showing - returning null');
     return null;
   }
-  
+
   console.log('[LoadingModal] Showing modal');
-  
+
   const getLoadingMessage = () => {
     if (internalProgress < 30) return "Initializing map...";
     if (internalProgress < 60) return "Loading map layers...";
@@ -132,9 +131,9 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
         show={show}
         canvasRef={canvasRef}
       /> */}
-      
+
       {/* Map pin logo with progress donut */}
-      <div 
+      <div
         className="absolute pointer-events-none"
         style={{
           left: '50%',
@@ -180,7 +179,7 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
             }}
           />
         </svg>
-        
+
         {/* Logo in center */}
         <div className="relative flex items-center justify-center">
           <Image
@@ -193,7 +192,7 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
           />
         </div>
       </div>
-      
+
       {/* Text content positioned in lower half */}
       <div className="absolute bottom-0 left-0 right-0 pb-16">
         <div className="max-w-md w-full mx-auto p-6">
@@ -207,25 +206,23 @@ export const LoadingModal: React.FC<LoadingModalProps> = ({ progress: externalPr
                 {Math.round(internalProgress)}% complete
               </p>
             </div>
-            
+
             {/* Facts display - HIDDEN as requested */}
             {false && currentFact && (
               <div className="animate-entrance">
                 <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
-                  <span className={`transition-all duration-500 ${
-                    currentFact?.type === 'project' ? 'text-primary' : 'text-muted-foreground'
-                  }`}>
+                  <span className={`transition-all duration-500 ${currentFact?.type === 'project' ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
                     {currentFact?.icon}
                   </span>
-                  <span className={`transition-all duration-500 ${
-                    currentFact?.type === 'project' ? 'text-primary' : ''
-                  }`}>
+                  <span className={`transition-all duration-500 ${currentFact?.type === 'project' ? 'text-primary' : ''
+                    }`}>
                     {currentFact?.text}
                   </span>
                 </div>
               </div>
             )}
-            
+
             {/* Loading dots */}
             <div className="flex items-center justify-center space-x-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
