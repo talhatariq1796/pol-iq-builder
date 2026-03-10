@@ -47,7 +47,7 @@ const generateMockDemographicData = (reportTemplate: string) => {
   } else if (reportTemplate?.includes('market') || reportTemplate?.includes('prizm')) {
     return { ...baseData, focus: 'market' };
   }
-  
+
   return { ...baseData, focus: 'general' };
 };
 
@@ -98,7 +98,7 @@ const Infographics: React.FC<InfographicsProps> = ({
       if (cleanupTimeoutRef.current) {
         clearTimeout(cleanupTimeoutRef.current);
       }
-      
+
       // Clean up any blob URLs to prevent memory leaks
       if (pdfUrl && pdfUrl.startsWith('blob:')) {
         URL.revokeObjectURL(pdfUrl);
@@ -110,39 +110,39 @@ const Infographics: React.FC<InfographicsProps> = ({
     let isMounted = true;
     const currentTimeout = cleanupTimeoutRef.current;
 
-    console.log('[Infographics Effect RUN]', { 
-        hasGeometry: !!geometry, 
-        reportTemplate, 
-        generateFuncExists: !!generateStandardReport 
+    console.log('[Infographics Effect RUN]', {
+      hasGeometry: !!geometry,
+      reportTemplate,
+      generateFuncExists: !!generateStandardReport
     });
 
     const generateReport = async () => {
-      if (isMounted) { 
-          console.log('[generateReport] Clearing error and pdfUrl before starting generation.');
-          setError(null); 
-          setPdfUrl(null);
-          setMockData(null);
-          setLoading(true);
+      if (isMounted) {
+        console.log('[generateReport] Clearing error and pdfUrl before starting generation.');
+        setError(null);
+        setPdfUrl(null);
+        setMockData(null);
+        setLoading(true);
       }
 
-      console.log('[generateReport START]', { hasGeometry: !!geometry, reportTemplate }); 
-      
+      console.log('[generateReport START]', { hasGeometry: !!geometry, reportTemplate });
+
       if (!reportTemplate) {
-         console.warn('[generateReport WARN] No report template selected. Exiting.');
-         if (isMounted) setLoading(false);
-         return;
+        console.warn('[generateReport WARN] No report template selected. Exiting.');
+        if (isMounted) setLoading(false);
+        return;
       }
 
       // If no geometry, still allow the interface to show but display the "select area" message
       if (!geometry) {
         console.warn('[generateReport WARN] No geometry available for report generation. Setting loading to false but not exiting.');
-         if (isMounted) setLoading(false);
-         return;
+        if (isMounted) setLoading(false);
+        return;
       }
 
       try {
         console.log(`[generateReport TRY] Generating report with template: ${reportTemplate}`);
-        
+
         if (generateStandardReport) {
           console.log('[generateReport] Using provided generateStandardReport function');
           try {
@@ -165,9 +165,9 @@ const Infographics: React.FC<InfographicsProps> = ({
       } catch (err) {
         console.error('[generateReport CATCH] Unexpected error during generation:', err);
         if (isMounted) {
-            const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-            console.log(`[generateReport CATCH] Setting error state to: "${errorMsg}"`);
-            setError(errorMsg);
+          const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+          console.log(`[generateReport CATCH] Setting error state to: "${errorMsg}"`);
+          setError(errorMsg);
         }
       } finally {
         console.log('[generateReport FINALLY] Setting loading to false.');
@@ -191,8 +191,8 @@ const Infographics: React.FC<InfographicsProps> = ({
         console.log('[Infographics Effect CLEANUP] Cleared previous timeout.');
       }
       if (pdfUrl && pdfUrl.startsWith('blob:')) {
-          console.log('[Infographics Effect CLEANUP] Revoking PDF blob URL.');
-          URL.revokeObjectURL(pdfUrl);
+        console.log('[Infographics Effect CLEANUP] Revoking PDF blob URL.');
+        URL.revokeObjectURL(pdfUrl);
       }
     };
   }, [geometry, reportTemplate, generateStandardReport]);
@@ -237,7 +237,7 @@ const Infographics: React.FC<InfographicsProps> = ({
 
     // Get display name for the selected template
     const templateDisplayName = getDisplayName(reportTemplate);
-    
+
     return (
       <div className="report-content p-6 max-w-4xl mx-auto bg-white">
         {/* Header */}
@@ -325,7 +325,7 @@ const Infographics: React.FC<InfographicsProps> = ({
             <p>• This Quebec area shows strong economic indicators with median income of ${mockData.medianIncome.toLocaleString()} CAD</p>
             <p>• High education levels ({mockData.universityEducation}%) indicate skilled workforce potential</p>
             <p>• Multicultural community with {mockData.immigrantPopulation}% immigrant population contributing to diversity</p>
-            <p>• {mockData.frenchSpeaking}% French-speaking population reflects Quebec's linguistic character</p>
+            <p>• {mockData.frenchSpeaking}% French-speaking population reflects Quebec&apos;s linguistic character</p>
             <p>• Homeownership rate of {mockData.homeOwnership}% indicates housing market stability</p>
           </div>
         </div>
@@ -361,7 +361,7 @@ const Infographics: React.FC<InfographicsProps> = ({
     try {
       console.log('Starting export...');
       const reportElement = document.querySelector('.report-content');
-      
+
       if (!reportElement) {
         console.error('Report content element not found');
         return;
@@ -403,16 +403,16 @@ const Infographics: React.FC<InfographicsProps> = ({
         if (!firstPage) {
           pdf.addPage();
         }
-        
+
         pdf.addImage(
-          canvas.toDataURL('image/png'), 
+          canvas.toDataURL('image/png'),
           'PNG',
           10,
           firstPage ? 10 : -(position * pdfHeight) + 10,
           imgWidth,
           imgHeight
         );
-        
+
         heightLeft -= (pdfHeight - 20);
         position++;
         firstPage = false;
@@ -443,7 +443,7 @@ const Infographics: React.FC<InfographicsProps> = ({
 
   return (
     <Card className="h-full flex flex-col shadow-none border-0">
-       {renderHeader()}
+      {renderHeader()}
       <CardContent className="flex-1 overflow-auto p-0">
         {/* Check if this is an endpoint scoring report */}
         {(reportTemplate === 'endpoint-scoring-combined' || reportTemplate === 'market-intelligence-report') ? (
@@ -453,7 +453,7 @@ const Infographics: React.FC<InfographicsProps> = ({
             {loading && (
               <div className="flex items-center justify-center p-8">
                 <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
                   <p className="text-sm text-gray-600">Generating report...</p>
                 </div>
               </div>
@@ -469,44 +469,44 @@ const Infographics: React.FC<InfographicsProps> = ({
                 src={pdfUrl}
                 title="Infographic Report"
                 className="w-full border-0"
-                style={{ 
-                  height: '800px', 
+                style={{
+                  height: '800px',
                   minHeight: '100%'
                 }}
-          />
-        )}
+              />
+            )}
             {mockData && !loading && !error && !pdfUrl && (
               <div className="min-h-0 flex-1">
                 {renderMockReport()}
               </div>
             )}
             {!loading && !error && !pdfUrl && !mockData && (
-               <div className="flex items-center justify-center p-8">
-                 <div className="text-center text-gray-500">
-                 <FileSpreadsheet className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                 <p>Report will be displayed here once generated.</p>
-                 </div>
-               </div>
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center text-gray-500">
+                  <FileSpreadsheet className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                  <p>Report will be displayed here once generated.</p>
+                </div>
+              </div>
             )}
           </>
         )}
       </CardContent>
-       {(pdfUrl || mockData) && !loading && (
-         <div className="p-2 border-t flex justify-end gap-2">
-           {pdfUrl && (
-           <Button size="sm" onClick={() => window.open(pdfUrl, '_blank')} disabled={!pdfUrl || loading}>
+      {(pdfUrl || mockData) && !loading && (
+        <div className="p-2 border-t flex justify-end gap-2">
+          {pdfUrl && (
+            <Button size="sm" onClick={() => window.open(pdfUrl, '_blank')} disabled={!pdfUrl || loading}>
               <Download className="mr-2 h-4 w-4" />
-             Open PDF
-           </Button>
-           )}
-           {mockData && (
-             <Button size="sm" onClick={exportToPDF} disabled={loading}>
-             <Download className="mr-2 h-4 w-4" />
-             Export PDF
-             </Button>
-           )}
-         </div>
-       )}
+              Open PDF
+            </Button>
+          )}
+          {mockData && (
+            <Button size="sm" onClick={exportToPDF} disabled={loading}>
+              <Download className="mr-2 h-4 w-4" />
+              Export PDF
+            </Button>
+          )}
+        </div>
+      )}
     </Card>
   );
 };

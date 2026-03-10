@@ -148,11 +148,11 @@ export class LocalConfigurationManager {
     try {
       // Try to read existing concept map
       const conceptMapPath = path.join(this.projectRoot, 'config/concept-map.json');
-      
+
       if (fs.existsSync(conceptMapPath)) {
         const conceptMapContent = fs.readFileSync(conceptMapPath, 'utf8');
         const conceptMap = JSON.parse(conceptMapContent);
-        
+
         return {
           layerMappings: this.extractLayerMappings(conceptMap),
           fieldMappings: this.extractFieldMappings(conceptMap),
@@ -195,7 +195,7 @@ export class LocalConfigurationManager {
 
   private extractLayerMappings(conceptMap: any): Record<string, string[]> {
     const mappings: Record<string, string[]> = {};
-    
+
     Object.entries(conceptMap).forEach(([key, value]: [string, any]) => {
       if (value.layers && Array.isArray(value.layers)) {
         mappings[value.concept || key] = value.layers;
@@ -212,7 +212,7 @@ export class LocalConfigurationManager {
 
   private extractSynonyms(conceptMap: any): Record<string, string[]> {
     const synonyms: Record<string, string[]> = {};
-    
+
     Object.entries(conceptMap).forEach(([key, value]: [string, any]) => {
       if (value.synonyms && Array.isArray(value.synonyms)) {
         synonyms[value.concept || key] = value.synonyms;
@@ -261,13 +261,13 @@ export class LocalConfigurationManager {
 
   private async findFilesWithLayerReferences(dirPath: string): Promise<any[]> {
     const references: any[] = [];
-    
+
     try {
       const files = fs.readdirSync(dirPath, { withFileTypes: true });
-      
+
       for (const file of files) {
         const filePath = path.join(dirPath, file.name);
-        
+
         if (file.isDirectory()) {
           const subRefs = await this.findFilesWithLayerReferences(filePath);
           references.push(...subRefs);
@@ -294,7 +294,7 @@ export class LocalConfigurationManager {
   private extractLayerReferences(content: string, filePath: string) {
     const references: any[] = [];
     const lines = content.split('\n');
-    
+
     // Look for layer ID references
     Object.keys(layers).forEach(layerId => {
       lines.forEach((line, index) => {
@@ -341,7 +341,7 @@ export class LocalConfigurationManager {
     return [
       {
         name: 'LayerController',
-        path: 'components/LayerController/LayerController.tsx',
+        path: 'components/layer-controller/LayerController.tsx',
         layerProps: ['config', 'view'],
         configProps: ['projectLayerConfig']
       },
@@ -362,10 +362,10 @@ export class LocalConfigurationManager {
     try {
       // 1. Update main layer configuration
       await this.updateLayerConfigFile(config, filesUpdated, errors);
-      
+
       // 2. Update concept mappings
       await this.updateConceptMapFile(config, filesUpdated, errors);
-      
+
       // 3. Create backup
       await this.createBackup();
 
@@ -391,17 +391,17 @@ export class LocalConfigurationManager {
     try {
       const configPath = path.join(this.projectRoot, 'config/layers.ts');
       const backupPath = `${configPath}.backup.${Date.now()}`;
-      
+
       // Create backup
       fs.copyFileSync(configPath, backupPath);
-      
+
       // Generate new configuration
       const newContent = this.generateLayerConfigContent(config);
-      
+
       // Write new file
       fs.writeFileSync(configPath, newContent, 'utf8');
       filesUpdated.push('config/layers.ts');
-      
+
       console.log('✅ Updated layer configuration file');
     } catch (error) {
       errors.push({ file: 'config/layers.ts', error: String(error), critical: true });
@@ -412,10 +412,10 @@ export class LocalConfigurationManager {
     try {
       const conceptMapPath = path.join(this.projectRoot, 'config/concept-map.json');
       const conceptMapContent = JSON.stringify(config.conceptMappings, null, 2);
-      
+
       fs.writeFileSync(conceptMapPath, conceptMapContent, 'utf8');
       filesUpdated.push('config/concept-map.json');
-      
+
       console.log('✅ Updated concept map file');
     } catch (error) {
       errors.push({ file: 'config/concept-map.json', error: String(error), critical: false });
@@ -424,8 +424,8 @@ export class LocalConfigurationManager {
 
   private generateLayerConfigContent(config: ProjectConfiguration): string {
     const timestamp = new Date().toISOString();
-    
-    const layersArray = Object.values(config.layers).map(layer => 
+
+    const layersArray = Object.values(config.layers).map(layer =>
       `  {
     id: '${layer.id}',
     name: '${layer.name}',
@@ -508,7 +508,7 @@ export const getLayerConfigById = (id: string): LayerConfig | undefined => {
 
   private async createBackup() {
     const backupDir = path.join(this.projectRoot, 'backups', `config_${Date.now()}`);
-    
+
     if (!fs.existsSync(path.dirname(backupDir))) {
       fs.mkdirSync(path.dirname(backupDir), { recursive: true });
     }

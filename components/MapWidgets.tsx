@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { 
-  useEffect, 
-  useRef, 
-  memo, 
-  useCallback, 
+import React, {
+  useEffect,
+  useRef,
+  memo,
+  useCallback,
   useState,
   useMemo
 } from 'react';
@@ -23,7 +23,7 @@ import Bookmarks from '@arcgis/core/widgets/Bookmarks';
 import Bookmark from '@arcgis/core/webmap/Bookmark';
 import Extent from '@arcgis/core/geometry/Extent';
 import Collection from '@arcgis/core/core/Collection';
-import LayerController from './LayerController/LayerController';
+import LayerController from './layer-controller/LayerController';
 
 
 // Type Definitions
@@ -61,9 +61,9 @@ const CITY_BOOKMARKS_DATA = [
 // +++ END REMOVED LEGEND GENERATION LOGIC +++
 
 
-const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({ 
-  view, 
-  activeWidget, 
+const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
+  view,
+  activeWidget,
   onClose,
   onLayerSelect,
   onToggleWidget,
@@ -83,23 +83,23 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
     bookmarks: null,
     layerList: null,
   });
-  
+
   const containersRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const isInitialized = useRef(false);
   const mountedRef = useRef(false);
-  
+
   // React roots
   const layerControlRootRef = useRef<Root | null>(null);
   const projectsRootRef = useRef<Root | null>(null);
   const filterRootRef = useRef<Root | null>(null);
   const indexRootRef = useRef<Root | null>(null);
-  
+
   // LayerController ref removed - handled by MapContainer
-  
+
   // State and handlers removed - layer management handled by MapContainer
   const [containersReady, setContainersReady] = useState(false);
   const widgetCleanupHandles = useRef<Map<string, __esri.Handle[]>>(new Map());
-  
+
   // Track which widgets have been initialized (no longer using lazy loading)
   // const [initializedWidgets, setInitializedWidgets] = useState<Set<string>>(new Set());
 
@@ -110,12 +110,12 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
   // Create widget container - WRAP IN useCallback
   const createWidgetContainer = useCallback((type: string, color: string): HTMLDivElement => {
     const container = document.createElement('div');
-    
+
     // Basic classes first
     container.className = 'widget-container esri-widget';
-    
+
     // Add widget-specific ESRI classes
-    switch(type) {
+    switch (type) {
       case 'layerList':
         container.classList.add('esri-layer-list');
         break;
@@ -141,14 +141,14 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
 
     // Add our custom class last
     container.classList.add(`widget-${type}`);
-    
+
     // Set other properties
     container.setAttribute('data-widget-type', type);
     container.style.setProperty('--widget-color', color);
     container.style.display = 'none';
 
-   // console.log(`Created widget container for ${type}:`, container.className);
-    
+    // console.log(`Created widget container for ${type}:`, container.className);
+
     return container;
   }, []); // <-- Empty dependency array ensures stable reference
 
@@ -156,7 +156,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
   // Main cleanup effect
   useEffect(() => {
     mountedRef.current = true;
-    
+
     const widgets = { ...widgetsRef.current }; // Capture ref value
     const cleanupHandles = new Map(widgetCleanupHandles.current); // Capture cleanup handles
     const layerListHandle = layerListActionHandleRef.current; // Capture layer list handle
@@ -169,26 +169,26 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
         layerControlRootRef.current.unmount();
         layerControlRootRef.current = null;
       }
-      
+
       if (projectsRootRef.current) {
         projectsRootRef.current.unmount();
         projectsRootRef.current = null;
       }
-      
+
       if (filterRootRef.current) {
         filterRootRef.current.unmount();
         filterRootRef.current = null;
       }
-      
+
       if (indexRootRef.current) {
         indexRootRef.current.unmount();
         indexRootRef.current = null;
       }
 
-      
+
       // +++ Clean up Watcher Handles +++
       cleanupHandles.forEach((handles: __esri.Handle[], layerId: string) => {
-       // console.log(`[MapWidgets Cleanup] Removing ${handles.length} watcher handles for layer ${layerId}`);
+        // console.log(`[MapWidgets Cleanup] Removing ${handles.length} watcher handles for layer ${layerId}`);
         handles.forEach((handle: __esri.Handle) => {
           try {
             handle.remove();
@@ -245,7 +245,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
         }
       }
     });
-    
+
     // Show/add the active container
     currentContainer.style.display = 'block';
     if (!currentContainer.parentElement) {
@@ -275,15 +275,15 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
   // Main Initialization Effect - Initialize ALL widgets immediately
   useEffect(() => {
     if (!view || !containersReady) {
-        return;
-      }
+      return;
+    }
 
     if (isInitialized.current) {
-          return;
-        }
+      return;
+    }
 
     console.log('MapWidgets initialization - creating all widgets immediately');
-    
+
     view.when(async () => {
       const containers = containersRef.current;
       const widgets = widgetsRef.current;
@@ -293,7 +293,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
         // Set locale to ensure t9n files load properly
         intl.setLocale("en");
         console.log('MapWidgets: Locale set to "en"');
-        
+
         // Initialize Search widget
         if (!widgets.search && containers.get('search')) {
           const searchWidget = new Search({ view, container: containers.get('search') });
@@ -304,19 +304,19 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
         // Initialize Print widget
         if (!widgets.print && containers.get('print')) {
           try {
-            const printWidget = new Print({ 
-              view, 
+            const printWidget = new Print({
+              view,
               container: containers.get('print'),
               printServiceUrl: "https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
             });
-            
+
             // Wait for widget to load
             printWidget.when(() => {
               console.log('Print widget loaded and ready');
             }).catch((error) => {
               console.error('Print widget failed to load:', error);
             });
-            
+
             widgets.print = printWidget;
             console.log('Print widget initialized');
           } catch (error) {
@@ -327,11 +327,11 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
         // Initialize Bookmarks widget
         if (!widgets.bookmarks && containers.get('bookmarks')) {
           try {
-            const bookmarksWidget = new Bookmarks({ 
-              view, 
+            const bookmarksWidget = new Bookmarks({
+              view,
               container: containers.get('bookmarks')
             });
-            
+
             // Wait for view to be ready before setting bookmarks
             view.when(() => {
               try {
@@ -352,14 +352,14 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
                     });
                   })
                 );
-                
+
                 bookmarksWidget.bookmarks = cityBookmarks;
                 console.log('Bookmarks widget initialized with', cityBookmarks.length, 'bookmarks');
               } catch (bookmarkError) {
                 console.error('Error creating bookmarks:', bookmarkError);
               }
             });
-            
+
             widgets.bookmarks = bookmarksWidget;
           } catch (error) {
             console.error('Error initializing bookmarks widget:', error);
@@ -379,7 +379,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
         console.error('Error waiting for view ready:', error);
       }
     });
-    
+
     // Cleanup function
     return () => {
       // Cleanup widgets on unmount
@@ -409,7 +409,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
       else if (widgetId === 'layerList') color = '#33a852';
       else if (widgetId === 'print') color = '#33a852';
       // Add other widget colors if needed
-      
+
       const container = createWidgetContainer(widgetId, color);
       createdContainers.set(widgetId, container);
     });
@@ -423,7 +423,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
 
   // Layer config state - needed for LayerController
   const [layerConfig, setLayerConfig] = useState<any>(null);
-  
+
   // Initialize layer config
   useEffect(() => {
     const initLayerConfig = async () => {
@@ -442,11 +442,11 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
   useEffect(() => {
     const handleThemeChange = (event: any) => {
       console.log('[MapWidgets] Theme changed, applying smooth transition...');
-      
+
       // No need to store state - CSS variables will handle the transition
       // The theme switching is handled by CSS custom properties changing
       // We just need to ensure certain problematic elements get the hint
-      
+
       requestAnimationFrame(() => {
         // Only update bookmarks as they need special handling
         if (widgetsRef.current.bookmarks && !widgetsRef.current.bookmarks.destroyed) {
@@ -460,7 +460,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
               bookmarkEl.style.removeProperty('background-color');
               bookmarkEl.style.removeProperty('color');
               bookmarkEl.style.removeProperty('border-color');
-              
+
               // Force repaint
               bookmarkEl.classList.add('theme-transition');
               requestAnimationFrame(() => {
@@ -469,7 +469,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             });
           }
         }
-        
+
         console.log('[MapWidgets] Theme transition complete');
       });
     };
@@ -483,16 +483,16 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
     if (!containersReady || !view || !layerConfig) {
       return null;
     }
-    const container = containersRef.current?.get('layerList'); 
+    const container = containersRef.current?.get('layerList');
     if (!container) return null;
-    
+
     return createPortal(
       <LayerController
         view={view}
         config={layerConfig}
         onLayerStatesChange={onLayerStatesChange}
         onLayersCreated={onLayersCreated}
-        visible={activeWidget === 'layerList'} 
+        visible={activeWidget === 'layerList'}
       />,
       container
     );
@@ -516,7 +516,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
           <X className="w-4 h-4" />
         </button>
       )}
-      
+
       {/* Widget Icons */}
       <div className="widget-icons-container">
         {visibleWidgets?.includes('search') && (
@@ -526,12 +526,12 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             title="Search"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
             </svg>
           </button>
         )}
-        
+
         {visibleWidgets?.includes('layerList') && (
           <button
             onClick={() => onToggleWidget('layerList')}
@@ -539,13 +539,13 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             title="Layers"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21,15 16,10 5,21"/>
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21,15 16,10 5,21" />
             </svg>
           </button>
         )}
-        
+
         {visibleWidgets?.includes('bookmarks') && (
           <button
             onClick={() => onToggleWidget('bookmarks')}
@@ -553,11 +553,11 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             title="Bookmarks"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+              <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
           </button>
         )}
-        
+
         {visibleWidgets?.includes('print') && (
           <button
             onClick={() => onToggleWidget('print')}
@@ -565,13 +565,13 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             title="Print"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6,9 6,2 18,2 18,9"/>
-              <path d="M6,18H4a2,2,0,0,1-2-2V11a2,2,0,0,1,2-2H20a2,2,0,0,1,2,2v5a2,2,0,0,1-2,2H18"/>
-              <polyline points="6,14 6,18 18,18 18,14"/>
+              <polyline points="6,9 6,2 18,2 18,9" />
+              <path d="M6,18H4a2,2,0,0,1-2-2V11a2,2,0,0,1,2-2H20a2,2,0,0,1,2,2v5a2,2,0,0,1-2,2H18" />
+              <polyline points="6,14 6,18 18,18 18,14" />
             </svg>
           </button>
         )}
-        
+
         {visibleWidgets?.includes('filter') && (
           <button
             onClick={() => onToggleWidget('filter')}
@@ -579,11 +579,11 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             title="Filter"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+              <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
             </svg>
           </button>
         )}
-        
+
         {visibleWidgets?.includes('projects') && (
           <button
             onClick={() => onToggleWidget('projects')}
@@ -593,7 +593,7 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             <Folder width="16" height="16" />
           </button>
         )}
-        
+
         {visibleWidgets?.includes('quickStats') && (
           <button
             onClick={() => onToggleWidget('quickStats')}
@@ -601,13 +601,13 @@ const MapWidgets: React.FC<MapWidgetsProps> = memo(function MapWidgets({
             title="Quick Stats"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <rect x="7" y="7" width="3" height="9"/>
-              <rect x="14" y="7" width="3" height="5"/>
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <rect x="7" y="7" width="3" height="9" />
+              <rect x="14" y="7" width="3" height="5" />
             </svg>
           </button>
         )}
-        
+
         {visibleWidgets?.includes('index') && (
           <button
             onClick={() => onToggleWidget('index')}

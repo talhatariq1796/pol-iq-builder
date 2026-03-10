@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MapPin, DollarSign, Activity, MoreHorizontal, Download, Edit, Users } from 'lucide-react';
+import { DollarSign, Activity, MoreHorizontal, Download, Edit, Users } from 'lucide-react';
 import { ChartComponent } from './ChartComponent';
 import { ChartCustomizer } from './ChartCustomizer';
 import { ColorPicker } from '@/components/ui/color-picker';
@@ -67,7 +67,7 @@ type ExtendedPolygon = __esri.Polygon;
 interface OtherLayerQueryInfo {
   id: string;
   url: string;
-  field?: string; 
+  field?: string;
   // Add other necessary properties based on actual usage
 }
 
@@ -85,7 +85,7 @@ const createLayer = async (url: string) => {
 const exportAsImage = async (elementId: string): Promise<void> => {
   const element = document.getElementById(elementId);
   if (!element) return;
-  
+
   const canvas = await html2canvas(element);
   const image = canvas.toDataURL('image/png');
   const link = document.createElement('a');
@@ -100,13 +100,13 @@ const exportAsPDF = async (elementId: string): Promise<void> => {
 
   const canvas = await html2canvas(element);
   const imgData = canvas.toDataURL('image/png');
-  
+
   const pdf = new jsPDF({
     orientation: 'landscape',
     unit: 'px',
     format: [canvas.width, canvas.height]
   });
-  
+
   pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
   pdf.save(`${elementId}-export.pdf`);
 };
@@ -121,14 +121,14 @@ const exportAsText = (text: string, filename: string): void => {
   document.body.removeChild(element);
 };
 
-const ActionMenu = ({ 
-  onEdit, 
-  onExportImage, 
+const ActionMenu = ({
+  onEdit,
+  onExportImage,
   onExportPDF,
   onExportTXT,
   title = "Chart"
-}: { 
-  onEdit?: () => void, 
+}: {
+  onEdit?: () => void,
   onExportImage?: () => void,
   onExportPDF?: () => void,
   onExportTXT?: () => void,
@@ -171,63 +171,63 @@ const MapCustomizer: React.FC<{
   onConfigChange,
   config
 }) => (
-  <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="bg-white">
-      <DialogHeader>
-        <DialogTitle>Customize Map</DialogTitle>
-      </DialogHeader>
-      <div className="grid gap-4 py-4">
-        <div className="space-y-2">
-          <Label>Unit Type</Label>
-          <RadioGroup
-            value={config.unitType}
-            onValueChange={(value: string) => 
-              onConfigChange({ ...config, unitType: value as 'miles' | 'kilometers' })
-            }
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="miles" id="miles" />
-              <Label htmlFor="miles">Miles</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="kilometers" id="kilometers" />
-              <Label htmlFor="kilometers">Kilometers</Label>
-            </div>
-          </RadioGroup>
-        </div>
-        <div className="space-y-2">
-          <Label>Colors</Label>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Area Fill</Label>
-              <ColorPicker
-                color={config.colors.area}
-                onChange={(color) => 
-                  onConfigChange({ 
-                    ...config, 
-                    colors: { ...config.colors, area: color }
-                  })
-                }
-              />
-            </div>
-            <div>
-              <Label>Border</Label>
-              <ColorPicker
-                color={config.colors.border}
-                onChange={(color) => 
-                  onConfigChange({ 
-                    ...config, 
-                    colors: { ...config.colors, border: color }
-                  })
-                }
-              />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-white">
+        <DialogHeader>
+          <DialogTitle>Customize Map</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label>Unit Type</Label>
+            <RadioGroup
+              value={config.unitType}
+              onValueChange={(value: string) =>
+                onConfigChange({ ...config, unitType: value as 'miles' | 'kilometers' })
+              }
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="miles" id="miles" />
+                <Label htmlFor="miles">Miles</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="kilometers" id="kilometers" />
+                <Label htmlFor="kilometers">Kilometers</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="space-y-2">
+            <Label>Colors</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Area Fill</Label>
+                <ColorPicker
+                  color={config.colors.area}
+                  onChange={(color) =>
+                    onConfigChange({
+                      ...config,
+                      colors: { ...config.colors, area: color }
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Border</Label>
+                <ColorPicker
+                  color={config.colors.border}
+                  onChange={(color) =>
+                    onConfigChange({
+                      ...config,
+                      colors: { ...config.colors, border: color }
+                    })
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </DialogContent>
-  </Dialog>
-);
+      </DialogContent>
+    </Dialog>
+  );
 
 const DemographicsCustomizer: React.FC<{
   isOpen: boolean;
@@ -240,42 +240,42 @@ const DemographicsCustomizer: React.FC<{
   onConfigChange,
   config
 }) => (
-  <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="bg-white">
-      <DialogHeader>
-        <DialogTitle>Customize Demographics Display</DialogTitle>
-      </DialogHeader>
-      <div className="grid gap-4 py-4">
-        <div>
-          <Label>Icon Color</Label>
-          <ColorPicker
-            color={config.iconColor}
-            onChange={(color) => 
-              onConfigChange({ ...config, iconColor: color })
-            }
-          />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-white">
+        <DialogHeader>
+          <DialogTitle>Customize Demographics Display</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div>
+            <Label>Icon Color</Label>
+            <ColorPicker
+              color={config.iconColor}
+              onChange={(color) =>
+                onConfigChange({ ...config, iconColor: color })
+              }
+            />
+          </div>
+          <div>
+            <Label>Text Color</Label>
+            <ColorPicker
+              color={config.textColor}
+              onChange={(color) =>
+                onConfigChange({ ...config, textColor: color })
+              }
+            />
+          </div>
         </div>
-        <div>
-          <Label>Text Color</Label>
-          <ColorPicker
-            color={config.textColor}
-            onChange={(color) => 
-              onConfigChange({ ...config, textColor: color })
-            }
-          />
-        </div>
-      </div>
-    </DialogContent>
-  </Dialog>
-);
+      </DialogContent>
+    </Dialog>
+  );
 
-const StatCard = ({ 
-  icon, 
-  value, 
-  label, 
+const StatCard = ({
+  icon,
+  value,
+  label,
   formatter = (val: number) => val,
   textColor = '#1e293b'
-}: { 
+}: {
   icon: React.ReactNode;
   value: number;
   label: string;
@@ -298,7 +298,7 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
     showLegend: true,
     title: 'Business Distribution'
   });
-  
+
   const [spendingChartConfig, setSpendingChartConfig] = useState<ChartConfig>({
     type: 'bar',
     colors: ['#059669', '#10b981', '#34d399'],
@@ -335,10 +335,12 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
     setIsLoading(true);
     setError(null);
 
-    const demographicValues = { totalPopulation: 0,
-                                medianAge: 0, 
-                                medianIncome: 0, 
-                                diversityIndex: 0 };
+    const demographicValues = {
+      totalPopulation: 0,
+      medianAge: 0,
+      medianIncome: 0,
+      diversityIndex: 0
+    };
     const businessData: BusinessData = [];
     const spendingData: IndexData = [];
     const psychographicsData: IndexData = [];
@@ -374,57 +376,57 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
         demographicResults.features.forEach(feature => {
           const attrs = feature.attributes;
           if (attrs) {
-              totalHouseholdsSum += attrs['ECYHTYHHD'] || 0;
-              medianAgeSum += attrs['ECYPTAMED'] || 0;
-              medianIncomeSum += attrs['ECYHNIMED'] || 0;
-              validFeaturesCount++;
+            totalHouseholdsSum += attrs['ECYHTYHHD'] || 0;
+            medianAgeSum += attrs['ECYPTAMED'] || 0;
+            medianIncomeSum += attrs['ECYHNIMED'] || 0;
+            validFeaturesCount++;
           }
         });
 
         if (validFeaturesCount > 0) {
-           demographicValues.totalPopulation = totalHouseholdsSum;
-           demographicValues.medianAge = medianAgeSum / validFeaturesCount;
-           demographicValues.medianIncome = medianIncomeSum / validFeaturesCount;
+          demographicValues.totalPopulation = totalHouseholdsSum;
+          demographicValues.medianAge = medianAgeSum / validFeaturesCount;
+          demographicValues.medianIncome = medianIncomeSum / validFeaturesCount;
         } else {
           console.warn('No valid demographic features found in the specified geometry.');
         }
       } else {
-          console.warn('No demographic features found intersecting the geometry.');
+        console.warn('No demographic features found intersecting the geometry.');
       }
 
       // --- Fetch other data (Business, Spending, Psychographics) - Assuming these have separate configs/logic --- 
       // Provide explicit type for the array
       const otherLayersToQuery: OtherLayerQueryInfo[] = [
-          // Example: Keep existing logic for other layers if they are still valid
-          // { id: 'business', url: 'URL_FOR_BUSINESS_LAYER', field: 'BUSINESS_FIELD' }, 
-          // { id: 'spending', url: 'URL_FOR_SPENDING_LAYER', field: 'SPENDING_FIELD' },
-          // ... etc ...
+        // Example: Keep existing logic for other layers if they are still valid
+        // { id: 'business', url: 'URL_FOR_BUSINESS_LAYER', field: 'BUSINESS_FIELD' }, 
+        // { id: 'spending', url: 'URL_FOR_SPENDING_LAYER', field: 'SPENDING_FIELD' },
+        // ... etc ...
       ];
 
       // Example: Placeholder for fetching and processing other data 
-      const otherPromises = otherLayersToQuery.map(async (layerInfo) => { 
-          try {
-             const layer = await createLayer(layerInfo.url);
-             // Use layerInfo.field if needed in the query
-             const query = new Query({ 
-                 geometry: geometry, 
-                 spatialRelationship: "intersects", 
-                 outFields: layerInfo.field ? [layerInfo.field, '*'] : ['*'], // Example query fields
-                 returnGeometry: false 
-             });
-             const results = await layer.queryFeatures(query);
-             // Process results for business, spending, etc.
-             // Example: return { id: layerInfo.id, data: processedResults };
-             return null; // Placeholder
-          } catch(err) {
-              console.error(`Failed to fetch/process layer ${layerInfo.id}:`, err);
-              return null; // Handle error for individual layers
-          }
+      const otherPromises = otherLayersToQuery.map(async (layerInfo) => {
+        try {
+          const layer = await createLayer(layerInfo.url);
+          // Use layerInfo.field if needed in the query
+          const query = new Query({
+            geometry: geometry,
+            spatialRelationship: "intersects",
+            outFields: layerInfo.field ? [layerInfo.field, '*'] : ['*'], // Example query fields
+            returnGeometry: false
+          });
+          const results = await layer.queryFeatures(query);
+          // Process results for business, spending, etc.
+          // Example: return { id: layerInfo.id, data: processedResults };
+          return null; // Placeholder
+        } catch (err) {
+          console.error(`Failed to fetch/process layer ${layerInfo.id}:`, err);
+          return null; // Handle error for individual layers
+        }
       });
 
       const otherResults = await Promise.all(otherPromises);
       otherResults.forEach(result => {
-          if (!result) return;
+        if (!result) return;
       });
 
       setAnalysisData({
@@ -448,35 +450,32 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
 
   const generateAIInsights = (data: AnalysisData): string => {
     const { demographics, business, spending, psychographics } = data;
-    
+
     const highSpendingCategories = spending
       .filter(s => s.index > 120)
       .map(s => s.category.replace(/-/g, ' '))
       .map(s => s.charAt(0).toUpperCase() + s.slice(1));
-    
+
     const youngPopulation = demographics.medianAge < 35;
     const affluentArea = demographics.medianIncome > 100000;
     const diverseArea = demographics.diversityIndex > 75;
-    
+
     const fitnessEngagement = psychographics
       .filter(p => p.index > 110)
       .length / psychographics.length;
-    
+
     const totalBusinesses = business.reduce((sum, b) => sum + b.count, 0);
-    
-    return `This area has a population of ${demographics.totalPopulation.toLocaleString()} with ${diverseArea ? 'high cultural diversity' : 'moderate diversity'} and a ${youngPopulation ? 'younger' : 'mature'} demographic profile (median age: ${demographics.medianAge}). ${
-      highSpendingCategories.length > 0 
+
+    return `This area has a population of ${demographics.totalPopulation.toLocaleString()} with ${diverseArea ? 'high cultural diversity' : 'moderate diversity'} and a ${youngPopulation ? 'younger' : 'mature'} demographic profile (median age: ${demographics.medianAge}). ${highSpendingCategories.length > 0
         ? `Residents show above-average spending on ${highSpendingCategories.join(', ')}.`
         : 'Spending patterns align with national averages.'
-    } ${
-      fitnessEngagement > 0.5 
-        ? `Strong interest in fitness activities suggests potential for specialized services.` 
+      } ${fitnessEngagement > 0.5
+        ? `Strong interest in fitness activities suggests potential for specialized services.`
         : 'Moderate fitness engagement indicates opportunity for introductory programs.'
-    } The area contains ${totalBusinesses} fitness-related businesses, with ${
-      affluentArea 
+      } The area contains ${totalBusinesses} fitness-related businesses, with ${affluentArea
         ? `premium service potential due to high median income ($${demographics.medianIncome.toLocaleString()}).`
         : `opportunities for value-oriented services (median income: $${demographics.medianIncome.toLocaleString()}).`
-    }`;
+      }`;
   };
 
   if (error) {
@@ -550,12 +549,12 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
             </div>
           </CardHeader>
           <CardContent className="p-0 h-full">
-            {geometry && <SimpleMap 
-              geometry={geometry as ExtendedPolygon} 
+            {geometry && <SimpleMap
+              geometry={geometry as ExtendedPolygon}
               config={{
-                center: mapConfig.center, 
-                zoom: mapConfig.zoom, 
-                colors: { 
+                center: mapConfig.center,
+                zoom: mapConfig.zoom,
+                colors: {
                   area: mapConfig.colors.area,
                   border: mapConfig.colors.border
                 },
@@ -576,7 +575,7 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
           <div className="h-full flex flex-col">
             <CardHeader className="pb-2 flex flex-row justify-between items-center border-b">
               <CardTitle>Demographics Overview</CardTitle>
-              <ActionMenu 
+              <ActionMenu
                 title="Demographics"
                 onEdit={() => setIsDemographicsCustomizerOpen(true)}
                 onExportImage={() => exportAsImage('demographics-export')}
@@ -625,7 +624,7 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ geometry }) => {
         <Card className="h-[calc(50vh-32px)] overflow-hidden" id="business-export">
           <CardHeader className="pb-2 flex flex-row justify-between items-center border-b">
             <CardTitle>Business Distribution</CardTitle>
-            <ActionMenu 
+            <ActionMenu
               title="Chart"
               onEdit={() => setIsBusinessChartCustomizerOpen(true)}
               onExportImage={() => exportAsImage('business-export')}

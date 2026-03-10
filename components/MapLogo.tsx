@@ -1,4 +1,3 @@
-// MapLogo.tsx
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
@@ -15,11 +14,10 @@ interface MapLogoProps {
   sidebarWidth?: number;
 }
 
-const MapLogo = ({ 
+const MapLogo = ({
   logoUrl = "/mpiq_logo.png",
   position = 'center',
   style = 'fade-out',
-  initialDelay = 1000,
   fadeOutDelay = 10000,
   isLoading = false,
   size = 'normal',
@@ -93,7 +91,7 @@ const MapLogo = ({
   const { width, height } = getImageSize();
 
   return (
-    <div 
+    <div
       className={`
         absolute z-50 transition-opacity duration-500 ease-in-out pointer-events-none
         ${positionStyles[position]}
@@ -101,14 +99,14 @@ const MapLogo = ({
         ${isLoading ? 'animate-pulse' : ''}
       `}
       style={position === 'center' ? {
-        left: `calc(50% - ${sidebarWidth/2}px)`,
+        left: `calc(50% - ${sidebarWidth / 2}px)`,
         transform: 'translate(-50%, -50%)'
       } : undefined}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Image 
-        src={logoUrl} 
+      <Image
+        src={logoUrl}
         alt="MarketpulseIQ"
         className={`h-auto ${getSizeClass()}`}
         width={width}

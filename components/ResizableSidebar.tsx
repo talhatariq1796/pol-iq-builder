@@ -39,10 +39,10 @@ interface ResizableSidebarProps {
   onLayerStatesChange: (layerStates: { [key: string]: LayerState }) => void;
 }
 
-const ResizableSidebar = memo(({ 
+const ResizableSidebar = (({
   layerStates,
   chatInterface,
-  defaultWidth}: ResizableSidebarProps) => {
+  defaultWidth }: ResizableSidebarProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -53,7 +53,7 @@ const ResizableSidebar = memo(({
     if (!layerStates) return;
 
     const allLayers = Object.values(layerStates);
-    const hasUnloadedLayers = allLayers.some(state => 
+    const hasUnloadedLayers = allLayers.some(state =>
       state.layer && !state.layer.loaded
     );
 
@@ -92,11 +92,11 @@ const ResizableSidebar = memo(({
 
   return (
     <>
-      <div 
+      <div
         ref={containerRef}
         className="fixed right-0 top-0 bottom-0 theme-sidebar shadow-lg"
-        style={{ 
-          width: `${defaultWidth}px`, 
+        style={{
+          width: `${defaultWidth}px`,
           zIndex: 10,
           backgroundColor: 'var(--theme-bg-secondary)',
           borderLeft: '1px solid var(--theme-border)',
@@ -107,10 +107,10 @@ const ResizableSidebar = memo(({
           <div className="p-2" style={{ borderBottom: '1px solid var(--theme-border)' }}>
             <div className="flex items-center justify-between pl-4 p-4">
               <div className="flex items-center gap-2">
-                <Image 
-                  src="/mpiq_pin2.png" 
-                  alt="IQ Logo" 
-                  width={20} 
+                <Image
+                  src="/mpiq_pin2.png"
+                  alt="IQ Logo"
+                  width={20}
                   height={20}
                   priority
                 />
@@ -119,16 +119,16 @@ const ResizableSidebar = memo(({
                   <span className="-ml-px" style={{ color: 'var(--theme-text-primary)' }}>center</span>
                 </div>
               </div>
-{/* <ThemeSwitcher /> */}
+              {/* <ThemeSwitcher /> */}
             </div>
           </div>
 
           {/* Direct chat content without Tabs */}
           <div className="flex-1 overflow-hidden h-[calc(100vh-80px)]">
             {chatInterface ? (
-                <div className="h-full">{chatInterface}</div>
-              ) : (
-                <ChatLoadingState />
+              <div className="h-full">{chatInterface}</div>
+            ) : (
+              <ChatLoadingState />
             )}
           </div>
         </div>
@@ -143,7 +143,7 @@ const ResizableSidebar = memo(({
 const ChatLoadingState: React.FC = () => {
   return (
     <div className="p-4">
-      <div 
+      <div
         className="theme-card rounded-lg p-4"
         style={{
           backgroundColor: 'var(--theme-bg-tertiary)',
