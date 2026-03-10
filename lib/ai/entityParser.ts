@@ -22,7 +22,7 @@ export interface EntityReference {
   endIndex: number;
 }
 
-export function extractEntities(text: string): EntityReference[] {
+function extractEntities(text: string): EntityReference[] {
   const entities: EntityReference[] = [];
 
   // Extract precincts - check all patterns from most specific to least
@@ -145,10 +145,6 @@ export function getEntityCoordinates(entity: EntityReference): { lat: number; ln
   return null;
 }
 
-/**
- * Parse AI response to extract numbered entities for map markers
- * Looks for patterns like "1. EL-3", "1. **East Lansing**", or "1. City of East Lansing, Precinct 3"
- */
 export function extractNumberedEntities(text: string): Array<{
   number: number;
   entity: EntityReference;
@@ -218,11 +214,7 @@ export function extractNumberedEntities(text: string): Array<{
   });
 }
 
-/**
- * Render text with clickable entity references
- * Returns an array of text segments and entity buttons
- */
-export interface TextSegment {
+interface TextSegment {
   type: 'text' | 'entity';
   content: string;
   entity?: EntityReference;

@@ -1,9 +1,3 @@
-/**
- * Confidence & Citation System Exports
- * Phase 14 Enhanced Implementation
- */
-
-// Types
 export type {
   ConfidenceLevel,
   ConfidenceMetadata,
@@ -33,6 +27,5 @@ export {
 
 // CitationService
 export {
-  CitationService,
   getCitationService,
 } from './CitationService';

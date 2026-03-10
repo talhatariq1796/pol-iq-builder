@@ -1007,7 +1007,7 @@ class SuggestionEngine {
 
     // If user has shown interest in donors
     if (state.behavior.suggestionsAccepted.some(s => s.includes('donor')) ||
-        getStateManager().hasInterestIn('donors')) {
+      getStateManager().hasInterestIn('donors')) {
       suggestions.push({
         id: 'check-donors',
         label: 'Check donor activity in this area',
@@ -1521,7 +1521,7 @@ class SuggestionEngine {
     const acceptedCount = state.behavior.suggestionsAccepted.length;
     const exploredCount = state.behavior.exploredPrecincts.size;
     const expertiseLevel = (actionCount > 20 || acceptedCount > 5 || exploredCount > 10) ? 'power' :
-                           (actionCount > 5 || exploredCount > 3) ? 'intermediate' : 'novice';
+      (actionCount > 5 || exploredCount > 3) ? 'intermediate' : 'novice';
 
     // Adjust priorities based on user behavior
     const adjusted = filtered.map(s => {
@@ -1806,7 +1806,7 @@ class SuggestionEngine {
     const { summary, suggestions: spatialSuggestions, clusters, outliers } = analysis;
 
     // Build acknowledgment
-    let acknowledgment = `**Spatial Analysis**: ${summary.quickStats.totalDoors.toLocaleString()} doors across ${precincts.length} precincts`;
+    const acknowledgment = `**Spatial Analysis**: ${summary.quickStats.totalDoors.toLocaleString()} doors across ${precincts.length} precincts`;
 
     // Build insight from summary
     const insightParts: string[] = [];

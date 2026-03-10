@@ -1,44 +1,37 @@
-/**
- * Intent Parser for AI Political Conversation
- *
- * Analyzes user queries to detect intent and extract entities
- * without requiring an LLM (can be enhanced with LLM later)
- */
-
 export interface ParsedIntent {
   type:
-    | 'district_query'
-    | 'district_analysis'  // Multi-level district analysis (MI-07, State House 73, etc.)
-    | 'comparison'
-    | 'filter'
-    | 'data_request'
-    | 'donor_overview'
-    | 'donor_lapsed'
-    | 'donor_lapsed_clusters'
-    | 'donor_upgrade'
-    | 'donor_upgrade_top'
-    | 'donor_comparison'
-    | 'donor_ie'
-    | 'donor_ie_spending'
-    | 'donor_committee'
-    | 'donor_geographic'
-    | 'donor_by_candidate'
-    | 'canvass_plan'      // Plan canvassing operations
-    | 'canvass_optimize'  // Optimize canvassing routes
-    | 'canvass_estimate'  // Estimate canvassing resources
-    | 'canvass_analysis'  // Analyze canvassing performance
-    | 'segment_create'    // Build/create a new voter segment
-    | 'segment_find'      // List/find saved segments
-    | 'segment_save'      // Save current segment
-    | 'segment_compare'   // Compare multiple segments
-    | 'output_request'  // Save, export, download requests
-    | 'report_request'  // Generate/create report requests
-    | 'report_history'  // View report history requests
-    | 'spatial_query'   // Spatial/proximity queries (radius, drive-time, walk-time)
-    | 'graph_query'     // Knowledge graph exploration
-    | 'trend_query'     // Historical trend analysis (2020-2024 elections)
-    | 'navigation'      // Map navigation (zoom to, fly to, center on)
-    | 'general';
+  | 'district_query'
+  | 'district_analysis'  // Multi-level district analysis (MI-07, State House 73, etc.)
+  | 'comparison'
+  | 'filter'
+  | 'data_request'
+  | 'donor_overview'
+  | 'donor_lapsed'
+  | 'donor_lapsed_clusters'
+  | 'donor_upgrade'
+  | 'donor_upgrade_top'
+  | 'donor_comparison'
+  | 'donor_ie'
+  | 'donor_ie_spending'
+  | 'donor_committee'
+  | 'donor_geographic'
+  | 'donor_by_candidate'
+  | 'canvass_plan'      // Plan canvassing operations
+  | 'canvass_optimize'  // Optimize canvassing routes
+  | 'canvass_estimate'  // Estimate canvassing resources
+  | 'canvass_analysis'  // Analyze canvassing performance
+  | 'segment_create'    // Build/create a new voter segment
+  | 'segment_find'      // List/find saved segments
+  | 'segment_save'      // Save current segment
+  | 'segment_compare'   // Compare multiple segments
+  | 'output_request'  // Save, export, download requests
+  | 'report_request'  // Generate/create report requests
+  | 'report_history'  // View report history requests
+  | 'spatial_query'   // Spatial/proximity queries (radius, drive-time, walk-time)
+  | 'graph_query'     // Knowledge graph exploration
+  | 'trend_query'     // Historical trend analysis (2020-2024 elections)
+  | 'navigation'      // Map navigation (zoom to, fly to, center on)
+  | 'general';
   entities: string[];
   filters?: {
     metric?: string;
@@ -116,9 +109,15 @@ export interface ParsedIntent {
   };
 }
 
-/**
- * Parse user query to detect intent and extract entities
- */
+export interface ExtractedDistrictEntities {
+  congressional?: string;        // 'mi-07'
+  stateSenate?: string;          // 'mi-senate-21'
+  stateHouse?: string;           // 'mi-house-73'
+  schoolDistrict?: string;       // 'mason-public-schools'
+  countyCommissioner?: string;   // 'cc-district-5'
+  districtLevel?: 'congressional' | 'state_senate' | 'state_house' | 'school' | 'county_commissioner';
+}
+
 export function parseIntent(query: string): ParsedIntent {
   const lower = query.toLowerCase();
   const words = lower.split(/\s+/);
@@ -652,23 +651,34 @@ export function parseIntent(query: string): ParsedIntent {
   };
 }
 
-/**
- * Extracted district entities from natural language query
- */
-export interface ExtractedDistrictEntities {
-  congressional?: string;        // 'mi-07'
-  stateSenate?: string;          // 'mi-senate-21'
-  stateHouse?: string;           // 'mi-house-73'
-  schoolDistrict?: string;       // 'mason-public-schools'
-  countyCommissioner?: string;   // 'cc-district-5'
-  districtLevel?: 'congressional' | 'state_senate' | 'state_house' | 'school' | 'county_commissioner';
+export function fuzzyMatchPrecinct(query: string, precinctNames: string[]): string | null {
+  const lower = query.toLowerCase();
+
+  // Exact match
+  for (const name of precinctNames) {
+    if (lower.includes(name.toLowerCase())) {
+      return name;
+    }
+  }
+
+  // Partial match (match if query contains majority of words from name)
+  for (const name of precinctNames) {
+    const nameWords = name.toLowerCase().split(/\s+/);
+    const matchedWords = nameWords.filter(word => lower.includes(word));
+
+    if (matchedWords.length >= Math.ceil(nameWords.length / 2)) {
+      return name;
+    }
+  }
+
+  return null;
 }
 
 /**
  * Extract all district entities from query
  * Recognizes patterns for all Michigan election levels
  */
-export function extractDistrictEntities(query: string): ExtractedDistrictEntities {
+function extractDistrictEntities(query: string): ExtractedDistrictEntities {
   const result: ExtractedDistrictEntities = {};
   const lower = query.toLowerCase();
 
@@ -1141,8 +1151,8 @@ function detectOutputIntent(lower: string): ParsedIntent['outputParams'] | null 
     if (
       (lower.includes('save') || lower.includes('export') || lower.includes('download')) &&
       (lower.includes('analysis') || lower.includes('conversation') || lower.includes('chat') ||
-       lower.includes('data') || lower.includes('results') || lower.includes('segment') ||
-       lower.includes('report') || lower.includes('work') || lower.includes('progress'))
+        lower.includes('data') || lower.includes('results') || lower.includes('segment') ||
+        lower.includes('report') || lower.includes('work') || lower.includes('progress'))
     ) {
       if (lower.includes('save')) requestType = 'save';
       else if (lower.includes('export')) requestType = 'export';
@@ -1562,32 +1572,6 @@ function detectReportIntent(lower: string, originalQuery: string): ParsedIntent[
     targetArea,
     comparisonAreas,
   };
-}
-
-/**
- * Helper: Fuzzy match a query to precinct names
- */
-export function fuzzyMatchPrecinct(query: string, precinctNames: string[]): string | null {
-  const lower = query.toLowerCase();
-
-  // Exact match
-  for (const name of precinctNames) {
-    if (lower.includes(name.toLowerCase())) {
-      return name;
-    }
-  }
-
-  // Partial match (match if query contains majority of words from name)
-  for (const name of precinctNames) {
-    const nameWords = name.toLowerCase().split(/\s+/);
-    const matchedWords = nameWords.filter(word => lower.includes(word));
-
-    if (matchedWords.length >= Math.ceil(nameWords.length / 2)) {
-      return name;
-    }
-  }
-
-  return null;
 }
 
 /**

@@ -19,7 +19,6 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import type { MapCommand } from '@/lib/ai-native/types';
-import { handleSpatialAnalysis } from '@/lib/ai/workflowHandlers';
 
 // ============================================================================
 // Query Patterns

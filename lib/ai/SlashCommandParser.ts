@@ -1,18 +1,3 @@
-/**
- * SlashCommandParser - Parse and execute slash commands in AI chat
- *
- * Provides quick shortcuts for common AI actions:
- * - /report, /pdf - Generate reports
- * - /show, /heatmap - Change map visualization
- * - /find - Filter precincts
- * - /compare - Compare areas
- * - /export - Export data
- * - /history - Show report history
- * - /segments, /donors, /canvass - Navigate to tools
- * - /help, /clear - Utility commands
- * - /save, /highlight - Save segments and highlight precincts
- */
-
 import type { MapCommand } from '@/lib/ai-native/types';
 
 export interface SlashCommandResult {
@@ -83,72 +68,6 @@ const REPORT_ALIASES: Record<string, string> = {
   fundraising: 'donor',
 };
 
-/**
- * Parse a slash command from user input
- */
-export function parseSlashCommand(input: string): { command: string; args: string } | null {
-  const trimmed = input.trim();
-
-  if (!trimmed.startsWith('/')) {
-    return null;
-  }
-
-  const spaceIndex = trimmed.indexOf(' ');
-  if (spaceIndex === -1) {
-    return {
-      command: trimmed.slice(1).toLowerCase(),
-      args: '',
-    };
-  }
-
-  return {
-    command: trimmed.slice(1, spaceIndex).toLowerCase(),
-    args: trimmed.slice(spaceIndex + 1).trim(),
-  };
-}
-
-/**
- * Check if input is a slash command
- */
-export function isSlashCommand(input: string): boolean {
-  return input.trim().startsWith('/');
-}
-
-/**
- * Execute a slash command
- */
-export function executeSlashCommand(input: string): SlashCommandResult {
-  const parsed = parseSlashCommand(input);
-
-  if (!parsed) {
-    return { handled: false };
-  }
-
-  const handler = COMMAND_HANDLERS[parsed.command];
-  if (!handler) {
-    // Check aliases
-    for (const cmd of Object.values(SLASH_COMMANDS)) {
-      if (cmd.aliases.includes(parsed.command)) {
-        return cmd.handler(parsed.args);
-      }
-    }
-
-    return {
-      handled: true,
-      response: `Unknown command: /${parsed.command}\n\nType **/help** to see available commands.`,
-      suggestedActions: [
-        { id: 'help', label: 'Show help', action: '/help', icon: 'help-circle' },
-      ],
-    };
-  }
-
-  return handler(parsed.args);
-}
-
-// ============================================================================
-// Command Handlers
-// ============================================================================
-
 const COMMAND_HANDLERS: Record<string, (args: string) => SlashCommandResult> = {
   // Report commands
   report: handleReportCommand,
@@ -180,403 +99,7 @@ const COMMAND_HANDLERS: Record<string, (args: string) => SlashCommandResult> = {
   save: handleSaveCommand,
 };
 
-/**
- * /report [type] - Generate a report
- */
-function handleReportCommand(args: string): SlashCommandResult {
-  const reportType = args.toLowerCase().trim();
-
-  if (!reportType) {
-    // Show report options
-    return {
-      handled: true,
-      response: `📋 **Report Generation**\n\nAvailable report types:\n\n` +
-        `• **/report executive** - One-page overview\n` +
-        `• **/report targeting** - Ranked precinct list\n` +
-        `• **/report profile** - Full 7-page analysis\n` +
-        `• **/report comparison** - Side-by-side comparison\n` +
-        `• **/report segment** - Segment documentation\n` +
-        `• **/report canvass** - Canvassing plan\n` +
-        `• **/report donor** - Fundraising analysis\n\n` +
-        `Or just type **/report** and I'll suggest the best one based on your session.`,
-      suggestedActions: [
-        { id: 'exec', label: '📋 Executive Summary', action: 'report:executive', icon: 'file-text' },
-        { id: 'target', label: '🎯 Targeting Brief', action: 'report:targeting', icon: 'target' },
-        { id: 'profile', label: '📊 Political Profile', action: 'report:profile', icon: 'book-open' },
-        { id: 'customize', label: '⚙️ Customize sections', action: 'customize report', icon: 'settings' },
-      ],
-    };
-  }
-
-  // Resolve report type alias
-  const resolvedType = REPORT_ALIASES[reportType];
-
-  if (!resolvedType) {
-    return {
-      handled: true,
-      response: `Unknown report type: "${reportType}"\n\n` +
-        `Available types: executive, targeting, profile, comparison, segment, canvass, donor`,
-      suggestedActions: [
-        { id: 'help', label: 'Show report help', action: '/report', icon: 'help-circle' },
-      ],
-    };
-  }
-
-  // Trigger report generation
-  return {
-    handled: true,
-    response: `Generating ${resolvedType} report...`,
-    suggestedActions: [
-      { id: 'generate', label: `Generate ${resolvedType} report`, action: `report:${resolvedType}`, icon: 'file-text' },
-    ],
-  };
-}
-
-/**
- * /show [metric] - Change map visualization
- */
-function handleShowCommand(args: string): SlashCommandResult {
-  const metric = args.toLowerCase().trim();
-
-  if (!metric) {
-    return {
-      handled: true,
-      response: `🗺️ **Map Visualization**\n\nUsage: **/show [metric]**\n\n` +
-        `Available metrics:\n` +
-        `• **/show swing** - Swing potential\n` +
-        `• **/show gotv** - GOTV priority\n` +
-        `• **/show persuasion** - Persuasion opportunity\n` +
-        `• **/show turnout** - Voter turnout\n` +
-        `• **/show partisan** - Partisan lean\n` +
-        `• **/show combined** - Combined targeting score`,
-      suggestedActions: [
-        { id: 'swing', label: 'Show swing', action: 'map:showHeatmap', icon: 'map', metadata: { metric: 'swing_potential' } },
-        { id: 'gotv', label: 'Show GOTV', action: 'map:showHeatmap', icon: 'map', metadata: { metric: 'gotv_priority' } },
-        { id: 'persuasion', label: 'Show persuasion', action: 'map:showHeatmap', icon: 'map', metadata: { metric: 'persuasion_opportunity' } },
-      ],
-    };
-  }
-
-  const resolvedMetric = METRIC_ALIASES[metric];
-
-  if (!resolvedMetric) {
-    return {
-      handled: true,
-      response: `Unknown metric: "${metric}"\n\nAvailable: swing, gotv, persuasion, turnout, partisan, combined`,
-    };
-  }
-
-  return {
-    handled: true,
-    response: `Showing ${metric} on map...`,
-    mapCommands: [{ type: 'showHeatmap', metric: resolvedMetric }],
-  };
-}
-
-/**
- * /heatmap [metric] - Show heatmap for metric
- */
-function handleHeatmapCommand(args: string): SlashCommandResult {
-  // Alias for /show
-  return handleShowCommand(args);
-}
-
-/**
- * /highlight [precinct/area] - Highlight on map
- */
-function handleHighlightCommand(args: string): SlashCommandResult {
-  const target = args.trim();
-
-  if (!target) {
-    return {
-      handled: true,
-      response: `🔍 **Highlight**\n\nUsage: **/highlight [precinct or area name]**\n\n` +
-        `Examples:\n` +
-        `• **/highlight East Lansing**\n` +
-        `• **/highlight Meridian Township**\n` +
-        `• **/highlight Precinct 1**`,
-    };
-  }
-
-  return {
-    handled: true,
-    response: `Highlighting "${target}" on map...`,
-    mapCommands: [
-      { type: 'highlight', target },
-      { type: 'flyTo', target },
-    ],
-  };
-}
-
-/**
- * /find [criteria] - Find precincts matching criteria
- */
-function handleFindCommand(args: string): SlashCommandResult {
-  const criteria = args.trim();
-
-  if (!criteria) {
-    return {
-      handled: true,
-      response: `🔍 **Find Precincts**\n\nUsage: **/find [criteria]**\n\n` +
-        `Examples:\n` +
-        `• **/find swing > 70** - High swing potential\n` +
-        `• **/find gotv > 80** - High GOTV priority\n` +
-        `• **/find turnout < 50** - Low turnout areas\n` +
-        `• **/find competitive** - Toss-up precincts\n` +
-        `• **/find high persuasion** - Persuadable areas`,
-      suggestedActions: [
-        { id: 'swing', label: 'Find swing precincts', action: 'Find precincts with swing potential above 70', icon: 'search' },
-        { id: 'gotv', label: 'Find GOTV targets', action: 'Find precincts with GOTV priority above 80', icon: 'search' },
-        { id: 'competitive', label: 'Find competitive', action: 'Find competitive toss-up precincts', icon: 'search' },
-      ],
-    };
-  }
-
-  // Parse the criteria and convert to a natural language query
-  // The AI will process this
-  return {
-    handled: true,
-    response: `Searching for precincts matching: ${criteria}`,
-    suggestedActions: [
-      { id: 'search', label: 'Search', action: `Find precincts with ${criteria}`, icon: 'search' },
-    ],
-  };
-}
-
-/**
- * /compare [area1] vs [area2] - Compare two areas
- */
-function handleCompareCommand(args: string): SlashCommandResult {
-  const input = args.trim();
-
-  if (!input) {
-    return {
-      handled: true,
-      response: `⚖️ **Compare Areas**\n\nUsage: **/compare [area1] vs [area2]**\n\n` +
-        `Examples:\n` +
-        `• **/compare East Lansing vs Meridian**\n` +
-        `• **/compare Lansing vs Delhi Township**\n` +
-        `• **/compare Precinct 1 vs Precinct 5**`,
-      suggestedActions: [
-        { id: 'nav', label: 'Go to comparison tool', action: 'navigate:/compare', icon: 'columns' },
-      ],
-    };
-  }
-
-  // Parse "X vs Y" or "X and Y"
-  const vsMatch = input.match(/(.+?)\s+(?:vs\.?|versus|and|compared?\s+to)\s+(.+)/i);
-
-  if (vsMatch) {
-    const area1 = vsMatch[1].trim();
-    const area2 = vsMatch[2].trim();
-
-    return {
-      handled: true,
-      response: `Comparing ${area1} vs ${area2}...`,
-      suggestedActions: [
-        { id: 'compare', label: `Compare ${area1} vs ${area2}`, action: `Compare ${area1} versus ${area2}`, icon: 'columns' },
-      ],
-    };
-  }
-
-  return {
-    handled: true,
-    response: `Please specify two areas to compare.\n\nExample: **/compare East Lansing vs Meridian**`,
-  };
-}
-
-/**
- * /analyze - Analyze selected area
- */
-function handleAnalyzeCommand(args: string): SlashCommandResult {
-  const target = args.trim();
-
-  if (target) {
-    return {
-      handled: true,
-      response: `Analyzing ${target}...`,
-      suggestedActions: [
-        { id: 'analyze', label: `Analyze ${target}`, action: `Tell me about ${target}`, icon: 'bar-chart' },
-      ],
-    };
-  }
-
-  return {
-    handled: true,
-    response: `📊 **Analyze**\n\nAnalyzing currently selected area...\n\n` +
-      `Tip: Click on a precinct on the map first, or specify an area:\n` +
-      `**/analyze East Lansing**`,
-    suggestedActions: [
-      { id: 'analyze', label: 'Analyze selection', action: 'Analyze the selected precinct', icon: 'bar-chart' },
-    ],
-  };
-}
-
-/**
- * /export [type] - Export data
- */
-function handleExportCommand(args: string): SlashCommandResult {
-  const exportType = args.toLowerCase().trim();
-
-  if (!exportType || exportType === 'help') {
-    return {
-      handled: true,
-      response: `📥 **Export Data**\n\nUsage: **/export [type]**\n\n` +
-        `Available exports:\n` +
-        `• **/export csv** - Export precincts to CSV\n` +
-        `• **/export segment** - Export current segment\n` +
-        `• **/export conversation** - Export chat transcript`,
-      suggestedActions: [
-        { id: 'csv', label: 'Export to CSV', action: 'output:exportCSV', icon: 'file-spreadsheet' },
-        { id: 'segment', label: 'Export segment', action: 'output:saveSegment', icon: 'bookmark' },
-      ],
-    };
-  }
-
-  const exportActions: Record<string, string> = {
-    csv: 'output:exportCSV',
-    precincts: 'output:exportCSV',
-    segment: 'output:saveSegment',
-    conversation: 'output:exportConversation',
-    chat: 'output:exportConversation',
-  };
-
-  const action = exportActions[exportType];
-
-  if (!action) {
-    return {
-      handled: true,
-      response: `Unknown export type: "${exportType}"\n\nAvailable: csv, segment, conversation`,
-    };
-  }
-
-  return {
-    handled: true,
-    response: `Exporting ${exportType}...`,
-    suggestedActions: [
-      { id: 'export', label: `Export ${exportType}`, action, icon: 'download' },
-    ],
-  };
-}
-
-/**
- * /history - Show report history
- */
-function handleHistoryCommand(_args: string): SlashCommandResult {
-  return {
-    handled: true,
-    response: `Loading report history...`,
-    suggestedActions: [
-      { id: 'history', label: 'Show report history', action: 'show my report history', icon: 'clock' },
-    ],
-  };
-}
-
-/**
- * Navigate to a tool page
- */
-function handleNavigateCommand(tool: string): SlashCommandResult {
-  const destinations: Record<string, { path: string; label: string }> = {
-    segments: { path: '/segments', label: 'Segment Builder' },
-    donors: { path: '/donors', label: 'Donor Analysis' },
-    canvass: { path: '/canvass', label: 'Canvassing Planner' },
-    compare: { path: '/compare', label: 'Comparison Tool' },
-    'political-ai': { path: '/political-ai', label: 'Political Map' },
-  };
-
-  const dest = destinations[tool];
-
-  if (!dest) {
-    return {
-      handled: true,
-      response: `Unknown destination: ${tool}`,
-    };
-  }
-
-  return {
-    handled: true,
-    response: `Navigating to ${dest.label}...`,
-    navigation: dest.path,
-  };
-}
-
-/**
- * /help - Show available commands
- */
-function handleHelpCommand(_args: string): SlashCommandResult {
-  return {
-    handled: true,
-    response: `📚 **Slash Commands**\n\n` +
-      `**Reports**\n` +
-      `• **/report [type]** - Generate a report (executive, targeting, profile, etc.)\n` +
-      `• **/history** - View recent reports\n\n` +
-      `**Map & Visualization**\n` +
-      `• **/show [metric]** - Show metric on map (swing, gotv, persuasion, turnout)\n` +
-      `• **/highlight [area]** - Highlight area on map\n\n` +
-      `**Analysis**\n` +
-      `• **/find [criteria]** - Find precincts (e.g., /find swing > 70)\n` +
-      `• **/compare [A] vs [B]** - Compare two areas\n` +
-      `• **/analyze** - Analyze selected area\n\n` +
-      `**Export & Save**\n` +
-      `• **/export [type]** - Export data (csv, segment, conversation)\n` +
-      `• **/save [name]** - Save current segment\n\n` +
-      `**Navigation**\n` +
-      `• **/segments** - Go to segment builder\n` +
-      `• **/donors** - Go to donor analysis\n` +
-      `• **/canvass** - Go to canvassing planner\n` +
-      `• **/map** - Go to political map\n\n` +
-      `**Utility**\n` +
-      `• **/help** - Show this help\n` +
-      `• **/clear** - Clear chat history`,
-    suggestedActions: [
-      { id: 'report', label: 'Generate report', action: '/report', icon: 'file-text' },
-      { id: 'find', label: 'Find precincts', action: '/find', icon: 'search' },
-      { id: 'show', label: 'Show on map', action: '/show', icon: 'map' },
-    ],
-  };
-}
-
-/**
- * /clear - Clear chat history
- */
-function handleClearCommand(_args: string): SlashCommandResult {
-  return {
-    handled: true,
-    response: `Chat history cleared.`,
-    clearChat: true,
-  };
-}
-
-/**
- * /save [name] - Save current segment
- */
-function handleSaveCommand(args: string): SlashCommandResult {
-  const name = args.trim();
-
-  if (!name) {
-    return {
-      handled: true,
-      response: `💾 **Save Segment**\n\nUsage: **/save [segment name]**\n\n` +
-        `Example: **/save High GOTV Targets**\n\n` +
-        `This will save the current filtered precincts as a reusable segment.`,
-    };
-  }
-
-  return {
-    handled: true,
-    response: `Saving segment as "${name}"...`,
-    toolAction: {
-      type: 'saveSegment',
-      payload: { name },
-    },
-  };
-}
-
-// ============================================================================
-// Command Definitions (for autocomplete/help)
-// ============================================================================
-
-export const SLASH_COMMANDS: Record<string, SlashCommand> = {
+const SLASH_COMMANDS: Record<string, SlashCommand> = {
   report: {
     name: 'report',
     aliases: ['pdf'],
@@ -667,24 +190,408 @@ export const SLASH_COMMANDS: Record<string, SlashCommand> = {
   },
 };
 
-/**
- * Get command suggestions for autocomplete
- */
-export function getCommandSuggestions(partial: string): string[] {
-  const search = partial.toLowerCase().replace('/', '');
+function parseSlashCommand(input: string): { command: string; args: string } | null {
+  const trimmed = input.trim();
 
-  const matches: string[] = [];
-
-  for (const [name, cmd] of Object.entries(SLASH_COMMANDS)) {
-    if (name.startsWith(search)) {
-      matches.push(`/${name}`);
-    }
-    for (const alias of cmd.aliases) {
-      if (alias.startsWith(search)) {
-        matches.push(`/${alias}`);
-      }
-    }
+  if (!trimmed.startsWith('/')) {
+    return null;
   }
 
-  return matches.slice(0, 5);
+  const spaceIndex = trimmed.indexOf(' ');
+  if (spaceIndex === -1) {
+    return {
+      command: trimmed.slice(1).toLowerCase(),
+      args: '',
+    };
+  }
+
+  return {
+    command: trimmed.slice(1, spaceIndex).toLowerCase(),
+    args: trimmed.slice(spaceIndex + 1).trim(),
+  };
+}
+
+export function isSlashCommand(input: string): boolean {
+  return input.trim().startsWith('/');
+}
+
+export function executeSlashCommand(input: string): SlashCommandResult {
+  const parsed = parseSlashCommand(input);
+
+  if (!parsed) {
+    return { handled: false };
+  }
+
+  const handler = COMMAND_HANDLERS[parsed.command];
+  if (!handler) {
+    // Check aliases
+    for (const cmd of Object.values(SLASH_COMMANDS)) {
+      if (cmd.aliases.includes(parsed.command)) {
+        return cmd.handler(parsed.args);
+      }
+    }
+
+    return {
+      handled: true,
+      response: `Unknown command: /${parsed.command}\n\nType **/help** to see available commands.`,
+      suggestedActions: [
+        { id: 'help', label: 'Show help', action: '/help', icon: 'help-circle' },
+      ],
+    };
+  }
+
+  return handler(parsed.args);
+}
+
+function handleReportCommand(args: string): SlashCommandResult {
+  const reportType = args.toLowerCase().trim();
+
+  if (!reportType) {
+    // Show report options
+    return {
+      handled: true,
+      response: `📋 **Report Generation**\n\nAvailable report types:\n\n` +
+        `• **/report executive** - One-page overview\n` +
+        `• **/report targeting** - Ranked precinct list\n` +
+        `• **/report profile** - Full 7-page analysis\n` +
+        `• **/report comparison** - Side-by-side comparison\n` +
+        `• **/report segment** - Segment documentation\n` +
+        `• **/report canvass** - Canvassing plan\n` +
+        `• **/report donor** - Fundraising analysis\n\n` +
+        `Or just type **/report** and I'll suggest the best one based on your session.`,
+      suggestedActions: [
+        { id: 'exec', label: '📋 Executive Summary', action: 'report:executive', icon: 'file-text' },
+        { id: 'target', label: '🎯 Targeting Brief', action: 'report:targeting', icon: 'target' },
+        { id: 'profile', label: '📊 Political Profile', action: 'report:profile', icon: 'book-open' },
+        { id: 'customize', label: '⚙️ Customize sections', action: 'customize report', icon: 'settings' },
+      ],
+    };
+  }
+
+  // Resolve report type alias
+  const resolvedType = REPORT_ALIASES[reportType];
+
+  if (!resolvedType) {
+    return {
+      handled: true,
+      response: `Unknown report type: "${reportType}"\n\n` +
+        `Available types: executive, targeting, profile, comparison, segment, canvass, donor`,
+      suggestedActions: [
+        { id: 'help', label: 'Show report help', action: '/report', icon: 'help-circle' },
+      ],
+    };
+  }
+
+  // Trigger report generation
+  return {
+    handled: true,
+    response: `Generating ${resolvedType} report...`,
+    suggestedActions: [
+      { id: 'generate', label: `Generate ${resolvedType} report`, action: `report:${resolvedType}`, icon: 'file-text' },
+    ],
+  };
+}
+
+function handleShowCommand(args: string): SlashCommandResult {
+  const metric = args.toLowerCase().trim();
+
+  if (!metric) {
+    return {
+      handled: true,
+      response: `🗺️ **Map Visualization**\n\nUsage: **/show [metric]**\n\n` +
+        `Available metrics:\n` +
+        `• **/show swing** - Swing potential\n` +
+        `• **/show gotv** - GOTV priority\n` +
+        `• **/show persuasion** - Persuasion opportunity\n` +
+        `• **/show turnout** - Voter turnout\n` +
+        `• **/show partisan** - Partisan lean\n` +
+        `• **/show combined** - Combined targeting score`,
+      suggestedActions: [
+        { id: 'swing', label: 'Show swing', action: 'map:showHeatmap', icon: 'map', metadata: { metric: 'swing_potential' } },
+        { id: 'gotv', label: 'Show GOTV', action: 'map:showHeatmap', icon: 'map', metadata: { metric: 'gotv_priority' } },
+        { id: 'persuasion', label: 'Show persuasion', action: 'map:showHeatmap', icon: 'map', metadata: { metric: 'persuasion_opportunity' } },
+      ],
+    };
+  }
+
+  const resolvedMetric = METRIC_ALIASES[metric];
+
+  if (!resolvedMetric) {
+    return {
+      handled: true,
+      response: `Unknown metric: "${metric}"\n\nAvailable: swing, gotv, persuasion, turnout, partisan, combined`,
+    };
+  }
+
+  return {
+    handled: true,
+    response: `Showing ${metric} on map...`,
+    mapCommands: [{ type: 'showHeatmap', metric: resolvedMetric }],
+  };
+}
+
+function handleHeatmapCommand(args: string): SlashCommandResult {
+  // Alias for /show
+  return handleShowCommand(args);
+}
+
+function handleHighlightCommand(args: string): SlashCommandResult {
+  const target = args.trim();
+
+  if (!target) {
+    return {
+      handled: true,
+      response: `🔍 **Highlight**\n\nUsage: **/highlight [precinct or area name]**\n\n` +
+        `Examples:\n` +
+        `• **/highlight East Lansing**\n` +
+        `• **/highlight Meridian Township**\n` +
+        `• **/highlight Precinct 1**`,
+    };
+  }
+
+  return {
+    handled: true,
+    response: `Highlighting "${target}" on map...`,
+    mapCommands: [
+      { type: 'highlight', target },
+      { type: 'flyTo', target },
+    ],
+  };
+}
+
+function handleFindCommand(args: string): SlashCommandResult {
+  const criteria = args.trim();
+
+  if (!criteria) {
+    return {
+      handled: true,
+      response: `🔍 **Find Precincts**\n\nUsage: **/find [criteria]**\n\n` +
+        `Examples:\n` +
+        `• **/find swing > 70** - High swing potential\n` +
+        `• **/find gotv > 80** - High GOTV priority\n` +
+        `• **/find turnout < 50** - Low turnout areas\n` +
+        `• **/find competitive** - Toss-up precincts\n` +
+        `• **/find high persuasion** - Persuadable areas`,
+      suggestedActions: [
+        { id: 'swing', label: 'Find swing precincts', action: 'Find precincts with swing potential above 70', icon: 'search' },
+        { id: 'gotv', label: 'Find GOTV targets', action: 'Find precincts with GOTV priority above 80', icon: 'search' },
+        { id: 'competitive', label: 'Find competitive', action: 'Find competitive toss-up precincts', icon: 'search' },
+      ],
+    };
+  }
+
+  // Parse the criteria and convert to a natural language query
+  // The AI will process this
+  return {
+    handled: true,
+    response: `Searching for precincts matching: ${criteria}`,
+    suggestedActions: [
+      { id: 'search', label: 'Search', action: `Find precincts with ${criteria}`, icon: 'search' },
+    ],
+  };
+}
+
+function handleCompareCommand(args: string): SlashCommandResult {
+  const input = args.trim();
+
+  if (!input) {
+    return {
+      handled: true,
+      response: `⚖️ **Compare Areas**\n\nUsage: **/compare [area1] vs [area2]**\n\n` +
+        `Examples:\n` +
+        `• **/compare East Lansing vs Meridian**\n` +
+        `• **/compare Lansing vs Delhi Township**\n` +
+        `• **/compare Precinct 1 vs Precinct 5**`,
+      suggestedActions: [
+        { id: 'nav', label: 'Go to comparison tool', action: 'navigate:/compare', icon: 'columns' },
+      ],
+    };
+  }
+
+  // Parse "X vs Y" or "X and Y"
+  const vsMatch = input.match(/(.+?)\s+(?:vs\.?|versus|and|compared?\s+to)\s+(.+)/i);
+
+  if (vsMatch) {
+    const area1 = vsMatch[1].trim();
+    const area2 = vsMatch[2].trim();
+
+    return {
+      handled: true,
+      response: `Comparing ${area1} vs ${area2}...`,
+      suggestedActions: [
+        { id: 'compare', label: `Compare ${area1} vs ${area2}`, action: `Compare ${area1} versus ${area2}`, icon: 'columns' },
+      ],
+    };
+  }
+
+  return {
+    handled: true,
+    response: `Please specify two areas to compare.\n\nExample: **/compare East Lansing vs Meridian**`,
+  };
+}
+
+function handleAnalyzeCommand(args: string): SlashCommandResult {
+  const target = args.trim();
+
+  if (target) {
+    return {
+      handled: true,
+      response: `Analyzing ${target}...`,
+      suggestedActions: [
+        { id: 'analyze', label: `Analyze ${target}`, action: `Tell me about ${target}`, icon: 'bar-chart' },
+      ],
+    };
+  }
+
+  return {
+    handled: true,
+    response: `📊 **Analyze**\n\nAnalyzing currently selected area...\n\n` +
+      `Tip: Click on a precinct on the map first, or specify an area:\n` +
+      `**/analyze East Lansing**`,
+    suggestedActions: [
+      { id: 'analyze', label: 'Analyze selection', action: 'Analyze the selected precinct', icon: 'bar-chart' },
+    ],
+  };
+}
+
+function handleExportCommand(args: string): SlashCommandResult {
+  const exportType = args.toLowerCase().trim();
+
+  if (!exportType || exportType === 'help') {
+    return {
+      handled: true,
+      response: `📥 **Export Data**\n\nUsage: **/export [type]**\n\n` +
+        `Available exports:\n` +
+        `• **/export csv** - Export precincts to CSV\n` +
+        `• **/export segment** - Export current segment\n` +
+        `• **/export conversation** - Export chat transcript`,
+      suggestedActions: [
+        { id: 'csv', label: 'Export to CSV', action: 'output:exportCSV', icon: 'file-spreadsheet' },
+        { id: 'segment', label: 'Export segment', action: 'output:saveSegment', icon: 'bookmark' },
+      ],
+    };
+  }
+
+  const exportActions: Record<string, string> = {
+    csv: 'output:exportCSV',
+    precincts: 'output:exportCSV',
+    segment: 'output:saveSegment',
+    conversation: 'output:exportConversation',
+    chat: 'output:exportConversation',
+  };
+
+  const action = exportActions[exportType];
+
+  if (!action) {
+    return {
+      handled: true,
+      response: `Unknown export type: "${exportType}"\n\nAvailable: csv, segment, conversation`,
+    };
+  }
+
+  return {
+    handled: true,
+    response: `Exporting ${exportType}...`,
+    suggestedActions: [
+      { id: 'export', label: `Export ${exportType}`, action, icon: 'download' },
+    ],
+  };
+}
+
+function handleHistoryCommand(_args: string): SlashCommandResult {
+  return {
+    handled: true,
+    response: `Loading report history...`,
+    suggestedActions: [
+      { id: 'history', label: 'Show report history', action: 'show my report history', icon: 'clock' },
+    ],
+  };
+}
+
+function handleNavigateCommand(tool: string): SlashCommandResult {
+  const destinations: Record<string, { path: string; label: string }> = {
+    segments: { path: '/segments', label: 'Segment Builder' },
+    donors: { path: '/donors', label: 'Donor Analysis' },
+    canvass: { path: '/canvass', label: 'Canvassing Planner' },
+    compare: { path: '/compare', label: 'Comparison Tool' },
+    'political-ai': { path: '/political-ai', label: 'Political Map' },
+  };
+
+  const dest = destinations[tool];
+
+  if (!dest) {
+    return {
+      handled: true,
+      response: `Unknown destination: ${tool}`,
+    };
+  }
+
+  return {
+    handled: true,
+    response: `Navigating to ${dest.label}...`,
+    navigation: dest.path,
+  };
+}
+
+function handleHelpCommand(_args: string): SlashCommandResult {
+  return {
+    handled: true,
+    response: `📚 **Slash Commands**\n\n` +
+      `**Reports**\n` +
+      `• **/report [type]** - Generate a report (executive, targeting, profile, etc.)\n` +
+      `• **/history** - View recent reports\n\n` +
+      `**Map & Visualization**\n` +
+      `• **/show [metric]** - Show metric on map (swing, gotv, persuasion, turnout)\n` +
+      `• **/highlight [area]** - Highlight area on map\n\n` +
+      `**Analysis**\n` +
+      `• **/find [criteria]** - Find precincts (e.g., /find swing > 70)\n` +
+      `• **/compare [A] vs [B]** - Compare two areas\n` +
+      `• **/analyze** - Analyze selected area\n\n` +
+      `**Export & Save**\n` +
+      `• **/export [type]** - Export data (csv, segment, conversation)\n` +
+      `• **/save [name]** - Save current segment\n\n` +
+      `**Navigation**\n` +
+      `• **/segments** - Go to segment builder\n` +
+      `• **/donors** - Go to donor analysis\n` +
+      `• **/canvass** - Go to canvassing planner\n` +
+      `• **/map** - Go to political map\n\n` +
+      `**Utility**\n` +
+      `• **/help** - Show this help\n` +
+      `• **/clear** - Clear chat history`,
+    suggestedActions: [
+      { id: 'report', label: 'Generate report', action: '/report', icon: 'file-text' },
+      { id: 'find', label: 'Find precincts', action: '/find', icon: 'search' },
+      { id: 'show', label: 'Show on map', action: '/show', icon: 'map' },
+    ],
+  };
+}
+
+function handleClearCommand(_args: string): SlashCommandResult {
+  return {
+    handled: true,
+    response: `Chat history cleared.`,
+    clearChat: true,
+  };
+}
+
+function handleSaveCommand(args: string): SlashCommandResult {
+  const name = args.trim();
+
+  if (!name) {
+    return {
+      handled: true,
+      response: `💾 **Save Segment**\n\nUsage: **/save [segment name]**\n\n` +
+        `Example: **/save High GOTV Targets**\n\n` +
+        `This will save the current filtered precincts as a reusable segment.`,
+    };
+  }
+
+  return {
+    handled: true,
+    response: `Saving segment as "${name}"...`,
+    toolAction: {
+      type: 'saveSegment',
+      payload: { name },
+    },
+  };
 }

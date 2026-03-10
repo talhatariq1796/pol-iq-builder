@@ -20,7 +20,6 @@ import type {
   InsightEngineConfig,
   InsightStorage,
   InsightTrigger,
-  StoredInsight,
   DonorGotvOverlapParams,
   TapestryTurnoutParams,
   DemographicSwingParams,
@@ -68,10 +67,7 @@ export function getInsightEngine(): InsightEngine {
   return insightEngineInstance;
 }
 
-/**
- * InsightEngine class - discovers cross-domain correlations
- */
-export class InsightEngine {
+class InsightEngine {
   private config: InsightEngineConfig;
   private storage: InsightStorage;
   private readonly STORAGE_KEY = 'pol_insight_storage';
@@ -1146,4 +1142,3 @@ export class InsightEngine {
   }
 }
 
-export default InsightEngine;

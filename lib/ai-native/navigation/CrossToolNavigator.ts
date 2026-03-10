@@ -53,7 +53,7 @@ export class CrossToolNavigator {
     preserveHistory = true
   ): void {
     // Get current exploration state from StateManager
-    let enhancedParams = { ...params };
+    const enhancedParams = { ...params };
 
     if (typeof window !== 'undefined') {
       try {

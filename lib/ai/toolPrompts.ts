@@ -1,12 +1,8 @@
-/**
- * Tool-specific system prompts for AI-powered political analysis tools
- */
-
 import { getDataSummaryText, getDataSummaryTextAsync } from './dataSummary';
 
 interface ToolContext {
-  toolName: string;
-  toolDescription: string;
+   toolName: string;
+   toolDescription: string;
 }
 
 /**
@@ -564,47 +560,47 @@ If data is not available for a specific query:
  * Automatically injects current data summary for context
  */
 export function getSystemPrompt(toolContext?: ToolContext): string {
-  // Get data summary to inject
-  const dataSummary = getDataSummaryText();
+   // Get data summary to inject
+   const dataSummary = getDataSummaryText();
 
-  let basePrompt: string;
+   let basePrompt: string;
 
-  if (!toolContext) {
-    // Default to Political AI prompt if no tool context provided
-    basePrompt = POLITICAL_AI_PROMPT;
-  } else {
-    switch (toolContext.toolName.toLowerCase()) {
-      case 'segmentation':
-      case 'segment':
-      case 'voter segmentation':
-        basePrompt = SEGMENTATION_TOOL_PROMPT;
-        break;
+   if (!toolContext) {
+      // Default to Political AI prompt if no tool context provided
+      basePrompt = POLITICAL_AI_PROMPT;
+   } else {
+      switch (toolContext.toolName.toLowerCase()) {
+         case 'segmentation':
+         case 'segment':
+         case 'voter segmentation':
+            basePrompt = SEGMENTATION_TOOL_PROMPT;
+            break;
 
-      case 'canvassing':
-      case 'canvass':
-      case 'door-knocking':
-      case 'turf':
-        basePrompt = CANVASSING_TOOL_PROMPT;
-        break;
+         case 'canvassing':
+         case 'canvass':
+         case 'door-knocking':
+         case 'turf':
+            basePrompt = CANVASSING_TOOL_PROMPT;
+            break;
 
-      case 'donors':
-      case 'fundraising':
-      case 'contributions':
-      case 'fec':
-        basePrompt = DONORS_TOOL_PROMPT;
-        break;
+         case 'donors':
+         case 'fundraising':
+         case 'contributions':
+         case 'fec':
+            basePrompt = DONORS_TOOL_PROMPT;
+            break;
 
-      case 'political ai':
-      case 'political-ai':
-      case 'main':
-      default:
-        basePrompt = POLITICAL_AI_PROMPT;
-        break;
-    }
-  }
+         case 'political ai':
+         case 'political-ai':
+         case 'main':
+         default:
+            basePrompt = POLITICAL_AI_PROMPT;
+            break;
+      }
+   }
 
-  // Inject data summary at the end
-  return `${basePrompt}
+   // Inject data summary at the end
+   return `${basePrompt}
 
 ${dataSummary}`;
 }
@@ -614,45 +610,45 @@ ${dataSummary}`;
  * Fetches real precinct data from blob storage for accurate statistics
  */
 export async function getSystemPromptAsync(toolContext?: ToolContext): Promise<string> {
-  // Get data summary to inject (uses blob storage)
-  const dataSummary = await getDataSummaryTextAsync();
+   // Get data summary to inject (uses blob storage)
+   const dataSummary = await getDataSummaryTextAsync();
 
-  let basePrompt: string;
+   let basePrompt: string;
 
-  if (!toolContext) {
-    basePrompt = POLITICAL_AI_PROMPT;
-  } else {
-    switch (toolContext.toolName.toLowerCase()) {
-      case 'segmentation':
-      case 'segment':
-      case 'voter segmentation':
-        basePrompt = SEGMENTATION_TOOL_PROMPT;
-        break;
+   if (!toolContext) {
+      basePrompt = POLITICAL_AI_PROMPT;
+   } else {
+      switch (toolContext.toolName.toLowerCase()) {
+         case 'segmentation':
+         case 'segment':
+         case 'voter segmentation':
+            basePrompt = SEGMENTATION_TOOL_PROMPT;
+            break;
 
-      case 'canvassing':
-      case 'canvass':
-      case 'door-knocking':
-      case 'turf':
-        basePrompt = CANVASSING_TOOL_PROMPT;
-        break;
+         case 'canvassing':
+         case 'canvass':
+         case 'door-knocking':
+         case 'turf':
+            basePrompt = CANVASSING_TOOL_PROMPT;
+            break;
 
-      case 'donors':
-      case 'fundraising':
-      case 'contributions':
-      case 'fec':
-        basePrompt = DONORS_TOOL_PROMPT;
-        break;
+         case 'donors':
+         case 'fundraising':
+         case 'contributions':
+         case 'fec':
+            basePrompt = DONORS_TOOL_PROMPT;
+            break;
 
-      case 'political ai':
-      case 'political-ai':
-      case 'main':
-      default:
-        basePrompt = POLITICAL_AI_PROMPT;
-        break;
-    }
-  }
+         case 'political ai':
+         case 'political-ai':
+         case 'main':
+         default:
+            basePrompt = POLITICAL_AI_PROMPT;
+            break;
+      }
+   }
 
-  return `${basePrompt}
+   return `${basePrompt}
 
 ${dataSummary}`;
 }
@@ -661,9 +657,9 @@ ${dataSummary}`;
  * Export individual prompts for testing or custom usage
  */
 export const prompts = {
-  base: BASE_SYSTEM_PROMPT,
-  segmentation: SEGMENTATION_TOOL_PROMPT,
-  canvassing: CANVASSING_TOOL_PROMPT,
-  donors: DONORS_TOOL_PROMPT,
-  politicalAI: POLITICAL_AI_PROMPT,
+   base: BASE_SYSTEM_PROMPT,
+   segmentation: SEGMENTATION_TOOL_PROMPT,
+   canvassing: CANVASSING_TOOL_PROMPT,
+   donors: DONORS_TOOL_PROMPT,
+   politicalAI: POLITICAL_AI_PROMPT,
 };

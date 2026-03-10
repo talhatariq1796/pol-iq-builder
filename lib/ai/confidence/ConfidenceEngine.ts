@@ -17,7 +17,6 @@ import type {
   ConfidenceEngineConfig,
   PrecinctConfidence,
   RedistrictingImpact,
-  CitationKey,
 } from './types';
 
 import {

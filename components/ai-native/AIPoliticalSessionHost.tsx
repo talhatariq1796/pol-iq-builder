@@ -11,14 +11,11 @@ import {
   handleReportIntent,
   handleReportHistoryRequest,
   handleReportCustomization,
-  type OutputContext,
-  type ReportContext,
   type HandlerResult
 } from '@/lib/ai/workflowHandlers';
 import { processQuery } from '@/lib/ai-native/handlers';
 import type { HandlerContext } from '@/lib/ai-native/handlers/types';
 import { isSlashCommand, executeSlashCommand } from '@/lib/ai/SlashCommandParser';
-import { colors } from '@/lib/ui/colors';
 import {
   getDistrictAnalysisInit,
   getSwingDetectionInit,
@@ -27,7 +24,7 @@ import {
 } from './WorkflowInitializers';
 import { getStateManager, type StateEvent } from '@/lib/ai-native/ApplicationStateManager';
 import { notifyTourAIResponseComplete } from '@/lib/tour/tourActions';
-import { getSuggestionEngine, type SuggestedAction as EngineSuggestedAction } from '@/lib/ai-native/SuggestionEngine';
+import { getSuggestionEngine } from '@/lib/ai-native/SuggestionEngine';
 import { FeatureSelectionCard } from './FeatureSelectionCard';
 import {
   extractFeatureData,
@@ -1382,7 +1379,7 @@ Available actions:
       const outputAppState = outputStateManager.getState();
       const outputMetrics = outputStateManager.getExplorationMetrics();
 
-      const outputContext: OutputContext = {
+      const outputContext: any = {
         precinctsExplored: outputMetrics.precinctsViewed,
         hasActiveSegment: outputAppState.segmentation.matchingPrecincts.length > 0,
         segmentPrecinctCount: outputAppState.segmentation.matchingPrecincts.length,
@@ -1421,7 +1418,7 @@ Available actions:
         const hasDonorData = donorContext.selectedZips.length > 0 || donorContext.activeView !== 'zip';
         const hasCanvassingData = canvassContext.turfs.length > 0 || canvassContext.targetPrecincts.length > 0;
 
-        const reportContext: ReportContext = {
+        const reportContext: any = {
           precinctsExplored: reportMetrics.precinctsViewed,
           hasActiveSegment: reportAppState.segmentation.matchingPrecincts.length > 0,
           segmentPrecinctCount: reportAppState.segmentation.matchingPrecincts.length,
@@ -1837,7 +1834,7 @@ Available actions:
         case 'explain': {
           // Explain the scoring methodology for current selection
           const precinctName = (metadata?.precinctName as string) ||
-                               state.featureSelection.currentFeature?.name;
+            state.featureSelection.currentFeature?.name;
           if (precinctName) {
             await handleUserInput(`Explain the targeting scores for ${precinctName}`);
           } else {
@@ -1851,7 +1848,7 @@ Available actions:
 
         case 'find-similar': {
           const precinctName = (metadata?.precinctName as string) ||
-                               state.featureSelection.currentFeature?.name;
+            state.featureSelection.currentFeature?.name;
           if (precinctName) {
             await handleUserInput(`Find precincts similar to ${precinctName}`);
           } else {
@@ -1865,15 +1862,15 @@ Available actions:
 
         case 'whatif-turnout': {
           const targetArea = (metadata?.areaName as string) ||
-                            state.featureSelection.currentFeature?.name ||
-                            'Ingham County';
+            state.featureSelection.currentFeature?.name ||
+            'Ingham County';
           await handleUserInput(`What if turnout increases by 5% in ${targetArea}?`);
           break;
         }
 
         case 'election-history': {
           const precinctName = (metadata?.precinctName as string) ||
-                               state.featureSelection.currentFeature?.name;
+            state.featureSelection.currentFeature?.name;
           if (precinctName) {
             await handleUserInput(`Show election history for ${precinctName}`);
           } else {
@@ -1891,7 +1888,7 @@ Available actions:
 
         case 'demographics': {
           const areaName = (metadata?.areaName as string) ||
-                           state.featureSelection.currentFeature?.name;
+            state.featureSelection.currentFeature?.name;
           if (areaName) {
             await handleUserInput(`Show demographics for ${areaName}`);
           } else {
@@ -1910,7 +1907,7 @@ Available actions:
         case 'precinct':
         case 'deep-dive': {
           const precinctName = (metadata?.precinctName as string) ||
-                               state.featureSelection.currentFeature?.name;
+            state.featureSelection.currentFeature?.name;
           if (precinctName) {
             await handleUserInput(`Give me a detailed analysis of ${precinctName}`);
           } else {
@@ -1973,7 +1970,7 @@ Available actions:
           const stateManager = getStateManager();
           const state = stateManager.getState();
           const precinctIds = (metadata?.precinctIds as string[]) ||
-                              state.segmentation.matchingPrecincts || [];
+            state.segmentation.matchingPrecincts || [];
 
           if (precinctIds.length === 0) {
             addAssistantMessage(
@@ -2015,7 +2012,7 @@ Available actions:
           const stateManager = getStateManager();
           const state = stateManager.getState();
           const precinctIds = (metadata?.precinctIds as string[]) ||
-                              state.segmentation.matchingPrecincts || [];
+            state.segmentation.matchingPrecincts || [];
 
           const turfCount = Math.ceil((precinctIds.length * 250) / 200);
 
@@ -2024,8 +2021,8 @@ Available actions:
             `Each turf contains approximately 200 doors for efficient canvassing.\n\n` +
             `| Turf | Precincts | Est. Doors |\n` +
             `|------|-----------|------------|\n` +
-            `${Array.from({length: Math.min(turfCount, 5)}, (_, i) =>
-              `| Turf ${i+1} | ${Math.ceil(precinctIds.length/turfCount)} | ~200 |`
+            `${Array.from({ length: Math.min(turfCount, 5) }, (_, i) =>
+              `| Turf ${i + 1} | ${Math.ceil(precinctIds.length / turfCount)} | ~200 |`
             ).join('\n')}\n` +
             (turfCount > 5 ? `\n*...and ${turfCount - 5} more turfs*` : ''),
             [
@@ -2097,7 +2094,7 @@ Available actions:
           }
 
           const targetIds = (metadata?.precinctIds as string[]) ||
-                            state.segmentation.matchingPrecincts || [];
+            state.segmentation.matchingPrecincts || [];
           const allPrecincts = data.precincts;
 
           // Filter to matching precincts, or use all if none specified
@@ -2221,7 +2218,7 @@ Available actions:
           }
 
           const targetIds = (metadata?.precinctIds as string[]) ||
-                            state.segmentation.matchingPrecincts || [];
+            state.segmentation.matchingPrecincts || [];
           const allPrecincts = data.precincts;
 
           const precinctsToExport = targetIds.length > 0
@@ -2331,7 +2328,7 @@ Available actions:
 
         case 'saveSegment': {
           const precinctIds = (metadata?.precinctIds as string[]) ||
-                              state.segmentation.matchingPrecincts || [];
+            state.segmentation.matchingPrecincts || [];
 
           if (precinctIds.length === 0) {
             addAssistantMessage(
@@ -2780,100 +2777,100 @@ Available actions:
               </p>
             </div>
           ) : (
-          <div className="text-center max-w-2xl">
-            <p className="text-xs text-gray-600 mb-6">Select a workflow to get started:</p>
+            <div className="text-center max-w-2xl">
+              <p className="text-xs text-gray-600 mb-6">Select a workflow to get started:</p>
 
-            <div className="grid grid-cols-1 gap-3 mt-8 max-w-md mx-auto">
-              {/* District Analysis */}
-              <button
-                onClick={() => handleWorkflowSelect({
-                  id: 'district-analysis',
-                  name: 'Area Analysis',
-                  description: 'Analyze areas and demographics'
-                })}
-                className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+              <div className="grid grid-cols-1 gap-3 mt-8 max-w-md mx-auto">
+                {/* District Analysis */}
+                <button
+                  onClick={() => handleWorkflowSelect({
+                    id: 'district-analysis',
+                    name: 'Area Analysis',
+                    description: 'Analyze areas and demographics'
+                  })}
+                  className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-xs text-gray-900">Area Analysis</h3>
+                      <p className="text-xs text-gray-600 mt-0.5">Analyze areas and demographics</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-xs text-gray-900">Area Analysis</h3>
-                    <p className="text-xs text-gray-600 mt-0.5">Analyze areas and demographics</p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              {/* Swing Areas */}
-              <button
-                onClick={() => handleWorkflowSelect({
-                  id: 'swing-detection',
-                  name: 'Swing Area Detection',
-                  description: 'Identify competitive swing areas'
-                })}
-                className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
+                {/* Swing Areas */}
+                <button
+                  onClick={() => handleWorkflowSelect({
+                    id: 'swing-detection',
+                    name: 'Swing Area Detection',
+                    description: 'Identify competitive swing areas'
+                  })}
+                  className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-xs text-gray-900">Swing Areas</h3>
+                      <p className="text-xs text-gray-600 mt-0.5">Identify competitive swing areas</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-xs text-gray-900">Swing Areas</h3>
-                    <p className="text-xs text-gray-600 mt-0.5">Identify competitive swing areas</p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              {/* Canvassing */}
-              <button
-                onClick={() => handleWorkflowSelect({
-                  id: 'canvassing',
-                  name: 'Canvassing Planning',
-                  description: 'Plan and optimize canvassing routes'
-                })}
-                className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                {/* Canvassing */}
+                <button
+                  onClick={() => handleWorkflowSelect({
+                    id: 'canvassing',
+                    name: 'Canvassing Planning',
+                    description: 'Plan and optimize canvassing routes'
+                  })}
+                  className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-xs text-gray-900">Canvassing</h3>
+                      <p className="text-xs text-gray-600 mt-0.5">Plan and optimize canvassing routes</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-xs text-gray-900">Canvassing</h3>
-                    <p className="text-xs text-gray-600 mt-0.5">Plan and optimize canvassing routes</p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              {/* Voter Targeting */}
-              <button
-                onClick={() => handleWorkflowSelect({
-                  id: 'voter-targeting',
-                  name: 'Voter Targeting',
-                  description: 'Identify high-priority voter segments'
-                })}
-                className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                {/* Voter Targeting */}
+                <button
+                  onClick={() => handleWorkflowSelect({
+                    id: 'voter-targeting',
+                    name: 'Voter Targeting',
+                    description: 'Identify high-priority voter segments'
+                  })}
+                  className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-xs text-gray-900">Voter Targeting</h3>
+                      <p className="text-xs text-gray-600 mt-0.5">Identify high-priority voter segments</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-xs text-gray-900">Voter Targeting</h3>
-                    <p className="text-xs text-gray-600 mt-0.5">Identify high-priority voter segments</p>
-                  </div>
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -2957,11 +2954,10 @@ Available actions:
                   </div>
                 ) : (
                   <div
-                    className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${
-                      message.role === 'user'
+                    className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${message.role === 'user'
                         ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
                         : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
-                    }`}
+                      }`}
                   >
                     {/* Wave 7: Improved prose styling for better readability */}
                     <div className="text-sm leading-relaxed prose prose-sm max-w-none

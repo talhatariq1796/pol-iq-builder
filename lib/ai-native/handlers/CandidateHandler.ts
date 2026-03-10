@@ -1,14 +1,3 @@
-/**
- * Candidate NLP Handler
- *
- * Translates natural language candidate/race queries into Knowledge Graph operations.
- * Supports queries like:
- * - "Who's running in State House 73?"
- * - "Tell me about Slotkin"
- * - "What are the competitive races?"
- * - "Show candidate fundraising"
- */
-
 import type {
   NLPHandler,
   ParsedQuery,
@@ -17,10 +6,6 @@ import type {
   ExtractedEntities,
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
-
-// ============================================================================
-// Query Patterns
-// ============================================================================
 
 const CANDIDATE_PATTERNS: QueryPattern[] = [
   {
@@ -85,10 +70,6 @@ const CANDIDATE_PATTERNS: QueryPattern[] = [
   },
 ];
 
-// ============================================================================
-// Candidate Data Types and Configuration
-// ============================================================================
-
 interface CandidateInfo {
   name: string;
   party: 'D' | 'R';
@@ -104,21 +85,6 @@ interface CandidateInfo {
   lastUpdated?: string; // ISO date when data was last verified
 }
 
-/**
- * Candidate data configuration
- *
- * In production, this should be loaded from:
- * - FEC API for fundraising data
- * - Knowledge Graph for endorsements and positions
- * - Campaign websites for key issues
- *
- * Data is validated against:
- * - FEC.gov filing records
- * - Official campaign press releases
- * - News coverage of endorsements
- *
- * Last reviewed: 2024-11-01 (post-election update needed)
- */
 const CANDIDATES: Record<string, CandidateInfo> = {
   slotkin: {
     name: 'Elissa Slotkin',
@@ -164,29 +130,12 @@ const CANDIDATES: Record<string, CandidateInfo> = {
   },
 };
 
-/**
- * Get candidate data - attempts to load from external sources first
- * Currently returns local data, but structured for future API integration
- */
 async function getCandidateData(candidateKey: string): Promise<CandidateInfo | null> {
   // TODO: Integrate with FEC API for live fundraising data
   // TODO: Integrate with Knowledge Graph for endorsements
   // For now, return local data
   return CANDIDATES[candidateKey] || null;
 }
-
-/**
- * Get all candidates for a race
- */
-async function getCandidatesForRace(office: string): Promise<CandidateInfo[]> {
-  return Object.values(CANDIDATES).filter(c =>
-    c.office.toLowerCase().includes(office.toLowerCase())
-  );
-}
-
-// ============================================================================
-// Candidate Handler Class
-// ============================================================================
 
 export class CandidateHandler implements NLPHandler {
   name = 'CandidateHandler';
@@ -575,10 +524,6 @@ export class CandidateHandler implements NLPHandler {
     };
   }
 }
-
-// ============================================================================
-// Singleton Export
-// ============================================================================
 
 export const candidateHandler = new CandidateHandler();
 

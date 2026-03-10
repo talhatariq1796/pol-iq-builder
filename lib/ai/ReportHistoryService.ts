@@ -1,12 +1,3 @@
-/**
- * ReportHistoryService - Manages report generation history
- *
- * Phase E: Polish & Integration
- * - Tracks recently generated reports
- * - Provides quick access to regenerate
- * - Stores in localStorage
- */
-
 export interface ReportHistoryEntry {
   id: string;
   reportType: 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment' | 'canvassing' | 'donor';
@@ -27,9 +18,6 @@ export interface ReportCustomization {
 const STORAGE_KEY = 'pol_report_history';
 const MAX_HISTORY = 20;
 
-/**
- * Report type configuration with icons and sections
- */
 export const REPORT_TYPE_CONFIG: Record<string, {
   icon: string;
   label: string;
@@ -127,10 +115,7 @@ export const REPORT_TYPE_CONFIG: Record<string, {
   },
 };
 
-/**
- * Get report history from localStorage
- */
-export function getReportHistory(): ReportHistoryEntry[] {
+function getReportHistory(): ReportHistoryEntry[] {
   if (typeof window === 'undefined') return [];
 
   try {
@@ -143,9 +128,6 @@ export function getReportHistory(): ReportHistoryEntry[] {
   }
 }
 
-/**
- * Add a report to history
- */
 export function addReportToHistory(entry: Omit<ReportHistoryEntry, 'id' | 'generatedAt'>): void {
   if (typeof window === 'undefined') return;
 
@@ -170,64 +152,6 @@ export function addReportToHistory(entry: Omit<ReportHistoryEntry, 'id' | 'gener
   }
 }
 
-/**
- * Get recent reports (last 5)
- */
 export function getRecentReports(limit = 5): ReportHistoryEntry[] {
   return getReportHistory().slice(0, limit);
-}
-
-/**
- * Clear report history
- */
-export function clearReportHistory(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-/**
- * Format a history entry for display
- */
-export function formatHistoryEntry(entry: ReportHistoryEntry): string {
-  const config = REPORT_TYPE_CONFIG[entry.reportType];
-  const date = new Date(entry.generatedAt);
-  const timeAgo = getTimeAgo(date);
-
-  return `${config?.emoji || '📄'} ${entry.title} (${timeAgo})`;
-}
-
-/**
- * Get human-readable time ago string
- */
-function getTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-/**
- * Get default sections for a report type
- */
-export function getDefaultSections(reportType: string): string[] {
-  const config = REPORT_TYPE_CONFIG[reportType];
-  if (!config) return [];
-  return config.sections.map(s => s.id);
-}
-
-/**
- * Get required sections for a report type
- */
-export function getRequiredSections(reportType: string): string[] {
-  const config = REPORT_TYPE_CONFIG[reportType];
-  if (!config) return [];
-  return config.sections.filter(s => s.required).map(s => s.id);
 }

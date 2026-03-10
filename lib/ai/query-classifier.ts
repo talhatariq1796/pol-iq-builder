@@ -1,12 +1,5 @@
 export type QueryClassification = 'follow-up' | 'new-analysis';
 
-/**
- * Classifies a user query by calling the server-side API endpoint.
- *
- * @param query The user's current query.
- * @param conversationHistory A summary of the recent conversation.
- * @returns The classification of the query.
- */
 export async function classifyQuery(
   query: string,
   conversationHistory: string

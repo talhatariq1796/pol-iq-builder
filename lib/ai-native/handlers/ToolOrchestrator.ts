@@ -23,24 +23,22 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES } from './types';
 
-import { SegmentationHandler, segmentationHandler } from './SegmentationHandler';
-import { CanvassingHandler, canvassingHandler } from './CanvassingHandler';
-import { DonorHandler, donorHandler } from './DonorHandler';
-import { ReportHandler, reportHandler } from './ReportHandler';
-import { ComparisonHandler, comparisonHandler } from './ComparisonHandler';
-import { DistrictHandler, districtHandler } from './DistrictHandler';
-import { GraphHandler, graphHandler } from './GraphHandler';
-import { SpatialHandler, spatialHandler } from './SpatialHandler';
-import { FilterHandler, filterHandler } from './FilterHandler';
-import { NavigationHandler, navigationHandler } from './NavigationHandler';
-import { TrendHandler, trendHandler } from './TrendHandler';
-import { GeneralHandler, generalHandler } from './GeneralHandler';
-import { CandidateHandler, candidateHandler } from './CandidateHandler';
-import { IssueHandler, issueHandler } from './IssueHandler';
-import { ElectionResultsHandler, electionResultsHandler } from './ElectionResultsHandler';
-import { DataExportHandler, dataExportHandler } from './DataExportHandler';
-import { PollHandler, getPollHandler } from './PollHandler';
-import { ScenarioHandler, scenarioHandler } from './ScenarioHandler';
+import { segmentationHandler } from './SegmentationHandler';
+import { reportHandler } from './ReportHandler';
+import { comparisonHandler } from './ComparisonHandler';
+import { districtHandler } from './DistrictHandler';
+import { graphHandler } from './GraphHandler';
+import { spatialHandler } from './SpatialHandler';
+import { filterHandler } from './FilterHandler';
+import { navigationHandler } from './NavigationHandler';
+import { trendHandler } from './TrendHandler';
+import { generalHandler } from './GeneralHandler';
+import { candidateHandler } from './CandidateHandler';
+import { issueHandler } from './IssueHandler';
+import { electionResultsHandler } from './ElectionResultsHandler';
+import { dataExportHandler } from './DataExportHandler';
+import { getPollHandler } from './PollHandler';
+import { scenarioHandler } from './ScenarioHandler';
 import { enhanceResponse, shouldEnhance } from '../ResponseEnhancer';
 
 // Initialize poll handler
@@ -178,8 +176,6 @@ export class ToolOrchestrator {
     this.handlers = [
       // Domain-specific handlers (high priority)
       segmentationHandler,
-      canvassingHandler,
-      donorHandler,
       reportHandler,
       comparisonHandler,
       districtHandler,

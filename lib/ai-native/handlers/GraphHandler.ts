@@ -18,7 +18,6 @@ import type {
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import {
   handleGraphQuery,
-  handleGraphOverview,
   handleGraphExploration,
   handleFindPath,
 } from '@/lib/ai/workflowHandlers';

@@ -1,14 +1,3 @@
-/**
- * Feature Selection Handler
- *
- * Formats map feature data for display in AI chat as selection cards.
- * Generates contextual suggestions based on feature type and user history.
- *
- * Part of Phase G: AI-Integrated Feature Selection
- * See docs/AI-CONTEXT-AWARENESS-PLAN.md for architecture details.
- */
-
-import type { PrecinctData } from '@/lib/segmentation/types';
 import type { SuggestedAction } from '@/components/ai-native/AIPoliticalSessionHost';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
 
@@ -57,14 +46,7 @@ export interface ScoreBar {
   color: string;
 }
 
-// ============================================================================
-// Feature Type Detection
-// ============================================================================
-
-/**
- * Detect feature type from raw feature properties
- */
-export function detectFeatureType(properties: Record<string, unknown>): FeatureType {
+function detectFeatureType(properties: Record<string, unknown>): FeatureType {
   // Check for H3 hexagon (h3Index field)
   if (properties.h3Index || properties.h3_index) {
     return 'hexagon';
@@ -77,19 +59,19 @@ export function detectFeatureType(properties: Record<string, unknown>): FeatureT
 
   // Check for State House district
   if (properties.SLDUST || properties.district_type === 'state_house' ||
-      (typeof properties.name === 'string' && properties.name.includes('House'))) {
+    (typeof properties.name === 'string' && properties.name.includes('House'))) {
     return 'state_house';
   }
 
   // Check for State Senate district
   if (properties.SLDLST || properties.district_type === 'state_senate' ||
-      (typeof properties.name === 'string' && properties.name.includes('Senate'))) {
+    (typeof properties.name === 'string' && properties.name.includes('Senate'))) {
     return 'state_senate';
   }
 
   // Check for municipality
   if (properties.municipality || properties.muni_type ||
-      properties.type === 'city' || properties.type === 'township') {
+    properties.type === 'city' || properties.type === 'township') {
     return 'municipality';
   }
 
@@ -97,13 +79,6 @@ export function detectFeatureType(properties: Record<string, unknown>): FeatureT
   return 'precinct';
 }
 
-// ============================================================================
-// Feature Data Extraction
-// ============================================================================
-
-/**
- * Extract standardized FeatureData from raw feature properties
- */
 export function extractFeatureData(
   properties: Record<string, unknown>,
   featureType?: FeatureType
@@ -569,7 +544,7 @@ function generateDistrictActions(feature: FeatureData): SuggestedAction[] {
   const m = feature.metrics;
   const competitiveness = m.competitiveness as string || '';
   const isCompetitive = competitiveness.toLowerCase().includes('toss') ||
-                        competitiveness.toLowerCase().includes('lean');
+    competitiveness.toLowerCase().includes('lean');
 
   const actions: SuggestedAction[] = [
     {
@@ -670,9 +645,6 @@ function formatMargin(margin: number): string {
   return margin > 0 ? `D+${Math.abs(margin)}` : `R+${Math.abs(margin)}`;
 }
 
-// ============================================================================
-// Exports
-// ============================================================================
 
 export {
   formatLean,

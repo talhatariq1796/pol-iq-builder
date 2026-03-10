@@ -31,7 +31,7 @@ export function getCitationService(): CitationService {
 /**
  * CitationService class
  */
-export class CitationService {
+class CitationService {
   // Pattern to match citation markers like [ELECTIONS], [SCORES], etc.
   private citationPattern = /\[([A-Z_]+)\]/g;
 

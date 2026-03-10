@@ -18,7 +18,6 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import {
-  handleDistrictQuery,
   handleDistrictAnalysis,
 } from '@/lib/ai/workflowHandlers';
 
@@ -441,8 +440,8 @@ export class DistrictHandler implements NLPHandler {
     const result = await handleDistrictAnalysis({
       [districtType === 'state_house' ? 'stateHouse' :
         districtType === 'state_senate' ? 'stateSenate' :
-        districtType === 'congressional' ? 'congressional' :
-        'schoolDistrict']: districtId,
+          districtType === 'congressional' ? 'congressional' :
+            'schoolDistrict']: districtId,
       districtLevel: districtType,
     });
 
