@@ -5,7 +5,6 @@ import React, { useEffect, useRef, memo, useCallback, useState } from 'react';
 import { loadArcGISModules } from '@/lib/arcgis-imports';
 import { LegendType } from '@/types/legend';
 import { LegendItem } from '@/components/MapLegend';
-import { MAP_CONSTRAINTS, DATA_EXTENT } from '@/config/mapConstraints';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import SampleHotspots, { SampleHotspot } from './SampleHotspots';
 
@@ -396,17 +395,12 @@ const MapClient = memo(({
         // Apply dynamic map constraints after view is ready
         // This prevents panning outside the project area while preserving zoom functionality
         view.when(() => {
-          console.log('[MapClient] View is ready, applying dynamic map constraints...', {
-            constraintsExtent: MAP_CONSTRAINTS.geometry,
-            dataExtent: DATA_EXTENT,
-            rotationEnabled: MAP_CONSTRAINTS.rotationEnabled
-          });
+
 
           // Add a small delay to ensure basemap is loaded  
           setTimeout(() => {
             try {
               console.log('[MapClient] Skipping map constraints - unlimited panning and zoom enabled');
-              // applyMapConstraints(view); // DISABLED - allows unlimited panning and zoom
               console.log('[MapClient] Map ready with no restrictions');
             } catch (error) {
               console.error('[MapClient] Error:', error);

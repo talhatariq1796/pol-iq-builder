@@ -79,9 +79,7 @@ import {
 // Import chat interface for contextual analysis
 import { useChatContext } from '@/components/chat-context-provider';
 
-// Import Phase 4 Integration - COMMENTED OUT FOR DEVELOPMENT PAUSE
-// import Phase4IntegrationWrapper from '@/components/phase4/Phase4IntegrationWrapper';
-// import { isPhase4FeatureEnabled } from '@/config/phase4-features';
+
 
 // Import ArcGIS geometry engine for buffering
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
