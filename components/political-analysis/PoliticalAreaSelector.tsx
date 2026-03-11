@@ -947,7 +947,7 @@ export function PoliticalAreaSelector({
           handleCancel();
         }}
       >
-        <TabsList className="grid grid-cols-5 w-full h-9">
+        <TabsList className="grid grid-cols-4 w-full h-9">
           {SELECTION_METHODS.map((method) => (
             <TabsTrigger
               key={method.id}

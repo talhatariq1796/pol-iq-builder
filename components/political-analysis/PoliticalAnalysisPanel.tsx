@@ -1102,966 +1102,964 @@ export function PoliticalAnalysisPanel({
 
   return (
     <TooltipProvider delayDuration={300}>
-    <div className={`w-full h-full flex flex-col ${className}`}>
-      {/* IQBuilder Header - pr-10 to avoid overlap with collapse button */}
-      <div className="flex items-center gap-2 px-4 pr-10 py-3 border-b border-gray-100">
-        <Image src="/mpiq_pin2.png" alt="IQ" width={20} height={20} />
-        <div className="flex text-sm font-bold">
-          <span className="text-[#33a852]">IQ</span>
-          <span className="text-gray-900 -ml-px">builder</span>
+      <div className={`w-full h-full flex flex-col ${className}`}>
+        {/* IQBuilder Header - pr-10 to avoid overlap with collapse button */}
+        <div className="flex items-center gap-2 px-4 pr-10 py-3 border-b border-gray-100">
+          <Image src="/mpiq_pin2.png" alt="IQ" width={20} height={20} />
+          <div className="flex text-sm font-bold">
+            <span className="text-[#33a852]">IQ</span>
+            <span className="text-gray-900 -ml-px">builder</span>
+          </div>
         </div>
-      </div>
 
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => {
-            const newTab = v as typeof activeTab;
-            setActiveTab(newTab);
-            // Dispatch to state manager for AI context awareness
-            getStateManager().dispatch({
-              type: 'IQBUILDER_TAB_CHANGED',
-              payload: { tab: newTab },
-              timestamp: new Date(),
-            });
-          }}
-          className="flex-1 flex flex-col min-h-0"
-        >
-          <TabsList className="mx-4 mt-4 grid grid-cols-4 shrink-0">
-            <TabsTrigger value="select" className="text-xs px-2">
-              <MapPin className="h-3 w-3 mr-1" />
-              Select
-            </TabsTrigger>
-            <TabsTrigger
-              value="results"
-              disabled={!analysisResult}
-              className="text-xs px-2"
-            >
-              <BarChart3 className="h-3 w-3 mr-1" />
-              Results
-            </TabsTrigger>
-            <TabsTrigger
-              value="report"
-              disabled={!analysisResult}
-              className="text-xs px-2"
-            >
-              <FileText className="h-3 w-3 mr-1" />
-              Report
-            </TabsTrigger>
-            <TabsTrigger
-              value="infographics"
-              className="text-xs px-2"
-            >
-              <PieChart className="h-3 w-3 mr-1" />
-              Census
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => {
+              const newTab = v as typeof activeTab;
+              setActiveTab(newTab);
+              // Dispatch to state manager for AI context awareness
+              getStateManager().dispatch({
+                type: 'IQBUILDER_TAB_CHANGED',
+                payload: { tab: newTab },
+                timestamp: new Date(),
+              });
+            }}
+            className="flex-1 flex flex-col min-h-0"
+          >
+            <TabsList className="mx-4 mt-4 grid grid-cols-4 shrink-0">
+              <TabsTrigger value="select" className="text-xs px-2 flex items-center gap-1 ">
+                <MapPin className="size-4 mb-1" />
+                Select
+              </TabsTrigger>
+              <TabsTrigger
+                value="results"
+                disabled={!analysisResult}
+                className="text-xs px-2 flex items-center gap-1 "
+              >
+                <BarChart3 className="size-4 mb-1" />
+                Results
+              </TabsTrigger>
+              <TabsTrigger
+                value="report"
+                disabled={!analysisResult}
+                className="text-xs px-2 flex items-center gap-1 "
+              >
+                <FileText className="size-4 mb-1" />
+                Report
+              </TabsTrigger>
+              <TabsTrigger
+                value="infographics"
+                className="text-xs px-2 flex items-center gap-1 "
+              >
+                <PieChart className="size-4 mb-1" />
+                Census
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Selection Tab */}
-          <TabsContent value="select" className="flex-1 overflow-auto p-4 m-0">
+            {/* Selection Tab */}
+            <TabsContent value="select" className="flex-1 overflow-auto p-4 m-0">
 
-            {/* QuickStartIQ Button - Opens dialog with predefined queries */}
-            <div className="mb-4">
-              <QuickStartIQDialog
-                hasSelection={!!(selectedArea || selectedPrecinct || selectedH3Cell)}
-                onQuerySelect={(query, metadata) => {
-                  console.log('[QuickStartIQ] Query selected:', query, metadata);
-                  onIQAction?.({
-                    type: 'quickstart',
-                    action: 'predefined-query',
-                    data: {
-                      query,
-                      category: metadata?.category,
-                      visualType: metadata?.visualType,
-                    }
-                  });
-                }}
-              />
-              {!(selectedArea || selectedPrecinct || selectedH3Cell) && (
-                <p className="text-xs text-gray-400 text-center mt-2">
-                  Select an area below to enable QuickStartIQ
-                </p>
-              )}
-            </div>
-
-            {/* Selected Precinct Card */}
-            {selectedPrecinct && precinctDetails && (
-              <div className="mb-4 bg-gradient-to-br from-emerald-50 to-white border-2 border-[#33a852] rounded-xl p-4 space-y-3 shadow-md">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MapPin className="h-3 w-3 text-[#33a852]" />
-                      <h3 className="font-semibold text-xs text-gray-900">Selected Precinct</h3>
-                    </div>
-                    <p className="text-xs font-medium text-gray-900">{precinctDetails.name}</p>
-                    <p className="text-xs text-gray-700">{precinctDetails.county} County</p>
-                  </div>
-                  {onClearSelection && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onClearSelection}
-                      className="h-7 px-2 text-xs text-gray-700 hover:text-gray-900 hover:bg-emerald-100"
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
-                    <span className="text-[#33a852] font-medium block mb-1">
-                      <MetricLabel metric="partisan_lean">Partisan Lean</MetricLabel>
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className={getLeanColor(precinctDetails.partisanLean)}
-                    >
-                      {formatLean(precinctDetails.partisanLean)}
-                    </Badge>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
-                    <span className="text-[#33a852] font-medium block mb-1">
-                      <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
-                    </span>
-                    <span className="font-bold text-gray-900">{precinctDetails.swingPotential.toFixed(0)}/100</span>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
-                    <span className="text-[#33a852] font-medium block mb-1">Voters</span>
-                    <span className="font-bold text-gray-900">{precinctDetails.registeredVoters.toLocaleString()}</span>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
-                    <span className="text-[#33a852] font-medium block mb-1">Population</span>
-                    <span className="font-bold text-gray-900">{precinctDetails.population.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-emerald-200">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-700 font-medium">
-                        <MetricLabel metric="gotv_priority">GOTV Priority</MetricLabel>
-                      </span>
-                      <span className="font-bold text-[#33a852]">{precinctDetails.gotvPriority.toFixed(0)}</span>
-                    </div>
-                    <Progress value={precinctDetails.gotvPriority} className="h-1.5 [&>div]:bg-[#33a852]" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-700 font-medium">
-                        <MetricLabel metric="persuasion_opportunity">Persuasion</MetricLabel>
-                      </span>
-                      <span className="font-bold text-[#33a852]">{precinctDetails.persuasionOpportunity.toFixed(0)}</span>
-                    </div>
-                    <Progress value={precinctDetails.persuasionOpportunity} className="h-1.5 [&>div]:bg-[#33a852]" />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200">
-                  <span className="text-xs text-gray-700 font-medium block mb-1">Strategy</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge
-                        className={`text-xs cursor-help ${getStrategyColor(precinctDetails.targetingStrategy)}`}
-                      >
-                        {precinctDetails.targetingStrategy}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <p>{getStrategyTooltip(precinctDetails.targetingStrategy)}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            )}
-
-            {/* Selected H3 Cell Card */}
-            {selectedH3Cell && (
-              <div className="mb-4 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-500 rounded-xl p-4 space-y-3 shadow-md">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="h-3 w-3 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.27 3.48v6.68L12 17.82l-6.27-3.48V7.66L12 4.18z"/>
-                      </svg>
-                      <h3 className="font-semibold text-xs text-gray-900">Selected H3 Cell</h3>
-                    </div>
-                    <p className="text-xs font-mono text-gray-700 truncate">{selectedH3Cell.h3Index}</p>
-                    <p className="text-xs text-gray-600">{selectedH3Cell.precinctCount} precinct{selectedH3Cell.precinctCount !== 1 ? 's' : ''}</p>
-                  </div>
-                  {onClearSelection && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onClearSelection}
-                      className="h-7 px-2 text-xs text-gray-700 hover:text-gray-900 hover:bg-blue-100"
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
-                    <span className="text-blue-600 font-medium block mb-1">
-                      <MetricLabel metric="partisan_lean">Partisan Lean</MetricLabel>
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className={getLeanColor(selectedH3Cell.attributes?.partisan_lean || 0)}
-                    >
-                      {formatLean(selectedH3Cell.attributes?.partisan_lean || 0)}
-                    </Badge>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
-                    <span className="text-blue-600 font-medium block mb-1">
-                      <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
-                    </span>
-                    <span className="font-bold text-gray-900">{(selectedH3Cell.attributes?.swing_potential || 0).toFixed(0)}/100</span>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
-                    <span className="text-blue-600 font-medium block mb-1">Population</span>
-                    <span className="font-bold text-gray-900">{Math.round(selectedH3Cell.attributes?.total_population || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
-                    <span className="text-blue-600 font-medium block mb-1">Combined Score</span>
-                    <span className="font-bold text-gray-900">{(selectedH3Cell.attributes?.combined_score || 0).toFixed(0)}/100</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-blue-200">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-700 font-medium">
-                        <MetricLabel metric="gotv_priority">GOTV Priority</MetricLabel>
-                      </span>
-                      <span className="font-bold text-blue-600">{(selectedH3Cell.attributes?.gotv_priority || 0).toFixed(0)}</span>
-                    </div>
-                    <Progress value={selectedH3Cell.attributes?.gotv_priority || 0} className="h-1.5 [&>div]:bg-blue-600" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-700 font-medium">
-                        <MetricLabel metric="persuasion_opportunity">Persuasion</MetricLabel>
-                      </span>
-                      <span className="font-bold text-blue-600">{(selectedH3Cell.attributes?.persuasion_opportunity || 0).toFixed(0)}</span>
-                    </div>
-                    <Progress value={selectedH3Cell.attributes?.persuasion_opportunity || 0} className="h-1.5 [&>div]:bg-blue-600" />
-                  </div>
-                </div>
-
-                {/* Precincts in cell */}
-                {selectedH3Cell.precincts && selectedH3Cell.precincts.length > 0 && (
-                  <div className="pt-2 border-t border-blue-200">
-                    <span className="text-xs text-gray-700 font-medium block mb-1">Precincts</span>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedH3Cell.precincts.slice(0, 3).map((precinct: string) => (
-                        <Badge key={precinct} variant="secondary" className="text-xs">
-                          {precinct.length > 25 ? precinct.slice(0, 25) + '...' : precinct}
-                        </Badge>
-                      ))}
-                      {selectedH3Cell.precincts.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{selectedH3Cell.precincts.length - 3} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+              {/* QuickStartIQ Button - Opens dialog with predefined queries */}
+              <div className="mb-4">
+                <QuickStartIQDialog
+                  hasSelection={!!(selectedArea || selectedPrecinct || selectedH3Cell)}
+                  onQuerySelect={(query, metadata) => {
+                    console.log('[QuickStartIQ] Query selected:', query, metadata);
+                    onIQAction?.({
+                      type: 'quickstart',
+                      action: 'predefined-query',
+                      data: {
+                        query,
+                        category: metadata?.category,
+                        visualType: metadata?.visualType,
+                      }
+                    });
+                  }}
+                />
+                {!(selectedArea || selectedPrecinct || selectedH3Cell) && (
+                  <p className="text-xs text-gray-400 text-center mt-2">
+                    Select an area below to enable QuickStartIQ
+                  </p>
                 )}
               </div>
-            )}
 
-            <PoliticalAreaSelector
-              view={view}
-              onAreaSelected={handleAreaSelected}
-              onSelectionCanceled={handleReset}
-              onBoundarySelectionChange={onBoundarySelectionChange}
-            />
-          </TabsContent>
-
-          {/* Results Tab */}
-          <TabsContent value="results" className="flex-1 overflow-hidden p-0 m-0">
-            <ScrollArea className="h-full">
-              <div className="p-4 space-y-4">
-                {isAnalyzing && (
-                  <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-                    <p className="text-xs text-muted-foreground">Analyzing area...</p>
-                  </div>
-                )}
-
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {analysisResult && !isAnalyzing && (
-                  <>
-                    {/* Area Summary */}
-                    <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-4 border-l-4 border-[#33a852] shadow-sm">
-                      <h3 className="font-semibold text-xs mb-2 flex items-center gap-2 text-gray-900">
+              {/* Selected Precinct Card */}
+              {selectedPrecinct && precinctDetails && (
+                <div className="mb-4 bg-gradient-to-br from-emerald-50 to-white border-2 border-[#33a852] rounded-xl p-4 space-y-3 shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
                         <MapPin className="h-3 w-3 text-[#33a852]" />
-                        {analysisResult.areaName}
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-gray-600">Precincts:</span>
-                          <span className="ml-1 font-medium text-gray-900">{analysisResult.totalPrecincts}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Voters:</span>
-                          <span className="ml-1 font-medium text-gray-900">
-                            {analysisResult.totalRegisteredVoters.toLocaleString()}
-                          </span>
-                        </div>
+                        <h3 className="font-semibold text-xs text-gray-900">Selected Precinct</h3>
                       </div>
+                      <p className="text-xs font-medium text-gray-900">{precinctDetails.name}</p>
+                      <p className="text-xs text-gray-700">{precinctDetails.county} County</p>
                     </div>
-
-                    {/* AI Strategic Insights */}
-                    {aiInsights && aiInsights.length > 0 && (
-                      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200 shadow-sm">
-                        <h4 className="text-xs font-semibold flex items-center gap-2 text-purple-900 mb-3">
-                          <Zap className="h-3.5 w-3.5 text-purple-600" />
-                          Strategic Insights
-                        </h4>
-                        <div className="space-y-2">
-                          {aiInsights.map((insight, idx) => (
-                            <div key={idx} className="flex gap-2 text-xs text-gray-700">
-                              <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
-                              <p className="leading-relaxed">{insight}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                    {onClearSelection && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClearSelection}
+                        className="h-7 px-2 text-xs text-gray-700 hover:text-gray-900 hover:bg-emerald-100"
+                      >
+                        Clear
+                      </Button>
                     )}
+                  </div>
 
-                    {/* Political Lean */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-medium flex items-center gap-2">
-                        <BarChart3 className="h-3 w-3 text-[#33a852]" />
-                        Political Profile
-                      </h4>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={getLeanColor(analysisResult.weightedPartisanLean)}
-                        >
-                          {formatLean(analysisResult.weightedPartisanLean)}
-                        </Badge>
-                        <Badge variant="secondary">
-                          {analysisResult.classification.competitiveness}
-                        </Badge>
-                      </div>
-
-                      {/* Partisan lean bar */}
-                      <div className="relative h-3 bg-gradient-to-r from-red-500 via-gray-300 to-blue-500 rounded-full">
-                        <div
-                          className="absolute w-3 h-3 bg-white border-2 border-gray-800 rounded-full transform -translate-y-0"
-                          style={{
-                            left: `${Math.min(Math.max((analysisResult.weightedPartisanLean + 50) / 100 * 100, 2), 98)}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>R+50</span>
-                        <span>Even</span>
-                        <span>D+50</span>
-                      </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
+                      <span className="text-[#33a852] font-medium block mb-1">
+                        <MetricLabel metric="partisan_lean">Partisan Lean</MetricLabel>
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={getLeanColor(precinctDetails.partisanLean)}
+                      >
+                        {formatLean(precinctDetails.partisanLean)}
+                      </Badge>
                     </div>
-
-                    {/* Targeting Metrics */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-medium flex items-center gap-2">
-                        <TrendingUp className="h-3 w-3 text-[#33a852]" />
-                        Targeting Metrics
-                      </h4>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-xs mb-1">
-                            <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
-                            <span className="font-medium text-[#33a852]">
-                              {analysisResult.weightedSwingPotential.toFixed(0)}%
-                            </span>
-                          </div>
-                          <Progress value={analysisResult.weightedSwingPotential} className="h-2 [&>div]:bg-[#33a852]" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-xs mb-1">
-                            <MetricLabel metric="persuasion_index">Persuasion Index</MetricLabel>
-                            <span className="font-medium text-[#33a852]">
-                              {analysisResult.classification.persuasionIndex}
-                            </span>
-                          </div>
-                          <Progress
-                            value={analysisResult.classification.persuasionIndex}
-                            className="h-2 [&>div]:bg-[#33a852]"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-xs mb-1">
-                            <MetricLabel metric="mobilization_index">Mobilization Index</MetricLabel>
-                            <span className="font-medium text-[#33a852]">
-                              {analysisResult.classification.mobilizationIndex}
-                            </span>
-                          </div>
-                          <Progress
-                            value={analysisResult.classification.mobilizationIndex}
-                            className="h-2 [&>div]:bg-[#33a852]"
-                          />
-                        </div>
-                      </div>
+                    <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
+                      <span className="text-[#33a852] font-medium block mb-1">
+                        <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
+                      </span>
+                      <span className="font-bold text-gray-900">{precinctDetails.swingPotential.toFixed(0)}/100</span>
                     </div>
+                    <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
+                      <span className="text-[#33a852] font-medium block mb-1">Voters</span>
+                      <span className="font-bold text-gray-900">{precinctDetails.registeredVoters.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
+                      <span className="text-[#33a852] font-medium block mb-1">Population</span>
+                      <span className="font-bold text-gray-900">{precinctDetails.population.toLocaleString()}</span>
+                    </div>
+                  </div>
 
-                    {/* Priority Badge */}
-                    <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-4 border border-emerald-200 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-900">
-                          <MetricLabel metric="targeting_priority">Targeting Priority</MetricLabel>
+                  <div className="space-y-2 pt-2 border-t border-emerald-200">
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-700 font-medium">
+                          <MetricLabel metric="gotv_priority">GOTV Priority</MetricLabel>
                         </span>
-                        <Badge
-                          className={
-                            analysisResult.classification.targetingPriority === 'High'
-                              ? 'bg-red-600 text-white'
-                              : analysisResult.classification.targetingPriority === 'Medium-High'
-                              ? 'bg-[#33a852] text-white'
-                              : 'bg-gray-500 text-white'
-                          }
-                        >
-                          {analysisResult.classification.targetingPriority}
-                        </Badge>
+                        <span className="font-bold text-[#33a852]">{precinctDetails.gotvPriority.toFixed(0)}</span>
                       </div>
+                      <Progress value={precinctDetails.gotvPriority} className="h-1.5 [&>div]:bg-[#33a852]" />
                     </div>
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-700 font-medium">
+                          <MetricLabel metric="persuasion_opportunity">Persuasion</MetricLabel>
+                        </span>
+                        <span className="font-bold text-[#33a852]">{precinctDetails.persuasionOpportunity.toFixed(0)}</span>
+                      </div>
+                      <Progress value={precinctDetails.persuasionOpportunity} className="h-1.5 [&>div]:bg-[#33a852]" />
+                    </div>
+                  </div>
 
-                    {/* Targeting Scores Section */}
-                    {analysisResult.targetingScores && (
-                      <div className="space-y-2 border-t pt-4">
-                        <h4 className="text-xs font-medium flex items-center gap-2">
-                          <Target className="h-3 w-3 text-[#33a852]" />
-                          Voter Targeting Scores
-                        </h4>
+                  <div className="pt-2 border-t border-emerald-200">
+                    <span className="text-xs text-gray-700 font-medium block mb-1">Strategy</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          className={`text-xs cursor-help ${getStrategyColor(precinctDetails.targetingStrategy)}`}
+                        >
+                          {precinctDetails.targetingStrategy}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>{getStrategyTooltip(precinctDetails.targetingStrategy)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              )}
 
-                        {/* GOTV Priority */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-medium">
-                              <MetricLabel metric="gotv_priority">GOTV Priority</MetricLabel>
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-[#33a852]">
-                                {analysisResult.targetingScores.avgGOTVPriority.toFixed(0)}
-                              </span>
-                              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 border-emerald-200">
-                                {getGOTVClassification(analysisResult.targetingScores.avgGOTVPriority)}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Progress
-                            value={analysisResult.targetingScores.avgGOTVPriority}
-                            className="h-2 [&>div]:bg-[#33a852]"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Mobilization potential for existing supporters
-                          </p>
-                        </div>
+              {/* Selected H3 Cell Card */}
+              {selectedH3Cell && (
+                <div className="mb-4 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-500 rounded-xl p-4 space-y-3 shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="h-3 w-3 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.27 3.48v6.68L12 17.82l-6.27-3.48V7.66L12 4.18z" />
+                        </svg>
+                        <h3 className="font-semibold text-xs text-gray-900">Selected H3 Cell</h3>
+                      </div>
+                      <p className="text-xs font-mono text-gray-700 truncate">{selectedH3Cell.h3Index}</p>
+                      <p className="text-xs text-gray-600">{selectedH3Cell.precinctCount} precinct{selectedH3Cell.precinctCount !== 1 ? 's' : ''}</p>
+                    </div>
+                    {onClearSelection && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClearSelection}
+                        className="h-7 px-2 text-xs text-gray-700 hover:text-gray-900 hover:bg-blue-100"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
 
-                        {/* Persuasion Opportunity */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-medium">
-                              <MetricLabel metric="persuasion_opportunity">Persuasion Opportunity</MetricLabel>
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-[#33a852]">
-                                {analysisResult.targetingScores.avgPersuasionOpportunity.toFixed(0)}
-                              </span>
-                              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 border-emerald-200">
-                                {getPersuasionClassification(analysisResult.targetingScores.avgPersuasionOpportunity)}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Progress
-                            value={analysisResult.targetingScores.avgPersuasionOpportunity}
-                            className="h-2 [&>div]:bg-[#33a852]"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Likelihood of influencing undecided voters
-                          </p>
-                        </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
+                      <span className="text-blue-600 font-medium block mb-1">
+                        <MetricLabel metric="partisan_lean">Partisan Lean</MetricLabel>
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={getLeanColor(selectedH3Cell.attributes?.partisan_lean || 0)}
+                      >
+                        {formatLean(selectedH3Cell.attributes?.partisan_lean || 0)}
+                      </Badge>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
+                      <span className="text-blue-600 font-medium block mb-1">
+                        <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
+                      </span>
+                      <span className="font-bold text-gray-900">{(selectedH3Cell.attributes?.swing_potential || 0).toFixed(0)}/100</span>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
+                      <span className="text-blue-600 font-medium block mb-1">Population</span>
+                      <span className="font-bold text-gray-900">{Math.round(selectedH3Cell.attributes?.total_population || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 border border-blue-100 shadow-sm">
+                      <span className="text-blue-600 font-medium block mb-1">Combined Score</span>
+                      <span className="font-bold text-gray-900">{(selectedH3Cell.attributes?.combined_score || 0).toFixed(0)}/100</span>
+                    </div>
+                  </div>
 
-                        {/* Strategy Distribution */}
-                        {Object.keys(analysisResult.targetingScores.strategyDistribution).length > 0 && (
-                          <div className="space-y-2 pt-2">
-                            <div className="text-xs font-medium">Recommended Strategies</div>
-                            <div className="flex flex-wrap gap-2">
-                              {Object.entries(analysisResult.targetingScores.strategyDistribution)
-                                .sort(([, a], [, b]) => b - a)
-                                .map(([strategy, count]) => (
-                                  <Tooltip key={strategy}>
-                                    <TooltipTrigger asChild>
-                                      <Badge
-                                        variant={getStrategyBadgeVariant(strategy)}
-                                        className="text-xs cursor-help"
-                                      >
-                                        {strategy} ({count})
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs">
-                                      <p>{getStrategyTooltip(strategy)}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ))}
-                            </div>
-                          </div>
+                  <div className="space-y-2 pt-2 border-t border-blue-200">
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-700 font-medium">
+                          <MetricLabel metric="gotv_priority">GOTV Priority</MetricLabel>
+                        </span>
+                        <span className="font-bold text-blue-600">{(selectedH3Cell.attributes?.gotv_priority || 0).toFixed(0)}</span>
+                      </div>
+                      <Progress value={selectedH3Cell.attributes?.gotv_priority || 0} className="h-1.5 [&>div]:bg-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-700 font-medium">
+                          <MetricLabel metric="persuasion_opportunity">Persuasion</MetricLabel>
+                        </span>
+                        <span className="font-bold text-blue-600">{(selectedH3Cell.attributes?.persuasion_opportunity || 0).toFixed(0)}</span>
+                      </div>
+                      <Progress value={selectedH3Cell.attributes?.persuasion_opportunity || 0} className="h-1.5 [&>div]:bg-blue-600" />
+                    </div>
+                  </div>
+
+                  {/* Precincts in cell */}
+                  {selectedH3Cell.precincts && selectedH3Cell.precincts.length > 0 && (
+                    <div className="pt-2 border-t border-blue-200">
+                      <span className="text-xs text-gray-700 font-medium block mb-1">Precincts</span>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedH3Cell.precincts.slice(0, 3).map((precinct: string) => (
+                          <Badge key={precinct} variant="secondary" className="text-xs">
+                            {precinct.length > 25 ? precinct.slice(0, 25) + '...' : precinct}
+                          </Badge>
+                        ))}
+                        {selectedH3Cell.precincts.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{selectedH3Cell.precincts.length - 3} more
+                          </Badge>
                         )}
                       </div>
-                    )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-                    {/* County-Wide Strategy Summary */}
-                    {targetingSummary && (
-                      <div className="space-y-2 border-t pt-4">
-                        <h4 className="text-xs font-medium flex items-center gap-2">
-                          <Info className="h-3 w-3 text-[#33a852]" />
-                          County Strategy Distribution
-                        </h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(targetingSummary.strategy_distribution)
-                            .sort(([, a], [, b]) => b - a)
-                            .slice(0, 4)
-                            .map(([strategy, percentage]) => (
-                              <Tooltip key={strategy}>
-                                <TooltipTrigger asChild>
-                                  <div
-                                    className="bg-muted/30 rounded-lg p-2 space-y-1 cursor-help hover:bg-muted/50 transition-colors"
-                                  >
-                                    <div className="flex items-center gap-1">
-                                      <div className={`w-2 h-2 rounded-full ${getStrategyColor(strategy)}`} />
-                                      <span className="text-xs font-medium truncate">{strategy}</span>
-                                    </div>
-                                    <div className="text-xs font-bold">{percentage.toFixed(0)}%</div>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                  <p>{getStrategyTooltip(strategy)}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            ))}
-                        </div>
-                        <div className="text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
-                          County avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
-                          Persuasion: {targetingSummary.score_stats.persuasion.mean.toFixed(0)}
+              <PoliticalAreaSelector
+                view={view}
+                onAreaSelected={handleAreaSelected}
+                onSelectionCanceled={handleReset}
+                onBoundarySelectionChange={onBoundarySelectionChange}
+              />
+            </TabsContent>
+
+            {/* Results Tab */}
+            <TabsContent value="results" className="flex-1 overflow-hidden p-0 m-0">
+              <ScrollArea className="h-full">
+                <div className="p-4 space-y-4">
+                  {isAnalyzing && (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                      <p className="text-xs text-muted-foreground">Analyzing area...</p>
+                    </div>
+                  )}
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {analysisResult && !isAnalyzing && (
+                    <>
+                      {/* Area Summary */}
+                      <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-4 border-l-4 border-[#33a852] shadow-sm">
+                        <h3 className="font-semibold text-xs mb-2 flex items-center gap-2 text-gray-900">
+                          <MapPin className="h-3 w-3 text-[#33a852]" />
+                          {analysisResult.areaName}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-gray-600">Precincts:</span>
+                            <span className="ml-1 font-medium text-gray-900">{analysisResult.totalPrecincts}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Voters:</span>
+                            <span className="ml-1 font-medium text-gray-900">
+                              {analysisResult.totalRegisteredVoters.toLocaleString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    {/* Included Precincts */}
-                    {analysisResult.includedPrecincts.length > 0 && (
+                      {/* AI Strategic Insights */}
+                      {aiInsights && aiInsights.length > 0 && (
+                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200 shadow-sm">
+                          <h4 className="text-xs font-semibold flex items-center gap-2 text-purple-900 mb-3">
+                            <Zap className="h-3.5 w-3.5 text-purple-600" />
+                            Strategic Insights
+                          </h4>
+                          <div className="space-y-2">
+                            {aiInsights.map((insight, idx) => (
+                              <div key={idx} className="flex gap-2 text-xs text-gray-700">
+                                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
+                                <p className="leading-relaxed">{insight}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Political Lean */}
                       <div className="space-y-2">
                         <h4 className="text-xs font-medium flex items-center gap-2">
-                          <Users className="h-3 w-3 text-[#33a852]" />
-                          Included Precincts ({analysisResult.includedPrecincts.length})
+                          <BarChart3 className="h-3 w-3 text-[#33a852]" />
+                          Political Profile
                         </h4>
-                        <div className="space-y-1 max-h-40 overflow-y-auto">
-                          {analysisResult.includedPrecincts.slice(0, 10).map((precinct) => (
-                            <div
-                              key={precinct.name}
-                              className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded"
-                            >
-                              <span className="truncate flex-1">{precinct.name}</span>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-muted-foreground">
-                                  {precinct.registeredVoters.toLocaleString()} voters
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={getLeanColor(analysisResult.weightedPartisanLean)}
+                          >
+                            {formatLean(analysisResult.weightedPartisanLean)}
+                          </Badge>
+                          <Badge variant="secondary">
+                            {analysisResult.classification.competitiveness}
+                          </Badge>
+                        </div>
+
+                        {/* Partisan lean bar */}
+                        <div className="relative h-3 bg-gradient-to-r from-red-500 via-gray-300 to-blue-500 rounded-full">
+                          <div
+                            className="absolute w-3 h-3 bg-white border-2 border-gray-800 rounded-full transform -translate-y-0"
+                            style={{
+                              left: `${Math.min(Math.max((analysisResult.weightedPartisanLean + 50) / 100 * 100, 2), 98)}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>R+50</span>
+                          <span>Even</span>
+                          <span>D+50</span>
+                        </div>
+                      </div>
+
+                      {/* Targeting Metrics */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium flex items-center gap-2">
+                          <TrendingUp className="h-3 w-3 text-[#33a852]" />
+                          Targeting Metrics
+                        </h4>
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
+                              <span className="font-medium text-[#33a852]">
+                                {analysisResult.weightedSwingPotential.toFixed(0)}%
+                              </span>
+                            </div>
+                            <Progress value={analysisResult.weightedSwingPotential} className="h-2 [&>div]:bg-[#33a852]" />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <MetricLabel metric="persuasion_index">Persuasion Index</MetricLabel>
+                              <span className="font-medium text-[#33a852]">
+                                {analysisResult.classification.persuasionIndex}
+                              </span>
+                            </div>
+                            <Progress
+                              value={analysisResult.classification.persuasionIndex}
+                              className="h-2 [&>div]:bg-[#33a852]"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <MetricLabel metric="mobilization_index">Mobilization Index</MetricLabel>
+                              <span className="font-medium text-[#33a852]">
+                                {analysisResult.classification.mobilizationIndex}
+                              </span>
+                            </div>
+                            <Progress
+                              value={analysisResult.classification.mobilizationIndex}
+                              className="h-2 [&>div]:bg-[#33a852]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Priority Badge */}
+                      <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-4 border border-emerald-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-900">
+                            <MetricLabel metric="targeting_priority">Targeting Priority</MetricLabel>
+                          </span>
+                          <Badge
+                            className={
+                              analysisResult.classification.targetingPriority === 'High'
+                                ? 'bg-red-600 text-white'
+                                : analysisResult.classification.targetingPriority === 'Medium-High'
+                                  ? 'bg-[#33a852] text-white'
+                                  : 'bg-gray-500 text-white'
+                            }
+                          >
+                            {analysisResult.classification.targetingPriority}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Targeting Scores Section */}
+                      {analysisResult.targetingScores && (
+                        <div className="space-y-2 border-t pt-4">
+                          <h4 className="text-xs font-medium flex items-center gap-2">
+                            <Target className="h-3 w-3 text-[#33a852]" />
+                            Voter Targeting Scores
+                          </h4>
+
+                          {/* GOTV Priority */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-medium">
+                                <MetricLabel metric="gotv_priority">GOTV Priority</MetricLabel>
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#33a852]">
+                                  {analysisResult.targetingScores.avgGOTVPriority.toFixed(0)}
                                 </span>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${getLeanColor(precinct.partisanLean)}`}
-                                >
-                                  {formatLean(precinct.partisanLean)}
+                                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 border-emerald-200">
+                                  {getGOTVClassification(analysisResult.targetingScores.avgGOTVPriority)}
                                 </Badge>
                               </div>
                             </div>
-                          ))}
-                          {analysisResult.includedPrecincts.length > 10 && (
-                            <p className="text-xs text-muted-foreground text-center py-1">
-                              +{analysisResult.includedPrecincts.length - 10} more precincts
+                            <Progress
+                              value={analysisResult.targetingScores.avgGOTVPriority}
+                              className="h-2 [&>div]:bg-[#33a852]"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Mobilization potential for existing supporters
                             </p>
+                          </div>
+
+                          {/* Persuasion Opportunity */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-medium">
+                                <MetricLabel metric="persuasion_opportunity">Persuasion Opportunity</MetricLabel>
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#33a852]">
+                                  {analysisResult.targetingScores.avgPersuasionOpportunity.toFixed(0)}
+                                </span>
+                                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 border-emerald-200">
+                                  {getPersuasionClassification(analysisResult.targetingScores.avgPersuasionOpportunity)}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Progress
+                              value={analysisResult.targetingScores.avgPersuasionOpportunity}
+                              className="h-2 [&>div]:bg-[#33a852]"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Likelihood of influencing undecided voters
+                            </p>
+                          </div>
+
+                          {/* Strategy Distribution */}
+                          {Object.keys(analysisResult.targetingScores.strategyDistribution).length > 0 && (
+                            <div className="space-y-2 pt-2">
+                              <div className="text-xs font-medium">Recommended Strategies</div>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(analysisResult.targetingScores.strategyDistribution)
+                                  .sort(([, a], [, b]) => b - a)
+                                  .map(([strategy, count]) => (
+                                    <Tooltip key={strategy}>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant={getStrategyBadgeVariant(strategy)}
+                                          className="text-xs cursor-help"
+                                        >
+                                          {strategy} ({count})
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs">
+                                        <p>{getStrategyTooltip(strategy)}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  ))}
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </ScrollArea>
+                      )}
 
-            {/* Action buttons */}
-            {analysisResult && !isAnalyzing && (
-              <div className="p-4 border-t flex gap-2 bg-gradient-to-r from-gray-50 to-white">
-                <Button variant="outline" size="sm" onClick={handleReset} className="flex-1 border-[#33a852] text-[#33a852] hover:bg-emerald-50">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  New Selection
-                </Button>
-                <Button size="sm" onClick={() => setActiveTab('report')} className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white text-xs">
-                  <ChevronRight className="h-4 w-4 mr-2" />
-                  Generate Report
-                </Button>
-              </div>
-            )}
-          </TabsContent>
+                      {/* County-Wide Strategy Summary */}
+                      {targetingSummary && (
+                        <div className="space-y-2 border-t pt-4">
+                          <h4 className="text-xs font-medium flex items-center gap-2">
+                            <Info className="h-3 w-3 text-[#33a852]" />
+                            County Strategy Distribution
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(targetingSummary.strategy_distribution)
+                              .sort(([, a], [, b]) => b - a)
+                              .slice(0, 4)
+                              .map(([strategy, percentage]) => (
+                                <Tooltip key={strategy}>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      className="bg-muted/30 rounded-lg p-2 space-y-1 cursor-help hover:bg-muted/50 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-1">
+                                        <div className={`w-2 h-2 rounded-full ${getStrategyColor(strategy)}`} />
+                                        <span className="text-xs font-medium truncate">{strategy}</span>
+                                      </div>
+                                      <div className="text-xs font-bold">{percentage.toFixed(0)}%</div>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p>{getStrategyTooltip(strategy)}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ))}
+                          </div>
+                          <div className="text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
+                            County avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
+                            Persuasion: {targetingSummary.score_stats.persuasion.mean.toFixed(0)}
+                          </div>
+                        </div>
+                      )}
 
-          {/* Report Tab */}
-          <TabsContent value="report" className="flex-1 overflow-auto p-4 m-0">
-            {analysisResult && (
-              <div className="space-y-4">
-                {/* InfographIQ Header */}
-                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                  <FileText className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs font-bold text-gray-900">Infograph<span className="text-purple-600">IQ</span></span>
-                </div>
-
-                {/* Status Alert */}
-                {!isAnalyzing && !error && !pdfProgress && (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-xs">
-                      Ready to generate Political Profile Report for{' '}
-                      <strong>{analysisResult.areaName}</strong>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Progress Tracking */}
-                {pdfProgress && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                      <span className="text-xs font-medium text-blue-800">{pdfProgress.stage}</span>
-                    </div>
-                    <Progress value={pdfProgress.percent} className="h-2" />
-                    <span className="text-xs text-blue-600">{pdfProgress.percent}%</span>
-                  </div>
-                )}
-
-                {/* Error State */}
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      {error}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Page Selection */}
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-xs">Report Pages</h4>
-                    <span className="text-xs text-muted-foreground">
-                      {Object.values(selectedPages).filter(Boolean).length} of 7 selected
-                    </span>
-                  </div>
-                  <ul className="text-xs space-y-2">
-                    {Object.entries(pageDescriptions).map(([pageNum, description]) => {
-                      const page = parseInt(pageNum);
-                      const isEnabled = selectedPages[page];
-                      return (
-                        <li key={page} className="flex items-center gap-2">
-                          <button
-                            onClick={() => setSelectedPages((prev: Record<number, boolean>) => ({
-                              ...prev,
-                              [page]: !prev[page]
-                            }))}
-                            className={`flex items-center gap-2 w-full p-1.5 rounded transition-colors ${
-                              isEnabled
-                                ? 'bg-green-50 text-green-800 hover:bg-green-100'
-                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                            }`}
-                            disabled={isAnalyzing}
-                          >
-                            <CheckCircle className={`h-3 w-3 ${isEnabled ? 'text-green-600' : 'text-gray-300'}`} />
-                            <span className="text-left flex-1">
-                              <strong>Page {page}:</strong> {description.split(' - ')[1]}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <p className="text-xs text-muted-foreground italic">
-                    Click to toggle pages. Cover page is always recommended.
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-[#33a852] text-[#33a852] hover:bg-emerald-50"
-                    onClick={() => setActiveTab('results')}
-                    disabled={isAnalyzing}
-                  >
-                    Back to Results
-                  </Button>
-                  <Button
-                    className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white text-xs"
-                    onClick={handleGenerateReport}
-                    disabled={isAnalyzing || Object.values(selectedPages).every(v => !v)}
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Generate PDF ({Object.values(selectedPages).filter(Boolean).length} pages)
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Infographics Tab */}
-          <TabsContent value="infographics" className="flex-1 overflow-auto p-4 m-0">
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                <PieChart className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-bold text-gray-900">Census <span className="text-blue-600">Infographics</span></span>
-              </div>
-
-              {/* Current Selection Status */}
-              <div className="bg-gray-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="h-3 w-3 text-gray-500" />
-                  <span className="text-xs font-medium text-gray-700">Current Selection</span>
-                </div>
-                {selectedArea || selectedPrecinct ? (
-                  <p className="text-xs text-gray-600">
-                    {selectedArea?.displayName || selectedPrecinct?.precinctName || 'Selected area'}
-                  </p>
-                ) : (
-                  <p className="text-xs text-amber-600">
-                    No area selected. Go to the Select tab to choose an area.
-                  </p>
-                )}
-              </div>
-
-              {/* Buffer Options (shown for point selections) */}
-              {(selectedArea?.geometry?.type === 'Point' || (!selectedArea && selectedPrecinct)) && (
-                <div className="bg-blue-50 rounded-lg p-3 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Circle className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-blue-800">Buffer Options</span>
-                  </div>
-                  <RadioGroup
-                    value={bufferType}
-                    onValueChange={(v: string) => setBufferType(v as typeof bufferType)}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id="buffer-none" />
-                      <Label htmlFor="buffer-none" className="text-xs">No Buffer</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="radius" id="buffer-radius" />
-                      <Label htmlFor="buffer-radius" className="text-xs flex items-center gap-1">
-                        <Circle className="h-3 w-3" /> Radius
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="drive" id="buffer-drive" />
-                      <Label htmlFor="buffer-drive" className="text-xs flex items-center gap-1">
-                        <Car className="h-3 w-3" /> Drive Time
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="walk" id="buffer-walk" />
-                      <Label htmlFor="buffer-walk" className="text-xs flex items-center gap-1">
-                        <Footprints className="h-3 w-3" /> Walk Time
-                      </Label>
-                    </div>
-                  </RadioGroup>
-
-                  {bufferType !== 'none' && (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={bufferValue}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBufferValue(Number(e.target.value))}
-                        className="w-20 h-8 text-xs"
-                        min={1}
-                        max={bufferType === 'radius' ? 50 : 60}
-                      />
-                      <span className="text-xs text-gray-600">
-                        {bufferType === 'radius' ? 'miles' : 'minutes'}
-                      </span>
-                    </div>
+                      {/* Included Precincts */}
+                      {analysisResult.includedPrecincts.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-medium flex items-center gap-2">
+                            <Users className="h-3 w-3 text-[#33a852]" />
+                            Included Precincts ({analysisResult.includedPrecincts.length})
+                          </h4>
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {analysisResult.includedPrecincts.slice(0, 10).map((precinct) => (
+                              <div
+                                key={precinct.name}
+                                className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded"
+                              >
+                                <span className="truncate flex-1">{precinct.name}</span>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-muted-foreground">
+                                    {precinct.registeredVoters.toLocaleString()} voters
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${getLeanColor(precinct.partisanLean)}`}
+                                  >
+                                    {formatLean(precinct.partisanLean)}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                            {analysisResult.includedPrecincts.length > 10 && (
+                              <p className="text-xs text-muted-foreground text-center py-1">
+                                +{analysisResult.includedPrecincts.length - 10} more precincts
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
+              </ScrollArea>
+
+              {/* Action buttons */}
+              {analysisResult && !isAnalyzing && (
+                <div className="p-4 border-t flex gap-2 bg-gradient-to-r from-gray-50 to-white">
+                  <Button variant="outline" size="sm" onClick={handleReset} className="flex-1 border-[#33a852] text-[#33a852] hover:bg-emerald-50">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    New Selection
+                  </Button>
+                  <Button size="sm" onClick={() => setActiveTab('report')} className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white text-xs">
+                    <ChevronRight className="h-4 w-4 mr-2" />
+                    Generate Report
+                  </Button>
+                </div>
               )}
+            </TabsContent>
 
-              {/* Template Selection */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-700">Select Template</span>
-                  <span className="text-xs text-gray-500">{filteredInfographicReports.length} available</span>
+            {/* Report Tab */}
+            <TabsContent value="report" className="flex-1 overflow-auto p-4 m-0">
+              {analysisResult && (
+                <div className="space-y-4">
+                  {/* InfographIQ Header */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <FileText className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs font-bold text-gray-900">Infograph<span className="text-purple-600">IQ</span></span>
+                  </div>
+
+                  {/* Status Alert */}
+                  {!isAnalyzing && !error && !pdfProgress && (
+                    <Alert>
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-xs">
+                        Ready to generate Political Profile Report for{' '}
+                        <strong>{analysisResult.areaName}</strong>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Progress Tracking */}
+                  {pdfProgress && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <span className="text-xs font-medium text-blue-800">{pdfProgress.stage}</span>
+                      </div>
+                      <Progress value={pdfProgress.percent} className="h-2" />
+                      <span className="text-xs text-blue-600">{pdfProgress.percent}%</span>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        {error}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Page Selection */}
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-xs">Report Pages</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {Object.values(selectedPages).filter(Boolean).length} of 7 selected
+                      </span>
+                    </div>
+                    <ul className="text-xs space-y-2">
+                      {Object.entries(pageDescriptions).map(([pageNum, description]) => {
+                        const page = parseInt(pageNum);
+                        const isEnabled = selectedPages[page];
+                        return (
+                          <li key={page} className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedPages((prev: Record<number, boolean>) => ({
+                                ...prev,
+                                [page]: !prev[page]
+                              }))}
+                              className={`flex items-center gap-2 w-full p-1.5 rounded transition-colors ${isEnabled
+                                ? 'bg-green-50 text-green-800 hover:bg-green-100'
+                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                }`}
+                              disabled={isAnalyzing}
+                            >
+                              <CheckCircle className={`h-3 w-3 ${isEnabled ? 'text-green-600' : 'text-gray-300'}`} />
+                              <span className="text-left flex-1">
+                                <strong>Page {page}:</strong> {description.split(' - ')[1]}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="text-xs text-muted-foreground italic">
+                      Click to toggle pages. Cover page is always recommended.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-[#33a852] text-[#33a852] hover:bg-emerald-50"
+                      onClick={() => setActiveTab('results')}
+                      disabled={isAnalyzing}
+                    >
+                      Back to Results
+                    </Button>
+                    <Button
+                      className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white text-xs"
+                      onClick={handleGenerateReport}
+                      disabled={isAnalyzing || Object.values(selectedPages).every(v => !v)}
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4 mr-2" />
+                          Generate PDF ({Object.values(selectedPages).filter(Boolean).length} pages)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Infographics Tab */}
+            <TabsContent value="infographics" className="flex-1 overflow-auto p-4 m-0">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                  <PieChart className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-bold text-gray-900">Census <span className="text-blue-600">Infographics</span></span>
                 </div>
 
-                {/* Search and Filter */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Search templates..."
-                    value={infographicSearchQuery}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInfographicSearchQuery(e.target.value)}
-                    className="h-8 text-xs flex-1"
-                  />
-                  <select
-                    value={infographicCategory}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInfographicCategory(e.target.value)}
-                    className="h-8 text-xs px-2 border rounded-md bg-white"
-                  >
-                    {infographicCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                {/* Current Selection Status */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-3 w-3 text-gray-500" />
+                    <span className="text-xs font-medium text-gray-700">Current Selection</span>
+                  </div>
+                  {selectedArea || selectedPrecinct ? (
+                    <p className="text-xs text-gray-600">
+                      {selectedArea?.displayName || selectedPrecinct?.precinctName || 'Selected area'}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-600">
+                      No area selected. Go to the Select tab to choose an area.
+                    </p>
+                  )}
                 </div>
 
-                {/* Template Grid */}
-                <ScrollArea className="h-[280px] border rounded-lg">
-                  <div className="grid grid-cols-2 gap-2 p-2">
-                    {filteredInfographicReports.map(report => (
-                      <button
-                        key={report.id}
-                        onClick={() => setSelectedInfographicTemplate(report.id)}
-                        className={`p-2 rounded-lg border text-left transition-all ${
-                          selectedInfographicTemplate === report.id
-                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {report.thumbnail && (
-                          <div className="h-16 mb-2 rounded overflow-hidden bg-gray-100">
-                            <img
-                              src={report.thumbnail}
-                              alt={report.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <p className="text-xs font-medium text-gray-900 line-clamp-2" title={report.title}>
-                          {report.title}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {report.categories?.slice(0, 2).map(cat => (
-                            <span key={cat} className="text-[10px] px-1 py-0.5 bg-gray-100 rounded text-gray-600">
-                              {cat}
-                            </span>
-                          ))}
-                        </div>
-                      </button>
-                    ))}
-                    {filteredInfographicReports.length === 0 && (
-                      <div className="col-span-2 py-8 text-center text-gray-500 text-xs">
-                        {infographicReports.length === 0 ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                            <span>Loading templates...</span>
-                          </div>
-                        ) : (
-                          'No templates match your search'
-                        )}
+                {/* Buffer Options (shown for point selections) */}
+                {(selectedArea?.geometry?.type === 'Point' || (!selectedArea && selectedPrecinct)) && (
+                  <div className="bg-blue-50 rounded-lg p-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Circle className="h-3 w-3 text-blue-600" />
+                      <span className="text-xs font-medium text-blue-800">Buffer Options</span>
+                    </div>
+                    <RadioGroup
+                      value={bufferType}
+                      onValueChange={(v: string) => setBufferType(v as typeof bufferType)}
+                      className="grid grid-cols-2 gap-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="none" id="buffer-none" />
+                        <Label htmlFor="buffer-none" className="text-xs">No Buffer</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="radius" id="buffer-radius" />
+                        <Label htmlFor="buffer-radius" className="text-xs flex items-center gap-1">
+                          <Circle className="h-3 w-3" /> Radius
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="drive" id="buffer-drive" />
+                        <Label htmlFor="buffer-drive" className="text-xs flex items-center gap-1">
+                          <Car className="h-3 w-3" /> Drive Time
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="walk" id="buffer-walk" />
+                        <Label htmlFor="buffer-walk" className="text-xs flex items-center gap-1">
+                          <Footprints className="h-3 w-3" /> Walk Time
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {bufferType !== 'none' && (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={bufferValue}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBufferValue(Number(e.target.value))}
+                          className="w-20 h-8 text-xs"
+                          min={1}
+                          max={bufferType === 'radius' ? 50 : 60}
+                        />
+                        <span className="text-xs text-gray-600">
+                          {bufferType === 'radius' ? 'miles' : 'minutes'}
+                        </span>
                       </div>
                     )}
                   </div>
-                </ScrollArea>
-              </div>
-
-              {/* Error Display */}
-              {infographicError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{infographicError}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* Generate Button */}
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={generateInfographic}
-                disabled={!selectedInfographicTemplate || infographicLoading || (!selectedArea && !selectedPrecinct)}
-              >
-                {infographicLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <PieChart className="h-4 w-4 mr-2" />
-                    Generate Infographic
-                  </>
                 )}
-              </Button>
 
-              {!selectedInfographicTemplate && (
-                <p className="text-xs text-gray-500 text-center">
-                  Select a template above to generate an infographic
-                </p>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                {/* Template Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-700">Select Template</span>
+                    <span className="text-xs text-gray-500">{filteredInfographicReports.length} available</span>
+                  </div>
 
-        {/* Infographic Viewer Dialog */}
-        <Dialog open={infographicDialogOpen} onOpenChange={setInfographicDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-blue-600" />
-                Census Infographic
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-auto min-h-0">
-              {generatedInfographicHtml ? (
-                <iframe
-                  srcDoc={generatedInfographicHtml}
-                  title="Infographic Report"
-                  className="w-full h-full min-h-[600px] border-0"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-64">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  {/* Search and Filter */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search templates..."
+                      value={infographicSearchQuery}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInfographicSearchQuery(e.target.value)}
+                      className="h-8 text-xs flex-1"
+                    />
+                    <select
+                      value={infographicCategory}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInfographicCategory(e.target.value)}
+                      className="h-8 text-xs px-2 border rounded-md bg-white"
+                    >
+                      {infographicCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Template Grid */}
+                  <ScrollArea className="h-[280px] border rounded-lg">
+                    <div className="grid grid-cols-2 gap-2 p-2">
+                      {filteredInfographicReports.map(report => (
+                        <button
+                          key={report.id}
+                          onClick={() => setSelectedInfographicTemplate(report.id)}
+                          className={`p-2 rounded-lg border text-left transition-all ${selectedInfographicTemplate === report.id
+                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                        >
+                          {report.thumbnail && (
+                            <div className="h-16 mb-2 rounded overflow-hidden bg-gray-100">
+                              <img
+                                src={report.thumbnail}
+                                alt={report.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <p className="text-xs font-medium text-gray-900 line-clamp-2" title={report.title}>
+                            {report.title}
+                          </p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {report.categories?.slice(0, 2).map(cat => (
+                              <span key={cat} className="text-[10px] px-1 py-0.5 bg-gray-100 rounded text-gray-600">
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                      {filteredInfographicReports.length === 0 && (
+                        <div className="col-span-2 py-8 text-center text-gray-500 text-xs">
+                          {infographicReports.length === 0 ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                              <span>Loading templates...</span>
+                            </div>
+                          ) : (
+                            'No templates match your search'
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
                 </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
-              <Button variant="outline" onClick={() => setInfographicDialogOpen(false)}>
-                Close
-              </Button>
-              {generatedInfographicHtml && (
+
+                {/* Error Display */}
+                {infographicError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">{infographicError}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Generate Button */}
                 <Button
-                  onClick={() => {
-                    const blob = new Blob([generatedInfographicHtml], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    window.open(url, '_blank');
-                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={generateInfographic}
+                  disabled={!selectedInfographicTemplate || infographicLoading || (!selectedArea && !selectedPrecinct)}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Open in New Tab
+                  {infographicLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <PieChart className="h-4 w-4 mr-2" />
+                      Generate Infographic
+                    </>
+                  )}
                 </Button>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+
+                {!selectedInfographicTemplate && (
+                  <p className="text-xs text-gray-500 text-center">
+                    Select a template above to generate an infographic
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Infographic Viewer Dialog */}
+          <Dialog open={infographicDialogOpen} onOpenChange={setInfographicDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="flex-shrink-0">
+                <DialogTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5 text-blue-600" />
+                  Census Infographic
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-auto min-h-0">
+                {generatedInfographicHtml ? (
+                  <iframe
+                    srcDoc={generatedInfographicHtml}
+                    title="Infographic Report"
+                    className="w-full h-full min-h-[600px] border-0"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
+                <Button variant="outline" onClick={() => setInfographicDialogOpen(false)}>
+                  Close
+                </Button>
+                {generatedInfographicHtml && (
+                  <Button
+                    onClick={() => {
+                      const blob = new Blob([generatedInfographicHtml], { type: 'text/html' });
+                      const url = URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Open in New Tab
+                  </Button>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-    </div>
     </TooltipProvider>
   );
 }
