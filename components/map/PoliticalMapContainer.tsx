@@ -2114,50 +2114,6 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
         />
       )}
 
-      {/* Bivariate Choropleth Layer */}
-      {mapState.view && activeLayer === 'bivariate' && (
-        <BivariateChoroplethLayer
-          view={mapState.view}
-          config={bivariateConfig}
-          visible={true}
-          opacity={choroplethOpacity}
-          onPrecinctClick={enableAIMode ? handlePrecinctClickForAI : handlePrecinctClick}
-          selectedPrecinctName={mapState.selectedPrecinct}
-        />
-      )}
-
-      {/* Proportional Symbol Layer */}
-      {mapState.view && activeLayer === 'proportional' && (
-        <ProportionalSymbolLayer
-          view={mapState.view}
-          config={proportionalConfig}
-          visible={true}
-          opacity={choroplethOpacity}
-          onSymbolClick={enableAIMode ? handlePrecinctClickForAI : handlePrecinctClick}
-        />
-      )}
-
-      {/* Value By Alpha Layer */}
-      {mapState.view && activeLayer === 'valueByAlpha' && (
-        <ValueByAlphaLayer
-          view={mapState.view}
-          config={valueByAlphaConfig}
-          visible={true}
-          opacity={choroplethOpacity}
-          onPrecinctClick={enableAIMode ? handlePrecinctClickForAI : handlePrecinctClick}
-          selectedPrecinctName={mapState.selectedPrecinct}
-        />
-      )}
-
-      {/* Boundary Selection Layer - shows boundary outlines when type is selected */}
-      {mapState.view && selectedBoundaryType && (
-        <BoundaryMapLayer
-          view={mapState.view}
-          layerType={selectedBoundaryType}
-          selectedIds={selectedBoundaryIds}
-          visible={true}
-        />
-      )}
 
       {/* Uploaded Layers Renderer */}
       {mapState.view && uploadedLayers.length > 0 && (
@@ -2549,10 +2505,10 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
           </div>
 
           {/* Divider before Upload */}
-          <div className="h-4 w-px bg-gray-300" />
+          {/* <div className="h-4 w-px bg-gray-300" /> */}
 
           {/* Upload Button */}
-          <button
+          {/* <button
             onClick={() => setShowUploader(!showUploader)}
             className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${showUploader
               ? 'bg-[#33a852] text-white'
@@ -2565,12 +2521,12 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             Upload
-          </button>
+          </button> */}
         </div>
       </div>
 
       {/* Upload Panel - Dropdown from toolbar (positioned below 2-row toolbar) */}
-      {showUploader && (
+      {/* {showUploader && (
         <div className="absolute top-[72px] right-3 z-30 w-72">
           <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
             <div className="flex items-center justify-between mb-2">
@@ -2596,7 +2552,7 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Uploaded Layers Panel - Dropdown from toolbar (positioned below 2-row toolbar) */}
       {uploadedLayers.length > 0 && showLayerControls && (
