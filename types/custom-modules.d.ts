@@ -25,7 +25,7 @@ declare module '@/components/ui/resizable' {
 }
 
 // Utility components
-declare module '@/components/location-search' {
+declare module '@/components/common/location-search' {
   export interface LocationResult {
     address: string;
     longitude: number;
@@ -33,12 +33,12 @@ declare module '@/components/location-search' {
     type: 'address' | 'city' | 'region' | 'country';
     bbox?: [number, number, number, number];
   }
-  
+
   export interface LocationSearchProps {
     onLocationSelected: (location: LocationResult) => void;
     placeholder?: string;
     className?: string;
   }
-  
+
   export function LocationSearch(props: LocationSearchProps): JSX.Element;
 } 

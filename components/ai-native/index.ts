@@ -9,9 +9,3 @@ export type {
   AISession,
 } from '@/lib/ai-native/types';
 
-// Re-export Phase 3 component types
-export type {
-  TurnoutScenario,
-  ScenarioSummary,
-  PrecinctScenarioResult,
-} from './WhatIfPoliticalPanel';

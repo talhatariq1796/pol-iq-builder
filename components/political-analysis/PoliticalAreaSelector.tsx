@@ -42,7 +42,7 @@ import {
 
 import { BoundaryLayerPicker, BOUNDARY_LAYERS } from './BoundaryLayerPicker';
 import { BoundarySearch, BoundaryFeature } from './BoundarySearch';
-import { LocationSearch, LocationResult } from '@/components/location-search';
+import { LocationSearch, LocationResult } from '@/components/common/location-search';
 import { useDrawing } from '@/hooks/useDrawing';
 import type { BoundaryLayerType, PoliticalAreaSelection } from '@/types/political';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
@@ -75,37 +75,37 @@ const SELECTION_METHODS: Array<{
   icon: React.ReactNode;
   description: string;
 }> = [
-  {
-    id: 'click-select',
-    label: 'Select',
-    icon: <MousePointer2 className="h-3.5 w-3.5 shrink-0" />,
-    description: 'Click areas on the map to select/multi-select them',
-  },
-  {
-    id: 'click-buffer',
-    label: 'Buffer',
-    icon: <Target className="h-3.5 w-3.5 shrink-0" />,
-    description: 'Click a point and create a radius or drive-time buffer',
-  },
-  {
-    id: 'draw',
-    label: 'Draw',
-    icon: <Pencil className="h-3.5 w-3.5 shrink-0" />,
-    description: 'Draw a custom polygon on the map',
-  },
-  {
-    id: 'search',
-    label: 'Search',
-    icon: <Search className="h-3.5 w-3.5 shrink-0" />,
-    description: 'Search for an address and create a buffer around it',
-  },
-  {
-    id: 'boundary-select',
-    label: 'Boundaries',
-    icon: <Layers className="h-3.5 w-3.5 shrink-0" />,
-    description: 'Select from precincts, ZIP codes, or other boundaries',
-  },
-];
+    {
+      id: 'click-select',
+      label: 'Select',
+      icon: <MousePointer2 className="h-3.5 w-3.5 shrink-0" />,
+      description: 'Click areas on the map to select/multi-select them',
+    },
+    {
+      id: 'click-buffer',
+      label: 'Buffer',
+      icon: <Target className="h-3.5 w-3.5 shrink-0" />,
+      description: 'Click a point and create a radius or drive-time buffer',
+    },
+    {
+      id: 'draw',
+      label: 'Draw',
+      icon: <Pencil className="h-3.5 w-3.5 shrink-0" />,
+      description: 'Draw a custom polygon on the map',
+    },
+    {
+      id: 'search',
+      label: 'Search',
+      icon: <Search className="h-3.5 w-3.5 shrink-0" />,
+      description: 'Search for an address and create a buffer around it',
+    },
+    {
+      id: 'boundary-select',
+      label: 'Boundaries',
+      icon: <Layers className="h-3.5 w-3.5 shrink-0" />,
+      description: 'Select from precincts, ZIP codes, or other boundaries',
+    },
+  ];
 
 // Buffer presets (miles for US users)
 const RADIUS_OPTIONS = [
@@ -275,8 +275,8 @@ export function PoliticalAreaSelector({
         const geometryMap = new Map<string, GeoJSON.Geometry>();
         for (const feature of boundaries.features) {
           const name = feature.properties?.Precinct_Long_Name ||
-                       feature.properties?.name ||
-                       feature.properties?.precinct_name;
+            feature.properties?.name ||
+            feature.properties?.precinct_name;
           if (name && feature.geometry) {
             geometryMap.set(name, feature.geometry);
           }
@@ -486,8 +486,8 @@ export function PoliticalAreaSelector({
         const coords = feature.geometry.type === 'Polygon'
           ? (feature.geometry as GeoJSON.Polygon).coordinates[0]
           : feature.geometry.type === 'MultiPolygon'
-          ? (feature.geometry as GeoJSON.MultiPolygon).coordinates[0][0]
-          : null;
+            ? (feature.geometry as GeoJSON.MultiPolygon).coordinates[0][0]
+            : null;
 
         if (coords) {
           const xs = coords.map((c) => c[0]);
@@ -741,8 +741,8 @@ export function PoliticalAreaSelector({
       bufferType === 'radius'
         ? `${bufferValue} mi radius`
         : bufferType === 'drivetime'
-        ? `${bufferValue} min drive`
-        : `${bufferValue} min walk`;
+          ? `${bufferValue} min drive`
+          : `${bufferValue} min walk`;
 
     return {
       geometry: geojsonGeometry,
@@ -938,413 +938,413 @@ export function PoliticalAreaSelector({
   return (
     <div className="w-full space-y-4">
 
-        {/* Method selection tabs */}
-        <Tabs
-          value={activeMethod}
-          onValueChange={(v) => {
-            setActiveMethod(v as SelectionMethod);
-            // Reset state when changing methods
-            handleCancel();
-          }}
-        >
-          <TabsList className="grid grid-cols-5 w-full h-9">
-            {SELECTION_METHODS.map((method) => (
-              <TabsTrigger
-                key={method.id}
-                value={method.id}
-                className="flex flex-row items-center justify-center gap-1 px-1 text-xs whitespace-nowrap"
-              >
-                {method.icon}
-                <span className="hidden sm:inline leading-none">{method.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      {/* Method selection tabs */}
+      <Tabs
+        value={activeMethod}
+        onValueChange={(v) => {
+          setActiveMethod(v as SelectionMethod);
+          // Reset state when changing methods
+          handleCancel();
+        }}
+      >
+        <TabsList className="grid grid-cols-5 w-full h-9">
+          {SELECTION_METHODS.map((method) => (
+            <TabsTrigger
+              key={method.id}
+              value={method.id}
+              className="flex flex-row items-center justify-center gap-1 px-1 text-xs whitespace-nowrap"
+            >
+              {method.icon}
+              <span className="hidden sm:inline leading-none">{method.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-          {/* Click-Select tab (direct map click to select precincts) */}
-          <TabsContent value="click-select" className="mt-4 space-y-4">
-            <div className="text-center py-4">
-              <MousePointer2 className="h-8 w-8 mx-auto mb-2 text-[#33a852]" />
-              <p className="text-xs text-muted-foreground mb-2">
-                Click areas on the map to select them
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Click again to deselect
-              </p>
-            </div>
+        {/* Click-Select tab (direct map click to select precincts) */}
+        <TabsContent value="click-select" className="mt-4 space-y-4">
+          <div className="text-center py-4">
+            <MousePointer2 className="h-8 w-8 mx-auto mb-2 text-[#33a852]" />
+            <p className="text-xs text-muted-foreground mb-2">
+              Click areas on the map to select them
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Click again to deselect
+            </p>
+          </div>
 
-            {selectedPrecinctNames.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-600">
-                    {selectedPrecinctNames.length} precinct{selectedPrecinctNames.length !== 1 ? 's' : ''} selected
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedPrecinctNames([])}
-                    className="text-xs h-7 px-2"
+          {selectedPrecinctNames.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-600">
+                  {selectedPrecinctNames.length} precinct{selectedPrecinctNames.length !== 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedPrecinctNames([])}
+                  className="text-xs h-7 px-2"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              </div>
+
+              <div className="max-h-32 overflow-y-auto space-y-1 border rounded-md p-2">
+                {selectedPrecinctNames.map((name) => (
+                  <div
+                    key={name}
+                    className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1"
                   >
-                    <X className="h-3 w-3 mr-1" />
-                    Clear
+                    <span className="truncate">{name}</span>
+                    <button
+                      onClick={() => setSelectedPrecinctNames((prev: string[]) => prev.filter(n => n !== name))}
+                      className="text-gray-400 hover:text-gray-600 ml-2"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Click + Buffer tab */}
+        <TabsContent value="click-buffer" className="mt-4 space-y-4">
+          {!clickedPoint ? (
+            <div className="text-center py-6">
+              <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+              <p className="text-xs text-muted-foreground mb-4">
+                Click on the map to place a point
+              </p>
+              <Button onClick={handleStartClickMode} variant="outline" className="text-xs">
+                <Target className="h-4 w-4 mr-2" />
+                Start Clicking
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Buffer type selector */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Buffer Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant={bufferType === 'radius' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setBufferType('radius')}
+                    className="flex items-center gap-1"
+                  >
+                    <CircleIcon className="h-3 w-3" />
+                    Radius
+                  </Button>
+                  <Button
+                    variant={bufferType === 'drivetime' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setBufferType('drivetime')}
+                    className="flex items-center gap-1"
+                  >
+                    <Car className="h-3 w-3" />
+                    Drive
+                  </Button>
+                  <Button
+                    variant={bufferType === 'walktime' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setBufferType('walktime')}
+                    className="flex items-center gap-1"
+                  >
+                    <PersonStanding className="h-3 w-3" />
+                    Walk
                   </Button>
                 </div>
+              </div>
 
-                <div className="max-h-32 overflow-y-auto space-y-1 border rounded-md p-2">
-                  {selectedPrecinctNames.map((name) => (
-                    <div
-                      key={name}
-                      className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1"
-                    >
-                      <span className="truncate">{name}</span>
-                      <button
-                        onClick={() => setSelectedPrecinctNames((prev: string[]) => prev.filter(n => n !== name))}
-                        className="text-gray-400 hover:text-gray-600 ml-2"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+              {/* Buffer value selector */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">
+                  {bufferType === 'radius' ? 'Distance' : 'Time'}
+                </Label>
+                <div className="flex gap-2">
+                  <Select value={bufferValue} onValueChange={setBufferValue}>
+                    <SelectTrigger className="flex-1 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="text-xs">
+                      {bufferOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={generateBuffer}
+                    disabled={isGeneratingBuffer}
+                    className="shrink-0 text-xs"
+                  >
+                    {isGeneratingBuffer ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Apply'
+                    )}
+                  </Button>
                 </div>
               </div>
-            )}
-          </TabsContent>
 
-          {/* Click + Buffer tab */}
-          <TabsContent value="click-buffer" className="mt-4 space-y-4">
-            {!clickedPoint ? (
-              <div className="text-center py-6">
-                <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                <p className="text-xs text-muted-foreground mb-4">
-                  Click on the map to place a point
-                </p>
-                <Button onClick={handleStartClickMode} variant="outline" className="text-xs">
-                  <Target className="h-4 w-4 mr-2" />
-                  Start Clicking
-                </Button>
-              </div>
-            ) : (
-              <>
-                {/* Buffer type selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Buffer Type</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant={bufferType === 'radius' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setBufferType('radius')}
-                      className="flex items-center gap-1"
-                    >
-                      <CircleIcon className="h-3 w-3" />
-                      Radius
-                    </Button>
-                    <Button
-                      variant={bufferType === 'drivetime' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setBufferType('drivetime')}
-                      className="flex items-center gap-1"
-                    >
-                      <Car className="h-3 w-3" />
-                      Drive
-                    </Button>
-                    <Button
-                      variant={bufferType === 'walktime' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setBufferType('walktime')}
-                      className="flex items-center gap-1"
-                    >
-                      <PersonStanding className="h-3 w-3" />
-                      Walk
-                    </Button>
-                  </div>
-                </div>
+              {/* Reset button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setClickedPoint(null);
+                  setBufferGeometry(null);
+                  view?.graphics.removeAll();
+                }}
+                className="w-full text-xs"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Clear Point
+              </Button>
+            </>
+          )}
+        </TabsContent>
 
-                {/* Buffer value selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">
-                    {bufferType === 'radius' ? 'Distance' : 'Time'}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Select value={bufferValue} onValueChange={setBufferValue}>
-                      <SelectTrigger className="flex-1 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="text-xs">
-                        {bufferOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={generateBuffer}
-                      disabled={isGeneratingBuffer}
-                      className="shrink-0 text-xs"
-                    >
-                      {isGeneratingBuffer ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Apply'
-                      )}
-                    </Button>
-                  </div>
-                </div>
+        {/* Draw tab */}
+        <TabsContent value="draw" className="mt-4 space-y-4">
+          {!drawnGeometry ? (
+            <div className="text-center py-6">
+              <Pencil className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+              <p className="text-xs text-muted-foreground mb-4">
+                Draw a polygon on the map
+              </p>
+              <Button onClick={handleStartDrawPolygon} variant="outline" className="text-xs">
+                <Pencil className="h-4 w-4 mr-2" />
+                Draw Polygon
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Double-click to complete
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Alert>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  Polygon drawn successfully
+                </AlertDescription>
+              </Alert>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDrawnGeometry(null);
+                  resetDrawing();
+                  view?.graphics.removeAll();
+                }}
+                className="w-full text-xs"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Clear Drawing
+              </Button>
+            </div>
+          )}
+        </TabsContent>
 
-                {/* Reset button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setClickedPoint(null);
-                    setBufferGeometry(null);
-                    view?.graphics.removeAll();
-                  }}
-                  className="w-full text-xs"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Point
-                </Button>
-              </>
-            )}
-          </TabsContent>
+        {/* Search tab */}
+        <TabsContent value="search" className="mt-4 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Search Location</Label>
+            <LocationSearch
+              onLocationSelected={handleLocationSelected}
+              placeholder="Enter address, city, or place..."
+              className="w-full text-xs"
+            />
+          </div>
 
-          {/* Draw tab */}
-          <TabsContent value="draw" className="mt-4 space-y-4">
-            {!drawnGeometry ? (
-              <div className="text-center py-6">
-                <Pencil className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                <p className="text-xs text-muted-foreground mb-4">
-                  Draw a polygon on the map
-                </p>
-                <Button onClick={handleStartDrawPolygon} variant="outline" className="text-xs">
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Draw Polygon
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Double-click to complete
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
+          {clickedPoint && (
+            <>
+              {searchedLocation && (
                 <Alert>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription>
-                    Polygon drawn successfully
+                  <MapPin className="h-4 w-4" />
+                  <AlertDescription className="text-xs truncate">
+                    {searchedLocation.address}
                   </AlertDescription>
                 </Alert>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDrawnGeometry(null);
-                    resetDrawing();
-                    view?.graphics.removeAll();
-                  }}
-                  className="w-full text-xs"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Drawing
-                </Button>
-              </div>
-            )}
-          </TabsContent>
+              )}
 
-          {/* Search tab */}
-          <TabsContent value="search" className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Search Location</Label>
-              <LocationSearch
-                onLocationSelected={handleLocationSelected}
-                placeholder="Enter address, city, or place..."
-                className="w-full text-xs"
+              {/* Buffer type selector */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Buffer Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant={bufferType === 'radius' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setBufferType('radius')}
+                    className="flex items-center gap-1"
+                  >
+                    <CircleIcon className="h-3 w-3" />
+                    Radius
+                  </Button>
+                  <Button
+                    variant={bufferType === 'drivetime' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setBufferType('drivetime')}
+                    className="flex items-center gap-1"
+                  >
+                    <Car className="h-3 w-3" />
+                    Drive
+                  </Button>
+                  <Button
+                    variant={bufferType === 'walktime' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setBufferType('walktime')}
+                    className="flex items-center gap-1"
+                  >
+                    <PersonStanding className="h-3 w-3" />
+                    Walk
+                  </Button>
+                </div>
+              </div>
+
+              {/* Buffer value selector */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">
+                  {bufferType === 'radius' ? 'Distance' : 'Time'}
+                </Label>
+                <div className="flex gap-2">
+                  <Select value={bufferValue} onValueChange={setBufferValue}>
+                    <SelectTrigger className="flex-1 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="text-xs">
+                      {bufferOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={generateBuffer}
+                    disabled={isGeneratingBuffer}
+                    className="shrink-0 text-xs"
+                  >
+                    {isGeneratingBuffer ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Apply'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* Boundary selection tab */}
+        <TabsContent value="boundary-select" className="mt-4 space-y-4">
+          {/* Layer picker */}
+          <BoundaryLayerPicker
+            value={boundaryType}
+            onChange={setBoundaryType}
+            disabled={isLoadingBoundaries}
+          />
+
+          {/* Multi-select toggle */}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="multi-select" className="text-xs">
+              Multi-select (combine boundaries)
+            </Label>
+            <Switch
+              id="multi-select"
+              checked={multiSelect}
+              onCheckedChange={(checked: boolean) => {
+                setMultiSelect(checked);
+                if (!checked && selectedBoundaryIds.length > 1) {
+                  setSelectedBoundaryIds([selectedBoundaryIds[0]]);
+                }
+              }}
+            />
+          </div>
+
+          {/* Boundary search/list */}
+          {boundaryType && (
+            <div className="h-[300px] border rounded-md p-3">
+              <BoundarySearch
+                layerType={boundaryType}
+                features={boundaryFeatures}
+                selectedIds={selectedBoundaryIds}
+                onSelectionChange={handleBoundarySelectionChange}
+                onFeatureHover={handleBoundaryHover}
+                onFeatureClick={handleBoundaryClick}
+                multiSelect={multiSelect}
+                isLoading={isLoadingBoundaries}
               />
             </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
-            {clickedPoint && (
+      {/* Info/Error message */}
+      {error && (
+        <Alert>
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-xs text-muted-foreground">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Selection summary */}
+      {isSelectionValid && (
+        <Alert>
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription>
+            {activeMethod === 'boundary-select' && (
               <>
-                {searchedLocation && (
-                  <Alert>
-                    <MapPin className="h-4 w-4" />
-                    <AlertDescription className="text-xs truncate">
-                      {searchedLocation.address}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Buffer type selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Buffer Type</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant={bufferType === 'radius' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setBufferType('radius')}
-                      className="flex items-center gap-1"
-                    >
-                      <CircleIcon className="h-3 w-3" />
-                      Radius
-                    </Button>
-                    <Button
-                      variant={bufferType === 'drivetime' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setBufferType('drivetime')}
-                      className="flex items-center gap-1"
-                    >
-                      <Car className="h-3 w-3" />
-                      Drive
-                    </Button>
-                    <Button
-                      variant={bufferType === 'walktime' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setBufferType('walktime')}
-                      className="flex items-center gap-1"
-                    >
-                      <PersonStanding className="h-3 w-3" />
-                      Walk
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Buffer value selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">
-                    {bufferType === 'radius' ? 'Distance' : 'Time'}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Select value={bufferValue} onValueChange={setBufferValue}>
-                      <SelectTrigger className="flex-1 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="text-xs">
-                        {bufferOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={generateBuffer}
-                      disabled={isGeneratingBuffer}
-                      className="shrink-0 text-xs"
-                    >
-                      {isGeneratingBuffer ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Apply'
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                Selected: {selectedBoundaryIds.length}{' '}
+                {selectedBoundaryIds.length === 1
+                  ? BOUNDARY_LAYERS[boundaryType!].displayName.toLowerCase()
+                  : BOUNDARY_LAYERS[boundaryType!].pluralName.toLowerCase()}
               </>
             )}
-          </TabsContent>
-
-          {/* Boundary selection tab */}
-          <TabsContent value="boundary-select" className="mt-4 space-y-4">
-            {/* Layer picker */}
-            <BoundaryLayerPicker
-              value={boundaryType}
-              onChange={setBoundaryType}
-              disabled={isLoadingBoundaries}
-            />
-
-            {/* Multi-select toggle */}
-            <div className="flex items-center justify-between">
-              <Label htmlFor="multi-select" className="text-xs">
-                Multi-select (combine boundaries)
-              </Label>
-              <Switch
-                id="multi-select"
-                checked={multiSelect}
-                onCheckedChange={(checked: boolean) => {
-                  setMultiSelect(checked);
-                  if (!checked && selectedBoundaryIds.length > 1) {
-                    setSelectedBoundaryIds([selectedBoundaryIds[0]]);
-                  }
-                }}
-              />
-            </div>
-
-            {/* Boundary search/list */}
-            {boundaryType && (
-              <div className="h-[300px] border rounded-md p-3">
-                <BoundarySearch
-                  layerType={boundaryType}
-                  features={boundaryFeatures}
-                  selectedIds={selectedBoundaryIds}
-                  onSelectionChange={handleBoundarySelectionChange}
-                  onFeatureHover={handleBoundaryHover}
-                  onFeatureClick={handleBoundaryClick}
-                  multiSelect={multiSelect}
-                  isLoading={isLoadingBoundaries}
-                />
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Info/Error message */}
-        {error && (
-          <Alert>
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-xs text-muted-foreground">{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Selection summary */}
-        {isSelectionValid && (
-          <Alert>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription>
-              {activeMethod === 'boundary-select' && (
-                <>
-                  Selected: {selectedBoundaryIds.length}{' '}
-                  {selectedBoundaryIds.length === 1
-                    ? BOUNDARY_LAYERS[boundaryType!].displayName.toLowerCase()
-                    : BOUNDARY_LAYERS[boundaryType!].pluralName.toLowerCase()}
-                </>
-              )}
-              {(activeMethod === 'click-buffer' || activeMethod === 'search') && (
-                <>
-                  Buffer: {bufferValue}{' '}
-                  {bufferType === 'radius'
-                    ? 'mi radius'
-                    : bufferType === 'drivetime'
+            {(activeMethod === 'click-buffer' || activeMethod === 'search') && (
+              <>
+                Buffer: {bufferValue}{' '}
+                {bufferType === 'radius'
+                  ? 'mi radius'
+                  : bufferType === 'drivetime'
                     ? 'min drive'
                     : 'min walk'}
-                </>
-              )}
-              {activeMethod === 'draw' && <>Area selected</>}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            className="flex-1 border-[#33a852]/30 text-gray-700 hover:bg-emerald-50 hover:border-[#33a852]"
-            onClick={handleCancel}
-          >
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white"
-            onClick={handleAnalyze}
-            disabled={!isSelectionValid}
-          >
-            {isSelectionValid ? (
-              <>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Analyze Area
               </>
-            ) : (
-              'Select an Area'
             )}
-          </Button>
-        </div>
+            {activeMethod === 'draw' && <>Area selected</>}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-2 pt-2">
+        <Button
+          variant="outline"
+          className="flex-1 border-[#33a852]/30 text-gray-700 hover:bg-emerald-50 hover:border-[#33a852]"
+          onClick={handleCancel}
+        >
+          <X className="h-4 w-4 mr-2" />
+          Cancel
+        </Button>
+        <Button
+          className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white"
+          onClick={handleAnalyze}
+          disabled={!isSelectionValid}
+        >
+          {isSelectionValid ? (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Analyze Area
+            </>
+          ) : (
+            'Select an Area'
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
