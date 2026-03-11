@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import PoliticalMapContainer from './PoliticalMapContainer';
-import MapLoadingSkeleton from '@/components/ui/MapLoadingSkeleton';
+import MapLoadingSkeleton from '@/components/common/map-loading-skeleton';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
 import { useIsMobile, useIsSmallScreen } from '@/lib/hooks/useMediaQuery';
@@ -218,9 +218,8 @@ export default function SharedMapPanel({
 
   return (
     <div
-      className={`fixed top-0 ${positionClasses} h-full bg-white shadow-xl z-30 transition-all duration-300 ease-in-out ${
-        isSmallScreen && !isCollapsed ? 'left-0 right-0' : ''
-      }`}
+      className={`fixed top-0 ${positionClasses} h-full bg-white shadow-xl z-30 transition-all duration-300 ease-in-out ${isSmallScreen && !isCollapsed ? 'left-0 right-0' : ''
+        }`}
       style={{ width: isCollapsed ? '40px' : responsiveWidth }}
     >
       {isCollapsed ? (
@@ -267,9 +266,8 @@ export default function SharedMapPanel({
           {/* Collapse button */}
           <button
             onClick={handleToggle}
-            className={`absolute top-4 ${position === 'left' ? 'right-4' : 'left-4'} ${
-              isSmallScreen ? 'right-4' : ''
-            } z-40 w-8 h-8 rounded-lg bg-white shadow-md flex items-center justify-center hover:bg-gray-50 transition-all duration-200 hover:scale-110`}
+            className={`absolute top-4 ${position === 'left' ? 'right-4' : 'left-4'} ${isSmallScreen ? 'right-4' : ''
+              } z-40 w-8 h-8 rounded-lg bg-white shadow-md flex items-center justify-center hover:bg-gray-50 transition-all duration-200 hover:scale-110`}
             title="Hide Map"
             aria-label="Collapse map panel"
           >

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { HelpDialog } from '@/components/help/HelpDialog';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import {
   AlertDialog,
   AlertDialogAction,

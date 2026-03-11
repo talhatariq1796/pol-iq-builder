@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, BarChart3, Maximize2, Minimize2 } from 'luci
 import { AIPoliticalSessionHost, MapCommand } from '@/components/ai-native/AIPoliticalSessionHost';
 import { AppNavigation } from '@/components/navigation/AppNavigation';
 import { HelpDialog, politicalAIHelp, politicalAITutorials } from '@/components/help';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { registerTourCallbacks, unregisterTourCallbacks } from '@/lib/tour/tourActions';
 import type { IQAction } from '@/components/political-analysis/PoliticalAnalysisPanel';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';

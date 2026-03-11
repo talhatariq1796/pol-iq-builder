@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { ConversationMemory, MemoryMessage } from '@/components/ConversationMemory';
+import { ConversationMemory, MemoryMessage } from '@/components/common/conversation-memory';
 
 interface PersistedMemory {
   messages: MemoryMessage[];
@@ -9,7 +9,7 @@ interface PersistedMemory {
 }
 
 interface ChatContextType {
-  addMessage: (message: { role: 'user' | 'assistant' | 'system'; content: string; [key: string]: any }) => void;
+  addMessage: (message: { role: 'user' | 'assistant' | 'system'; content: string;[key: string]: any }) => void;
   contextSummary: string;
   refreshContextSummary: () => Promise<void>;
 }
@@ -45,7 +45,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       try {
         const data = memoryRef.current.export();
         localStorage.setItem('mpiQ_conversation_memory', JSON.stringify(data));
-      } catch {}
+      } catch { }
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -74,7 +74,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addMessage = (message: { role: 'user' | 'assistant' | 'system'; content: string; [key: string]: any }) => {
+  const addMessage = (message: { role: 'user' | 'assistant' | 'system'; content: string;[key: string]: any }) => {
     memoryRef.current.addMessage({ role: message.role, content: message.content });
     // Trigger summarization if threshold reached
     if (memoryRef.current.getMessages().length % 10 === 0) {

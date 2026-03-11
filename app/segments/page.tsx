@@ -23,7 +23,7 @@ const QUICK_START_PRESETS = {
   persuasion: 'preset-college-independents',
   donors: 'preset-high-value-donors',
 } as const;
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { useBreadcrumbs } from '@/hooks/useBreadcrumbs';
 

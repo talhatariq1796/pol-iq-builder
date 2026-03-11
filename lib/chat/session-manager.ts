@@ -1,12 +1,12 @@
-import { 
-  SESSION_CONFIG, 
-  SessionState, 
-  SessionMetadata, 
+import {
+  SESSION_CONFIG,
+  SessionState,
+  SessionMetadata,
   generateSessionId,
   isSessionExpired,
-  SessionTrigger 
+  SessionTrigger
 } from '@/config/chat-memory-config';
-import { ConversationMemory } from '@/components/ConversationMemory';
+import { ConversationMemory } from '@/components/common/conversation-memory';
 
 export type QueryClassification = 'follow-up' | 'new-analysis';
 
@@ -31,7 +31,7 @@ export class ChatSessionManager {
    * Handle a new query and determine session action
    */
   async handleNewQuery(
-    query: string, 
+    query: string,
     conversationHistory: string,
     persona?: string,
     analysisType?: string,
@@ -108,18 +108,18 @@ export class ChatSessionManager {
         shouldClearContext = true;
         trigger = classification === 'new-analysis' ? 'new-analysis' : undefined;
         break;
-      
+
       case 'timeout-restart':
         sessionId = this.startNewSession(analysisType, userId);
         shouldClearContext = true;
         trigger = 'timeout';
         break;
-      
+
       case 'continue':
         sessionId = this.continueCurrentSession();
         shouldClearContext = false;
         break;
-      
+
       default:
         sessionId = this.startNewSession(analysisType, userId);
         shouldClearContext = true;
@@ -141,10 +141,10 @@ export class ChatSessionManager {
   private startNewSession(analysisType?: string, userId?: string): string {
     // Generate user-scoped session ID
     const sessionId = generateSessionId(userId);
-    
+
     // Clear the conversation memory and start fresh
     this.conversationMemory.clear();
-    
+
     // Create our session state
     this.currentSession = {
       sessionId,
@@ -191,9 +191,9 @@ export class ChatSessionManager {
       console.log(`[SessionManager] Manually clearing session: ${this.currentSession.sessionId}`);
       this.conversationMemory.clear();
     }
-    
+
     this.currentSession = null;
-    
+
     // Return a decision indicating session was cleared (but don't start new one yet)
     return {
       classification: 'new-analysis',
@@ -209,8 +209,8 @@ export class ChatSessionManager {
    * Update session context with analysis results
    */
   public updateSessionContext(
-    metrics: string[], 
-    regions: string[], 
+    metrics: string[],
+    regions: string[],
     results?: any,
     persona?: string
   ): void {

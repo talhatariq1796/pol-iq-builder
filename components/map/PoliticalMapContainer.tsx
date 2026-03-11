@@ -51,7 +51,7 @@ import Polygon from '@arcgis/core/geometry/Polygon';
 import { Clock, Play, Pause, ChevronLeft, ChevronRight, SkipBack, SkipForward } from 'lucide-react';
 
 // Import widget styles for zoom control and other ArcGIS widgets
-import '../widget-styles.css';
+import '../../styles/widget-styles.css';
 
 /**
  * Convert GeoJSON geometry to ArcGIS geometry

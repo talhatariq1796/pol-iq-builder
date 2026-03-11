@@ -11,7 +11,7 @@ import { HelpDialog, compareHelp, compareTutorials } from '@/components/help';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { useToolUrlParams } from '@/lib/ai-native/hooks/useToolUrlParams';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 
 // Dynamic import to prevent SSR issues with ArcGIS/ResizeObserver
 const SharedMapPanel = dynamic(
