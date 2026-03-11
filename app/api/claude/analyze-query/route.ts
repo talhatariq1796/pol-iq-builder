@@ -1,7 +1,6 @@
 /* eslint-disable prefer-const */
 import { NextResponse } from 'next/server';
-import { layers } from '@/config/layers';
-import Anthropic, { APIError } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { hasOwnProperty } from '@/utils/lint-helpers';
 import { mapQueryToVisualizations, QueryIntent } from '@/utils/visualizations/query-mapper';
 import { VisualizationType } from '@/config/dynamic-layers';
@@ -42,10 +41,6 @@ type MessageCreateParamsBase = {
   messages: MessageParam[];
   model: string;
   stream?: boolean;
-};
-
-type MessageCreateParamsNonStreaming = Omit<MessageCreateParamsBase, 'stream'> & {
-  stream?: false;
 };
 
 type Message = {
@@ -93,18 +88,6 @@ const anthropic = new Anthropic({
 const PRIMARY_MODEL = 'claude-3-5-sonnet-20241022';
 const FALLBACK_MODEL = 'claude-3-5-sonnet-20240620';
 
-// Helper type guard to check if the response is a non-streaming Message
-function isResponseMessage(response: any): response is Message {
-  return (
-    response &&
-    typeof response === 'object' &&
-    !hasOwnProperty(response, 'close') && // Use helper function instead of direct call
-    Array.isArray(response.content) &&
-    response.content.length > 0 &&
-    response.content[0].type === 'text'
-  );
-}
-
 const systemPrompt = `You are an AI assistant that analyzes user queries to determine the most appropriate visualization type and data requirements.
 Your task is to:
 1. Understand the user's intent
@@ -142,8 +125,8 @@ export async function POST(req: Request) {
     // Call Claude API to analyze the query using the SDK
     const response = await anthropic.messages.create({
       model: PRIMARY_MODEL,
-        max_tokens: 1000,
-        system: systemPrompt,
+      max_tokens: 1000,
+      system: systemPrompt,
       messages: [
         { role: 'user', content: query }
       ]
@@ -153,7 +136,7 @@ export async function POST(req: Request) {
 
     // Log the full response for debugging
     console.log('Claude API response:', JSON.stringify(data, null, 2));
-    
+
     // Handle potential error response
     if (isAPIError(data)) {
       console.error('Claude API error:', data);
@@ -169,12 +152,12 @@ export async function POST(req: Request) {
             { role: 'user', content: query }
           ]
         });
-        
+
         if (isAPIError(fallbackResponse)) {
           console.error('Fallback model also failed:', fallbackResponse);
           throw new Error(fallbackResponse.error.message || 'Failed to analyze query with both models');
         }
-        
+
         // Use fallback data instead
         data = fallbackResponse;
       } else {

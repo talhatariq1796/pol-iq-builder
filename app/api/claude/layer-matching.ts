@@ -14,83 +14,6 @@ interface CompositeFeature {
   };
 }
 
-export function createCompositeIndex(features: any[], layerMatches: LayerMatch[]): CompositeFeature[] {
-  // Calculate normalization ranges dynamically from feature data
-  const normalizeRanges = layerMatches.reduce((ranges, match) => {
-    if (!match.field) return ranges;
-    
-    // Get all values for this field
-    const values = features
-      .map(f => f.attributes?.[match.field as string])
-      .filter(v => v !== null && v !== undefined);
-      
-    if (values.length > 0) {
-      ranges[match.field] = {
-        min: Math.min(...values),
-        max: Math.max(...values)
-      };
-    }
-    return ranges;
-  }, {} as { [key: string]: { min: number; max: number } });
-
-  return features.map(feature => {
-    let compositeScore = 0;
-    let totalWeight = 0;
-
-    layerMatches.forEach(match => {
-      if (!match.field) return;
-      const fieldValue = feature.attributes[match.field];
-      if (fieldValue !== undefined && fieldValue !== null) {
-        const range = normalizeRanges[match.field] || { min: 0, max: 100 };
-        const normalizedValue = Math.min(100, Math.max(0,
-          ((fieldValue - range.min) / (range.max - range.min)) * 100
-        ));
-        
-        compositeScore += (normalizedValue * match.relevance);
-        totalWeight += match.relevance;
-      }
-    });
-
-    return {
-      geometry: feature.geometry,
-      attributes: {
-        ...feature.attributes,
-        compositeIndex: totalWeight > 0 ? Math.round(compositeScore / totalWeight) : 0
-      }
-    };
-  });
-}
-
-export function createVisualizationLayer(features: CompositeFeature[], title: string = "Combined Activity Index") {
-  return {
-    type: "feature",
-    source: features,
-    title: title,
-    renderer: {
-      type: "simple",
-      symbol: {
-        type: "simple-fill",
-        color: [0, 0, 0, 0],
-        outline: {
-          color: [128, 128, 128, 0.5],
-          width: "0.5px"
-        }
-      },
-      visualVariables: [{
-        type: "color",
-        field: "compositeIndex",
-        stops: [
-          { value: 0, color: [240, 249, 243] },   // #f0f9f3 - light green
-          { value: 50, color: [134, 203, 152] },  // #86cb98 - medium green
-          { value: 100, color: [51, 168, 82] }    // #33a852 - target green
-        ],
-        legendOptions: {
-          title: "Combined Activity Index"
-        }
-      }]
-    }
-  };
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -114,9 +37,9 @@ export default async function handler(
 
     if (!question) {
       console.error('Invalid request: Missing question');
-      return res.status(400).json({ 
-        error: 'Invalid request', 
-        details: 'Missing question parameter' 
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: 'Missing question parameter'
       });
     }
 
@@ -144,48 +67,11 @@ export default async function handler(
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : 'No stack trace'
     });
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Layer matching failed',
       details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
-}
-
-function buildCategoriesFromLayers(layers: Record<string, LayerConfig>): Record<string, string[]> {
-  const categories: Record<string, Set<string>> = {};
-  
-  Object.values(layers).forEach(layer => {
-    // Extract terms from metadata tags
-    layer.metadata?.tags?.forEach(tag => {
-      const category = tag.split('-')[0] || tag; // Use first part of hyphenated tag as category
-      if (!categories[category]) {
-        categories[category] = new Set<string>();
-      }
-      categories[category].add(tag);
-    });
-
-    // Extract terms from field labels
-    layer.fields?.forEach(field => {
-      const label = field.label;
-      if (label) {
-        const terms = label.toLowerCase().split(' ');
-        terms.forEach(term => {
-          if (!categories[term]) {
-            categories[term] = new Set<string>();
-          }
-          categories[term].add(label.toLowerCase());
-        });
-      }
-    });
-  });
-
-  // Convert Sets to arrays
-  return Object.fromEntries(
-    Object.entries(categories).map(([category, terms]) => [
-      category,
-      Array.from(terms)
-    ])
-  );
 }
 
 function performRulesBasedMatching(question: string): LayerMatch[] {
@@ -195,9 +81,9 @@ function performRulesBasedMatching(question: string): LayerMatch[] {
   // Get all retail/store layers from layer configuration
   const retailLayers = Object.entries(layers).filter(([_, layer]) => {
     const tags = layer.metadata?.tags || [];
-    const isRetail = tags.some(tag => 
-      tag.includes('retail') || 
-      tag.includes('store') || 
+    const isRetail = tags.some(tag =>
+      tag.includes('retail') ||
+      tag.includes('store') ||
       tag.includes('shop')
     );
     return isRetail && layer.status === 'active';
@@ -206,15 +92,15 @@ function performRulesBasedMatching(question: string): LayerMatch[] {
   // Build search terms for each layer from its metadata
   retailLayers.forEach(([layerId, layer]) => {
     const searchTerms = new Set<string>();
-    
+
     // Add terms from layer name
     layer.name?.toLowerCase().split(/[\s-]+/).forEach(term => searchTerms.add(term));
-    
+
     // Add terms from tags
     layer.metadata?.tags?.forEach(tag => {
       tag.toLowerCase().split(/[\s-]+/).forEach(term => searchTerms.add(term));
     });
-    
+
     // Add terms from description
     if (layer.description) {
       const keywords = layer.description.toLowerCase()
@@ -234,17 +120,17 @@ function performRulesBasedMatching(question: string): LayerMatch[] {
       });
 
       // Add demographic layers for filtering if query mentions areas or demographics
-      if (questionLower.includes('area') || 
-          questionLower.includes('demographic') || 
-          questionLower.includes('young') || 
-          questionLower.includes('professional') ||
-          questionLower.includes('high') || 
-          questionLower.includes('concentration')) {
-        
+      if (questionLower.includes('area') ||
+        questionLower.includes('demographic') ||
+        questionLower.includes('young') ||
+        questionLower.includes('professional') ||
+        questionLower.includes('high') ||
+        questionLower.includes('concentration')) {
+
         // Find demographic layers from metadata
-        const demographicLayers = Object.entries(layers).filter(([_, l]) => 
-          l.metadata?.tags?.some(tag => 
-            tag.includes('demographic') || 
+        const demographicLayers = Object.entries(layers).filter(([_, l]) =>
+          l.metadata?.tags?.some(tag =>
+            tag.includes('demographic') ||
             tag.includes('population') ||
             tag.includes('income')
           ) && l.status === 'active'
@@ -266,12 +152,12 @@ function performRulesBasedMatching(question: string): LayerMatch[] {
   });
 
   // If no specific store was mentioned but query is about retail/stores
-  if (matches.length === 0 && 
-      (questionLower.includes('store') || 
-       questionLower.includes('retail') || 
-       questionLower.includes('shop') || 
-       questionLower.includes('location'))) {
-    
+  if (matches.length === 0 &&
+    (questionLower.includes('store') ||
+      questionLower.includes('retail') ||
+      questionLower.includes('shop') ||
+      questionLower.includes('location'))) {
+
     // Add all retail layers with lower relevance
     retailLayers.forEach(([layerId, layer]) => {
       matches.push({
@@ -291,7 +177,7 @@ async function performAIMatching(anthropic: Anthropic, question: string, layers:
   // Get all active layers and their metadata
   const activeLayers = Object.entries(layers).filter(([_, layer]) => layer.status === 'active');
   const validLayerIds = activeLayers.map(([id]) => id);
-  
+
   if (validLayerIds.length === 0) {
     return [];
   }
@@ -300,9 +186,9 @@ async function performAIMatching(anthropic: Anthropic, question: string, layers:
   const isLocationQuery = queryBuilder.isLocationQuery(question);
   const isAreaQuery = queryBuilder.isAreaQuery(question);
   const isHighValueQuery = question.toLowerCase().includes('high') || question.toLowerCase().includes('top');
-  const isPointInPolygonQuery = question.toLowerCase().includes('in') && 
-    (question.toLowerCase().includes('area') || question.toLowerCase().includes('region') || 
-     question.toLowerCase().includes('neighborhood') || question.toLowerCase().includes('zone'));
+  const isPointInPolygonQuery = question.toLowerCase().includes('in') &&
+    (question.toLowerCase().includes('area') || question.toLowerCase().includes('region') ||
+      question.toLowerCase().includes('neighborhood') || question.toLowerCase().includes('zone'));
 
   const response = await anthropic.messages.create({
     model: "claude-3-sonnet-20240229",
@@ -357,13 +243,13 @@ ${isPointInPolygonQuery ? '- visualizationMode: "point-in-polygon"\n- pointLayer
   try {
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     const matches = JSON.parse(content);
-    
+
     // For point-in-polygon queries, ensure we have both point and polygon layers
     if (isPointInPolygonQuery) {
-      const pointMatches = matches.filter((m: LayerMatch) => 
+      const pointMatches = matches.filter((m: LayerMatch) =>
         layers[m.layerId]?.metadata?.geometryType === 'point'
       );
-      const polygonMatches = matches.filter((m: LayerMatch) => 
+      const polygonMatches = matches.filter((m: LayerMatch) =>
         layers[m.layerId]?.metadata?.geometryType === 'polygon'
       );
 
@@ -378,8 +264,8 @@ ${isPointInPolygonQuery ? '- visualizationMode: "point-in-polygon"\n- pointLayer
     }
 
     // Validate matches against actual layer configuration
-    return matches.filter((match: LayerMatch) => 
-      validLayerIds.includes(match.layerId) && 
+    return matches.filter((match: LayerMatch) =>
+      validLayerIds.includes(match.layerId) &&
       layers[match.layerId]?.rendererField === match.field
     );
   } catch (e) {

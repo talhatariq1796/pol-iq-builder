@@ -1,4 +1,3 @@
-import { LocalGeospatialFeature } from '@/types/index';
 
 export function getRelevantFields(attributes: Record<string, any>, query: string): string[] {
   if (!attributes || !query) {
@@ -9,11 +8,11 @@ export function getRelevantFields(attributes: Record<string, any>, query: string
   const queryLower = query.toLowerCase();
 
   // Check for demographic-related fields
-  if (queryLower.includes('demographic') || 
-      queryLower.includes('population') || 
-      queryLower.includes('income') || 
-      queryLower.includes('age') || 
-      queryLower.includes('education')) {
+  if (queryLower.includes('demographic') ||
+    queryLower.includes('population') ||
+    queryLower.includes('income') ||
+    queryLower.includes('age') ||
+    queryLower.includes('education')) {
     const demographicFields = availableFields.filter(field => {
       const fieldLower = field.toLowerCase();
       return (
@@ -24,7 +23,7 @@ export function getRelevantFields(attributes: Record<string, any>, query: string
         fieldLower.includes('demographic')
       );
     });
-    
+
     if (demographicFields.length > 0) {
       console.log('[getRelevantFields] Found demographic fields:', demographicFields);
       return demographicFields;
@@ -32,11 +31,11 @@ export function getRelevantFields(attributes: Record<string, any>, query: string
   }
 
   // Check for sports-related fields
-  if (queryLower.includes('sports') || 
-      queryLower.includes('fan') || 
-      queryLower.includes('nhl') || 
-      queryLower.includes('soccer') || 
-      queryLower.includes('exercise')) {
+  if (queryLower.includes('sports') ||
+    queryLower.includes('fan') ||
+    queryLower.includes('nhl') ||
+    queryLower.includes('soccer') ||
+    queryLower.includes('exercise')) {
     const fanFields = availableFields.filter(field => {
       const fieldLower = field.toLowerCase();
       return (
@@ -47,13 +46,13 @@ export function getRelevantFields(attributes: Record<string, any>, query: string
         fieldLower.includes('exercise')
       );
     });
-    
+
     if (fanFields.length > 0) {
       console.log('[getRelevantFields] Found fan fields:', fanFields);
       return fanFields;
     }
   }
-  
+
   // Default case: return all available fields
   console.log('[getRelevantFields] No specific fields found, returning all available fields');
   return availableFields;
