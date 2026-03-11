@@ -15,17 +15,6 @@ export const metadata: Metadata = {
     icon: '/mpiq_pin2.png',
   },
 }
-
-/**
- * Preload critical data resources for faster initial page load
- * These are the most critical files loaded on political-ai page:
- * 1. blob-urls.json - Maps blob keys to Vercel Blob Storage URLs
- * 2. ingham_precincts.geojson - Precinct boundaries for map visualization
- *
- * Note: Other data files (targeting scores, demographics, etc.) are loaded
- * from Vercel Blob Storage via URLs in blob-urls.json
- */
-
 export default function RootLayout({
   children,
 }: {
