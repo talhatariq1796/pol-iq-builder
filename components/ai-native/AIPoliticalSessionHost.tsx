@@ -2033,19 +2033,10 @@ Available actions:
             '*Tip: Match volunteer experience to turf difficulty - assign experienced canvassers to persuasion turfs.*',
             [
               { id: 'export', label: 'Export for VAN', action: 'output:exportVAN' },
-              { id: 'canvass-page', label: 'Go to Canvassing', action: 'Navigate to /canvass' },
             ]
           );
           break;
         }
-
-        default:
-          addAssistantMessage(
-            `Processing canvassing ${operation}...`,
-            [
-              { id: 'canvass', label: 'Go to Canvassing', action: 'Navigate to /canvass' },
-            ]
-          );
       }
     } catch (error) {
       console.error('[AIPoliticalSessionHost] Canvassing action error:', error);
@@ -2406,14 +2397,11 @@ Available actions:
 
     // Map operation names to routes
     const routeMap: Record<string, string> = {
-      'canvass': '/canvass',
       'compare': '/compare',
       'settings': '/settings',
       'segments': '/segments',
-      'donors': '/donors',
       'political': '/political',
       'political-ai': '/political-ai',
-      'map': '/map',
     };
 
     const route = routeMap[operation] || `/${operation}`;

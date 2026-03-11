@@ -63,9 +63,6 @@ const REPORT_ALIASES: Record<string, string> = {
   canvass: 'canvass',
   canvassing: 'canvass',
   field: 'canvass',
-  donor: 'donor',
-  donors: 'donor',
-  fundraising: 'donor',
 };
 
 const COMMAND_HANDLERS: Record<string, (args: string) => SlashCommandResult> = {
@@ -254,7 +251,6 @@ function handleReportCommand(args: string): SlashCommandResult {
         `• **/report comparison** - Side-by-side comparison\n` +
         `• **/report segment** - Segment documentation\n` +
         `• **/report canvass** - Canvassing plan\n` +
-        `• **/report donor** - Fundraising analysis\n\n` +
         `Or just type **/report** and I'll suggest the best one based on your session.`,
       suggestedActions: [
         { id: 'exec', label: '📋 Executive Summary', action: 'report:executive', icon: 'file-text' },
@@ -508,8 +504,6 @@ function handleHistoryCommand(_args: string): SlashCommandResult {
 function handleNavigateCommand(tool: string): SlashCommandResult {
   const destinations: Record<string, { path: string; label: string }> = {
     segments: { path: '/segments', label: 'Segment Builder' },
-    donors: { path: '/donors', label: 'Donor Analysis' },
-    canvass: { path: '/canvass', label: 'Canvassing Planner' },
     compare: { path: '/compare', label: 'Comparison Tool' },
     'political-ai': { path: '/political-ai', label: 'Political Map' },
   };

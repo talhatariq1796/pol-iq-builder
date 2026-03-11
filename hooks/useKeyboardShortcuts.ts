@@ -59,7 +59,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
     // Cmd+1-4 for navigation
     if (cmdOrCtrl && ['1', '2', '3', '4'].includes(e.key)) {
       e.preventDefault();
-      const routes = ['/political-ai', '/segments', '/donors', '/canvass'];
+      const routes = ['/political-ai', '/segments'];
       router.push(routes[parseInt(e.key) - 1]);
       return;
     }

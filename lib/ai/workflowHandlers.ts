@@ -2714,7 +2714,6 @@ function assessConfidence(factors: {
   return 'low';
 }
 
-
 function getSpecificReportResponse(
   reportType: string,
   options: ReportOption[],

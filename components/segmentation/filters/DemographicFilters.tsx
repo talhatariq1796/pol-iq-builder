@@ -132,7 +132,7 @@ export function DemographicFilters({ filters, onChange }: DemographicFiltersProp
             <SelectItem value="any">Any</SelectItem>
             <SelectItem value="high_school">High School</SelectItem>
             <SelectItem value="some_college">Some College</SelectItem>
-            <SelectItem value="bachelors">Bachelor's+</SelectItem>
+            <SelectItem value="bachelors">Bachelors&apos;s+</SelectItem>
             <SelectItem value="graduate">Graduate+</SelectItem>
           </SelectContent>
         </Select>
