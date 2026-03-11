@@ -14,7 +14,7 @@ import type { SegmentFilters } from '@/lib/segmentation/types';
 /**
  * Available tool pages in the application
  */
-export type ToolType = 'political-ai' | 'segments' | 'donors' | 'canvass' | 'compare' | 'map' | 'settings' | 'knowledge-graph';
+export type ToolType = 'political-ai' | 'segments' | 'compare' | 'settings';
 
 // ============================================================================
 // Exploration History
@@ -101,11 +101,8 @@ export interface KnowledgeGraphToolContext {
 export interface ToolContexts {
   'political-ai': PoliticalAIToolContext;
   segments: SegmentToolContext;
-  donors: DonorToolContext;
-  canvass: CanvassToolContext;
   compare: CompareToolContext;
   settings: SettingsToolContext;
-  'knowledge-graph': KnowledgeGraphToolContext;
 }
 
 // ============================================================================

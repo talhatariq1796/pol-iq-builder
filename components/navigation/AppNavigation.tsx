@@ -33,25 +33,6 @@ const navItems: NavItem[] = [
     icon: <Users className="h-5 w-5" />,
     description: 'Voter segmentation tool',
   },
-  {
-    href: '/canvass',
-    label: 'Canvass',
-    icon: <Footprints className="h-5 w-5" />,
-    description: 'Canvassing planner',
-  },
-  {
-    href: '/donors',
-    label: 'Donors',
-    icon: <DollarSign className="h-5 w-5" />,
-    description: 'Donor concentration analysis',
-  },
-  // Knowledge Graph hidden until ready for release
-  // {
-  //   href: '/knowledge-graph',
-  //   label: 'Knowledge',
-  //   icon: <Network className="h-5 w-5" />,
-  //   description: 'Entity relationships',
-  // },
 ];
 
 interface AppNavigationProps {
@@ -75,11 +56,10 @@ export function AppNavigation({ variant = 'sidebar', className = '' }: AppNaviga
             <Link
               key={item.href}
               href={item.href}
-              className={`relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800'
-              }`}
+              className={`relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800'
+                }`}
               title={item.description}
             >
               {item.icon}
@@ -121,11 +101,10 @@ export function AppNavigation({ variant = 'sidebar', className = '' }: AppNaviga
             <Link
               key={item.href}
               href={item.href}
-              className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
-                isActive
-                  ? 'bg-[#33a852] text-white shadow-md'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800'
-              }`}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all ${isActive
+                ? 'bg-[#33a852] text-white shadow-md'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800'
+                }`}
               title={item.label}
             >
               {item.icon}
@@ -161,11 +140,10 @@ export function AppNavigation({ variant = 'sidebar', className = '' }: AppNaviga
         {/* Settings Button */}
         <Link
           href="/settings"
-          className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
-            pathname === '/settings'
-              ? 'bg-[#33a852] text-white shadow-md'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800'
-          }`}
+          className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all ${pathname === '/settings'
+            ? 'bg-[#33a852] text-white shadow-md'
+            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800'
+            }`}
           title="Settings"
         >
           <Settings className="h-5 w-5" />
@@ -195,11 +173,10 @@ export function NavigationButtons({ className = '' }: { className?: string }) {
           <Link
             key={item.href}
             href={item.href}
-            className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
-              isActive
-                ? 'bg-[#33a852] text-white shadow-md'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
+            className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all ${isActive
+              ? 'bg-[#33a852] text-white shadow-md'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
             style={{
               color: isActive ? 'white' : 'var(--theme-text-secondary)',
             }}

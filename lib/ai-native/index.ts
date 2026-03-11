@@ -12,8 +12,6 @@ export type {
   BehaviorState,
   TemporalState,
   SegmentationState,
-  CanvassingState,
-  DonorState,
   ComparisonState,
   ReportState,
   StateEventType,
@@ -34,8 +32,6 @@ export { useToolUrlParams, hasUrlParams, buildQueryString } from './hooks/useToo
 export {
   CrossToolNavigator,
   navigateToSegments,
-  navigateToDonors,
-  navigateToCanvass,
   navigateToComparison,
 } from './navigation/CrossToolNavigator';
 

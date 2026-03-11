@@ -4,9 +4,7 @@
  * Translates natural language navigation queries into page navigation actions.
  * Supports queries like:
  * - "Go to segments page"
- * - "Open canvassing tool"
  * - "Take me to settings"
- * - "Switch to donor analysis"
  */
 
 import type {
@@ -27,18 +25,12 @@ const NAVIGATION_PATTERNS: QueryPattern[] = [
     intent: 'navigate_tool',
     patterns: [
       /(?:go\s+to|open|navigate\s+to|take\s+me\s+to|switch\s+to|show\s+me)\s+(?:the\s+)?(?:segments?|segmentation)/i,
-      /(?:go\s+to|open|navigate\s+to|take\s+me\s+to|switch\s+to|show\s+me)\s+(?:the\s+)?(?:donors?|fundraising|donor\s+analysis)/i,
-      /(?:go\s+to|open|navigate\s+to|take\s+me\s+to|switch\s+to|show\s+me)\s+(?:the\s+)?(?:canvass(?:ing)?|field\s+operations?)/i,
       /(?:go\s+to|open|navigate\s+to|take\s+me\s+to|switch\s+to|show\s+me)\s+(?:the\s+)?(?:compar(?:e|ison))/i,
-      /(?:go\s+to|open|navigate\s+to|take\s+me\s+to|switch\s+to|show\s+me)\s+(?:the\s+)?(?:knowledge\s+graph|graph)/i,
       /(?:go\s+to|open|navigate\s+to|take\s+me\s+to|switch\s+to|show\s+me)\s+(?:the\s+)?(?:main|political[\s-]?ai|ai\s+page|home)/i,
       /(?:segments?|segmentation)\s+(?:page|tool)/i,
-      /(?:donors?|fundraising)\s+(?:page|tool|dashboard)/i,
-      /(?:canvass(?:ing)?|field)\s+(?:page|tool|planner)/i,
       /(?:compar(?:e|ison))\s+(?:page|tool|view)/i,
-      /knowledge\s+graph\s+(?:page|tool|view)/i,
     ],
-    keywords: ['go to', 'open', 'navigate', 'switch', 'show', 'page', 'tool', 'segments', 'donors', 'canvass', 'compare', 'graph'],
+    keywords: ['go to', 'open', 'navigate', 'switch', 'show', 'page', 'tool', 'segments', 'compare'],
     priority: 11,  // Higher than SegmentationHandler (10) to catch navigation intent first
   },
   {
@@ -73,29 +65,11 @@ const DESTINATIONS: Record<string, Destination> = {
     description: 'Create and manage voter segments with advanced filtering',
     keywords: ['segment', 'segmentation', 'filter', 'target', 'voters'],
   },
-  donors: {
-    path: '/donors',
-    name: 'Donor Analysis',
-    description: 'Analyze FEC donor data and identify fundraising prospects',
-    keywords: ['donor', 'donors', 'fundraising', 'contribution', 'fec'],
-  },
-  canvass: {
-    path: '/canvass',
-    name: 'Canvassing Planner',
-    description: 'Build and optimize door-knocking operations',
-    keywords: ['canvass', 'canvassing', 'field', 'doors', 'turf', 'walk'],
-  },
   compare: {
     path: '/compare',
     name: 'Comparison View',
     description: 'Side-by-side analysis of precincts and areas',
     keywords: ['compare', 'comparison', 'versus', 'vs', 'side by side'],
-  },
-  graph: {
-    path: '/knowledge-graph',
-    name: 'Knowledge Graph',
-    description: 'Explore relationships between entities and concepts',
-    keywords: ['graph', 'knowledge', 'relationships', 'connections', 'network'],
   },
   main: {
     path: '/political-ai',
@@ -120,21 +94,9 @@ const DESTINATION_PATTERNS: Record<string, RegExp[]> = {
     /\b(segment(?:s|ation)?)\b/i,
     /\b(filter(?:ing)?|target(?:ing)?)\b/i,
   ],
-  donors: [
-    /\b(donor(?:s)?|fundraising|contribution(?:s)?)\b/i,
-    /\b(fec|donor\s+analysis)\b/i,
-  ],
-  canvass: [
-    /\b(canvass(?:ing)?|field(?:\s+operations?)?)\b/i,
-    /\b(door(?:s)?|turf|walk)\b/i,
-  ],
   compare: [
     /\b(compar(?:e|ison)|versus|vs)\b/i,
     /\bside[\s-]?by[\s-]?side\b/i,
-  ],
-  graph: [
-    /\b(knowledge\s+graph|graph)\b/i,
-    /\b(relationships?|connections?|network)\b/i,
   ],
   main: [
     /\b(main|home|political[\s-]?ai)\b/i,
@@ -295,22 +257,6 @@ export class NavigationHandler implements NLPHandler {
           priority: 1,
         },
         {
-          id: 'nav-donors',
-          label: 'Donor Analysis',
-          description: 'Analyze fundraising data',
-          action: 'Go to donor analysis',
-          icon: 'dollar-sign',
-          priority: 2,
-        },
-        {
-          id: 'nav-canvass',
-          label: 'Canvassing Planner',
-          description: 'Plan field operations',
-          action: 'Go to canvassing planner',
-          icon: 'map',
-          priority: 3,
-        },
-        {
           id: 'nav-compare',
           label: 'Comparison View',
           description: 'Compare precincts',
@@ -407,58 +353,6 @@ export class NavigationHandler implements NLPHandler {
           priority: 3,
         },
       ],
-      donors: [
-        {
-          id: 'concentration',
-          label: 'Donor Concentration',
-          description: 'Where are donors located?',
-          action: 'Show donor concentration',
-          icon: 'map-pin',
-          priority: 1,
-        },
-        {
-          id: 'prospects',
-          label: 'Find Prospects',
-          description: 'Untapped fundraising areas',
-          action: 'Find donor prospects',
-          icon: 'trending-up',
-          priority: 2,
-        },
-        {
-          id: 'trends',
-          label: 'Giving Trends',
-          description: 'Time-series analysis',
-          action: 'Show giving trends',
-          icon: 'activity',
-          priority: 3,
-        },
-      ],
-      canvass: [
-        {
-          id: 'create-universe',
-          label: 'Create Universe',
-          description: 'Build a new canvass plan',
-          action: 'Create a canvass universe',
-          icon: 'plus-circle',
-          priority: 1,
-        },
-        {
-          id: 'estimate',
-          label: 'Estimate Resources',
-          description: 'Calculate volunteer needs',
-          action: 'Estimate canvassing resources',
-          icon: 'calculator',
-          priority: 2,
-        },
-        {
-          id: 'optimize',
-          label: 'Optimize Route',
-          description: 'Plan efficient routes',
-          action: 'Optimize my canvassing route',
-          icon: 'route',
-          priority: 3,
-        },
-      ],
       compare: [
         {
           id: 'add-entities',
@@ -482,32 +376,6 @@ export class NavigationHandler implements NLPHandler {
           description: 'Compare multiple entities',
           action: 'Compare multiple precincts',
           icon: 'grid',
-          priority: 3,
-        },
-      ],
-      graph: [
-        {
-          id: 'explore',
-          label: 'Explore Graph',
-          description: 'Interactive graph exploration',
-          action: 'Explore the knowledge graph',
-          icon: 'share-2',
-          priority: 1,
-        },
-        {
-          id: 'query',
-          label: 'Query Relationships',
-          description: 'Find connections',
-          action: 'What is connected to East Lansing?',
-          icon: 'search',
-          priority: 2,
-        },
-        {
-          id: 'overview',
-          label: 'Graph Overview',
-          description: 'See all node types',
-          action: 'Show graph overview',
-          icon: 'layers',
           priority: 3,
         },
       ],

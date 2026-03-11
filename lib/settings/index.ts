@@ -1,9 +1,3 @@
-/**
- * Settings Module - Phase 17.1
- *
- * Centralized settings management for the Political Landscape Analysis Platform.
- */
-
 // Types
 export * from './types';
 
@@ -12,7 +6,6 @@ export {
   DEFAULT_SETTINGS,
   DEFAULT_CAMPAIGN_SETTINGS,
   DEFAULT_TARGETING_SETTINGS,
-  DEFAULT_CANVASSING_SETTINGS,
   DEFAULT_AI_SETTINGS,
   DEFAULT_DATA_SETTINGS,
   DEFAULT_MAP_SETTINGS,
@@ -35,7 +28,6 @@ export {
   // Individual schemas
   campaignCalendarSettingsSchema,
   targetingSettingsSchema,
-  canvassingSettingsSchema,
   aiSettingsSchema,
   dataSettingsSchema,
   mapSettingsSchema,

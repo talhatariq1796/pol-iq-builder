@@ -23,8 +23,6 @@ import type {
   ComparisonEntity,
   ComparisonResult,
   PrecinctDataFile,
-  MunicipalityDataFile,
-  StateHouseDataFile,
 } from '@/lib/comparison/types';
 import type { EntityResourceAnalysis } from '@/lib/comparison';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
@@ -352,13 +350,6 @@ export class ComparisonHandler implements NLPHandler {
       ],
       suggestedActions: [
         {
-          id: 'plan-canvass',
-          label: 'Plan Canvass for Top Areas',
-          description: 'Create walk list',
-          action: 'plan_canvass',
-          priority: 1,
-        },
-        {
           id: 'export-roi',
           label: 'Export ROI Analysis',
           description: 'Download as CSV',
@@ -425,14 +416,6 @@ export class ComparisonHandler implements NLPHandler {
             action: 'compare_export_pdf',
             params: { briefId: brief.id },
             priority: 1,
-          },
-          {
-            id: 'create-canvass',
-            label: 'Plan Canvass',
-            description: 'Build walk list for these areas',
-            action: 'plan_canvass',
-            params: { precincts: areaNames },
-            priority: 2,
           },
         ],
         data: brief,
@@ -742,7 +725,7 @@ export class ComparisonHandler implements NLPHandler {
   private extractReferenceEntity(query: string): string | null {
     // Extract entity name after "similar to" or "like"
     const match = query.match(/similar\s+to\s+([\w\s]+?)(?:\s+and|\s+or|$)/i) ||
-                  query.match(/like\s+([\w\s]+?)(?:\s+and|\s+or|$)/i);
+      query.match(/like\s+([\w\s]+?)(?:\s+and|\s+or|$)/i);
     return match ? match[1].trim() : null;
   }
 
@@ -874,7 +857,6 @@ export class ComparisonHandler implements NLPHandler {
     lines.push(`**Next Steps:**`);
     lines.push(`- Compare ${reference.name} to top matches for detailed analysis`);
     lines.push(`- Create a segment from similar precincts for coordinated targeting`);
-    lines.push(`- Plan canvassing routes across these similar areas`);
 
     return appendSources(lines.join('\n'), ['elections', 'demographics']);
   }

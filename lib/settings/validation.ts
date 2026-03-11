@@ -93,9 +93,6 @@ export const targetingSettingsSchema = z.object({
   targetUniverseSize: z.union([z.number().min(100).max(1000000), z.literal('auto')]),
 });
 
-// =============================================================================
-// Canvassing Validation
-// =============================================================================
 
 export const doorsPerHourSchema = z.object({
   urban: z.number().min(10).max(60),
@@ -103,15 +100,6 @@ export const doorsPerHourSchema = z.object({
   rural: z.number().min(3).max(30),
 });
 
-export const canvassingSettingsSchema = z.object({
-  doorsPerHour: doorsPerHourSchema,
-  defaultShiftLength: z.number().min(1).max(8),
-  optimalTurfSize: z.number().min(20).max(100),
-  expectedContactRate: z.number().min(10).max(80),
-  expectedNotHomeRate: z.number().min(20).max(80),
-  preferWalkableRoutes: z.boolean(),
-  maxDriveBetweenTurfs: z.number().min(5).max(60),
-});
 
 // =============================================================================
 // AI Assistant Validation
@@ -199,7 +187,6 @@ export const organizationSettingsSchema = z.object({
 export const allSettingsSchema = z.object({
   campaign: campaignCalendarSettingsSchema,
   targeting: targetingSettingsSchema,
-  canvassing: canvassingSettingsSchema,
   ai: aiSettingsSchema,
   data: dataSettingsSchema,
   map: mapSettingsSchema,
@@ -264,7 +251,6 @@ export function getErrorMessages(error: z.ZodError): string[] {
 const categorySchemas = {
   campaign: campaignCalendarSettingsSchema,
   targeting: targetingSettingsSchema,
-  canvassing: canvassingSettingsSchema,
   ai: aiSettingsSchema,
   data: dataSettingsSchema,
   map: mapSettingsSchema,

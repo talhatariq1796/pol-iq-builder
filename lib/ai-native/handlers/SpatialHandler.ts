@@ -289,7 +289,6 @@ export class SpatialHandler implements NLPHandler {
       `- Electoral performance and partisan lean\n` +
       `- Demographics and voter profile\n` +
       `- Targeting scores (GOTV, Persuasion, Swing)\n` +
-      `- Canvassing logistics\n\n` +
       `What would you like to explore?`;
 
     const mapCommands: MapCommand[] = [];
@@ -325,14 +324,6 @@ export class SpatialHandler implements NLPHandler {
           action: `Find precincts similar to ${precinct}`,
           priority: 2,
         },
-        {
-          id: 'plan-canvass',
-          label: 'Plan canvassing',
-          description: 'Create a canvassing plan',
-          action: 'navigate:canvass',
-          metadata: { precincts: entities.precincts },
-          priority: 3,
-        },
       ],
       metadata: this.buildMetadata('map_click', startTime, query),
     };
@@ -349,7 +340,6 @@ export class SpatialHandler implements NLPHandler {
       `This area includes multiple precincts. I can help you:\n` +
       `- See aggregate voter statistics\n` +
       `- Identify targeting priorities\n` +
-      `- Plan canvassing routes\n` +
       `- Generate a comprehensive report\n\n` +
       `What would you like to know?`;
 
@@ -381,13 +371,6 @@ export class SpatialHandler implements NLPHandler {
           description: 'Save these precincts for later',
           action: 'output:saveSegment',
           priority: 2,
-        },
-        {
-          id: 'canvass-plan',
-          label: 'Create canvassing plan',
-          description: 'Optimize door-knocking routes',
-          action: 'navigate:canvass',
-          priority: 3,
         },
         {
           id: 'generate-report',

@@ -731,7 +731,5 @@ export const TOUR_DEMO_QUERIES = {
   swingPrecincts: 'Show me the most competitive swing precincts',
   gotvPriority: 'Which precincts have the highest GOTV priority?',
   compareAreas: 'Compare Lansing vs East Lansing',
-  donorConcentration: 'Where are donors concentrated?',
-  canvassingPlan: 'How many volunteer hours to canvass East Lansing?',
   demographics: 'What are the demographics of Meridian Township?',
 };

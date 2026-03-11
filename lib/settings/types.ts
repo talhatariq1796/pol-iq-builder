@@ -84,31 +84,6 @@ export interface TargetingSettings {
 }
 
 // =============================================================================
-// 17.3 Canvassing Settings
-// =============================================================================
-
-export interface DoorsPerHour {
-  urban: number;    // Default: 25-30
-  suburban: number; // Default: 20-25
-  rural: number;    // Default: 12-18
-}
-
-export interface CanvassingSettings {
-  // Efficiency assumptions
-  doorsPerHour: DoorsPerHour;
-
-  // Shift defaults
-  defaultShiftLength: number;  // Hours (default: 3)
-  optimalTurfSize: number;     // Doors (default: 40-50)
-
-  // Contact rates
-  expectedContactRate: number;   // Default: 35%
-  expectedNotHomeRate: number;   // Default: 50%
-
-  // Route optimization
-  preferWalkableRoutes: boolean;
-  maxDriveBetweenTurfs: number;  // Minutes
-}
 
 // =============================================================================
 // 17.4 AI Assistant Settings
@@ -218,7 +193,6 @@ export interface AllSettings {
   appearance: Record<string, never>; // Appearance settings managed in-component (localStorage)
   campaign: CampaignCalendarSettings;
   targeting: TargetingSettings;
-  canvassing: CanvassingSettings;
   ai: AISettings;
   data: DataSettings;
   map: MapSettings;

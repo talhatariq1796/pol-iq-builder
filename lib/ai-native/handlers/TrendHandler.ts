@@ -423,13 +423,6 @@ export class TrendHandler implements NLPHandler {
             action: `Tell me about ${flipRisk.highRisk[0]?.precinctId || 'the highest risk precinct'}`,
             priority: 2,
           },
-          {
-            id: 'go-to-canvass',
-            label: 'Plan Defense Strategy',
-            description: 'Create canvassing plan',
-            action: 'Navigate to /canvass',
-            priority: 3,
-          },
         ],
         data: flipRisk,
         metadata: this.buildMetadata('flip_risk', startTime, query),

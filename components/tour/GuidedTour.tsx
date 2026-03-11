@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { HelpCircle, Play, BookOpen, Users, BarChart3, DollarSign, Map, Target, Search, Vote, MapPin, Scale, Building2, Landmark } from 'lucide-react';
+import { HelpCircle, Play, BookOpen, Users, BarChart3, Target, Search, Vote, Scale, Building2, Landmark } from 'lucide-react';
 import {
   getTourSteps,
   DEFAULT_TOUR_CONFIG,
@@ -119,18 +119,6 @@ const FEATURE_TOUR_ITEMS: TourMenuItem[] = [
     description: 'Compare jurisdictions and precincts',
     icon: BarChart3,
   },
-  {
-    theme: 'donor',
-    label: 'Donor Analysis',
-    description: 'FEC data and fundraising insights',
-    icon: DollarSign,
-  },
-  {
-    theme: 'canvassing',
-    label: 'Canvassing Planner',
-    description: 'Plan field operations',
-    icon: Map,
-  },
 ];
 
 /**
@@ -154,18 +142,6 @@ const WORKFLOW_TOUR_ITEMS: TourMenuItem[] = [
     label: 'Build a GOTV Universe',
     description: 'Create turnout targeting list',
     icon: Vote,
-  },
-  {
-    theme: 'workflow-find-donors',
-    label: 'Find Top Donor Areas',
-    description: 'Discover donor concentrations',
-    icon: DollarSign,
-  },
-  {
-    theme: 'workflow-plan-canvass',
-    label: 'Plan a Canvass',
-    description: 'Convert segments to operations',
-    icon: MapPin,
   },
   {
     theme: 'workflow-compare-areas',
@@ -376,15 +352,11 @@ export function GuidedTour({
       const navigationMap: Partial<Record<TourTheme, string>> = {
         // Feature tours
         'segmentation': '/segments',
-        'donor': '/donors',
-        'canvassing': '/canvass',
         'comparison': '/compare',
         // Workflow tours - navigate to the relevant tool page
         'workflow-find-swing': '/political-ai',  // Main analysis page
         'workflow-analyze-precinct': '/political-ai',  // Main analysis page
         'workflow-build-gotv': '/segments',  // Segmentation tool
-        'workflow-find-donors': '/donors',  // Donor tool
-        'workflow-plan-canvass': '/canvass',  // Canvassing tool
         'workflow-compare-areas': '/compare',  // Comparison tool
       };
 

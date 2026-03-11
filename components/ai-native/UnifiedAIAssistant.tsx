@@ -28,7 +28,6 @@ import {
   handleReportCustomization,
   handleReportIntent,
   handleOutputIntent,
-  type ReportContext,
 } from '@/lib/ai/workflowHandlers';
 import { processQuery } from '@/lib/ai-native/handlers';
 import { addReportToHistory, REPORT_TYPE_CONFIG, getRecentReports } from '@/lib/ai/ReportHistoryService';
@@ -101,18 +100,6 @@ const EXAMPLE_QUESTIONS = {
     "Compare Democratic vote share across precincts",
     "Highlight persuadable areas",
     "Show me competitive districts",
-  ],
-  donors: [
-    "Which ZIP codes have the most donors?",
-    "Show lapsed donors",
-    "Find upgrade prospects",
-    "Where are donors concentrated?",
-  ],
-  canvassing: [
-    "Plan canvassing for 20 volunteers",
-    "What's the best turf for GOTV?",
-    "How many doors can we knock in East Lansing?",
-    "Create optimal canvassing routes",
   ],
 };
 
@@ -215,28 +202,6 @@ function getToolConfig(tool: ToolType): ToolConfig {
         ],
       };
 
-    case 'donors':
-      return {
-        greeting: "Analyze donor concentration, giving patterns, and prospect identification by ZIP code.",
-        placeholder: 'Ask about donors, ZIP codes, or giving patterns...',
-        suggestions: [
-          { id: 'top-zips', label: 'Top donor ZIP codes', action: 'Show me the top donor ZIP codes' },
-          { id: 'momentum', label: 'Donation momentum', action: 'Which areas show donation momentum?' },
-          { id: 'prospects', label: 'Find prospects', action: 'Identify high-potential donor prospects' },
-        ],
-      };
-
-    case 'canvass':
-      return {
-        greeting: "Plan canvassing operations: turf creation, route optimization, and priority targeting.",
-        placeholder: 'Ask about turfs, routes, or canvassing priorities...',
-        suggestions: [
-          { id: 'create-turfs', label: 'Create turfs', action: 'Create turfs for high-priority areas' },
-          { id: 'optimize-route', label: 'Optimize routes', action: 'Optimize canvassing route for maximum efficiency' },
-          { id: 'gotv-targets', label: 'GOTV targets', action: 'Show GOTV priority targets for canvassing' },
-        ],
-      };
-
     case 'compare':
       return {
         greeting: "Compare precincts, municipalities, or districts. Select two areas or search for similar ones.",
@@ -245,17 +210,6 @@ function getToolConfig(tool: ToolType): ToolConfig {
           { id: 'find-similar', label: 'Find similar areas', action: 'Find precincts similar to the selected one' },
           { id: 'compare-metrics', label: 'Compare key metrics', action: 'Compare key electoral metrics between selected areas' },
           { id: 'benchmark', label: 'Benchmark analysis', action: 'Benchmark selected area against county average' },
-        ],
-      };
-
-    case 'map':
-      return {
-        greeting: "Click precincts for details or ask about specific areas.",
-        placeholder: 'Ask about what you see on the map...',
-        suggestions: [
-          { id: 'show-swing', label: 'Show swing potential', action: 'map:showHeatmap', metadata: { metric: 'partisan_lean' } },
-          { id: 'show-gotv', label: 'Show GOTV priority', action: 'map:showHeatmap', metadata: { metric: 'gotv_priority' } },
-          { id: 'show-precincts', label: 'Show precincts', action: 'map:showChoropleth' },
         ],
       };
 
@@ -599,12 +553,8 @@ function getErrorRecovery(error: unknown, input: string): { message: string; act
 const TOOL_LABELS: Record<ToolType, string> = {
   'political-ai': 'Political Analysis',
   'segments': 'Voter Segmentation',
-  'donors': 'Donor Analysis',
-  'canvass': 'Canvassing Planner',
   'compare': 'Comparison Tool',
-  'map': 'Map Explorer',
   'settings': 'Settings',
-  'knowledge-graph': 'Knowledge Graph',
 };
 
 /**
@@ -641,16 +591,6 @@ function generateContextAwareGreeting(
     const recentSegment = savedSegments[savedSegments.length - 1];
 
     // Wave 6D.5: Cross-tool serendipity - check for donor-GOTV overlap
-    const donorZips = history
-      .filter(e => e.tool === 'donors' && e.metadata?.topZips)
-      .flatMap(e => (e.metadata?.topZips as string[]) || []);
-    const gotvPrecincts = history
-      .filter(e => {
-        const gotvPriority = e.metadata?.gotvPriority as number | undefined;
-        return gotvPriority !== undefined && gotvPriority > 70;
-      })
-      .flatMap(e => e.precinctIds || []);
-
     // If came from another tool, acknowledge context
     if (previousToolEntry && previousToolEntry.tool) {
       const previousToolLabel = TOOL_LABELS[previousToolEntry.tool] || previousToolEntry.tool;
@@ -669,14 +609,7 @@ function generateContextAwareGreeting(
         greeting += getCrossToolSuggestion(currentTool, previousToolEntry.tool, uniquePrecincts);
 
         // Add suggestion to continue with previous context
-        if (currentTool === 'canvass' && uniquePrecincts.length > 0) {
-          additionalSuggestions.push({
-            id: 'continue-context',
-            label: `Plan canvassing for ${uniquePrecincts.length} explored precincts`,
-            action: 'output:planCanvass',
-            metadata: { precinctIds: uniquePrecincts }
-          });
-        } else if (currentTool === 'compare' && uniquePrecincts.length >= 2) {
+        if (currentTool === 'compare' && uniquePrecincts.length >= 2) {
           additionalSuggestions.push({
             id: 'continue-context',
             label: `Compare ${uniquePrecincts[0]} and ${uniquePrecincts[1]}`,
@@ -700,34 +633,6 @@ function generateContextAwareGreeting(
             });
           } else if (metrics.precinctsViewed >= 3) {
             greeting = `You've explored ${metrics.precinctsViewed} precincts. Want to save them as a targeting segment?`;
-          }
-          break;
-
-        case 'canvass':
-          if (recentSegment) {
-            const precinctCount = recentSegment.matchingPrecincts?.length || 'several';
-            greeting = `Ready to plan canvassing! You have "${recentSegment.name}" saved with ${precinctCount} precincts.`;
-            additionalSuggestions.unshift({
-              id: 'use-segment',
-              label: `Create turfs from "${recentSegment.name}"`,
-              action: `Create canvassing turfs for segment ${recentSegment.name}`,
-              icon: 'map'
-            });
-          } else if (gotvPrecincts.length > 0) {
-            greeting = `You've identified ${gotvPrecincts.length} high-GOTV precincts. Let's turn them into an efficient canvassing plan.`;
-          }
-          break;
-
-        case 'donors':
-          // Wave 6D.5: Cross-tool serendipity for donors
-          if (gotvPrecincts.length > 0) {
-            greeting = `Interesting! Your GOTV targets overlap with some high-donor ZIP codes. This could be an opportunity for combined outreach.`;
-            additionalSuggestions.unshift({
-              id: 'cross-reference',
-              label: 'Show donor-GOTV overlap areas',
-              action: 'Show me where high-GOTV precincts overlap with top donor ZIP codes',
-              icon: 'sparkles'
-            });
           }
           break;
 
@@ -782,10 +687,6 @@ function getCrossToolSuggestion(
     : `those ${precincts.length} precincts`;
 
   switch (currentTool) {
-    case 'canvass':
-      return `Would you like to create canvassing turfs for ${precinctText}?`;
-    case 'donors':
-      return `I can show you donor data in ${precinctText}' ZIP codes.`;
     case 'compare':
       return precincts.length >= 2
         ? `Ready to compare these areas? Pick any two to start.`
@@ -1541,13 +1442,11 @@ export default function UnifiedAIAssistant({
           result = await handleReportCustomization(intent.reportParams.reportType);
         } else {
           const explorationMetrics = stateManager.getExplorationMetrics();
-          const reportContext: ReportContext = {
+          const reportContext: any = {
             precinctsExplored: explorationMetrics.precinctsViewed,
             hasActiveSegment: false,
             segmentPrecinctCount: 0,
             hasComparisonData: false,
-            hasDonorData: toolContext === 'donors',
-            hasCanvassingData: toolContext === 'canvass',
             currentTool: toolContext,
             hasMapSelection: !!selectedPrecinct,
             selectedPrecinctNames: selectedPrecinct ? [selectedPrecinct.precinctName] : undefined,
@@ -1851,7 +1750,7 @@ export default function UnifiedAIAssistant({
     // Handle report actions (Phase B - Report Templates)
     if (action.action.startsWith('report:')) {
       const [, reportType] = action.action.split(':');
-      await handleReportAction(reportType as 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment' | 'canvassing' | 'donor', action.metadata || {});
+      await handleReportAction(reportType as 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment', action.metadata || {});
       return;
     }
 
@@ -2333,34 +2232,6 @@ export default function UnifiedAIAssistant({
         break;
       }
 
-      case 'planCanvass': {
-        const state = stateManager.getState();
-        const targetPrecincts = (metadata.precinctIds as string[]) || state.segmentation.matchingPrecincts;
-
-        // Navigate to canvassing page with context
-        CrossToolNavigator.navigateWithContext('canvass', {
-          targetPrecincts,
-          operation: 'high-value-canvass',
-        });
-
-        // Log exploration
-        stateManager.logExploration({
-          tool: toolContext,
-          action: 'canvass_planned',
-          metadata: { precinctCount: targetPrecincts.length },
-        });
-
-        setMessages((prev: Message[]) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: `🚪 Navigating to canvassing planner with ${targetPrecincts.length} high-priority target precincts...`,
-            timestamp: new Date(),
-          },
-        ]);
-        break;
-      }
-
       case 'exportConversation': {
         // Format conversation as text
         const conversationText = messages.map((msg) => {
@@ -2413,7 +2284,7 @@ export default function UnifiedAIAssistant({
 
   // Handle report generation actions
   const handleReportAction = useCallback(async (
-    reportType: 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment' | 'canvassing' | 'donor',
+    reportType: 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment',
     metadata: Record<string, unknown>
   ) => {
     const stateManager = getStateManager();
@@ -2536,44 +2407,6 @@ export default function UnifiedAIAssistant({
           };
           break;
 
-        case 'canvassing':
-          endpoint = '/api/political-pdf/canvassing';
-          requestBody = {
-            operationName: (metadata.operationName as string) || 'Canvassing Operation',
-            operationType: (metadata.operationType as string) || 'gotv',
-            precinctNames,
-            operationDate: metadata.operationDate as string,
-            turfs: metadata.turfs as Array<{ turfId: string; turfName: string; precinctName: string; totalDoors: number }>,
-            talkingPoints: metadata.talkingPoints as string[],
-            faqs: metadata.faqs as Array<{ question: string; answer: string }>,
-          };
-          break;
-
-        case 'donor':
-          endpoint = '/api/political-pdf/donor';
-          // Donor reports need summary data, not precincts
-          const summary = (metadata.summary as Record<string, number>) || {
-            totalRaised: 0,
-            totalDonors: 0,
-            avgDonation: 0,
-            medianDonation: 0,
-            largestDonation: 0,
-            repeatDonorRate: 0,
-          };
-          requestBody = {
-            reportTitle: (metadata.reportTitle as string) || 'Donor Analysis Report',
-            analysisArea: (metadata.analysisArea as string) || 'Ingham County',
-            dateRange: (metadata.dateRange as string) || '2023-2024 Election Cycle',
-            summary,
-            topZipCodes: (metadata.topZipCodes as Array<{ zipCode: string; totalAmount: number; donorCount: number; avgDonation: number; maxDonation: number }>) || [],
-            segments: (metadata.segments as Array<{ name: string; description: string; donorCount: number; totalAmount: number; avgDonation: number; percentOfTotal: number }>) || [],
-            lapsedDonors: metadata.lapsedDonors,
-            geographicOpportunities: metadata.geographicOpportunities,
-            monthlyTrends: metadata.monthlyTrends,
-            recommendations: metadata.recommendations as string[],
-          };
-          break;
-
         default:
           // Unknown report type
           setMessages((prev: Message[]) => [
@@ -2620,7 +2453,7 @@ export default function UnifiedAIAssistant({
 
       // Add to report history
       addReportToHistory({
-        reportType: reportType as 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment' | 'canvassing' | 'donor',
+        reportType: reportType as 'executive' | 'targeting' | 'profile' | 'comparison' | 'segment',
         title: reportConfig.label,
         precinctCount: precinctNames.length,
         precinctNames,
@@ -2855,10 +2688,10 @@ export default function UnifiedAIAssistant({
           >
             <div
               className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.role === 'user'
-                  ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
-                  : message.isError
-                    ? 'bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 text-gray-900 border-2 border-red-300'
-                    : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
+                ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
+                : message.isError
+                  ? 'bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 text-gray-900 border-2 border-red-300'
+                  : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
                 }`}
             >
               {message.role === 'user' ? (
@@ -2882,8 +2715,8 @@ export default function UnifiedAIAssistant({
                   {message.confidence && (
                     <div className="mt-2 flex items-center gap-1">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${message.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                          message.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
+                        message.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                         }`}>
                         {message.confidence} confidence
                       </span>
@@ -3094,8 +2927,8 @@ export default function UnifiedAIAssistant({
               }}
               placeholder={isProcessing ? "AI is thinking..." : config.placeholder}
               className={`flex-1 min-w-0 px-4 py-3 text-sm border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#33a852] focus:border-[#33a852] transition-all min-h-[48px] ${isProcessing
-                  ? 'border-emerald-300 bg-emerald-50 cursor-not-allowed opacity-60'
-                  : 'border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+                ? 'border-emerald-300 bg-emerald-50 cursor-not-allowed opacity-60'
+                : 'border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
                 }`}
               disabled={isProcessing}
             />
@@ -3219,8 +3052,8 @@ export default function UnifiedAIAssistant({
               <button
                 onClick={confirmationModal.onConfirm}
                 className={`px-4 py-2 rounded-lg transition-colors ${confirmationModal.isDangerous
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-[#33a852] hover:bg-[#2d9944] text-white'
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-[#33a852] hover:bg-[#2d9944] text-white'
                   }`}
               >
                 {confirmationModal.confirmLabel}

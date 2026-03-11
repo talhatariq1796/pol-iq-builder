@@ -300,12 +300,6 @@ export class DataExportHandler implements NLPHandler {
           metadata: { type: 'walklist' },
           priority: 2,
         },
-        {
-          id: 'go-to-canvass',
-          label: 'Create Canvass First',
-          action: 'Navigate to /canvass',
-          priority: 3,
-        },
       ],
       data: { exportType: 'van' },
       metadata: this.buildMetadata('export_van', startTime, query),

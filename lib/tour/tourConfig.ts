@@ -18,8 +18,6 @@ export type TourTheme =
   | 'welcome'
   | 'segmentation'
   | 'comparison'
-  | 'donor'
-  | 'canvassing'
   | 'full'
   // Demo scenarios - comprehensive campaign walkthroughs (Democratic perspective)
   | 'demo-scenario'           // State House District 73 (Julie Brixie defense)
@@ -29,12 +27,8 @@ export type TourTheme =
   | 'workflow-find-swing'
   | 'workflow-analyze-precinct'
   | 'workflow-build-gotv'
-  | 'workflow-find-donors'
-  | 'workflow-plan-canvass'
   | 'workflow-compare-areas'
   // Cross-tool workflow tours
-  | 'cross-tool-segment-to-canvass'  // Build segment → Plan canvass
-  | 'cross-tool-analyze-to-donors'   // Analyze area → Find donors
   | 'cross-tool-full-workflow';      // Complete end-to-end campaign workflow
 
 /**
@@ -97,7 +91,7 @@ export const WELCOME_TOUR_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Need Help?',
       description:
-        'Click here anytime to restart this tour or explore specific features like Voter Segmentation, Donor Analysis, or Canvassing Planning.',
+        'Click here anytime to restart this tour or explore specific features like Voter Segmentation or Comparison.',
       side: 'right',
       align: 'end',
     },
@@ -238,7 +232,7 @@ export const FULL_TOUR_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Explore More Features',
       description:
-        'Use the sidebar navigation to access specialized tools: /segments for voter segmentation, /donors for FEC analysis, /canvass for field operations, and /compare for side-by-side comparison.',
+        'Use the sidebar navigation to access specialized tools: /segments for voter segmentation and /compare for side-by-side comparison.',
       side: 'right',
       align: 'center',
     },
@@ -299,7 +293,7 @@ export const SEGMENTATION_TOUR_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Save Segments',
       description:
-        'Save your filtered segments for later use. Saved segments can be used in canvassing plans, donor prospecting, and reports. Ask "Save this as my student areas segment."',
+        'Save your filtered segments for later use. Saved segments can be used in reports. Ask "Save this as my student areas segment."',
       side: 'bottom',
       align: 'center',
     },
@@ -308,7 +302,7 @@ export const SEGMENTATION_TOUR_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Try It Now',
       description:
-        'Try asking: "Find competitive areas with high college education" to see a filtered segment. You can then save it or use it for canvassing planning.',
+        'Try asking: "Find competitive areas with high college education" to see a filtered segment. You can then save it or use it for field planning.',
       side: 'bottom',
       align: 'center',
     },
@@ -371,149 +365,6 @@ export const COMPARISON_TOUR_STEPS: TourStepWithAction[] = [
       title: 'Try It Now',
       description:
         'Try asking: "Compare East Lansing with Meridian Township" to see a detailed side-by-side analysis. You can compare cities, townships, or individual areas.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-];
-
-/**
- * Donor-specific tour - expanded for comprehensive coverage
- */
-export const DONOR_TOUR_STEPS: TourStepWithAction[] = [
-  {
-    popover: {
-      title: 'Donor Analysis',
-      description:
-        'Analyze FEC contribution data at the ZIP code level. Navigate to /donors for the full Donor Dashboard with segmentation, lapsed donor analysis, and upgrade potential scoring.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: 'AI Donor Insights',
-      description:
-        'Ask "Where are Democratic donors concentrated?" or "Which areas have lapsed donors we should re-engage?" The AI analyzes FEC data and provides fundraising recommendations.',
-      side: 'right',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'focusChatInput', delay: 200 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: 'Donor Heatmaps',
-      description:
-        'View donor concentration by ZIP code on the map. The AI can show you donor heatmaps: "Show donor concentration as a heatmap" or "Highlight high-donor ZIP codes."',
-      side: 'left',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Prospect Scoring',
-      description:
-        'Identify high-potential donors based on ZIP code wealth indicators, political lean, and historical giving patterns. Ask "Which areas have the best fundraising potential?"',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Lapsed Donor Re-engagement',
-      description:
-        'Find donors who gave in previous cycles but not recently. Ask "Show lapsed donors in East Lansing" to identify re-engagement opportunities for your fundraising outreach.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Try It Now',
-      description:
-        'Try asking: "Where are donors concentrated in Ingham County?" to see a breakdown of giving by area. You can also ask about specific party affiliations or giving ranges.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-];
-
-/**
- * Canvassing-specific tour - expanded for comprehensive coverage
- */
-export const CANVASSING_TOUR_STEPS: TourStepWithAction[] = [
-  {
-    popover: {
-      title: 'Canvassing Planner',
-      description:
-        'Convert voter segments into actionable door-to-door operations. Navigate to /canvass for turf allocation, volunteer management, route optimization, and progress tracking.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: 'AI Canvassing Planning',
-      description:
-        'Ask "Create a canvassing plan for high-GOTV areas in Lansing" or "How many volunteer hours to knock 5,000 doors?" The AI helps optimize your field operations.',
-      side: 'right',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'focusChatInput', delay: 200 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: 'Canvassing Visualization',
-      description:
-        'See your canvassing universe on the map. The AI can highlight target areas and show GOTV priority heatmaps to help you allocate resources efficiently.',
-      side: 'left',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Area Selection',
-      description:
-        'Select areas for your canvass by clicking on the map, drawing a custom area, or using search. The AI can also recommend areas based on your targeting goals.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Universe Building',
-      description:
-        'Build your canvassing universe by combining filters: GOTV priority, demographic targeting, and geographic clustering. Ask "Build a canvassing universe for student areas" to get started.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Route Optimization',
-      description:
-        'Get estimated door counts and volunteer hours for your selected areas. The AI calculates efficient routing based on housing density and geographic clustering.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: 'Try It Now',
-      description:
-        'Try asking: "How many doors in East Lansing and how long would it take to canvass?" to see estimated volunteer hours and door counts.',
       side: 'bottom',
       align: 'center',
     },
@@ -701,7 +552,7 @@ export const DEMO_SCENARIO_STEPS: TourStepWithAction[] = [
     popover: {
       title: '💾 Save Your Segment',
       description:
-        'You\'ve identified your GOTV universe! To save these precincts as a reusable segment:\n\n1. Go to <strong>/segments</strong> from the sidebar\n2. Apply the same filters (D+15 lean, turnout under 65%)\n3. Click <strong>Save Segment</strong> and name it\n\n<em>Saved segments can be exported to CSV or used for canvassing.</em>',
+        'You\'ve identified your GOTV universe! To save these precincts as a reusable segment:\n\n1. Go to <strong>/segments</strong> from the sidebar\n2. Apply the same filters (D+15 lean, turnout under 65%)\n3. Click <strong>Save Segment</strong> and name it\n\n<em>Saved segments can be exported to CSV for your voter file vendor.</em>',
       side: 'right',
       align: 'center',
     },
@@ -752,107 +603,7 @@ export const DEMO_SCENARIO_STEPS: TourStepWithAction[] = [
     ],
   },
 
-  // =========================================================================
-  // ACT 4: DONOR INTELLIGENCE
-  // =========================================================================
-  {
-    popover: {
-      title: 'Act 4: Donor Intelligence',
-      description:
-        'No campaign runs without fundraising. Let\'s find where donors are concentrated and identify upgrade opportunities.\n\n<em>The AI will analyze FEC contribution data.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🤖 Automated: Finding Donors',
-      description:
-        'The AI analyzes FEC data to find Democratic donor concentrations by ZIP code.\n\n<em>Query runs automatically.</em>',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Where are Democratic donors concentrated in Ingham County?' }, delay: 300 },
-      // Show persuasion opportunity heatmap - correlates with donor potential (educated, affluent voters)
-      { action: 'showHeatmap', params: { metric: 'persuasion_opportunity' }, delay: 500 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: '💰 Donor Geography',
-      description:
-        'The map shows <strong>persuasion opportunity</strong> - areas with educated, affluent voters who correlate with donor capacity.\n\n• <strong>Darker areas</strong> = Higher donor potential\n• Key areas: East Lansing, Okemos, Meridian Township\n\n<em>High persuasion areas often have more Democratic donors.</em>',
-      side: 'left',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '💰 Donor Insights',
-      description:
-        'The AI shows:\n\n• <strong>Top donor ZIP codes</strong> with total giving\n• <strong>Average gift size</strong> by area\n• <strong>Donor occupations</strong> (educators, retirees, etc.)\n• <strong>Lapsed donors</strong> for re-engagement\n\n<em>Visit /donors for the full Donor Dashboard with prospect scoring.</em>',
-      side: 'right',
-      align: 'center',
-    },
-  },
 
-  // =========================================================================
-  // ACT 5: CANVASSING OPERATIONS
-  // =========================================================================
-  {
-    popover: {
-      title: 'Act 5: Canvassing Operations',
-      description:
-        'Finally, let\'s convert our segments into door-knocking operations. We\'ll estimate volunteer hours and optimize routes.\n\n<em>The AI will calculate canvassing requirements.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🤖 Automated: Canvass Planning',
-      description:
-        'The AI calculates door counts and volunteer hours needed for your GOTV universe.\n\n<em>Query runs automatically.</em>',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'How many doors and volunteer hours to canvass East Lansing and Lansing high-GOTV precincts?' }, delay: 300 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: '🚶 Route Visualization',
-      description:
-        'The AI estimates:\n\n• <strong>Door counts</strong> per precinct\n• <strong>Hours needed</strong> (30-50 doors/hour based on density)\n• <strong>Geographic clusters</strong> for efficient routing\n\n<em>Urban areas are faster to canvass than rural spread.</em>',
-      side: 'left',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'showChoropleth' },
-      { action: 'highlightPrecincts', params: { precincts: ['Lansing 1-8', 'Lansing 1-9', 'Lansing 2-12', 'East Lansing 1', 'East Lansing 3'] }, delay: 300 },
-    ],
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '📋 Canvass Deliverables',
-      description:
-        'From /canvass you can:\n\n• Assign turfs to volunteer teams\n• Export walk lists (CSV)\n• Track completion progress\n• Generate walk sheet PDFs\n\n<em>The platform handles the logistics so you focus on strategy.</em>',
-      side: 'right',
-      align: 'center',
-    },
-  },
 
   // =========================================================================
   // ACT 6: REPORTS & EXPORTS
@@ -861,7 +612,7 @@ export const DEMO_SCENARIO_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Act 6: Reports & Exports',
       description:
-        'Every analysis can be exported or turned into professional reports.\n\n<strong>Available exports:</strong>\n• Precinct Profile PDFs (7 pages)\n• Segment CSV files (26 columns)\n• Comparison reports\n• Canvass walk lists\n• Knowledge graph data (JSON/CSV)',
+        'Every analysis can be exported or turned into professional reports.\n\n<strong>Available exports:</strong>\n• Precinct Profile PDFs (7 pages)\n• Segment CSV files (26 columns)\n• Comparison reports\n• Knowledge graph data (JSON/CSV)',
       side: 'bottom',
       align: 'center',
     },
@@ -879,7 +630,7 @@ export const DEMO_SCENARIO_STEPS: TourStepWithAction[] = [
     popover: {
       title: '✅ Campaign Strategy Complete!',
       description:
-        'You\'ve now seen the full platform workflow:\n\n1. ✅ <strong>Discovery</strong> - Analyzed District 73\n2. ✅ <strong>Segmentation</strong> - Built persuasion & GOTV universes\n3. ✅ <strong>Comparison</strong> - Compared East Lansing vs Meridian\n4. ✅ <strong>Donors</strong> - Found fundraising opportunities\n5. ✅ <strong>Canvassing</strong> - Planned field operations\n6. ✅ <strong>Exports</strong> - Ready for deliverables',
+        'You\'ve now seen the full platform workflow:\n\n1. ✅ <strong>Discovery</strong> - Analyzed District 73\n2. ✅ <strong>Segmentation</strong> - Built persuasion & GOTV universes\n3. ✅ <strong>Comparison</strong> - Compared East Lansing vs Meridian\n4. ✅ <strong>Exports</strong> - Ready for deliverables',
       side: 'bottom',
       align: 'center',
     },
@@ -888,7 +639,7 @@ export const DEMO_SCENARIO_STEPS: TourStepWithAction[] = [
     popover: {
       title: '🎯 Your Deliverables',
       description:
-        '<strong>For District 73, you identified:</strong>\n\n• 12 high-priority precincts (~45,000 voters)\n• 8 swing precincts for persuasion\n• 6 GOTV precincts for mobilization\n• 3 ZIP codes with $250K+ donor capacity\n• 5 canvass routes covering 2,100 doors/weekend\n\n<strong>Key insight:</strong> Focus "College Towns" messaging on education policy.',
+        '<strong>For District 73, you identified:</strong>\n\n• 12 high-priority precincts (~45,000 voters)\n• 8 swing precincts for persuasion\n• 6 GOTV precincts for mobilization\n\n<strong>Key insight:</strong> Focus "College Towns" messaging on education policy.',
       side: 'bottom',
       align: 'center',
     },
@@ -1104,61 +855,11 @@ export const DEMO_SCENARIO_SENATE_STEPS: TourStepWithAction[] = [
   },
 
   // =========================================================================
-  // ACT 4: DONOR NETWORK
+  // ACT 4: FIELD PRIORITIES
   // =========================================================================
   {
     popover: {
-      title: 'Act 4: Fundraising Geography',
-      description:
-        'Senate campaigns are expensive ($50M+ in Michigan). Let\'s identify where Democratic donors are concentrated for fundraising events and house parties.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🤖 Automated: Mapping the Donor Base',
-      description:
-        'The AI analyzes FEC contribution data to find Democratic donor concentrations by ZIP code.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Where are Democratic donors concentrated for fundraising in Ingham County?' }, delay: 300 },
-      // Show persuasion opportunity heatmap - correlates with donor potential
-      { action: 'showHeatmap', params: { metric: 'persuasion_opportunity' }, delay: 500 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: '💰 Donor Geography',
-      description:
-        'The map highlights areas with high donor potential. Persuasion opportunity correlates with:\n\n• <strong>College-educated voters</strong>\n• <strong>Higher income households</strong>\n• <strong>Professional occupations</strong>',
-      side: 'left',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '💰 Donor Intelligence',
-      description:
-        'Key donor areas in Ingham County:\n\n• <strong>48823 (East Lansing)</strong> - Faculty, professionals\n• <strong>48864 (Okemos)</strong> - Affluent families\n• <strong>48912 (East Lansing)</strong> - Older donors, high gift size\n\n<em>Plan house parties in high-donor ZIPs for efficient fundraising.</em>',
-      side: 'right',
-      align: 'center',
-    },
-  },
-
-  // =========================================================================
-  // ACT 5: FIELD OPERATIONS
-  // =========================================================================
-  {
-    popover: {
-      title: 'Act 5: Deploying Field Resources',
+      title: 'Act 4: Deploying Field Resources',
       description:
         'With limited statewide resources, Ingham County gets a modest field team. Let\'s optimize where to deploy them for maximum vote yield.',
       side: 'bottom',
@@ -1169,24 +870,9 @@ export const DEMO_SCENARIO_SENATE_STEPS: TourStepWithAction[] = [
     ],
   },
   {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🤖 Automated: Canvass Planning',
-      description:
-        'The AI calculates optimal canvassing allocation based on GOTV priority and voter density.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'How many volunteer shifts to canvass high-GOTV precincts in Lansing and East Lansing?' }, delay: 300 },
-    ],
-  },
-  {
     element: '[data-tour="map-container"]',
     popover: {
-      title: '🚶 Canvassing Priorities',
+      title: '🚶 Field Priorities',
       description:
         'For a Senate campaign in Ingham:\n\n• <strong>Priority 1:</strong> East Lansing student precincts (high yield, low turnout)\n• <strong>Priority 2:</strong> Central Lansing (dense, efficient)\n• <strong>Priority 3:</strong> Suburban swing areas (persuasion + GOTV)\n\n<em>Concentrate resources where vote yield per hour is highest.</em>',
       side: 'left',
@@ -1205,7 +891,7 @@ export const DEMO_SCENARIO_SENATE_STEPS: TourStepWithAction[] = [
     popover: {
       title: '✅ Senate Strategy Complete!',
       description:
-        'You\'ve developed an Ingham County strategy for the Democratic Senate campaign:\n\n1. ✅ <strong>County overview</strong> - Understood the D+20 stronghold\n2. ✅ <strong>GOTV priorities</strong> - Identified student + urban turnout targets\n3. ✅ <strong>Suburban persuasion</strong> - Found educated swing voters\n4. ✅ <strong>Donor geography</strong> - Mapped fundraising opportunities\n5. ✅ <strong>Field allocation</strong> - Optimized canvassing resources',
+        'You\'ve developed an Ingham County strategy for the Democratic Senate campaign:\n\n1. ✅ <strong>County overview</strong> - Understood the D+20 stronghold\n2. ✅ <strong>GOTV priorities</strong> - Identified student + urban turnout targets\n3. ✅ <strong>Suburban persuasion</strong> - Found educated swing voters\n4. ✅ <strong>Field allocation</strong> - Optimized resource deployment',
       side: 'bottom',
       align: 'center',
     },
@@ -1219,7 +905,7 @@ export const DEMO_SCENARIO_SENATE_STEPS: TourStepWithAction[] = [
     popover: {
       title: '🎯 Ingham County Contribution',
       description:
-        '<strong>Target for Ingham County:</strong>\n\n• 160,000+ total votes (maximize turnout)\n• D+22 margin (net +35,000 Democratic)\n• 85%+ student turnout in East Lansing\n• $500K+ raised from local donors\n\n<strong>Key message:</strong> Protect reproductive rights, support public education, defend democracy.',
+        '<strong>Target for Ingham County:</strong>\n\n• 160,000+ total votes (maximize turnout)\n• D+22 margin (net +35,000 Democratic)\n• 85%+ student turnout in East Lansing\n\n<strong>Key message:</strong> Protect reproductive rights, support public education, defend democracy.',
       side: 'bottom',
       align: 'center',
     },
@@ -1483,7 +1169,7 @@ export const DEMO_SCENARIO_CONGRESS_STEPS: TourStepWithAction[] = [
     onActivate: [
       { action: 'expandAIPanel' },
       { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'How should we allocate canvassing resources between persuasion in suburbs and GOTV in Lansing for MI-07?' }, delay: 300 },
+      { action: 'typeInChat', params: { text: 'How should we allocate field resources between persuasion in suburbs and GOTV in Lansing for MI-07?' }, delay: 300 },
     ],
   },
   {
@@ -1557,7 +1243,7 @@ export const DEMO_SCENARIO_CONGRESS_STEPS: TourStepWithAction[] = [
     popover: {
       title: '🚀 Execute the Plan',
       description:
-        'Now you can:\n\n• Export voter segments for your voter file\n• Generate canvassing walk lists\n• Create precinct reports for field staff\n• Track progress against targets\n\n*This platform turns strategy into action.*',
+        'Now you can:\n\n• Export voter segments for your voter file\n• Create precinct reports for field staff\n• Track progress against targets\n\n*This platform turns strategy into action.*',
       side: 'right',
       align: 'end',
     },
@@ -1634,7 +1320,7 @@ export const WORKFLOW_FIND_SWING_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Step 4: Build a Segment',
       description:
-        'Once you\'ve identified swing precincts, use the Analysis Panel to save them as a segment. This lets you export the list for canvassing or generate reports.',
+        'Once you\'ve identified swing precincts, use the Analysis Panel to save them as a segment. This lets you export the list or generate reports.',
       side: 'left',
       align: 'start',
     },
@@ -1755,7 +1441,7 @@ export const WORKFLOW_BUILD_GOTV_STEPS: TourStepWithAction[] = [
     popover: {
       title: '🗳️ Workflow: Build a GOTV Universe',
       description:
-        'Create a targeted universe of precincts for Get Out The Vote campaigns. You\'ll learn to identify high-potential turnout areas and save them for canvassing.',
+        'Create a targeted universe of precincts for Get Out The Vote campaigns. You\'ll learn to identify high-potential turnout areas and save them for export.',
       side: 'bottom',
       align: 'center',
     },
@@ -1798,7 +1484,7 @@ export const WORKFLOW_BUILD_GOTV_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Step 3: Refine Your Universe',
       description:
-        'Use the Analysis Panel filters to narrow down your list. Consider geographic clustering (easier canvassing), population density (doors per hour), and total voter count.',
+        'Use the Analysis Panel filters to narrow down your list. Consider geographic clustering, population density (doors per hour), and total voter count.',
       side: 'left',
       align: 'start',
     },
@@ -1812,178 +1498,26 @@ export const WORKFLOW_BUILD_GOTV_STEPS: TourStepWithAction[] = [
     popover: {
       title: 'Step 4: Save and Plan',
       description:
-        'Click "Save Segment" to save your GOTV universe. Ask the AI: "How many doors in this segment?" or "Create a canvassing plan for these precincts" to estimate volunteer needs.',
+        'Click "Save Segment" to save your GOTV universe. Ask the AI: "How many doors in this segment?" to estimate volunteer needs.',
       side: 'right',
       align: 'center',
     },
     onActivate: [
       { action: 'expandAIPanel' },
       { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'How many volunteer hours to canvass East Lansing?' }, delay: 300 },
+      { action: 'typeInChat', params: { text: 'How many doors in East Lansing?' }, delay: 300 },
     ],
   },
   {
     popover: {
       title: '✅ Workflow Complete!',
       description:
-        'You\'ve built a GOTV universe! Navigate to /canvass to convert this into turf assignments, or export to CSV for your voter file vendor.',
+        'You\'ve built a GOTV universe! Export to CSV for your voter file vendor or use the segments tool to refine further.',
       side: 'bottom',
       align: 'center',
     },
     onActivate: [
       { action: 'showChoropleth' },
-    ],
-  },
-];
-
-/**
- * Workflow: Find Top Donor Areas
- * Goal: Identify geographic concentrations of donors
- */
-export const WORKFLOW_FIND_DONORS_STEPS: TourStepWithAction[] = [
-  {
-    popover: {
-      title: '💰 Workflow: Find Top Donor Areas',
-      description:
-        'Discover where your donors are concentrated and identify areas with untapped fundraising potential using FEC contribution data.',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-    ],
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: 'Step 1: Ask About Donors',
-      description:
-        'Ask: "Where are donors concentrated?" or "Show me top donor ZIP codes." The AI analyzes FEC data to find geographic patterns in political giving.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Where are donors concentrated?' }, delay: 300 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: 'Step 2: View High-Potential Areas',
-      description:
-        'While the AI retrieves donor data by ZIP code, the map shows persuasion opportunity - areas with educated, affluent voters who often correlate with donor capacity. Visit /donors for the full donor heatmap.',
-      side: 'left',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'showHeatmap', params: { metric: 'persuasion_opportunity' } },
-    ],
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: 'Step 3: Analyze Patterns',
-      description:
-        'Ask follow-up questions: "What occupations give the most?" "Are there lapsed donors we should re-engage?" "Which areas have high average gifts?" The AI provides fundraising insights.',
-      side: 'right',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Which occupations contribute the most?' }, delay: 300 },
-    ],
-  },
-  {
-    popover: {
-      title: '✅ Workflow Complete!',
-      description:
-        'You know how to find donor concentrations. Visit /donors for the full Donor Dashboard with RFM segmentation, lapsed donor analysis, and more.',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'showChoropleth' },
-    ],
-  },
-];
-
-/**
- * Workflow: Plan a Canvass
- * Goal: Convert a segment into canvassing operations
- */
-export const WORKFLOW_PLAN_CANVASS_STEPS: TourStepWithAction[] = [
-  {
-    popover: {
-      title: '🚶 Workflow: Plan a Canvass',
-      description:
-        'Convert your voter segments into actionable door-knocking plans with volunteer hour estimates and route optimization.',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-    ],
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: 'Step 1: Define Your Universe',
-      description:
-        'Start by asking: "Show me high-GOTV precincts in Lansing" or load a saved segment. The AI will highlight your target area on the map.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Show me high-GOTV precincts in Lansing' }, delay: 300 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: 'Step 2: Review Geographic Spread',
-      description:
-        'Look at how your target precincts cluster. Tightly clustered precincts are more efficient to canvass. Consider splitting distant precincts into separate days.',
-      side: 'left',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'showHeatmap', params: { metric: 'gotv_priority' } },
-      { action: 'flyToLocation', params: { target: 'Lansing' }, delay: 300 },
-      { action: 'highlightPrecincts', params: { precincts: ['Lansing 1-8', 'Lansing 1-9', 'Lansing 1-5', 'Lansing 1-2'] }, delay: 600 },
-    ],
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: 'Step 3: Estimate Resources',
-      description:
-        'Ask: "How many volunteer hours to canvass this area?" or "How many doors in these precincts?" The AI calculates based on voter density and estimates 30-50 doors per hour.',
-      side: 'right',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'How many volunteer hours to canvass these 4 precincts?' }, delay: 300 },
-    ],
-  },
-  {
-    popover: {
-      title: '✅ Workflow Complete!',
-      description:
-        'You have a canvassing plan outline. Visit /canvass to assign turfs to volunteers, track progress, and generate walk lists.',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'clearHighlight' },
-      { action: 'showChoropleth', delay: 200 },
-      { action: 'zoomToExtent', params: { zoom: 10 }, delay: 400 },
     ],
   },
 ];
@@ -2069,205 +1603,6 @@ export const WORKFLOW_COMPARE_AREAS_STEPS: TourStepWithAction[] = [
 // =============================================================================
 
 /**
- * Cross-Tool Tour: Segment → Canvass
- *
- * Shows the complete workflow from building a voter segment to planning
- * canvassing operations. Navigates from /political-ai to /segments to /canvass.
- */
-export const CROSS_TOOL_SEGMENT_TO_CANVASS_STEPS: TourStepWithAction[] = [
-  // =========================================================================
-  // INTRODUCTION
-  // =========================================================================
-  {
-    popover: {
-      title: '🔄 Cross-Tool Workflow: Segment → Canvass',
-      description:
-        'This tour demonstrates a complete workflow from identifying target voters to planning field operations. You\'ll learn how tools connect across the platform.\n\n<strong>The workflow:</strong> Build Segment → Review Data → Plan Canvass',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'showChoropleth' },
-    ],
-  },
-
-  // =========================================================================
-  // PART 1: IDENTIFY TARGET VOTERS (Main Page)
-  // =========================================================================
-  {
-    popover: {
-      title: 'Part 1: Identify Target Voters',
-      description:
-        'First, we\'ll use the AI to identify high-GOTV precincts. These are areas where turnout mobilization has the biggest impact.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🤖 Finding GOTV Targets',
-      description:
-        'Watch as the AI identifies precincts with high GOTV priority - areas where increasing turnout yields the most net votes.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Find the top 10 precincts with highest GOTV priority in Lansing' }, delay: 300 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: '🗺️ Visualize the Universe',
-      description:
-        'The AI highlights your target precincts. Notice they cluster in urban areas with Democratic lean but lower turnout.\n\n<em>This becomes your canvassing universe.</em>',
-      side: 'left',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'showHeatmap', params: { metric: 'gotv_priority' } },
-      { action: 'flyToLocation', params: { target: 'Lansing' }, delay: 500 },
-    ],
-  },
-
-  // =========================================================================
-  // PART 2: NAVIGATE TO SEGMENTS TOOL
-  // =========================================================================
-  {
-    popover: {
-      title: 'Part 2: Build the Segment',
-      description:
-        'Now let\'s save this as a formal segment. The Segments tool (/segments) lets you:\n\n• Apply advanced filters\n• Save segments for reuse\n• Export to voter files\n\n<em>Click Next to navigate to the Segments page.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    popover: {
-      title: '➡️ Navigating to Segments',
-      description:
-        'You\'ll be redirected to the <strong>Segments page</strong>. This page provides advanced filtering tools to refine your voter universe.\n\n<strong>Pro tip:</strong> Your AI context travels with you - the AI remembers what you were analyzing.',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'navigateTo', params: { path: '/segments', delay: 2000 } },
-    ],
-  },
-];
-
-/**
- * Cross-Tool Tour: Analyze → Donors
- *
- * Shows how to analyze an area and then explore donor opportunities.
- * Useful for campaigns that need to combine targeting with fundraising.
- */
-export const CROSS_TOOL_ANALYZE_TO_DONORS_STEPS: TourStepWithAction[] = [
-  // =========================================================================
-  // INTRODUCTION
-  // =========================================================================
-  {
-    popover: {
-      title: '🔄 Cross-Tool Workflow: Analyze → Donors',
-      description:
-        'This tour shows how to combine area analysis with donor intelligence. Perfect for campaigns that need to coordinate targeting with fundraising.\n\n<strong>The workflow:</strong> Analyze Area → Find Donor Clusters → Plan Outreach',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'showChoropleth' },
-    ],
-  },
-
-  // =========================================================================
-  // PART 1: ANALYZE THE AREA
-  // =========================================================================
-  {
-    popover: {
-      title: 'Part 1: Analyze Your Target Area',
-      description:
-        'First, let\'s understand the political landscape of a key area. We\'ll analyze Meridian Township - an affluent suburb with both voter and donor potential.',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🤖 Area Analysis',
-      description:
-        'The AI provides a comprehensive breakdown of Meridian Township - demographics, partisan lean, and Tapestry lifestyle segments.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Analyze Meridian Township - demographics, political lean, and lifestyle segments' }, delay: 300 },
-    ],
-  },
-  {
-    element: '[data-tour="map-container"]',
-    popover: {
-      title: '🗺️ Visualize the Area',
-      description:
-        'Meridian Township is highlighted. Note the suburban character - this type of area often has:\n\n• Higher income households (donor potential)\n• Educated voters (persuadable)\n• Professional occupations (targeted messaging)',
-      side: 'left',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'flyToLocation', params: { target: 'Meridian Township' } },
-      { action: 'showChoropleth' },
-    ],
-  },
-
-  // =========================================================================
-  // PART 2: EXPLORE DONOR OPPORTUNITIES
-  // =========================================================================
-  {
-    popover: {
-      title: 'Part 2: Find Donor Opportunities',
-      description:
-        'Now let\'s find where donors are concentrated in this area. The Donors tool (/donors) provides:\n\n• FEC contribution data by ZIP\n• Donor occupation analysis\n• Lapsed donor identification\n\n<em>Click Next to navigate to Donors.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '💰 Quick Donor Check',
-      description:
-        'Before navigating, let\'s ask about donors in this area to preview what we\'ll find.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Where are donors concentrated near Meridian Township?' }, delay: 300 },
-    ],
-  },
-  {
-    popover: {
-      title: '➡️ Navigating to Donors',
-      description:
-        'You\'ll be redirected to the <strong>Donors page</strong>. This page provides deep FEC analysis including:\n\n• Donor heatmaps by ZIP\n• Time-series giving trends\n• Occupation breakdowns\n\n<em>Use insights from area analysis to target fundraising.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-    onActivate: [
-      { action: 'navigateTo', params: { path: '/donors', delay: 2000 } },
-    ],
-  },
-];
-
-/**
  * Cross-Tool Tour: Full Campaign Workflow
  *
  * Comprehensive tour showing end-to-end campaign planning across all tools.
@@ -2281,7 +1616,7 @@ export const CROSS_TOOL_FULL_WORKFLOW_STEPS: TourStepWithAction[] = [
     popover: {
       title: '🎯 Complete Campaign Workflow',
       description:
-        'This comprehensive tour demonstrates how all platform tools work together for campaign planning.\n\n<strong>You\'ll experience:</strong>\n1. AI-powered analysis (main page)\n2. Voter segmentation (/segments)\n3. Donor intelligence (/donors)\n4. Side-by-side comparison (/compare)\n5. Field operations (/canvass)',
+        'This comprehensive tour demonstrates how all platform tools work together for campaign planning.\n\n<strong>You\'ll experience:</strong>\n1. AI-powered analysis (main page)\n2. Voter segmentation (/segments)\n3. Side-by-side comparison (/compare)',
       side: 'bottom',
       align: 'center',
     },
@@ -2356,41 +1691,11 @@ export const CROSS_TOOL_FULL_WORKFLOW_STEPS: TourStepWithAction[] = [
   },
 
   // =========================================================================
-  // PHASE 3: DONOR INTELLIGENCE
+  // PHASE 3: COMPARISON
   // =========================================================================
   {
     popover: {
-      title: 'Phase 3: Donor Intelligence',
-      description:
-        'Campaigns need money. The Donors tool analyzes FEC data to find:\n\n• Geographic donor concentrations\n• Occupation patterns\n• Lapsed donors to re-engage\n• Upgrade potential\n\n<em>Click Next to see donor insights.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '💰 Donor Discovery',
-      description:
-        'The AI can query donor data directly. Ask about concentration, occupations, giving trends, or specific ZIP codes.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'typeInChat', params: { text: 'Which ZIP codes have the highest Democratic donor concentration?' }, delay: 300 },
-      // Show persuasion opportunity heatmap - correlates with donor potential
-      { action: 'showHeatmap', params: { metric: 'persuasion_opportunity' }, delay: 500 },
-    ],
-  },
-
-  // =========================================================================
-  // PHASE 4: COMPARISON
-  // =========================================================================
-  {
-    popover: {
-      title: 'Phase 4: Comparative Analysis',
+      title: 'Phase 3: Comparative Analysis',
       description:
         'Understanding differences between areas helps tailor messaging. The Compare tool provides:\n\n• Side-by-side metrics\n• Demographic breakdowns\n• Strategy recommendations\n\n<em>Click Next to see comparison capabilities.</em>',
       side: 'bottom',
@@ -2414,42 +1719,13 @@ export const CROSS_TOOL_FULL_WORKFLOW_STEPS: TourStepWithAction[] = [
   },
 
   // =========================================================================
-  // PHASE 5: FIELD OPERATIONS
-  // =========================================================================
-  {
-    popover: {
-      title: 'Phase 5: Field Operations',
-      description:
-        'Convert strategy into action. The Canvass tool helps:\n\n• Calculate door counts and volunteer hours\n• Optimize routes by geography\n• Assign turfs to teams\n• Track progress\n\n<em>This is where strategy becomes reality.</em>',
-      side: 'bottom',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="ai-chat-panel"]',
-    popover: {
-      title: '🚶 Plan Field Operations',
-      description:
-        'The AI calculates canvassing requirements. Ask about door counts, volunteer hours, or route optimization.',
-      side: 'right',
-      align: 'start',
-    },
-    onActivate: [
-      { action: 'expandAIPanel' },
-      { action: 'switchToActiveChat', delay: 100 },
-      { action: 'showHeatmap', params: { metric: 'gotv_priority' }, delay: 200 },
-      { action: 'typeInChat', params: { text: 'How many volunteer hours to canvass high-GOTV precincts in Lansing?' }, delay: 500 },
-    ],
-  },
-
-  // =========================================================================
   // CONCLUSION
   // =========================================================================
   {
     popover: {
       title: '✅ Workflow Complete!',
       description:
-        'You\'ve seen the complete campaign planning workflow:\n\n1. ✅ <strong>AI Discovery</strong> - Strategic questions answered\n2. ✅ <strong>Segmentation</strong> - Target voters identified\n3. ✅ <strong>Donors</strong> - Fundraising geography mapped\n4. ✅ <strong>Comparison</strong> - Areas differentiated\n5. ✅ <strong>Field Ops</strong> - Canvassing planned\n\n<em>Use the sidebar to navigate to any tool.</em>',
+        'You\'ve seen the complete campaign planning workflow:\n\n1. ✅ <strong>AI Discovery</strong> - Strategic questions answered\n2. ✅ <strong>Segmentation</strong> - Target voters identified\n3. ✅ <strong>Comparison</strong> - Areas differentiated\n\n<em>Use the sidebar to navigate to any tool.</em>',
       side: 'bottom',
       align: 'center',
     },
@@ -2482,10 +1758,6 @@ export function getTourSteps(theme: TourTheme): TourStepWithAction[] {
       return SEGMENTATION_TOUR_STEPS;
     case 'comparison':
       return COMPARISON_TOUR_STEPS;
-    case 'donor':
-      return DONOR_TOUR_STEPS;
-    case 'canvassing':
-      return CANVASSING_TOUR_STEPS;
     case 'full':
       return FULL_TOUR_STEPS;
     // Demo scenarios - comprehensive campaign walkthroughs (Democratic perspective)
@@ -2502,17 +1774,9 @@ export function getTourSteps(theme: TourTheme): TourStepWithAction[] {
       return WORKFLOW_ANALYZE_PRECINCT_STEPS;
     case 'workflow-build-gotv':
       return WORKFLOW_BUILD_GOTV_STEPS;
-    case 'workflow-find-donors':
-      return WORKFLOW_FIND_DONORS_STEPS;
-    case 'workflow-plan-canvass':
-      return WORKFLOW_PLAN_CANVASS_STEPS;
     case 'workflow-compare-areas':
       return WORKFLOW_COMPARE_AREAS_STEPS;
     // Cross-tool workflow tours
-    case 'cross-tool-segment-to-canvass':
-      return CROSS_TOOL_SEGMENT_TO_CANVASS_STEPS;
-    case 'cross-tool-analyze-to-donors':
-      return CROSS_TOOL_ANALYZE_TO_DONORS_STEPS;
     case 'cross-tool-full-workflow':
       return CROSS_TOOL_FULL_WORKFLOW_STEPS;
     default:
@@ -2546,8 +1810,6 @@ export const TOUR_STEP_COUNTS: Record<TourTheme, number> = {
   welcome: WELCOME_TOUR_STEPS.length,
   segmentation: SEGMENTATION_TOUR_STEPS.length,
   comparison: COMPARISON_TOUR_STEPS.length,
-  donor: DONOR_TOUR_STEPS.length,
-  canvassing: CANVASSING_TOUR_STEPS.length,
   full: FULL_TOUR_STEPS.length,
   // Demo scenarios (Democratic campaign walkthroughs)
   'demo-scenario': DEMO_SCENARIO_STEPS.length,
@@ -2557,11 +1819,7 @@ export const TOUR_STEP_COUNTS: Record<TourTheme, number> = {
   'workflow-find-swing': WORKFLOW_FIND_SWING_STEPS.length,
   'workflow-analyze-precinct': WORKFLOW_ANALYZE_PRECINCT_STEPS.length,
   'workflow-build-gotv': WORKFLOW_BUILD_GOTV_STEPS.length,
-  'workflow-find-donors': WORKFLOW_FIND_DONORS_STEPS.length,
-  'workflow-plan-canvass': WORKFLOW_PLAN_CANVASS_STEPS.length,
   'workflow-compare-areas': WORKFLOW_COMPARE_AREAS_STEPS.length,
   // Cross-tool workflow tours
-  'cross-tool-segment-to-canvass': CROSS_TOOL_SEGMENT_TO_CANVASS_STEPS.length,
-  'cross-tool-analyze-to-donors': CROSS_TOOL_ANALYZE_TO_DONORS_STEPS.length,
   'cross-tool-full-workflow': CROSS_TOOL_FULL_WORKFLOW_STEPS.length,
 };

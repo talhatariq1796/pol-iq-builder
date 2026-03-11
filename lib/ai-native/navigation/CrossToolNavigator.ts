@@ -12,7 +12,7 @@ import { buildQueryString } from '../hooks/useToolUrlParams';
 // Type Definitions
 // ============================================================================
 
-export type NavigableTool = 'segments' | 'donors' | 'canvass' | 'compare' | 'political-ai';
+export type NavigableTool = 'segments' | 'compare' | 'political-ai';
 
 export interface NavigationContext {
   tool: NavigableTool;
@@ -65,7 +65,7 @@ export class CrossToolNavigator {
         const currentTool = stateManager.getCurrentTool();
 
         // Add explored precincts if navigating to segments/canvass and not already provided
-        if (['segments', 'canvass'].includes(targetTool) && !params.precincts && exploredPrecincts.length > 0) {
+        if (['segments'].includes(targetTool) && !params.precincts && exploredPrecincts.length > 0) {
           enhancedParams.precincts = exploredPrecincts.slice(0, 10); // Limit to 10 most recent
         }
 
@@ -133,7 +133,6 @@ export class CrossToolNavigator {
    *
    * Supports formats:
    * - "navigate:segments?precincts=P001,P002"
-   * - "navigate:donors?zips=48823,48864"
    * - "navigate:compare?left=lansing&right=east-lansing"
    *
    * @param command - Navigation command string
@@ -177,8 +176,6 @@ export class CrossToolNavigator {
   private static getToolPath(tool: NavigableTool): string {
     const paths: Record<NavigableTool, string> = {
       'segments': '/segments',
-      'donors': '/donors',
-      'canvass': '/canvass',
       'compare': '/compare',
       'political-ai': '/political-ai',
     };
@@ -192,7 +189,7 @@ export class CrossToolNavigator {
     // Remove leading slash if present
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
 
-    const validTools: NavigableTool[] = ['segments', 'donors', 'canvass', 'compare', 'political-ai'];
+    const validTools: NavigableTool[] = ['segments', 'compare', 'political-ai'];
 
     if (validTools.includes(cleanPath as NavigableTool)) {
       return cleanPath as NavigableTool;
@@ -276,7 +273,7 @@ export class CrossToolNavigator {
    *   matchingPrecincts: ['P001', 'P002'],
    *   segmentName: 'high-gotv'
    * });
-   * // Returns suggestions to continue in canvass or donors
+   * // Returns suggestions to continue in segments
    * ```
    */
   static generateContinueInSuggestions(
@@ -286,56 +283,7 @@ export class CrossToolNavigator {
     const suggestions: Array<{ label: string; action: string; metadata?: Record<string, unknown> }> = [];
 
     switch (currentTool) {
-      case 'segments':
-        // After creating a segment, suggest canvassing or donor analysis
-        if (context.matchingPrecincts && Array.isArray(context.matchingPrecincts) && context.matchingPrecincts.length > 0) {
-          suggestions.push({
-            label: 'Continue in Canvassing Planner',
-            action: `navigate:canvass?segment=${encodeURIComponent(String(context.segmentName || 'current'))}`,
-            metadata: { tool: 'canvass' }
-          });
-        }
-        if (context.zips && Array.isArray(context.zips) && context.zips.length > 0) {
-          suggestions.push({
-            label: 'Analyze Donors in these ZIPs',
-            action: `navigate:donors?zips=${context.zips.join(',')}`,
-            metadata: { tool: 'donors' }
-          });
-        }
-        break;
-
-      case 'donors':
-        // After viewing donor ZIPs, suggest segment creation or comparison
-        if (context.selectedZips && Array.isArray(context.selectedZips) && context.selectedZips.length > 0) {
-          suggestions.push({
-            label: 'Build Segment for these ZIPs',
-            action: `navigate:segments?zips=${context.selectedZips.join(',')}`,
-            metadata: { tool: 'segments' }
-          });
-        }
-        if (context.topZips && Array.isArray(context.topZips) && context.topZips.length >= 2) {
-          const [zip1, zip2] = context.topZips;
-          suggestions.push({
-            label: 'Compare Top Donor Areas',
-            action: `navigate:compare?left=${zip1}&right=${zip2}`,
-            metadata: { tool: 'compare' }
-          });
-        }
-        break;
-
-      case 'canvass':
-        // After creating turfs, suggest viewing on map or comparing
-        if (context.turfs && Array.isArray(context.turfs) && context.turfs.length > 0) {
-          suggestions.push({
-            label: 'View Turfs on Map',
-            action: 'navigate:political-ai',
-            metadata: { tool: 'political-ai' }
-          });
-        }
-        break;
-
       case 'compare':
-        // After comparison, suggest viewing areas individually or on map
         if (context.leftEntity && context.rightEntity) {
           suggestions.push({
             label: 'View on Full Map',
@@ -442,26 +390,6 @@ export function navigateToSegments(precincts: string[], segmentName?: string): v
   CrossToolNavigator.navigateWithContext('segments', {
     precincts,
     segment: segmentName,
-  });
-}
-
-/**
- * Navigate to donors page with ZIPs
- */
-export function navigateToDonors(zips: string[], view?: ToolUrlParams['view']): void {
-  CrossToolNavigator.navigateWithContext('donors', {
-    zips,
-    view,
-  });
-}
-
-/**
- * Navigate to canvass page with segment
- */
-export function navigateToCanvass(segmentName: string, precincts?: string[]): void {
-  CrossToolNavigator.navigateWithContext('canvass', {
-    segment: segmentName,
-    precincts,
   });
 }
 

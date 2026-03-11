@@ -1032,28 +1032,11 @@ export class SegmentationHandler implements NLPHandler {
 
     if (results.precinctCount > 0) {
       actions.push({
-        id: 'show-heatmap',
-        label: 'Show GOTV Heatmap',
-        description: 'Visualize GOTV priority on map',
-        action: 'map:showHeatmap',
-        metadata: { metric: 'gotv_priority' },
-        priority: 1,
-      });
-
-      actions.push({
         id: 'go-to-segments',
         label: 'Build in Segment Tool',
         description: 'Save & export in /segments',
         action: 'Navigate to /segments',
         priority: 2,
-      });
-
-      actions.push({
-        id: 'go-to-canvass',
-        label: 'Plan Canvassing',
-        description: 'Create walk lists in /canvass',
-        action: 'Navigate to /canvass',
-        priority: 3,
       });
     }
 
@@ -1333,12 +1316,6 @@ export class SegmentationHandler implements NLPHandler {
           },
         ],
         suggestedActions: [
-          {
-            id: 'plan-canvass',
-            label: 'Plan Canvassing',
-            action: 'Navigate to /canvass',
-            priority: 1,
-          },
           {
             id: 'go-to-segments',
             label: 'Save in Segment Tool',
@@ -1636,12 +1613,6 @@ export class SegmentationHandler implements NLPHandler {
             action: 'Navigate to /segments',
             priority: 1,
           },
-          {
-            id: 'go-to-canvass',
-            label: 'Plan Canvassing',
-            action: 'Navigate to /canvass',
-            priority: 2,
-          },
         ],
         data: { target: targetPrecincts, similar: similarPrecincts },
         metadata: this.buildMetadata('segment_lookalike', startTime, query),
@@ -1723,18 +1694,6 @@ export class SegmentationHandler implements NLPHandler {
             label: 'Build in Segment Tool',
             action: 'Navigate to /segments',
             priority: 1,
-          },
-          {
-            id: 'go-to-donors',
-            label: 'View Donor Analysis',
-            action: 'Navigate to /donors',
-            priority: 2,
-          },
-          {
-            id: 'go-to-canvass',
-            label: 'Plan Canvassing',
-            action: 'Navigate to /canvass',
-            priority: 3,
           },
         ],
         data: { overlapPrecincts, targetType },

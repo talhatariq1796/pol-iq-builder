@@ -9,7 +9,6 @@ import type {
   AllSettings,
   CampaignCalendarSettings,
   TargetingSettings,
-  CanvassingSettings,
   AISettings,
   DataSettings,
   MapSettings,
@@ -75,35 +74,7 @@ export const DEFAULT_TARGETING_SETTINGS: TargetingSettings = {
   targetUniverseSize: 'auto',
 };
 
-// =============================================================================
-// Canvassing Defaults
-// =============================================================================
 
-/**
- * Default canvassing settings.
- * Based on industry standards for door-to-door canvassing.
- */
-export const DEFAULT_CANVASSING_SETTINGS: CanvassingSettings = {
-  // Doors per hour by density (industry averages)
-  doorsPerHour: {
-    urban: 28,     // Dense urban: more doors, less travel
-    suburban: 22,  // Suburban: moderate density
-    rural: 15,     // Rural: more driving between houses
-  },
-
-  // Shift and turf defaults
-  defaultShiftLength: 3,  // 3-hour shifts are sustainable
-  optimalTurfSize: 45,    // 40-50 doors per turf
-
-  // Contact rate expectations
-  expectedContactRate: 35,   // 35% answer the door
-  expectedNotHomeRate: 50,   // 50% not home
-  // Remaining 15% = refused, moved, etc.
-
-  // Route preferences
-  preferWalkableRoutes: true,
-  maxDriveBetweenTurfs: 15,  // 15 minutes max between turfs
-};
 
 // =============================================================================
 // AI Assistant Defaults
@@ -219,7 +190,6 @@ export const DEFAULT_SETTINGS: AllSettings = {
   appearance: {}, // Managed in-component via localStorage
   campaign: DEFAULT_CAMPAIGN_SETTINGS,
   targeting: DEFAULT_TARGETING_SETTINGS,
-  canvassing: DEFAULT_CANVASSING_SETTINGS,
   ai: DEFAULT_AI_SETTINGS,
   data: DEFAULT_DATA_SETTINGS,
   map: DEFAULT_MAP_SETTINGS,

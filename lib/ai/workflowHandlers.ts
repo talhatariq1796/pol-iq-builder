@@ -151,8 +151,6 @@ const REPORT_EMOJIS: Record<string, string> = {
   profile: '📊',
   comparison: '⚖️',
   segment: '🔍',
-  canvass: '🚶',
-  donor: '💰',
 };
 
 export async function handleDistrictAnalysis(
@@ -422,12 +420,7 @@ export async function handleDistrictAnalysis(
         icon: 'users',
         metadata: { metric: 'gotv_priority' }
       },
-      {
-        id: 'plan-canvass',
-        label: 'Plan canvassing',
-        action: `Plan canvassing for ${districtLabel}`,
-        icon: 'route'
-      },
+
       {
         id: 'generate-report',
         label: 'Generate district report',
@@ -594,12 +587,7 @@ export async function handleFilterRequest(filterCriteria: any): Promise<HandlerR
         action: 'Export these precincts to CSV',
         icon: 'download'
       },
-      {
-        id: 'plan-canvassing',
-        label: 'Plan canvassing route',
-        action: 'Plan canvassing for these precincts',
-        icon: 'route'
-      },
+
     ];
 
     // Enhance response with context (Phase 2)

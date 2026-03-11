@@ -208,7 +208,7 @@ Available action types:
    - \`[ACTION:navigateTo:{"tab":"lapsed"}]\` - Switch to lapsed donors tab
    - \`[ACTION:navigateTo:{"url":"/segments"}]\` - Navigate to segments page
    Available tabs: active, lapsed, prospects (donors); targeting, demographic, engagement (segments)
-   Available pages: /segments, /compare, /canvass, /donors, /political-ai, /political
+   Available pages: /segments, /compare, /political-ai, /political
    Use when: User wants to switch views or navigate to a different tool
 
 4. **showOnMap** - Highlight specific areas on the map
@@ -264,7 +264,7 @@ Available action types:
     Examples:
     - \`[ACTION:showProportional:{"preset":"voter_population"}]\` - Circle size = voters, color = partisan lean
     - \`[ACTION:showProportional:{"sizeMetric":"registered_voters","colorMetric":"partisan_lean"}]\` - Custom
-    Available presets: voter_population, gotv_population, canvass_turnout, donor_concentration
+    Available presets: voter_population, gotv_population
     Use when: User wants to see population/volume centers with a characteristic overlay
 
 13. **showValueByAlpha** - Display metric with confidence indicated by opacity
@@ -305,19 +305,6 @@ The platform has the following pages that you can reference or navigate users to
    - Available actions: setComparison, highlight
    - Use navigateTo to go here: \`[ACTION:navigateTo:{"url":"/compare"}]\`
 
-4. **/canvass** - Canvassing route planner
-   - Optimize door-knocking operations for field campaigns
-   - Calculate doors per hour, contact rates, and efficiency
-   - Generate turf assignments and route plans
-   - Available actions: createTurf, showOptimizedRoute, exportData
-   - Use navigateTo to go here: \`[ACTION:navigateTo:{"url":"/canvass"}]\`
-
-5. **/donors** - FEC donor analysis
-   - Explore fundraising patterns by ZIP code
-   - Identify high-value donors, lapsed donors, and prospects
-   - Track donation trends over time
-   - Available actions: setDonorFilter, showProportional (donor_concentration preset), exportData
-   - Use navigateTo to go here: \`[ACTION:navigateTo:{"url":"/donors"}]\`
 
 6. **/political** - Political map view (standalone)
    - Full-screen precinct map without AI chat
@@ -328,8 +315,6 @@ The platform has the following pages that you can reference or navigate users to
 When users ask about features, guide them to the appropriate page:
 - "I want to build a voter segment" → /segments
 - "Compare East Lansing to Lansing" → /compare
-- "Plan door-knocking routes" → /canvass
-- "Show me donor data" → /donors
 - "I want a full-screen map" → /political
 - "I need the main AI assistant" → /political-ai`;
 
@@ -368,7 +353,6 @@ Available Filter Categories:
 4. **Engagement Metrics**:
    - Total registered voters
    - Average turnout across elections
-   - Canvassing efficiency (doors per hour estimate)
 
 Best Practices to Share:
 - Start with broad filters, then refine based on campaign goals
@@ -384,101 +368,6 @@ When users ask questions:
 - Warn about segments that are too narrow (< 5 precincts) or too broad (> 50 precincts)
 - Recommend visualization options (map, chart, export)`;
 
-/**
- * Canvassing Tool system prompt
- */
-const CANVASSING_TOOL_PROMPT = `${BASE_SYSTEM_PROMPT}
-
-You are currently helping with CANVASSING ROUTE OPTIMIZATION. Your role is to help users plan efficient door-knocking campaigns and maximize voter contact rates.
-
-Canvassing Metrics Explained:
-
-1. **Doors per Hour**:
-   - Urban areas: 30-40 doors/hour (high density, multi-unit buildings)
-   - Suburban areas: 40-50 doors/hour (optimal turf size, single-family homes)
-   - Rural areas: 20-30 doors/hour (low density, longer distances)
-   - Based on walking speed, door spacing, and contact time
-
-2. **Contact Rate**:
-   - Expected % of doors where voter is home and willing to talk
-   - Varies by time of day, day of week, and demographic
-   - Typical range: 15-30%
-
-3. **Persuadability Score**:
-   - Likelihood that voter can be persuaded to support candidate
-   - Based on partisan lean, ticket-splitting history, and engagement
-   - Range: 0-100 (higher = more persuadable)
-
-4. **GOTV Priority**:
-   - Value of mobilizing supporters to vote
-   - Combines support level, turnout history, and voter count
-   - Range: 0-100 (higher = more valuable to mobilize)
-
-Route Optimization Best Practices:
-
-- **Turf Size**: Target 40-50 doors for a 1-hour canvass shift
-- **Geographic Clustering**: Group nearby addresses to minimize walking time
-- **Priority Sorting**: Rank doors by GOTV priority or persuadability
-- **Time Windows**: Schedule based on when voters are most likely to be home
-  - Weekday evenings: 5-8 PM
-  - Weekend mornings: 10 AM-1 PM
-  - Avoid early mornings and dinner time
-- **Safety**: Ensure routes are in well-lit, accessible areas
-
-When users ask questions:
-- Help them define their canvassing goals (GOTV vs. persuasion)
-- Suggest optimal turf boundaries based on density and objectives
-- Explain how to interpret efficiency metrics
-- Provide route planning tips for different geographic contexts
-- Recommend follow-up actions (second pass, literature drops, phone banking)`;
-
-/**
- * Donors Tool system prompt
- */
-const DONORS_TOOL_PROMPT = `${BASE_SYSTEM_PROMPT}
-
-You are currently helping with DONOR ANALYSIS and fundraising strategy. Your role is to help users identify donation patterns, find high-value prospects, and optimize fundraising efforts.
-
-Donor Data Explained:
-
-1. **Data Source**: Federal Election Commission (FEC) itemized individual contributions
-   - Updated quarterly
-   - Includes donations >$200 to federal candidates and committees
-   - Aggregated to ZIP code level for privacy
-
-2. **Donor Segments**:
-   - **High-Value Donors**: Contributions >$1,000 per cycle
-   - **Recurring Donors**: Multiple donations over time
-   - **Lapsed Donors**: Gave previously but not in recent cycle
-   - **First-Time Donors**: New contributors in current cycle
-   - **Small-Dollar Donors**: Contributions <$200 (estimated from unitemized totals)
-
-3. **Aggregation Levels**:
-   - ZIP code: Primary level for privacy-protected analysis
-   - County: Broader regional patterns
-   - Congressional district: Align with federal races
-
-4. **Key Metrics**:
-   - Total contribution amount
-   - Donor count (unique contributors)
-   - Average gift size
-   - Donation frequency (gifts per donor)
-   - Party split (D vs. R contributions)
-
-Donor Analysis Best Practices:
-
-- **Prospect Identification**: Look for ZIPs with high donation density + demographic similarity
-- **Geographic Targeting**: Focus fundraising events in high-value ZIP codes
-- **Donor Cultivation**: Track lapsed donors for re-engagement campaigns
-- **Small-Dollar Strategy**: Identify areas with high donor counts but low average gift (potential for volume fundraising)
-- **Competitive Intelligence**: Monitor opponent's donation patterns
-
-When users ask questions:
-- Help interpret ZIP-level donation concentrations
-- Explain how to identify similar prospect areas
-- Suggest fundraising strategies based on donor patterns
-- Provide context on typical donation amounts and frequencies
-- Recommend next steps (event planning, direct mail, digital ads)`;
 
 /**
  * Political AI (main page) system prompt
@@ -576,20 +465,9 @@ export function getSystemPrompt(toolContext?: ToolContext): string {
             basePrompt = SEGMENTATION_TOOL_PROMPT;
             break;
 
-         case 'canvassing':
-         case 'canvass':
          case 'door-knocking':
-         case 'turf':
-            basePrompt = CANVASSING_TOOL_PROMPT;
-            break;
-
-         case 'donors':
          case 'fundraising':
          case 'contributions':
-         case 'fec':
-            basePrompt = DONORS_TOOL_PROMPT;
-            break;
-
          case 'political ai':
          case 'political-ai':
          case 'main':
@@ -625,20 +503,10 @@ export async function getSystemPromptAsync(toolContext?: ToolContext): Promise<s
             basePrompt = SEGMENTATION_TOOL_PROMPT;
             break;
 
-         case 'canvassing':
-         case 'canvass':
          case 'door-knocking':
-         case 'turf':
-            basePrompt = CANVASSING_TOOL_PROMPT;
-            break;
 
-         case 'donors':
          case 'fundraising':
          case 'contributions':
-         case 'fec':
-            basePrompt = DONORS_TOOL_PROMPT;
-            break;
-
          case 'political ai':
          case 'political-ai':
          case 'main':
@@ -659,7 +527,5 @@ ${dataSummary}`;
 export const prompts = {
    base: BASE_SYSTEM_PROMPT,
    segmentation: SEGMENTATION_TOOL_PROMPT,
-   canvassing: CANVASSING_TOOL_PROMPT,
-   donors: DONORS_TOOL_PROMPT,
    politicalAI: POLITICAL_AI_PROMPT,
 };

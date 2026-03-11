@@ -191,7 +191,6 @@ export interface EnhancedSessionContext extends SessionContext {
 export interface TemporalVisualizationState {
   isTemporalMode: boolean;
   selectedYear: number | null;              // For election year selection
-  selectedMonth: string | null;             // For donor time series (YYYY-MM)
   comparisonYears: number[];                // Years being compared
   visualizationMode: 'slider' | 'animated' | 'comparison' | 'momentum';
   isPlaying: boolean;
@@ -209,24 +208,6 @@ export interface SegmentationState {
   currentSegmentName: string | null;
   lookalikeReference: string | null;
   lookalikeResults: LookalikeResult[];
-}
-
-export interface CanvassingState {
-  activeOperation: CanvassingOperation | null;
-  loadedUniverse: string | null;
-  turfs: Turf[];
-  volunteers: Volunteer[];
-  assignments: TurfAssignment[];
-  progress: CanvassingProgress;
-  performanceMetrics: PerformanceMetrics | null;
-  targetPrecincts?: string[]; // Added for toolContext sync (P2-39)
-}
-
-export interface CanvassingOperation {
-  id: string;
-  name: string;
-  createdAt: Date;
-  status: 'planning' | 'active' | 'paused' | 'completed';
 }
 
 export interface Turf {
@@ -250,28 +231,10 @@ export interface TurfAssignment {
   assignedAt: Date;
 }
 
-export interface CanvassingProgress {
-  totalDoors: number;
-  doorsKnocked: number;
-  contacts: number;
-  notHome: number;
-  responses: Record<string, number>;
-}
-
 export interface PerformanceMetrics {
   doorsPerHour: number;
   contactRate: number;
   responseRate: number;
-}
-
-export interface DonorState {
-  activeView: 'zip' | 'timeSeries' | 'occupations' | 'committees' | 'ies' | 'lapsed' | 'upgrade';
-  selectedZips: string[];
-  timeRange: { start: Date; end: Date } | null;
-  partyFilter: 'all' | 'D' | 'R' | 'other';
-  selectedCandidates: string[];
-  lapsedThreshold: number;
-  upgradeMinAmount: number;
 }
 
 export interface ComparisonState {
@@ -376,8 +339,6 @@ export interface ApplicationState {
   behavior: BehaviorState;
   temporal: TemporalState;
   segmentation: SegmentationState;
-  canvassing: CanvassingState;
-  donors: DonorState;
   comparison: ComparisonState;
   reports: ReportState;
 
@@ -430,13 +391,6 @@ export type StateEventType =
   | 'SEGMENT_CREATED'
   | 'SEGMENT_SAVED'
   | 'SAVED_SEGMENT_UPDATED'
-  | 'CANVASSING_OPERATION_STARTED'
-  | 'CANVASSING_PROGRESS_UPDATED'
-  | 'CANVASSING_PARAMS_CHANGED'
-  | 'CANVASSING_UNIVERSE_SAVED'
-  | 'DONOR_VIEW_CHANGED'
-  | 'DONOR_FILTER_CHANGED'
-  | 'DONOR_ZIP_SELECTED'
   | 'COMPARISON_STARTED'
   | 'COMPARISON_COMPLETED'
   | 'COMPARISON_LOADED'
@@ -540,14 +494,6 @@ class ApplicationStateManager {
 
   getSegmentationState(): SegmentationState {
     return { ...this.state.segmentation };
-  }
-
-  getCanvassingState(): CanvassingState {
-    return { ...this.state.canvassing };
-  }
-
-  getDonorState(): DonorState {
-    return { ...this.state.donors };
   }
 
   getComparisonState(): ComparisonState {
@@ -1177,57 +1123,6 @@ class ApplicationStateManager {
   }
 
   /**
-   * Update canvassing state and sync to toolContext (P2-39)
-   */
-  updateCanvassingState(updates: Partial<CanvassingState>): void {
-    this.state.canvassing = {
-      ...this.state.canvassing,
-      ...updates,
-    };
-
-    // Extract targetPrecincts from turfs if not provided directly
-    const targetPrecincts = updates.targetPrecincts ||
-      (updates.turfs?.flatMap(t => t.precinctIds) ?? this.state.canvassing.targetPrecincts ?? []);
-
-    // Sync to toolContext
-    this.state.toolContexts.canvass = {
-      ...this.state.toolContexts.canvass,
-      turfs: this.state.canvassing.turfs.map(t => ({
-        id: t.id,
-        name: t.name,
-        precinctIds: t.precinctIds,
-        doorCount: t.doorCount,
-      })),
-      targetPrecincts,
-    };
-
-    this.dispatch({
-      type: 'CANVASSING_PARAMS_CHANGED',
-      payload: { updates },
-      timestamp: new Date(),
-    });
-  }
-
-  /**
-   * Update donor view and sync to toolContext (P2-40)
-   */
-  updateDonorView(view: DonorState['activeView']): void {
-    this.state.donors.activeView = view;
-
-    // Sync to toolContext
-    this.state.toolContexts.donors = {
-      ...this.state.toolContexts.donors,
-      activeView: view,
-    };
-
-    this.dispatch({
-      type: 'DONOR_VIEW_CHANGED',
-      payload: { view },
-      timestamp: new Date(),
-    });
-  }
-
-  /**
    * Log an exploration action
    */
   logExploration(entry: Omit<ExplorationHistoryEntry, 'timestamp'>): void {
@@ -1304,7 +1199,6 @@ class ApplicationStateManager {
         'FEATURE_SELECTED',
         'FEATURE_DESELECTED',
         'SEGMENT_FILTER_CHANGED',
-        'DONOR_ZIP_SELECTED',
       ];
 
       if (mapEvents.includes(event.type)) {
@@ -1382,24 +1276,6 @@ class ApplicationStateManager {
         break;
       }
 
-      case 'donors': {
-        const donorCtx = this.state.toolContexts.donors;
-        if (donorCtx.selectedZips.length > 0) {
-          parts.push(`Selected ZIPs: ${donorCtx.selectedZips.slice(0, 5).join(', ')}${donorCtx.selectedZips.length > 5 ? '...' : ''}`);
-          parts.push(`Donor view: ${donorCtx.activeView}`);
-        }
-        break;
-      }
-
-      case 'canvass': {
-        const canvassCtx = this.state.toolContexts.canvass;
-        if (canvassCtx.turfs.length > 0) {
-          parts.push(`Canvassing turfs: ${canvassCtx.turfs.length}`);
-          parts.push(`Target precincts: ${canvassCtx.targetPrecincts.length}`);
-        }
-        break;
-      }
-
       case 'compare': {
         const compareCtx = this.state.toolContexts.compare;
         if (compareCtx.leftEntity && compareCtx.rightEntity) {
@@ -1413,8 +1289,7 @@ class ApplicationStateManager {
     // Map state
     if (this.state.sharedMapState.layer !== 'none') {
       parts.push(
-        `Map layer: ${this.state.sharedMapState.layer}${
-          this.state.sharedMapState.metric ? ` showing ${this.state.sharedMapState.metric}` : ''
+        `Map layer: ${this.state.sharedMapState.layer}${this.state.sharedMapState.metric ? ` showing ${this.state.sharedMapState.metric}` : ''
         }`
       );
     }
@@ -1849,7 +1724,7 @@ class ApplicationStateManager {
       filtersApplied = Object.keys(filters).filter(key => {
         const value = filters[key as keyof typeof filters];
         return value !== null && value !== undefined &&
-               (typeof value !== 'object' || Object.keys(value).length > 0);
+          (typeof value !== 'object' || Object.keys(value).length > 0);
       }).length;
     }
 
@@ -2060,15 +1935,6 @@ class ApplicationStateManager {
 
       case 'SEGMENT_SAVED':
         this.state.segmentation.currentSegmentName = payload.name as string;
-        break;
-
-      case 'DONOR_VIEW_CHANGED':
-        this.state.donors.activeView = payload.view as DonorState['activeView'];
-        // Sync to toolContext (P2-40)
-        this.state.toolContexts.donors = {
-          ...this.state.toolContexts.donors,
-          activeView: payload.view as DonorState['activeView'],
-        };
         break;
 
       case 'COMPARISON_STARTED':
@@ -2768,8 +2634,6 @@ class ApplicationStateManager {
       swing: [/swing/i, /competitive/i, /battleground/i],
       gotv: [/gotv/i, /turnout/i, /mobiliz/i],
       persuasion: [/persuad/i, /persuasion/i, /undecided/i],
-      donors: [/donor/i, /contribut/i, /fundrais/i],
-      canvassing: [/canvass/i, /door/i, /turf/i, /volunteer/i],
       demographics: [/demograph/i, /population/i, /age/i, /income/i],
     };
 
@@ -2996,31 +2860,6 @@ class ApplicationStateManager {
         lookalikeReference: null,
         lookalikeResults: [],
       },
-      canvassing: {
-        activeOperation: null,
-        loadedUniverse: null,
-        turfs: [],
-        volunteers: [],
-        assignments: [],
-        progress: {
-          totalDoors: 0,
-          doorsKnocked: 0,
-          contacts: 0,
-          notHome: 0,
-          responses: {},
-        },
-        performanceMetrics: null,
-        targetPrecincts: [],
-      },
-      donors: {
-        activeView: 'zip',
-        selectedZips: [],
-        timeRange: null,
-        partyFilter: 'all',
-        selectedCandidates: [],
-        lapsedThreshold: 365,
-        upgradeMinAmount: 100,
-      },
       comparison: {
         leftEntity: null,
         rightEntity: null,
@@ -3048,26 +2887,12 @@ class ApplicationStateManager {
           filters: null,
           matchingPrecincts: [],
         },
-        donors: {
-          selectedZips: [],
-          timeRange: null,
-          partyFilter: 'all',
-          activeView: 'zip',
-        },
-        canvass: {
-          turfs: [],
-          targetPrecincts: [],
-        },
         compare: {
           leftEntity: null,
           rightEntity: null,
         },
         settings: {
           activeSection: undefined,
-        },
-        'knowledge-graph': {
-          selectedNode: undefined,
-          expandedNodes: [],
         },
       },
       sharedMapState: {
@@ -3089,7 +2914,6 @@ class ApplicationStateManager {
       temporal_viz: {
         isTemporalMode: false,
         selectedYear: null,
-        selectedMonth: null,
         comparisonYears: [],
         visualizationMode: 'slider',
         isPlaying: false,

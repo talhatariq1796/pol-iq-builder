@@ -44,11 +44,6 @@ const CATEGORY_CONFIG = {
     icon: Target,
     description: 'Voter targeting weights and thresholds',
   },
-  canvassing: {
-    label: 'Canvassing',
-    icon: Users,
-    description: 'Door rates, shift lengths, and route preferences',
-  },
   ai: {
     label: 'AI Assistant',
     icon: MessageSquare,
@@ -111,11 +106,6 @@ const settingsHelp = {
       id: 'targeting',
       title: 'Targeting Strategy',
       content: 'Control how voter targeting scores are calculated. Set minimum thresholds for GOTV and persuasion targets, choose your primary strategy (GOTV, Persuasion, or Hybrid), and adjust the weights used for scoring factors like turnout history and partisan lean.',
-    },
-    {
-      id: 'canvassing',
-      title: 'Canvassing',
-      content: 'Customize door-knocking parameters including optimal turf size (40-50 doors recommended), expected contact rates, and doors per hour based on density. Set maximum drive time between turfs and route preferences.',
     },
     {
       id: 'ai',
@@ -309,13 +299,12 @@ function SettingsPageContent() {
                   key={key}
                   onClick={() => !isComingSoon && setActiveCategory(key)}
                   disabled={isComingSoon}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                    isComingSoon
-                      ? 'opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-500'
-                      : activeCategory === key
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${isComingSoon
+                    ? 'opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-500'
+                    : activeCategory === key
                       ? 'bg-green-50 dark:bg-green-900/20 text-[#33a852] dark:text-green-400'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                   title={isComingSoon ? 'Coming Soon' : undefined}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -423,8 +412,6 @@ function CategorySettings({ category, settings, onChange }: CategorySettingsProp
       return <CampaignSettings settings={settings.campaign} onChange={(key, value) => onChange('campaign', key, value)} />;
     case 'targeting':
       return <TargetingSettings settings={settings.targeting} onChange={(key, value) => onChange('targeting', key, value)} />;
-    case 'canvassing':
-      return <CanvassingSettings settings={settings.canvassing} onChange={(key, value) => onChange('canvassing', key, value)} />;
     case 'ai':
       return <AISettings settings={settings.ai} onChange={(key, value) => onChange('ai', key, value)} />;
     case 'data':
@@ -467,14 +454,12 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (value: boo
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked ? 'bg-[#33a852]' : 'bg-gray-200 dark:bg-gray-700'
-      }`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-[#33a852]' : 'bg-gray-200 dark:bg-gray-700'
+        }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          checked ? 'translate-x-6' : 'translate-x-1'
-        }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'
+          }`}
       />
     </button>
   );
@@ -559,11 +544,10 @@ function AppearanceSettings() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setTheme('light')}
-            className={`p-3 rounded-lg border-2 transition-colors ${
-              !isDarkMode
-                ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
+            className={`p-3 rounded-lg border-2 transition-colors ${!isDarkMode
+              ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
           >
             <div className="w-full h-8 bg-white rounded mb-2 border border-gray-200" />
             <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Light</span>
@@ -575,11 +559,10 @@ function AppearanceSettings() {
           </button>
           <button
             onClick={() => setTheme('dark')}
-            className={`p-3 rounded-lg border-2 transition-colors ${
-              isDarkMode
-                ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
+            className={`p-3 rounded-lg border-2 transition-colors ${isDarkMode
+              ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
           >
             <div className="w-full h-8 bg-gray-800 rounded mb-2" />
             <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Dark</span>
@@ -832,66 +815,7 @@ function TargetingSettings({ settings, onChange }: {
   );
 }
 
-function CanvassingSettings({ settings, onChange }: {
-  settings: AllSettings['canvassing'];
-  onChange: (key: keyof AllSettings['canvassing'], value: AllSettings['canvassing'][typeof key]) => void
-}) {
-  return (
-    <div className="bg-white rounded-lg border">
-      <SettingRow label="Default Shift Length" description="Hours per canvassing shift">
-        <NumberInput value={settings.defaultShiftLength} min={1} max={8} onChange={(v) => onChange('defaultShiftLength', v)} />
-      </SettingRow>
-      <SettingRow label="Optimal Turf Size" description="Target doors per turf assignment">
-        <NumberInput value={settings.optimalTurfSize} min={20} max={100} onChange={(v) => onChange('optimalTurfSize', v)} />
-      </SettingRow>
-      <SettingRow label="Expected Contact Rate" description="% of doors with successful contact">
-        <NumberInput value={settings.expectedContactRate} min={10} max={80} onChange={(v) => onChange('expectedContactRate', v)} />
-      </SettingRow>
-      <SettingRow label="Expected Not Home Rate" description="% of doors with no one home">
-        <NumberInput value={settings.expectedNotHomeRate} min={20} max={80} onChange={(v) => onChange('expectedNotHomeRate', v)} />
-      </SettingRow>
-      <SettingRow label="Max Drive Between Turfs" description="Maximum minutes between turfs">
-        <NumberInput value={settings.maxDriveBetweenTurfs} min={5} max={60} onChange={(v) => onChange('maxDriveBetweenTurfs', v)} />
-      </SettingRow>
-      <SettingRow label="Prefer Walkable Routes">
-        <Toggle checked={settings.preferWalkableRoutes} onChange={(v) => onChange('preferWalkableRoutes', v)} />
-      </SettingRow>
 
-      <div className="px-4 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Doors Per Hour by Density</h4>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex items-center justify-between py-2">
-            <span className="text-xs text-gray-600 dark:text-gray-400">Urban</span>
-            <NumberInput
-              value={settings.doorsPerHour.urban}
-              min={10}
-              max={60}
-              onChange={(v) => onChange('doorsPerHour', { ...settings.doorsPerHour, urban: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-xs text-gray-600 dark:text-gray-400">Suburban</span>
-            <NumberInput
-              value={settings.doorsPerHour.suburban}
-              min={5}
-              max={50}
-              onChange={(v) => onChange('doorsPerHour', { ...settings.doorsPerHour, suburban: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-xs text-gray-600 dark:text-gray-400">Rural</span>
-            <NumberInput
-              value={settings.doorsPerHour.rural}
-              min={3}
-              max={30}
-              onChange={(v) => onChange('doorsPerHour', { ...settings.doorsPerHour, rural: v })}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Response style example previews
 const RESPONSE_STYLE_EXAMPLES = {
@@ -975,11 +899,10 @@ function AISettings({ settings, onChange }: {
               <button
                 key={key}
                 onClick={() => onChange('responseStyle', key)}
-                className={`relative p-3 rounded-lg border-2 transition-all text-left ${
-                  settings.responseStyle === key
-                    ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                }`}
+                className={`relative p-3 rounded-lg border-2 transition-all text-left ${settings.responseStyle === key
+                  ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
+                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg">{style.icon}</span>
@@ -1032,11 +955,10 @@ function AISettings({ settings, onChange }: {
               <button
                 key={key}
                 onClick={() => onChange('tone', key)}
-                className={`relative p-3 rounded-lg border-2 transition-all text-left ${
-                  settings.tone === key
-                    ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                }`}
+                className={`relative p-3 rounded-lg border-2 transition-all text-left ${settings.tone === key
+                  ? 'border-[#33a852] bg-green-50 dark:bg-green-900/20'
+                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg">{tone.icon}</span>
@@ -1094,11 +1016,10 @@ function AISettings({ settings, onChange }: {
                 <button
                   key={freq}
                   onClick={() => onChange('proactiveFrequency', freq)}
-                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                    settings.proactiveFrequency === freq
-                      ? 'bg-[#33a852] text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${settings.proactiveFrequency === freq
+                    ? 'bg-[#33a852] text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
                 >
                   {freq.charAt(0).toUpperCase() + freq.slice(1)}
                 </button>
@@ -1174,9 +1095,6 @@ function DataSettings({ settings, onChange }: {
         </SettingRow>
         <SettingRow label="Session Retention Days" description="How long to keep session data">
           <NumberInput value={settings.sessionRetentionDays} min={1} max={365} onChange={(v) => onChange('sessionRetentionDays', v)} />
-        </SettingRow>
-        <SettingRow label="Enable Donor Data" description="Include FEC donor information">
-          <Toggle checked={settings.enableDonorData} onChange={(v) => onChange('enableDonorData', v)} />
         </SettingRow>
         <SettingRow label="Enable Tapestry Segments" description="Include ESRI Tapestry psychographics">
           <Toggle checked={settings.enableTapestrySegments} onChange={(v) => onChange('enableTapestrySegments', v)} />
@@ -1801,9 +1719,8 @@ function CampaignCalendarWidget({ settings }: { settings: AllSettings['campaign'
             {upcomingDeadlines.map((deadline) => (
               <div
                 key={deadline.name}
-                className={`p-4 flex items-center justify-between ${
-                  deadline.isUrgent ? 'bg-red-50' : ''
-                }`}
+                className={`p-4 flex items-center justify-between ${deadline.isUrgent ? 'bg-red-50' : ''
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   {getTypeIcon(deadline.type)}
@@ -1888,7 +1805,7 @@ function TeamPlaceholder() {
       <h3 className="text-lg font-medium text-gray-900 mb-2">Team Management</h3>
       <p className="text-gray-500 mb-6 max-w-md mx-auto">
         Invite team members, assign roles, and collaborate on campaign analysis.
-        Share segments, reports, and canvassing plans with your team.
+        Share segments and reports with your team.
       </p>
       <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
         <Clock className="w-4 h-4" />

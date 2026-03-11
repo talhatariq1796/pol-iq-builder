@@ -1402,11 +1402,6 @@ Available actions:
         }
 
         const hasComparison = !!(reportAppState.comparison.leftEntity && reportAppState.comparison.rightEntity);
-        const toolContexts = reportStateManager.getToolContexts();
-        const donorContext = toolContexts.donors;
-        const canvassContext = toolContexts.canvass;
-        const hasDonorData = donorContext.selectedZips.length > 0 || donorContext.activeView !== 'zip';
-        const hasCanvassingData = canvassContext.turfs.length > 0 || canvassContext.targetPrecincts.length > 0;
 
         const reportContext: any = {
           precinctsExplored: reportMetrics.precinctsViewed,
@@ -1416,8 +1411,6 @@ Available actions:
           comparisonEntities: hasComparison
             ? [reportAppState.comparison.leftEntity!.name, reportAppState.comparison.rightEntity!.name]
             : undefined,
-          hasDonorData,
-          hasCanvassingData,
           currentTool: 'political-ai',
           hasMapSelection: !!(selectedPrecinct || (mapState?.selectedBoundaries?.ids?.length ?? 0) > 0),
           selectedPrecinctNames: selectedPrecinctNames.length > 0 ? selectedPrecinctNames : undefined,

@@ -368,15 +368,6 @@ export class ToolOrchestrator {
         '- "Find suburban swing precincts"',
         '- "Build a segment of high GOTV areas"',
         '',
-        '**Canvassing:**',
-        '- "Plan a 5,000 door canvass"',
-        '- "How many volunteers for 10k doors?"',
-        '',
-        '**Donors:**',
-        '- "Where are donors concentrated?"',
-        '- "Find lapsed donors from 2022"',
-        '- "Show upgrade prospects"',
-        '',
         '**Districts:**',
         '- "Analyze State House District 73"',
         '- "Compare districts 73 and 74"',
@@ -386,10 +377,6 @@ export class ToolOrchestrator {
         '- "Show turnout trends since 2020"',
         '- "How has partisan lean changed?"',
         '- "Which districts might flip?"',
-        '',
-        '**Knowledge Graph:**',
-        '- "Show the knowledge graph"',
-        '- "Explore connections for Lansing"',
         '',
         '**Reports:**',
         '- "Generate a profile for East Lansing"',
@@ -429,26 +416,6 @@ export class ToolOrchestrator {
       });
     }
 
-    if (/door|knock|canvass|volunteer/i.test(query)) {
-      suggestions.push({
-        id: 'try-canvass',
-        label: 'Plan Canvass',
-        description: 'Create canvassing operation',
-        action: 'canvass_plan',
-        priority: 1,
-      });
-    }
-
-    if (/donor|fundrais|money|contribution/i.test(query)) {
-      suggestions.push({
-        id: 'try-donors',
-        label: 'Analyze Donors',
-        description: 'View donor concentration',
-        action: 'donor_concentration',
-        priority: 1,
-      });
-    }
-
     if (/report|profile|pdf|document/i.test(query)) {
       suggestions.push({
         id: 'try-report',
@@ -469,32 +436,12 @@ export class ToolOrchestrator {
       });
     }
 
-    if (/graph|connection|relationship|network/i.test(query)) {
-      suggestions.push({
-        id: 'try-graph',
-        label: 'Explore Knowledge Graph',
-        description: 'View entity connections',
-        action: 'graph_query',
-        priority: 1,
-      });
-    }
-
     if (/trend|history|over time|change|flip/i.test(query)) {
       suggestions.push({
         id: 'try-trends',
         label: 'View Trends',
         description: 'Analyze historical patterns',
         action: 'election_trends',
-        priority: 1,
-      });
-    }
-
-    if (/map|zoom|show|highlight|layer/i.test(query)) {
-      suggestions.push({
-        id: 'try-map',
-        label: 'Update Map',
-        description: 'Change map visualization',
-        action: 'spatial_query',
         priority: 1,
       });
     }
@@ -515,20 +462,6 @@ export class ToolOrchestrator {
         description: 'Identify high-priority areas',
         action: 'segment_find',
         priority: 1,
-      },
-      {
-        id: 'show-donors',
-        label: 'Show Donor Map',
-        description: 'View donor concentration',
-        action: 'donor_concentration',
-        priority: 2,
-      },
-      {
-        id: 'plan-canvass',
-        label: 'Plan Canvass',
-        description: 'Create door-knocking operation',
-        action: 'canvass_plan',
-        priority: 3,
       },
       {
         id: 'generate-report',
