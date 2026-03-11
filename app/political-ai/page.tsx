@@ -322,9 +322,8 @@ function PoliticalAIContent() {
 
       {/* Left Panel - AI Conversation Interface */}
       <div
-        className={`flex-shrink-0 overflow-hidden flex flex-col shadow-lg transition-all duration-300 ${
-          leftPanelCollapsed ? 'w-10' : leftPanelMaximized ? 'w-[calc(100%-420px)]' : 'w-80'
-        }`}
+        className={`flex-shrink-0 overflow-hidden flex flex-col shadow-lg transition-all duration-300 ${leftPanelCollapsed ? 'w-10' : leftPanelMaximized ? 'w-[calc(100%-420px)]' : 'w-80'
+          }`}
         style={{
           backgroundColor: 'var(--theme-bg-secondary, #ffffff)',
           borderRight: '1px solid var(--theme-border, #e0e0e0)'
@@ -394,9 +393,8 @@ function PoliticalAIContent() {
 
       {/* Right Panel - IQBuilder / Analysis Panel */}
       <div
-        className={`flex-shrink-0 overflow-hidden flex flex-col shadow-lg transition-all duration-300 ${
-          rightPanelCollapsed ? 'w-10' : 'w-[400px]'
-        }`}
+        className={`flex-shrink-0 overflow-hidden flex flex-col shadow-lg transition-all duration-300 ${rightPanelCollapsed ? 'w-10' : 'w-[400px]'
+          }`}
         style={{
           backgroundColor: 'var(--theme-bg-secondary, #ffffff)',
           borderLeft: '1px solid var(--theme-border, #e0e0e0)'

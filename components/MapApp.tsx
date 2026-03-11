@@ -163,9 +163,9 @@ export const MapApp: React.FC = memo(() => {
     // Cleanup layer protection on unmount
     return () => {
       if ((window as any).mapView) {
-        import('../utils/layer-protection').then(({ deactivateLayerProtection }) => {
-          deactivateLayerProtection((window as any).mapView);
-        });
+        // import('../utils/layer-protection').then(({ deactivateLayerProtection }) => {
+        //   deactivateLayerProtection((window as any).mapView);
+        // });
       }
     };
   }, []);
@@ -194,10 +194,10 @@ export const MapApp: React.FC = memo(() => {
     // Store global reference for theme switch debugging
     (window as any).mapView = view;
 
-    // Activate layer protection system
-    import('../utils/layer-protection').then(({ activateLayerProtection }) => {
-      activateLayerProtection(view);
-    });
+    // // Activate layer protection system
+    // import('../utils/layer-protection').then(({ activateLayerProtection }) => {
+    //   activateLayerProtection(view);
+    // });
   }, []);
 
   const handleMapError = useCallback((error: Error) => {

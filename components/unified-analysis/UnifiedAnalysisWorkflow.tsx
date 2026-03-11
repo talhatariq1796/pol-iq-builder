@@ -1958,41 +1958,6 @@ export default function UnifiedAnalysisWorkflow({
             onCMADataChange={setCMAData}
             propertyParams={propertyParams || undefined}
           />
-
-          {/* reportIQ - Hidden for now */}
-          {/* <Card 
-          className={`transition-all h-28 ${
-            isProjectArea 
-              ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:!bg-gray-800' 
-              : workflowState.analysisType === 'comprehensive' 
-                ? 'border-green-500 bg-green-50 dark:!bg-green-900/30 dark:!border-green-400 shadow-lg cursor-pointer' 
-                : 'hover:shadow-lg dark:hover:bg-gray-800 cursor-pointer'
-          }`}
-          onClick={() => !workflowState.isProcessing && !isProjectArea && setWorkflowState((prev: any) => ({ ...prev, analysisType: 'comprehensive' }))}
-        >
-          <CardHeader className="py-2">
-            <CardTitle className="flex items-center gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <Image 
-                  src="/mpiq_pin2.png" 
-                  alt="reportIQ" 
-                  width={20} 
-                  height={20}
-                  className="h-5 w-5" 
-                />
-                <div className="flex text-sm font-bold">
-                  <span className="firefly-accent-primary">report</span>
-                  <span className="theme-text-primary -ml-px">IQ</span>
-                </div>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2">
-            <p className={`text-xs ${isProjectArea ? 'theme-text-secondary' : 'text-muted-foreground'}`}>
-              {isProjectArea ? 'Not available for all areas at once. Make a selection first' : 'Complete analysis with all available data and visualizations'}
-            </p>
-          </CardContent>
-        </Card> */}
         </div>
 
         {/* Configuration Section - Only show when analysis type is selected AND not CMA (CMA has its own dialogs) */}

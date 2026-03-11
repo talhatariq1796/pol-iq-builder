@@ -1,12 +1,3 @@
-/**
- * AI-Native Module
- *
- * Core infrastructure for AI-first political analysis interface.
- * Provides context-aware actions, map integration, score explanations,
- * proactive insights, session persistence, and UI utilities.
- */
-
-// Types
 export * from './types';
 export * from './types/unified-state';
 
@@ -33,20 +24,10 @@ export type {
 // Suggestion Engine
 export { default as SuggestionEngine, getSuggestionEngine } from './SuggestionEngine';
 
-// Engines
-export { PoliticalSuggestedActionsEngine, suggestedActionsEngine } from './PoliticalSuggestedActionsEngine';
 export { MapCommandBridge, mapCommandBridge } from './MapCommandBridge';
-export { PoliticalScoreExplainer, scoreExplainer } from './PoliticalScoreExplainer';
-export { PoliticalInsightsEngine, insightsEngine } from './PoliticalInsightsEngine';
-export { PoliticalSessionPersistence, sessionPersistence } from './PoliticalSessionPersistence';
 
 // UI Hooks
-export { useVoiceInput, createVoiceInputProps } from './useVoiceInput';
-export {
-  useKeyboardShortcuts,
-  DEFAULT_POLITICAL_SHORTCUTS,
-  renderShortcutGroups,
-} from './useKeyboardShortcuts';
+
 export { useToolUrlParams, hasUrlParams, buildQueryString } from './hooks/useToolUrlParams';
 
 // Navigation
@@ -65,7 +46,6 @@ export {
   useThrottle,
   useThrottledCallback,
   useMemoWithTTL,
-  useVirtualScroll,
   useIntersectionObserver,
   useLazyLoad,
   useRAFCallback,
@@ -82,8 +62,6 @@ export {
   processQuery,
   canHandleQuery,
   segmentationHandler,
-  canvassingHandler,
-  donorHandler,
   reportHandler,
 } from './handlers';
 
@@ -100,50 +78,11 @@ export type {
 } from './types';
 
 export type {
-  ActionContext,
-  AnalysisResult as ActionAnalysisResult,
-} from './PoliticalSuggestedActionsEngine';
-
-export type {
   MapState,
   MapBridgeConfig,
   MapEvent,
 } from './MapCommandBridge';
 
-export type {
-  ScoreExplanation,
-  ScoreContribution,
-  ScoreType,
-} from './PoliticalScoreExplainer';
-
-export type {
-  Insight,
-  InsightType,
-  InsightEvidence,
-} from './PoliticalInsightsEngine';
-
-export type {
-  SessionMetadata,
-  SessionExport,
-  SessionListOptions,
-} from './PoliticalSessionPersistence';
-
-// Voice Input Types
-export type {
-  VoiceInputState,
-  VoiceInputConfig,
-  UseVoiceInputReturn,
-  VoiceInputButtonProps,
-} from './useVoiceInput';
-
-// Keyboard Shortcut Types
-export type {
-  KeyboardShortcut,
-  ShortcutGroup,
-  UseKeyboardShortcutsConfig,
-  UseKeyboardShortcutsReturn,
-  KeyboardShortcutsHelpProps,
-} from './useKeyboardShortcuts';
 
 // Performance Types
 export type {

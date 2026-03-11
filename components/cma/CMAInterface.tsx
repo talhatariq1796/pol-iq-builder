@@ -14,7 +14,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CMAFilterDialog } from './CMAFilterDialog';
 import { CMAReport } from './CMAReport';
-import { SquareFootageDialog } from './dialogs/SquareFootageDialog';
 import { CMAStatsPreview } from './CMAStatsPreview';
 import { useCMAAnalysis } from './hooks/useCMAAnalysis';
 import { useChartGeneration } from '@/hooks/useChartGeneration';
@@ -27,6 +26,7 @@ import {
   extractFilterReference
 } from './utils/similarityScore';
 import { filterPropertiesByFilters, getFilterStatistics } from './utils/filterProperties';
+import { SquareFootageDialog } from './dialogs/SquareFootageDialog';
 
 interface CMAInterfaceProps {
   selectedArea?: AreaSelection;
@@ -64,7 +64,7 @@ const CMAInterface: React.FC<CMAInterfaceProps> = ({
   // Selected comparable property IDs for CMA report
   // When empty, all properties are used in calculations (default behavior)
   const [selectedComparableIds, setSelectedComparableIds] = useState<string[]>([]);
-  
+
   // Auto-generate initial filters based on PropertyParams (no re-extraction needed!)
   const initialFilters = useMemo(() => {
     console.log('[CMAInterface] 🎯 initialFilters useMemo executing:', {
@@ -315,10 +315,10 @@ const CMAInterface: React.FC<CMAInterfaceProps> = ({
         validation.suggestion || 'Please adjust your selection',
         '',
         `Selected Properties: ${filteredProperties.length}`,
-        validation.propertyTypes ? 
+        validation.propertyTypes ?
           `Property Types: ${PropertyTypeValidator.formatPropertyTypes(validation.propertyTypes)}` : ''
       ].join('\n');
-      
+
       alert(message);
       console.error('[CMAInterface] Property type validation failed:', validation);
       return;
@@ -364,32 +364,32 @@ const CMAInterface: React.FC<CMAInterfaceProps> = ({
         value: `${typeCount} type${typeCount > 1 ? 's' : ''}`
       });
     }
-    
+
     if (selectedFilters.priceRange.min > 0 || selectedFilters.priceRange.max < 2000000) {
-      badges.push({ 
-        label: 'Price', 
-        value: `$${selectedFilters.priceRange.min.toLocaleString()} - $${selectedFilters.priceRange.max.toLocaleString()}` 
+      badges.push({
+        label: 'Price',
+        value: `$${selectedFilters.priceRange.min.toLocaleString()} - $${selectedFilters.priceRange.max.toLocaleString()}`
       });
     }
-    
+
     if (selectedFilters.bedrooms.min > 0 || selectedFilters.bedrooms.max < 10) {
-      badges.push({ 
-        label: 'Bedrooms', 
-        value: `${selectedFilters.bedrooms.min}-${selectedFilters.bedrooms.max}` 
+      badges.push({
+        label: 'Bedrooms',
+        value: `${selectedFilters.bedrooms.min}-${selectedFilters.bedrooms.max}`
       });
     }
-    
+
     if (selectedFilters.bathrooms.min > 0 || selectedFilters.bathrooms.max < 10) {
-      badges.push({ 
-        label: 'Bathrooms', 
-        value: `${selectedFilters.bathrooms.min}-${selectedFilters.bathrooms.max}` 
+      badges.push({
+        label: 'Bathrooms',
+        value: `${selectedFilters.bathrooms.min}-${selectedFilters.bathrooms.max}`
       });
     }
-    
+
     if (selectedFilters.listingStatus !== 'both') {
       badges.push({ label: 'Status', value: selectedFilters.listingStatus });
     }
-    
+
     return badges;
   }, [selectedFilters]);
 
@@ -563,332 +563,332 @@ const CMAInterface: React.FC<CMAInterfaceProps> = ({
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
 
-          {/* Inline Filters Accordion - Issue #14 */}
-          <Accordion type="single" collapsible defaultValue="filters" className="mb-4">
-            <AccordionItem value="filters" className="border rounded-lg bg-gray-50">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-[#660D39]" />
-                  <span className="font-semibold text-sm text-[#484247]">Filters</span>
-                  {filterBadges.length > 0 && (
-                    <Badge variant="secondary" className="text-xs ml-2">
-                      {filterBadges.length} active
-                    </Badge>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-4">
-                  {/* Property Type Selection */}
-                  <div>
-                    <Label className="text-xs font-medium text-[#484247] mb-2 block">Property Type</Label>
-                    <div className="flex flex-wrap gap-3">
-                      {[
-                        { id: 'house', label: 'Houses' },
-                        { id: 'condo', label: 'Condos' },
-                        { id: 'townhouse', label: 'Townhouses' },
-                        { id: 'revenue', label: 'Revenue' },
-                      ].map((type) => (
-                        <div key={type.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`prop-type-${type.id}`}
-                            checked={selectedFilters.selectedPropertyTypes?.includes(type.id) ?? false}
-                            onCheckedChange={(checked: boolean) => {
-                              const current = selectedFilters.selectedPropertyTypes || [];
-                              const updated = checked
-                                ? [...current, type.id]
-                                : current.filter(t => t !== type.id);
-                              handleFilterChange({ ...selectedFilters, selectedPropertyTypes: updated });
-                            }}
-                          />
-                          <Label htmlFor={`prop-type-${type.id}`} className="text-xs cursor-pointer">
-                            {type.label}
-                          </Label>
+            {/* Inline Filters Accordion - Issue #14 */}
+            <Accordion type="single" collapsible defaultValue="filters" className="mb-4">
+              <AccordionItem value="filters" className="border rounded-lg bg-gray-50">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-[#660D39]" />
+                    <span className="font-semibold text-sm text-[#484247]">Filters</span>
+                    {filterBadges.length > 0 && (
+                      <Badge variant="secondary" className="text-xs ml-2">
+                        {filterBadges.length} active
+                      </Badge>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="space-y-4">
+                    {/* Property Type Selection */}
+                    <div>
+                      <Label className="text-xs font-medium text-[#484247] mb-2 block">Property Type</Label>
+                      <div className="flex flex-wrap gap-3">
+                        {[
+                          { id: 'house', label: 'Houses' },
+                          { id: 'condo', label: 'Condos' },
+                          { id: 'townhouse', label: 'Townhouses' },
+                          { id: 'revenue', label: 'Revenue' },
+                        ].map((type) => (
+                          <div key={type.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`prop-type-${type.id}`}
+                              checked={selectedFilters.selectedPropertyTypes?.includes(type.id) ?? false}
+                              onCheckedChange={(checked: boolean) => {
+                                const current = selectedFilters.selectedPropertyTypes || [];
+                                const updated = checked
+                                  ? [...current, type.id]
+                                  : current.filter(t => t !== type.id);
+                                handleFilterChange({ ...selectedFilters, selectedPropertyTypes: updated });
+                              }}
+                            />
+                            <Label htmlFor={`prop-type-${type.id}`} className="text-xs cursor-pointer">
+                              {type.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Listing Status */}
+                    <div>
+                      <Label className="text-xs font-medium text-[#484247] mb-2 block">Listing Status</Label>
+                      <RadioGroup
+                        value={selectedFilters.listingStatus}
+                        onValueChange={(value: string) => handleFilterChange({ ...selectedFilters, listingStatus: value as 'sold' | 'active' | 'both' })}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="both" id="status-both" />
+                          <Label htmlFor="status-both" className="text-xs cursor-pointer">Both</Label>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Listing Status */}
-                  <div>
-                    <Label className="text-xs font-medium text-[#484247] mb-2 block">Listing Status</Label>
-                    <RadioGroup
-                      value={selectedFilters.listingStatus}
-                      onValueChange={(value: string) => handleFilterChange({ ...selectedFilters, listingStatus: value as 'sold' | 'active' | 'both' })}
-                      className="flex gap-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="both" id="status-both" />
-                        <Label htmlFor="status-both" className="text-xs cursor-pointer">Both</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="sold" id="status-sold" />
-                        <Label htmlFor="status-sold" className="text-xs cursor-pointer">Sold Only</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="active" id="status-active" />
-                        <Label htmlFor="status-active" className="text-xs cursor-pointer">Active Only</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {/* Essential Filters Row */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Bedrooms */}
-                    <div>
-                      <Label className="text-xs font-medium text-[#484247] mb-1 block">Bedrooms</Label>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          placeholder="Min"
-                          value={selectedFilters.bedrooms.min || ''}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
-                            ...selectedFilters,
-                            bedrooms: { ...selectedFilters.bedrooms, min: parseInt(e.target.value) || 0 }
-                          })}
-                          className="h-8 text-xs w-16"
-                        />
-                        <span className="text-xs text-gray-400">-</span>
-                        <Input
-                          type="number"
-                          placeholder="Max"
-                          value={selectedFilters.bedrooms.max === 10 ? '' : selectedFilters.bedrooms.max}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
-                            ...selectedFilters,
-                            bedrooms: { ...selectedFilters.bedrooms, max: parseInt(e.target.value) || 10 }
-                          })}
-                          className="h-8 text-xs w-16"
-                        />
-                      </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="sold" id="status-sold" />
+                          <Label htmlFor="status-sold" className="text-xs cursor-pointer">Sold Only</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="active" id="status-active" />
+                          <Label htmlFor="status-active" className="text-xs cursor-pointer">Active Only</Label>
+                        </div>
+                      </RadioGroup>
                     </div>
 
-                    {/* Price Range */}
-                    <div>
-                      <Label className="text-xs font-medium text-[#484247] mb-1 block">Price Range</Label>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="text"
-                          placeholder="Min"
-                          value={selectedFilters.priceRange.min ? `$${selectedFilters.priceRange.min.toLocaleString()}` : ''}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const value = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
-                            handleFilterChange({
+                    {/* Essential Filters Row */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {/* Bedrooms */}
+                      <div>
+                        <Label className="text-xs font-medium text-[#484247] mb-1 block">Bedrooms</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            placeholder="Min"
+                            value={selectedFilters.bedrooms.min || ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
                               ...selectedFilters,
-                              priceRange: { ...selectedFilters.priceRange, min: value }
-                            });
-                          }}
-                          className="h-8 text-xs w-24"
-                        />
-                        <span className="text-xs text-gray-400">-</span>
-                        <Input
-                          type="text"
-                          placeholder="Max"
-                          value={selectedFilters.priceRange.max && selectedFilters.priceRange.max < 2000000 ? `$${selectedFilters.priceRange.max.toLocaleString()}` : ''}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const value = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 2000000;
-                            handleFilterChange({
+                              bedrooms: { ...selectedFilters.bedrooms, min: parseInt(e.target.value) || 0 }
+                            })}
+                            className="h-8 text-xs w-16"
+                          />
+                          <span className="text-xs text-gray-400">-</span>
+                          <Input
+                            type="number"
+                            placeholder="Max"
+                            value={selectedFilters.bedrooms.max === 10 ? '' : selectedFilters.bedrooms.max}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
                               ...selectedFilters,
-                              priceRange: { ...selectedFilters.priceRange, max: value }
-                            });
-                          }}
-                          className="h-8 text-xs w-24"
-                        />
+                              bedrooms: { ...selectedFilters.bedrooms, max: parseInt(e.target.value) || 10 }
+                            })}
+                            className="h-8 text-xs w-16"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Price Range */}
+                      <div>
+                        <Label className="text-xs font-medium text-[#484247] mb-1 block">Price Range</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="text"
+                            placeholder="Min"
+                            value={selectedFilters.priceRange.min ? `$${selectedFilters.priceRange.min.toLocaleString()}` : ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const value = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                              handleFilterChange({
+                                ...selectedFilters,
+                                priceRange: { ...selectedFilters.priceRange, min: value }
+                              });
+                            }}
+                            className="h-8 text-xs w-24"
+                          />
+                          <span className="text-xs text-gray-400">-</span>
+                          <Input
+                            type="text"
+                            placeholder="Max"
+                            value={selectedFilters.priceRange.max && selectedFilters.priceRange.max < 2000000 ? `$${selectedFilters.priceRange.max.toLocaleString()}` : ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const value = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 2000000;
+                              handleFilterChange({
+                                ...selectedFilters,
+                                priceRange: { ...selectedFilters.priceRange, max: value }
+                              });
+                            }}
+                            className="h-8 text-xs w-24"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Bathrooms */}
+                      <div>
+                        <Label className="text-xs font-medium text-[#484247] mb-1 block">Bathrooms</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            placeholder="Min"
+                            value={selectedFilters.bathrooms.min || ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
+                              ...selectedFilters,
+                              bathrooms: { ...selectedFilters.bathrooms, min: parseInt(e.target.value) || 0 }
+                            })}
+                            className="h-8 text-xs w-16"
+                          />
+                          <span className="text-xs text-gray-400">-</span>
+                          <Input
+                            type="number"
+                            placeholder="Max"
+                            value={selectedFilters.bathrooms.max === 10 ? '' : selectedFilters.bathrooms.max}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
+                              ...selectedFilters,
+                              bathrooms: { ...selectedFilters.bathrooms, max: parseInt(e.target.value) || 10 }
+                            })}
+                            className="h-8 text-xs w-16"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Square Footage */}
+                      <div>
+                        <Label className="text-xs font-medium text-[#484247] mb-1 block">Sq Ft</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            placeholder="Min"
+                            value={selectedFilters.squareFootage.min || ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
+                              ...selectedFilters,
+                              squareFootage: { ...selectedFilters.squareFootage, min: parseInt(e.target.value) || 0 }
+                            })}
+                            className="h-8 text-xs w-16"
+                          />
+                          <span className="text-xs text-gray-400">-</span>
+                          <Input
+                            type="number"
+                            placeholder="Max"
+                            value={selectedFilters.squareFootage.max === 10000 ? '' : selectedFilters.squareFootage.max}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
+                              ...selectedFilters,
+                              squareFootage: { ...selectedFilters.squareFootage, max: parseInt(e.target.value) || 10000 }
+                            })}
+                            className="h-8 text-xs w-16"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Bathrooms */}
-                    <div>
-                      <Label className="text-xs font-medium text-[#484247] mb-1 block">Bathrooms</Label>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          placeholder="Min"
-                          value={selectedFilters.bathrooms.min || ''}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
-                            ...selectedFilters,
-                            bathrooms: { ...selectedFilters.bathrooms, min: parseInt(e.target.value) || 0 }
-                          })}
-                          className="h-8 text-xs w-16"
-                        />
-                        <span className="text-xs text-gray-400">-</span>
-                        <Input
-                          type="number"
-                          placeholder="Max"
-                          value={selectedFilters.bathrooms.max === 10 ? '' : selectedFilters.bathrooms.max}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
-                            ...selectedFilters,
-                            bathrooms: { ...selectedFilters.bathrooms, max: parseInt(e.target.value) || 10 }
-                          })}
-                          className="h-8 text-xs w-16"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Square Footage */}
-                    <div>
-                      <Label className="text-xs font-medium text-[#484247] mb-1 block">Sq Ft</Label>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          placeholder="Min"
-                          value={selectedFilters.squareFootage.min || ''}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
-                            ...selectedFilters,
-                            squareFootage: { ...selectedFilters.squareFootage, min: parseInt(e.target.value) || 0 }
-                          })}
-                          className="h-8 text-xs w-16"
-                        />
-                        <span className="text-xs text-gray-400">-</span>
-                        <Input
-                          type="number"
-                          placeholder="Max"
-                          value={selectedFilters.squareFootage.max === 10000 ? '' : selectedFilters.squareFootage.max}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange({
-                            ...selectedFilters,
-                            squareFootage: { ...selectedFilters.squareFootage, max: parseInt(e.target.value) || 10000 }
-                          })}
-                          className="h-8 text-xs w-16"
-                        />
-                      </div>
+                    {/* Clear Filters Button */}
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearFilters}
+                        className="h-7 text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Clear Filters
+                      </Button>
                     </div>
                   </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
-                  {/* Clear Filters Button */}
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClearFilters}
-                      className="h-7 text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Clear Filters
-                    </Button>
+            {/* Quick Stats Preview Panel - Issue #18 */}
+            <div className="mb-4">
+              <CMAStatsPreview
+                properties={filteredProperties}
+                isLoading={isLoading}
+              />
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-2xl font-bold text-[#660D39] mb-1">
+                    {isLoading ? '...' : filteredProperties.length}
+                  </div>
+                  <div className="text-xs text-[#484247] leading-tight">
+                    {selectedArea ? 'Properties in Area' : 'Select Area First'}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-2xl font-bold text-[#660D39] mb-1">
+                    {isLoading ? '...' : stats.average_cma_score.toFixed(1)}
+                  </div>
+                  <div className="text-xs text-[#484247] leading-tight">Average Score</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-2xl font-bold text-[#660D39] mb-1">
+                    {stats.average_dom}
+                  </div>
+                  <div className="text-xs text-[#484247] leading-tight">Avg Days on Market</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-2xl font-bold text-[#660D39] mb-1">
+                    ${stats.price_per_sqft}
+                  </div>
+                  <div className="text-xs text-[#484247] leading-tight">Price per Sq Ft</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="text-red-600 font-medium text-xs">Analysis Error:</div>
+                  <div className="text-red-700 text-xs">{error}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isLoading && (
+              <div className="p-8 text-center">
+                <div className="inline-flex items-center gap-2 text-[#484247]">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#660D39]"></div>
+                  <span className="text-xs">Running CMA analysis for {selectedArea?.displayName}...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Area Info */}
+            {selectedArea && filteredProperties.length > 0 && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                <div className="text-xs">
+                  <div className="font-medium text-[#484247]">Analysis Area: {selectedArea.displayName}</div>
+                  <div className="text-[#484247]">
+                    Method: {selectedArea.method} |
+                    Properties Found: {filteredProperties.length} |
+                    Generated: {new Date().toLocaleString()}
                   </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </div>
+            )}
 
-          {/* Quick Stats Preview Panel - Issue #18 */}
-          <div className="mb-4">
-            <CMAStatsPreview
+            {/* Chart Generation Status */}
+            {isGeneratingCharts && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-xs text-blue-700">Generating charts for PDF...</span>
+                </div>
+              </div>
+            )}
+
+            {chartError && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <div className="text-xs text-yellow-700">
+                  Chart generation failed: {chartError.message}. PDF will be generated without charts.
+                </div>
+              </div>
+            )}
+
+            {/* CMA Report */}
+            <CMAReport
               properties={filteredProperties}
-              isLoading={isLoading}
+              filters={selectedFilters}
+              stats={stats}
+              analysisData={null}
+              selectedArea={selectedArea}
+              propertyParams={propertyParams}
+              mapView={mapView}
+              reportType={selectedFilters.listingStatus === 'sold' ? 'sold' :
+                selectedFilters.listingStatus === 'active' ? 'active' : 'both'}
+              chartImages={chartImages}
+              searchAddress={searchAddress}
+              clickCoordinates={clickCoordinates}
+              condoSquareFootage={effectiveCondoSquareFootage}
+              selectedComparableIds={selectedComparableIds}
+              onSelectedComparablesChange={handleSelectedComparablesChange}
             />
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
-            <Card>
-              <CardContent className="p-3 text-center">
-                <div className="text-2xl font-bold text-[#660D39] mb-1">
-                  {isLoading ? '...' : filteredProperties.length}
-                </div>
-                <div className="text-xs text-[#484247] leading-tight">
-                  {selectedArea ? 'Properties in Area' : 'Select Area First'}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-3 text-center">
-                <div className="text-2xl font-bold text-[#660D39] mb-1">
-                  {isLoading ? '...' : stats.average_cma_score.toFixed(1)}
-                </div>
-                <div className="text-xs text-[#484247] leading-tight">Average Score</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-3 text-center">
-                <div className="text-2xl font-bold text-[#660D39] mb-1">
-                  {stats.average_dom}
-                </div>
-                <div className="text-xs text-[#484247] leading-tight">Avg Days on Market</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-3 text-center">
-                <div className="text-2xl font-bold text-[#660D39] mb-1">
-                  ${stats.price_per_sqft}
-                </div>
-                <div className="text-xs text-[#484247] leading-tight">Price per Sq Ft</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-              <div className="flex items-center gap-2">
-                <div className="text-red-600 font-medium text-xs">Analysis Error:</div>
-                <div className="text-red-700 text-xs">{error}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isLoading && (
-            <div className="p-8 text-center">
-              <div className="inline-flex items-center gap-2 text-[#484247]">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#660D39]"></div>
-                <span className="text-xs">Running CMA analysis for {selectedArea?.displayName}...</span>
-              </div>
-            </div>
-          )}
-
-          {/* Area Info */}
-          {selectedArea && filteredProperties.length > 0 && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
-              <div className="text-xs">
-                <div className="font-medium text-[#484247]">Analysis Area: {selectedArea.displayName}</div>
-                <div className="text-[#484247]">
-                  Method: {selectedArea.method} |
-                  Properties Found: {filteredProperties.length} |
-                  Generated: {new Date().toLocaleString()}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Chart Generation Status */}
-          {isGeneratingCharts && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span className="text-xs text-blue-700">Generating charts for PDF...</span>
-              </div>
-            </div>
-          )}
-
-          {chartError && (
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-              <div className="text-xs text-yellow-700">
-                Chart generation failed: {chartError.message}. PDF will be generated without charts.
-              </div>
-            </div>
-          )}
-
-          {/* CMA Report */}
-          <CMAReport
-            properties={filteredProperties}
-            filters={selectedFilters}
-            stats={stats}
-            analysisData={null}
-            selectedArea={selectedArea}
-            propertyParams={propertyParams}
-            mapView={mapView}
-            reportType={selectedFilters.listingStatus === 'sold' ? 'sold' :
-                       selectedFilters.listingStatus === 'active' ? 'active' : 'both'}
-            chartImages={chartImages}
-            searchAddress={searchAddress}
-            clickCoordinates={clickCoordinates}
-            condoSquareFootage={effectiveCondoSquareFootage}
-            selectedComparableIds={selectedComparableIds}
-            onSelectedComparablesChange={handleSelectedComparablesChange}
-          />
           </div>
         </DialogContent>
       </Dialog>

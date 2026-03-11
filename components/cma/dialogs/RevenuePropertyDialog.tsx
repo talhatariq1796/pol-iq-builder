@@ -32,9 +32,9 @@ import {
   DollarSign
 } from 'lucide-react';
 import type { CMAProperty } from '../types';
-import { InvestmentMetricsDisplay } from '../sections/InvestmentMetricsDisplay';
 import { CashFlowCalculator } from '../sections/CashFlowCalculator';
 import { RevenueComparables } from '../sections/RevenueComparables';
+import { InvestmentMetricsDisplay } from '../sections/InvestmentMetricsDisplay';
 
 export interface RevenuePropertyDialogProps {
   property: CMAProperty | null;

@@ -1,12 +1,3 @@
-/**
- * Condo Price Estimator
- *
- * Calculates estimated condo prices based on square footage and comparable sold properties.
- * Uses average price per square foot from comparable sales to estimate property value.
- *
- * @module lib/analysis/calculations/condoPriceEstimator
- */
-
 export interface CondoPriceEstimate {
   estimatedPrice: number;
   avgPricePerSqFt: number;
@@ -26,20 +17,6 @@ export interface ComparableProperty {
   address?: string;
 }
 
-/**
- * Estimates condo price based on user-entered square footage and comparable sales
- *
- * Calculation:
- * 1. Filter sold condos with valid building_size and price
- * 2. Calculate average price per sqft: Sum(prices) / Sum(square footage)
- * 3. Estimated price = user sqft × avg price per sqft
- * 4. Calculate price range: ±15% of estimate
- * 5. Determine confidence level based on number of comparables
- *
- * @param userSquareFootage - Square footage entered by user
- * @param comparableCondos - Array of comparable condo properties
- * @returns Price estimate with detailed calculation explanation
- */
 export function estimateCondoPrice(
   userSquareFootage: number,
   comparableCondos: ComparableProperty[]
@@ -153,35 +130,4 @@ For accurate pricing, consider hiring a professional appraiser who can account f
     priceRange,
     confidenceLevel
   };
-}
-
-/**
- * Formats price estimate for display in UI
- *
- * @param estimate - Price estimate object
- * @returns Formatted string for display
- */
-export function formatPriceEstimate(estimate: CondoPriceEstimate): string {
-  if (estimate.comparablesUsed === 0) {
-    return 'Unable to estimate (no comparables)';
-  }
-
-  return `$${estimate.estimatedPrice.toLocaleString()} (${estimate.confidenceLevel} confidence, ${estimate.comparablesUsed} comps)`;
-}
-
-/**
- * Gets suggested square footage ranges by property type
- *
- * @param propertyType - Type of property
- * @returns Min/max square footage range
- */
-export function getSuggestedSqftRange(propertyType: string): { min: number; max: number } {
-  const ranges: Record<string, { min: number; max: number }> = {
-    condo: { min: 600, max: 1500 },
-    apartment: { min: 500, max: 1200 },
-    townhouse: { min: 1200, max: 2000 },
-    loft: { min: 800, max: 2500 }
-  };
-
-  return ranges[propertyType.toLowerCase()] || { min: 600, max: 1500 };
 }

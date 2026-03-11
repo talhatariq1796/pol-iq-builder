@@ -11,7 +11,7 @@
  * 4. Queue commands for sequential execution
  */
 
-import type { MapCommand, MapCommandType, MapStyle } from './types';
+import type { MapCommand, MapStyle } from './types';
 
 // ============================================================================
 // Types
@@ -331,8 +331,8 @@ export class MapCommandBridge {
     const targets = Array.isArray(command.target)
       ? command.target
       : command.target
-      ? [command.target]
-      : [];
+        ? [command.target]
+        : [];
 
     // Limit number of highlighted features
     const limitedTargets = targets.slice(0, this.config.maxHighlightedFeatures);

@@ -36,11 +36,7 @@ import type { Entity, Relationship } from '@/lib/knowledge-graph/types';
 import { toast } from '@/hooks/use-toast';
 import { ThinkingIndicator, detectQueryContext, type QueryContext } from './ThinkingIndicator';
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
 
-// P1-25: Retry helper for failed API calls
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
@@ -439,18 +435,12 @@ interface WorkflowSelection {
 
 export const AIPoliticalSessionHost: React.FC<AIPoliticalSessionHostProps> = ({
   onMapCommand,
-  initialGreeting = "Analyze precincts, districts, and voter targeting.",
   selectedPrecinct,
-  isMapReady = false,
   mapState,
   iqAction,
   skipWorkflowSelection = false,
   onSessionStateChange,
 }) => {
-  // ---------------------------------------------------------------------------
-  // State Management
-  // ---------------------------------------------------------------------------
-
   const router = useRouter();
   const [sessionState, setSessionState] = useState<SessionState>(skipWorkflowSelection ? 'active' : 'welcome');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -2825,29 +2815,6 @@ Available actions:
                   </div>
                 </button>
 
-                {/* Canvassing */}
-                <button
-                  onClick={() => handleWorkflowSelect({
-                    id: 'canvassing',
-                    name: 'Canvassing Planning',
-                    description: 'Plan and optimize canvassing routes'
-                  })}
-                  className="p-3 rounded-xl bg-white hover:shadow-md hover:border-[#33a852] transition-all text-left border border-gray-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-[#33a852]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-xs text-gray-900">Canvassing</h3>
-                      <p className="text-xs text-gray-600 mt-0.5">Plan and optimize canvassing routes</p>
-                    </div>
-                  </div>
-                </button>
-
                 {/* Voter Targeting */}
                 <button
                   onClick={() => handleWorkflowSelect({
@@ -2955,8 +2922,8 @@ Available actions:
                 ) : (
                   <div
                     className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${message.role === 'user'
-                        ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
-                        : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
+                      ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
+                      : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
                       }`}
                   >
                     {/* Wave 7: Improved prose styling for better readability */}

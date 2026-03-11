@@ -19,7 +19,7 @@ import {
 import { ComprehensiveStats } from '@/lib/utils/cmaStatistics';
 import { CMAProperty, calculateTimeOnMarket } from './types';
 import { calculateMarketMomentum } from '@/lib/pdf/data/extractors';
-import { estimateCondoPrice, formatPriceEstimate } from '@/lib/analysis/calculations/condoPriceEstimator';
+import { estimateCondoPrice } from '@/lib/analysis/calculations/condoPriceEstimator';
 
 interface EnhancedAIAnalysisProps {
   properties: CMAProperty[];
@@ -95,9 +95,9 @@ const EnhancedAIAnalysis: React.FC<EnhancedAIAnalysisProps> = ({
 
     // Calculate market momentum using FILTERED properties with calculated time_on_market
     const marketMomentum = calculateMarketMomentum(filteredProperties);
-    
+
     // Price trend analysis
-    const monthlyAppreciation = stats.monthly.avgPrice > 0 && stats.annual.avgPrice > 0 
+    const monthlyAppreciation = stats.monthly.avgPrice > 0 && stats.annual.avgPrice > 0
       ? ((stats.monthly.avgPrice - stats.annual.avgPrice) / stats.annual.avgPrice) * 100
       : 0;
 
@@ -359,7 +359,7 @@ const EnhancedAIAnalysis: React.FC<EnhancedAIAnalysisProps> = ({
                     <div className="font-semibold text-[#484247] font-montserrat">Price Trend</div>
                     <div className="text-[#484247] font-montserrat">
                       {stats.monthly.avgPrice > stats.annual.avgPrice ? 'Appreciating' :
-                       stats.monthly.avgPrice < stats.annual.avgPrice ? 'Declining' : 'Stable'}
+                        stats.monthly.avgPrice < stats.annual.avgPrice ? 'Declining' : 'Stable'}
                     </div>
                   </div>
                 </div>
@@ -369,7 +369,7 @@ const EnhancedAIAnalysis: React.FC<EnhancedAIAnalysisProps> = ({
                     <div className="font-semibold text-[#484247] font-montserrat">Market Speed</div>
                     <div className="text-[#484247] font-montserrat">
                       {stats.allTime.avgTimeOnMarket < 45 ? 'Fast' :
-                       stats.allTime.avgTimeOnMarket < 90 ? 'Normal' : 'Slow'}
+                        stats.allTime.avgTimeOnMarket < 90 ? 'Normal' : 'Slow'}
                     </div>
                   </div>
                 </div>
@@ -379,7 +379,7 @@ const EnhancedAIAnalysis: React.FC<EnhancedAIAnalysisProps> = ({
                     <div className="font-semibold text-[#484247] font-montserrat">Investment Appeal</div>
                     <div className="text-[#484247] font-montserrat">
                       {(stats.allTime.avgRent * 12 / stats.allTime.avgPrice) > 0.06 ? 'High' :
-                       (stats.allTime.avgRent * 12 / stats.allTime.avgPrice) > 0.04 ? 'Medium' : 'Low'}
+                        (stats.allTime.avgRent * 12 / stats.allTime.avgPrice) > 0.04 ? 'Medium' : 'Low'}
                     </div>
                   </div>
                 </div>

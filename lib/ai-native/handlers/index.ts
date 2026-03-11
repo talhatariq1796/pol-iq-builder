@@ -10,8 +10,6 @@ export * from './types';
 
 // Domain-specific handlers
 export { SegmentationHandler, segmentationHandler } from './SegmentationHandler';
-export { CanvassingHandler, canvassingHandler } from './CanvassingHandler';
-export { DonorHandler, donorHandler } from './DonorHandler';
 export { ReportHandler, reportHandler } from './ReportHandler';
 export { ComparisonHandler, comparisonHandler } from './ComparisonHandler';
 export { DistrictHandler, districtHandler } from './DistrictHandler';

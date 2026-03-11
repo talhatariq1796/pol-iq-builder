@@ -89,9 +89,6 @@ const COMMAND_HANDLERS: Record<string, (args: string) => SlashCommandResult> = {
 
   // Navigation commands
   segments: () => handleNavigateCommand('segments'),
-  donors: () => handleNavigateCommand('donors'),
-  canvass: () => handleNavigateCommand('canvass'),
-  map: () => handleNavigateCommand('political-ai'),
 
   // Utility commands
   help: handleHelpCommand,
@@ -550,11 +547,6 @@ function handleHelpCommand(_args: string): SlashCommandResult {
       `**Export & Save**\n` +
       `• **/export [type]** - Export data (csv, segment, conversation)\n` +
       `• **/save [name]** - Save current segment\n\n` +
-      `**Navigation**\n` +
-      `• **/segments** - Go to segment builder\n` +
-      `• **/donors** - Go to donor analysis\n` +
-      `• **/canvass** - Go to canvassing planner\n` +
-      `• **/map** - Go to political map\n\n` +
       `**Utility**\n` +
       `• **/help** - Show this help\n` +
       `• **/clear** - Clear chat history`,

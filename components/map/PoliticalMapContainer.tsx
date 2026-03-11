@@ -2203,36 +2203,6 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
                 H3 Hexagons
               </button>
               <button
-                onClick={() => handleLayerToggle('bivariate')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'bivariate'
-                  ? 'bg-purple-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                title="Two variables in 3×3 color matrix"
-              >
-                Bivariate
-              </button>
-              <button
-                onClick={() => handleLayerToggle('proportional')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'proportional'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                title="Proportional symbols: Size + Color"
-              >
-                Symbols
-              </button>
-              <button
-                onClick={() => handleLayerToggle('valueByAlpha')}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'valueByAlpha'
-                  ? 'bg-amber-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                title="Value by Alpha: Opacity shows confidence"
-              >
-                VxA
-              </button>
-              <button
                 onClick={() => handleLayerToggle('none')}
                 className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeLayer === 'none'
                   ? 'bg-gray-500 text-white shadow-sm'

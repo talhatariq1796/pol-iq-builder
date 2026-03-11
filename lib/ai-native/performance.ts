@@ -1,19 +1,5 @@
-/**
- * Performance Optimization Utilities
- *
- * Provides utilities for optimizing the AI-native interface:
- * - Lazy loading for heavy components
- * - Memoization with smart cache invalidation
- * - Debouncing and throttling
- * - Virtual scrolling helpers
- * - Preloading strategies
- */
-
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 
-// ============================================================================
-// Debounce Hook
-// ============================================================================
 
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -49,10 +35,6 @@ export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
     [delay]
   );
 }
-
-// ============================================================================
-// Throttle Hook
-// ============================================================================
 
 export function useThrottle<T>(value: T, interval: number): T {
   const [throttledValue, setThrottledValue] = useState(value);
@@ -97,10 +79,6 @@ export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
     [interval]
   );
 }
-
-// ============================================================================
-// Memoization with TTL
-// ============================================================================
 
 interface CacheEntry<T> {
   value: T;
@@ -195,10 +173,6 @@ export function useMemoWithTTL<T>(
   }, [...deps, ttl]);
 }
 
-// ============================================================================
-// Virtual Scrolling Helper
-// ============================================================================
-
 export interface VirtualScrollConfig {
   itemCount: number;
   itemHeight: number;
@@ -213,38 +187,6 @@ export interface VirtualScrollResult {
   totalHeight: number;
   offsetTop: number;
 }
-
-export function useVirtualScroll(
-  config: VirtualScrollConfig,
-  scrollTop: number
-): VirtualScrollResult {
-  const { itemCount, itemHeight, containerHeight, overscan = 3 } = config;
-
-  return useMemo(() => {
-    const visibleCount = Math.ceil(containerHeight / itemHeight);
-    const totalHeight = itemCount * itemHeight;
-
-    let startIndex = Math.floor(scrollTop / itemHeight) - overscan;
-    startIndex = Math.max(0, startIndex);
-
-    let endIndex = startIndex + visibleCount + overscan * 2;
-    endIndex = Math.min(itemCount - 1, endIndex);
-
-    const offsetTop = startIndex * itemHeight;
-
-    return {
-      startIndex,
-      endIndex,
-      visibleCount,
-      totalHeight,
-      offsetTop,
-    };
-  }, [itemCount, itemHeight, containerHeight, overscan, scrollTop]);
-}
-
-// ============================================================================
-// Intersection Observer Hook
-// ============================================================================
 
 export function useIntersectionObserver(
   options: IntersectionObserverInit = {}
@@ -287,10 +229,6 @@ export function useIntersectionObserver(
     entry,
   };
 }
-
-// ============================================================================
-// Lazy Loading Hook
-// ============================================================================
 
 export function useLazyLoad<T>(
   loader: () => Promise<T>,
@@ -347,16 +285,12 @@ export function useLazyLoad<T>(
   return { data, isLoading, error, load, reset };
 }
 
-// ============================================================================
-// Preload Manager
-// ============================================================================
-
 export class PreloadManager {
   private static instance: PreloadManager;
   private preloadedResources = new Set<string>();
   private preloadPromises = new Map<string, Promise<unknown>>();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): PreloadManager {
     if (!PreloadManager.instance) {
@@ -434,10 +368,6 @@ export class PreloadManager {
   }
 }
 
-// ============================================================================
-// RAF Scheduler
-// ============================================================================
-
 export function useRAFCallback<T extends (...args: unknown[]) => unknown>(
   callback: T
 ): T {
@@ -468,10 +398,6 @@ export function useRAFCallback<T extends (...args: unknown[]) => unknown>(
     []
   );
 }
-
-// ============================================================================
-// Batch Updates
-// ============================================================================
 
 export function useBatchedUpdates<T>(
   updates: T[],
@@ -508,24 +434,4 @@ export function useBatchedUpdates<T>(
   return processedUpdates;
 }
 
-// ============================================================================
-// Export Singleton
-// ============================================================================
-
 export const preloadManager = PreloadManager.getInstance();
-
-export default {
-  useDebounce,
-  useDebouncedCallback,
-  useThrottle,
-  useThrottledCallback,
-  useMemoWithTTL,
-  useVirtualScroll,
-  useIntersectionObserver,
-  useLazyLoad,
-  useRAFCallback,
-  useBatchedUpdates,
-  MemoCache,
-  PreloadManager,
-  preloadManager,
-};
