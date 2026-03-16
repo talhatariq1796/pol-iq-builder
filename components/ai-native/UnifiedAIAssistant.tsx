@@ -713,7 +713,6 @@ export default function UnifiedAIAssistant({
   mapState,
   selectedPrecinct,
   initialGreeting,
-  isMapReady = false,
   triggerQuery,
   onQueryProcessed,
 }: UnifiedAIAssistantProps) {
@@ -730,7 +729,6 @@ export default function UnifiedAIAssistant({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [sessionStartTime] = useState<number>(Date.now());
-  const [isExpanded, setIsExpanded] = useState(true); // For collapse/expand state
   const [isInitialized, setIsInitialized] = useState(false); // Track if messages have been initialized (Issue #8)
 
   // Issue #13: Keyboard shortcut hints visibility
@@ -1166,62 +1164,6 @@ export default function UnifiedAIAssistant({
       metadata: { entityType: entity.type, entityText: entity.text },
     });
   }, [onMapCommand, toolContext]);
-
-  // ---------------------------------------------------------------------------
-  // Proactive Intelligence - Check triggers periodically (Phase 1)
-  // ---------------------------------------------------------------------------
-
-  // Track last proactive message time to prevent spam
-  const lastProactiveRef = useRef<number>(0);
-
-  useEffect(() => {
-    // DISABLED: Proactive suggestions were confusing users with unprompted messages
-    // that didn't relate to their current work. Keep suggestion buttons in responses
-    // but disable ambient/proactive triggers for now.
-    // TODO: Re-enable when proactive triggers are more contextually accurate
-    /*
-    // Don't run during initial load or when processing
-    if (isProcessing) return;
-
-    const checkProactive = () => {
-      // Prevent proactive messages within 30 seconds of each other
-      const now = Date.now();
-      if (now - lastProactiveRef.current < 30000) return;
-
-      const suggestionEngine = getSuggestionEngine();
-      const trigger = suggestionEngine.checkProactiveTriggers();
-
-      if (trigger) {
-        lastProactiveRef.current = now;
-
-        // Convert suggestions to our action format
-        const actions: SuggestedAction[] = trigger.suggestions.map(s => ({
-          id: s.id,
-          label: s.label,
-          action: s.action,
-          metadata: s.metadata,
-        }));
-
-        // Add proactive message
-        setMessages((prev: Message[]) => [...prev, {
-          role: 'assistant' as const,
-          content: trigger.message,
-          timestamp: new Date(),
-          actions,
-          metadata: { workflow: 'proactive' }
-        }]);
-
-        console.log('[UnifiedAIAssistant] Proactive message triggered:', trigger.trigger.id);
-      }
-    };
-
-    // Check every 10 seconds
-    const interval = setInterval(checkProactive, 10000);
-
-    return () => clearInterval(interval);
-    */
-    return () => { }; // No-op cleanup
-  }, [isProcessing]);
 
   // ---------------------------------------------------------------------------
   // Exploration Depth Tracking - Update depth indicator
@@ -2565,35 +2507,6 @@ export default function UnifiedAIAssistant({
             {/* Exploration Depth Indicator */}
             <DepthIndicator
               depth={explorationDepth}
-              onMilestoneUnlock={(milestone) => {
-                // DISABLED: Toast notifications were confusing users
-                // The "unlocked" concept wasn't clear and toasts appeared repeatedly
-                // TODO: Consider a different UX for showing feature progression
-                /*
-                const toastMessages: Record<number, { title: string; description: string }> = {
-                  30: {
-                    title: 'Segments Unlocked!',
-                    description: 'You can now save your exploration as a reusable segment.',
-                  },
-                  60: {
-                    title: 'Comparisons Unlocked!',
-                    description: 'Compare precincts side-by-side for deeper analysis.',
-                  },
-                  80: {
-                    title: 'Full Reports Unlocked!',
-                    description: 'Generate comprehensive analysis reports.',
-                  },
-                };
-                const msg = toastMessages[milestone.threshold];
-                if (msg) {
-                  toast({
-                    title: msg.title,
-                    description: msg.description,
-                    duration: 5000,
-                  });
-                }
-                */
-              }}
             />
             {/* Issue #14: Export chat transcript button */}
             <button

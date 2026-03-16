@@ -23,7 +23,6 @@ export { InsightGenerator } from './InsightGenerator';
 // Wave 1 engines
 export { SimilarityEngine } from './SimilarityEngine';
 export { ResourceOptimizer } from './ResourceOptimizer';
-export { DonorIntegrator } from './DonorIntegrator';
 export { DonorLookup } from './DonorLookup';
 
 // Wave 2 engines

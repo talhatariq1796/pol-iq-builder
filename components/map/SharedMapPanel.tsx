@@ -52,7 +52,6 @@ export default function SharedMapPanel({
   onToggle,
   expandedWidth = '75%', // Default to 75% for better usability (was 50%)
   position = 'right',
-  showLayerControls = true,
   showAnalysisPanel = false,
   onMapReady,
   defaultCollapsed = true,

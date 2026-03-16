@@ -480,7 +480,7 @@ export class PoliticalDataService {
   private initialized = false;
   private initPromise: Promise<void> | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get singleton instance
@@ -979,20 +979,20 @@ export class PoliticalDataService {
         // Components (for detailed analysis)
         gotvComponents: targetingData?.gotv_components
           ? {
-              supportStrength: targetingData.gotv_components.support_strength,
-              turnoutOpportunity: targetingData.gotv_components.turnout_opportunity,
-              voterPoolWeight: targetingData.gotv_components.voter_pool_weight,
-            }
+            supportStrength: targetingData.gotv_components.support_strength,
+            turnoutOpportunity: targetingData.gotv_components.turnout_opportunity,
+            voterPoolWeight: targetingData.gotv_components.voter_pool_weight,
+          }
           : undefined,
 
         persuasionComponents: targetingData?.persuasion_components
           ? {
-              marginCloseness: targetingData.persuasion_components.margin_closeness,
-              swingFactor: targetingData.persuasion_components.swing_factor,
-              moderateFactor: targetingData.persuasion_components.moderate_factor,
-              independentFactor: targetingData.persuasion_components.independent_factor,
-              lowEngagement: targetingData.persuasion_components.low_engagement,
-            }
+            marginCloseness: targetingData.persuasion_components.margin_closeness,
+            swingFactor: targetingData.persuasion_components.swing_factor,
+            moderateFactor: targetingData.persuasion_components.moderate_factor,
+            independentFactor: targetingData.persuasion_components.independent_factor,
+            lowEngagement: targetingData.persuasion_components.low_engagement,
+          }
           : undefined,
 
         // Engagement / media (for segment News Preference and engagement filters)
@@ -1758,8 +1758,8 @@ export class PoliticalDataService {
     // Get registered voters from election data
     const latestElection = elections?.elections
       ? Object.values(elections.elections).sort((a: any, b: any) =>
-          b.date?.localeCompare(a.date || '')
-        )[0]
+        b.date?.localeCompare(a.date || '')
+      )[0]
       : null;
 
     const registeredVoters = (latestElection as any)?.registered_voters || 0;
@@ -1854,7 +1854,7 @@ export class PoliticalDataService {
     const leans: number[] = [];
     const swings: number[] = [];
     const turnouts: number[] = [];
-    let totalVoters = 0;
+    const totalVoters = 0;
 
     for (const scores of allScores.values()) {
       leans.push(scores.partisanLean.value);
@@ -2349,7 +2349,7 @@ export class PoliticalDataService {
     return parts.join('. ') + '.';
   }
 
-// ============================================================================
+  // ============================================================================
   // District Crosswalk Methods (Multi-Level Election Support)
   // ============================================================================
 
@@ -2512,7 +2512,7 @@ export class PoliticalDataService {
     for (const [precinctName, assignment] of Object.entries(crosswalk)) {
       const schoolDistrict = assignment.schoolDistrict || '';
       if (schoolDistrict.toLowerCase().includes(normalizedSearch) ||
-          normalizedSearch.includes(schoolDistrict.toLowerCase())) {
+        normalizedSearch.includes(schoolDistrict.toLowerCase())) {
         const precinct = unified[precinctName];
         if (precinct) {
           matchingPrecincts.push(precinct);

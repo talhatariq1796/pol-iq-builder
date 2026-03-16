@@ -554,21 +554,6 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
     }
   }, [mapState.view]);
 
-  // Handle uploaded layer added
-  const handleLayerAdded = useCallback((layer: UploadedLayer) => {
-    setUploadedLayers((prev: UploadedLayer[]) => [...prev, layer]);
-    setShowUploader(false);
-    setUploadError(null);
-    console.log('[PoliticalMapContainer] Layer added:', layer.name);
-  }, []);
-
-  // Handle upload error
-  const handleUploadError = useCallback((error: string) => {
-    setUploadError(error);
-    // Clear error after 5 seconds
-    setTimeout(() => setUploadError(null), 5000);
-  }, []);
-
   // Toggle layer visibility
   const handleToggleLayerVisibility = useCallback((layerId: string) => {
     setUploadedLayers((prev: UploadedLayer[]) =>
