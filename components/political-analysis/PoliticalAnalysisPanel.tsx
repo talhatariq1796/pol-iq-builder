@@ -1969,20 +1969,23 @@ export function PoliticalAnalysisPanel({
                         const page = parseInt(pageNum);
                         const isEnabled = selectedPages[page];
                         return (
-                          <li key={page} className="flex items-center gap-2">
+                          <li key={page} className="flex items-stretch gap-2">
                             <button
+                              type="button"
                               onClick={() => setSelectedPages((prev: Record<number, boolean>) => ({
                                 ...prev,
                                 [page]: !prev[page]
                               }))}
-                              className={`flex items-center gap-2 w-full p-1.5 rounded transition-colors ${isEnabled
+                              className={`flex w-full items-center gap-2 rounded p-1.5 text-left leading-snug transition-colors ${isEnabled
                                 ? 'bg-green-50 text-green-800 hover:bg-green-100'
                                 : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                                 }`}
                               disabled={isAnalyzing}
                             >
-                              <CheckCircle className={`h-3 w-3 ${isEnabled ? 'text-green-600' : 'text-gray-300'}`} />
-                              <span className="text-left flex-1">
+                              <span className="flex h-4 w-4 shrink-0 items-center justify-center [&_svg]:size-3">
+                                <CheckCircle className={isEnabled ? 'text-green-600' : 'text-gray-300'} />
+                              </span>
+                              <span className="min-w-0 flex-1">
                                 <strong>Page {page}:</strong> {description.split(' - ')[1]}
                               </span>
                             </button>
@@ -2005,19 +2008,21 @@ export function PoliticalAnalysisPanel({
                       Back to Results
                     </Button>
                     <Button
-                      className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white text-xs"
+                      className="flex-1 bg-[#33a852] hover:bg-[#2d9944] text-white text-xs [&_svg]:size-4"
                       onClick={handleGenerateReport}
                       disabled={isAnalyzing || Object.values(selectedPages).every(v => !v)}
                     >
                       {isAnalyzing ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Generating...
+                          <Loader2 className="shrink-0 animate-spin" aria-hidden />
+                          <span className="leading-none">Generating...</span>
                         </>
                       ) : (
                         <>
-                          <Download className="h-4 w-4 mr-2" />
-                          Generate PDF ({Object.values(selectedPages).filter(Boolean).length} pages)
+                          <Download className="shrink-0" aria-hidden />
+                          <span className="leading-none">
+                            Generate PDF ({Object.values(selectedPages).filter(Boolean).length} pages)
+                          </span>
                         </>
                       )}
                     </Button>

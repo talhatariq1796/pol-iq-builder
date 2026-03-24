@@ -25,7 +25,56 @@ import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson'
 
 const DATA_DIR = path.join(process.cwd(), 'public/data/political/pensylvania');
 const OUTPUT_FILE = path.join(DATA_DIR, 'precinct_targeting_scores.json');
+const ELECTION_HISTORY_FILE = path.join(DATA_DIR, 'pa_precinct_election_history.json');
 const POP_BG_FILE = path.join(DATA_DIR, 'pa_total_population_2025.geojson');
+
+const PA_ELECTION_DATES = {
+  '2020': { date: '2020-11-03', type: 'general' as const },
+  '2022': { date: '2022-11-08', type: 'midterm' as const },
+  '2024': { date: '2024-11-05', type: 'general' as const },
+};
+
+/** Per-precinct shape expected by PoliticalDataService + political-pdf aggregateElectionHistory */
+function buildPrecinctElectionPayload(
+  registered: number | undefined,
+  demVotes: number,
+  repVotes: number,
+  electionType: 'general' | 'midterm',
+): {
+  type: string;
+  registered_voters: number;
+  ballots_cast: number;
+  turnout: number;
+  races: Record<string, Record<string, unknown>>;
+} {
+  const totalVotes = demVotes + repVotes;
+  const ballotsCast = totalVotes;
+  let reg =
+    registered && registered > 0 ? registered : totalVotes > 0 ? totalVotes : 0;
+  if (reg > 0 && ballotsCast > reg) {
+    reg = ballotsCast;
+  }
+  const turnout = reg > 0 ? (ballotsCast / reg) * 100 : 0;
+  return {
+    type: electionType,
+    registered_voters: reg,
+    ballots_cast: ballotsCast,
+    turnout,
+    races: {
+      President: {
+        office: 'President',
+        district: 'Pennsylvania',
+        candidates: [] as unknown[],
+        total_votes: totalVotes,
+        dem_votes: demVotes,
+        rep_votes: repVotes,
+        other_votes: 0,
+        winner: demVotes >= repVotes ? 'Democratic' : 'Republican',
+        winner_party: demVotes >= repVotes ? 'DEM' : 'REP',
+      },
+    },
+  };
+}
 
 interface ElectionRecord {
   key: string;
@@ -424,6 +473,71 @@ function main() {
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2), 'utf8');
   console.log(`[build-pa-targeting-scores] Wrote ${OUTPUT_FILE}`);
   console.log(`[build-pa-targeting-scores] Strategy distribution:`, strategyCounts);
+
+  // PDF / API: precinct-keyed election history (same keys as targeting)
+  const electionPrecincts: Record<string, { elections: Record<string, ReturnType<typeof buildPrecinctElectionPayload>> }> =
+    {};
+  for (const [uniqueId, record] of data2020) {
+    const compKey = normalizeKey(record.countyFp, record.vtdst);
+    const d22 = data2022.get(compKey);
+    const d24 = data2024.get(compKey);
+    const reg =
+      record.registeredVoters && record.registeredVoters > 0
+        ? record.registeredVoters
+        : undefined;
+    const elections: Record<string, ReturnType<typeof buildPrecinctElectionPayload>> = {};
+
+    if (record.demVotes + record.repVotes > 0) {
+      elections[PA_ELECTION_DATES['2020'].date] = buildPrecinctElectionPayload(
+        reg,
+        record.demVotes,
+        record.repVotes,
+        PA_ELECTION_DATES['2020'].type,
+      );
+    }
+    if (d22 && d22.demVotes + d22.repVotes > 0) {
+      elections[PA_ELECTION_DATES['2022'].date] = buildPrecinctElectionPayload(
+        reg,
+        d22.demVotes,
+        d22.repVotes,
+        PA_ELECTION_DATES['2022'].type,
+      );
+    }
+    if (d24 && d24.demVotes + d24.repVotes > 0) {
+      elections[PA_ELECTION_DATES['2024'].date] = buildPrecinctElectionPayload(
+        reg,
+        d24.demVotes,
+        d24.repVotes,
+        PA_ELECTION_DATES['2024'].type,
+      );
+    }
+    if (Object.keys(elections).length > 0) {
+      electionPrecincts[uniqueId] = { elections };
+    }
+  }
+
+  const electionOutput = {
+    metadata: {
+      generated: new Date().toISOString(),
+      state: 'Pennsylvania',
+      source_files: [
+        'pa_2020_presidential.geojson',
+        'pa_2022_precinct.geojson',
+        'pa_2024_precincts_with_votes.geojson',
+      ],
+      elections: [
+        { year: 2020, type: 'general', date: PA_ELECTION_DATES['2020'].date },
+        { year: 2022, type: 'midterm', date: PA_ELECTION_DATES['2022'].date },
+        { year: 2024, type: 'general', date: PA_ELECTION_DATES['2024'].date },
+      ],
+      precinct_count: Object.keys(electionPrecincts).length,
+      note:
+        'registered_voters for 2022/2024 use 2020 presidential registration when available; turnout is ballots/registered.',
+    },
+    precincts: electionPrecincts,
+  };
+  fs.writeFileSync(ELECTION_HISTORY_FILE, JSON.stringify(electionOutput, null, 2), 'utf8');
+  console.log(`[build-pa-targeting-scores] Wrote ${ELECTION_HISTORY_FILE} (${Object.keys(electionPrecincts).length} precincts)`);
 }
 
 main();

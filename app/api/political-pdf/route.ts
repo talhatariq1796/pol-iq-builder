@@ -7,7 +7,14 @@ import type {
   ElectionData,
   PoliticalAreaSelection,
   TargetingPriority,
+  DemographicSummary,
+  PoliticalAttitudes,
+  PoliticalEngagement,
 } from '@/types/political';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+
+/** Report cover line: same env defaults as PoliticalDataService metadata. */
+const { state: REPORT_STATE, county: REPORT_COUNTY } = getPoliticalRegionEnv();
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,6 +49,117 @@ interface PoliticalPDFRequest {
 
   // Optional: Which pages to include (1-7, defaults to all)
   selectedPages?: number[];
+}
+
+function num(x: unknown): number | undefined {
+  if (typeof x === 'number' && !Number.isNaN(x)) return x;
+  if (x != null && x !== '') {
+    const n = Number(x);
+    if (!Number.isNaN(n)) return n;
+  }
+  return undefined;
+}
+
+/** PA / targeting JSON: lean + swing may live on political_scores or top-level swing_potential. */
+function readLeanSwingFromTargeting(t: Record<string, unknown> | null | undefined): {
+  lean: number;
+  swing: number;
+} {
+  if (!t) return { lean: 0, swing: 0 };
+  const ps = t.political_scores as Record<string, unknown> | undefined;
+  const lean = num(ps?.partisan_lean) ?? 0;
+  const swing = num(t.swing_potential) ?? num(ps?.swing_potential) ?? 0;
+  return { lean, swing };
+}
+
+function precinctPoliticalScoresFromTargeting(
+  precinctName: string,
+  t: Record<string, unknown>
+): PrecinctPoliticalScores {
+  const { lean, swing } = readLeanSwingFromTargeting(t);
+  const competitiveness = classifyCompetitiveness(lean);
+  const volatility = classifyVolatility(swing);
+  const avgTurnout = 65;
+  const targetingPriority = calculateTargetingPriority(lean, swing, avgTurnout);
+  return {
+    precinctId: precinctName.replace(/[^a-zA-Z0-9]/g, '_'),
+    precinctName,
+    partisanLean: {
+      value: lean,
+      classification: competitiveness,
+      electionsAnalyzed: 3,
+      confidence: 0.75,
+    },
+    swingPotential: {
+      value: swing,
+      classification: volatility,
+      components: {
+        marginStdDev: swing * 0.5,
+        avgElectionSwing: swing * 0.3,
+        ticketSplitting: swing * 0.2,
+      },
+    },
+    turnout: {
+      averageTurnout: avgTurnout,
+      presidentialAvg: null,
+      midtermAvg: null,
+      dropoff: null,
+      trend: 'stable',
+      electionsAnalyzed: 0,
+    },
+    targetingPriority,
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+function enrichDemographicsFromTargeting(
+  d: DemographicSummary | null,
+  t: Record<string, unknown> | null | undefined
+): DemographicSummary {
+  const base: DemographicSummary = d ?? {
+    totalPopulation: 0,
+    votingAgePopulation: 0,
+    registeredVoters: 0,
+    medianAge: 0,
+    medianHouseholdIncome: 0,
+    educationBachelorsPlus: 0,
+    ownerOccupied: 0,
+    renterOccupied: 0,
+    urbanRural: 'suburban',
+  };
+  if (!t) return base;
+  const tPop = num(t.total_population);
+  const useTargeting =
+    (tPop != null && tPop > 0 && (!base.totalPopulation || base.totalPopulation === 0)) ||
+    (num(t.registered_voters) != null &&
+      (num(t.registered_voters) as number) > 0 &&
+      (!base.registeredVoters || base.registeredVoters === 0));
+  if (!useTargeting) return base;
+  const ownerPct = num(t.owner_pct);
+  const renterFromOwner =
+    ownerPct != null && ownerPct >= 0 && ownerPct <= 100
+      ? Math.max(0, Math.min(100, 100 - ownerPct))
+      : undefined;
+
+  return {
+    ...base,
+    totalPopulation: tPop && tPop > 0 ? tPop : base.totalPopulation,
+    votingAgePopulation: num(t.population_age_18up) ?? base.votingAgePopulation,
+    registeredVoters: num(t.registered_voters) ?? base.registeredVoters,
+    medianAge: num(t.median_age) ?? base.medianAge,
+    medianHouseholdIncome: num(t.median_household_income) ?? base.medianHouseholdIncome,
+    educationBachelorsPlus: num(t.college_pct) ?? base.educationBachelorsPlus,
+    ownerOccupied: ownerPct ?? base.ownerOccupied,
+    renterOccupied:
+      renterFromOwner != null
+        ? renterFromOwner
+        : base.renterOccupied > 0
+          ? base.renterOccupied
+          : base.ownerOccupied > 0 && base.renterOccupied === 0
+            ? Math.max(0, 100 - base.ownerOccupied)
+            : base.renterOccupied,
+    diversityIndex: num(t.diversity_index) ?? base.diversityIndex,
+  };
 }
 
 /**
@@ -92,20 +210,39 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    const precinctDataList = await Promise.all(precinctDataPromises);
+    const rawList = await Promise.all(precinctDataPromises);
+    const precinctDataList = rawList.map((p) => ({
+      ...p,
+      demographics: enrichDemographicsFromTargeting(
+        p.demographics,
+        p.targetingScores as Record<string, unknown> | null | undefined
+      ),
+    }));
 
-    // Filter out precincts with no scores (missing data)
-    const validPrecincts = precinctDataList.filter((p) => p.scores !== null);
+    // Legacy MI political_scores and/or PA targeting_scores
+    const withData = precinctDataList.filter((p) => p.scores != null || p.targetingScores != null);
 
-    if (validPrecincts.length === 0) {
+    if (withData.length === 0) {
       return NextResponse.json(
         {
           error: 'No valid precinct data found',
-          message: `None of the requested precincts have political scores available: ${body.precinctNames.join(', ')}`,
+          message: `None of the requested precincts have political or targeting data: ${body.precinctNames.join(', ')}`,
         },
         { status: 404 }
       );
     }
+
+    const validPrecincts: PrecinctData[] = withData.map((p) => {
+      if (p.scores) return p;
+      if (!p.targetingScores) return p;
+      return {
+        ...p,
+        scores: precinctPoliticalScoresFromTargeting(
+          p.precinctName,
+          p.targetingScores as unknown as Record<string, unknown>
+        ),
+      };
+    });
 
     console.log(
       `[Political PDF API] Loaded data for ${validPrecincts.length}/${body.precinctNames.length} precincts`
@@ -181,6 +318,111 @@ interface PrecinctData {
   engagement: any;
 }
 
+function isEffectivelyZeroAttitudes(a: PoliticalAttitudes): boolean {
+  const vals = [
+    a.veryLiberal,
+    a.somewhatLiberal,
+    a.middleOfRoad,
+    a.somewhatConservative,
+    a.veryConservative,
+    a.registeredDemocrat,
+    a.registeredRepublican,
+    a.registeredIndependent,
+    a.registeredOther ?? 0,
+    a.likelyVoters ?? 0,
+  ];
+  return vals.every((v) => Math.abs(Number(v) || 0) < 1e-6);
+}
+
+function isEffectivelyZeroEngagement(e: PoliticalEngagement): boolean {
+  const vals = [
+    e.politicalPodcastListeners,
+    e.politicalContributors,
+    e.wroteCalledPolitician,
+    e.cashGiftsToPolitical,
+    e.followsPoliticiansOnSocial,
+    e.followsPoliticalGroups,
+    e.votedLastElection ?? 0,
+    e.alwaysVotes ?? 0,
+  ];
+  return vals.every((v) => Math.abs(Number(v) || 0) < 1e-6);
+}
+
+/** Weighted average of optional targeting affiliation / ideology fields (when present on JSON). */
+function aggregateAttitudesFromTargeting(precincts: PrecinctData[]): PoliticalAttitudes | null {
+  const weights = precincts.map((p) => {
+    const t = p.targetingScores as Record<string, unknown> | null | undefined;
+    return (
+      p.demographics?.totalPopulation ||
+      num(t?.total_population) ||
+      num(t?.registered_voters) ||
+      1000
+    );
+  });
+  let tw = 0;
+  let wDem = 0,
+    wRep = 0,
+    wInd = 0,
+    wLib = 0,
+    wMod = 0,
+    wCon = 0;
+  let any = false;
+
+  precincts.forEach((p, i) => {
+    const t = p.targetingScores as Record<string, unknown> | undefined;
+    if (!t) return;
+    const d = num(t.dem_affiliation_pct);
+    const r = num(t.rep_affiliation_pct);
+    const ind = num(t.ind_affiliation_pct);
+    const lib = num(t.liberal_pct);
+    const mod = num(t.moderate_pct);
+    const con = num(t.conservative_pct);
+    if (
+      d == null &&
+      r == null &&
+      ind == null &&
+      lib == null &&
+      mod == null &&
+      con == null
+    ) {
+      return;
+    }
+    any = true;
+    const w = weights[i];
+    tw += w;
+    if (d != null) wDem += d * w;
+    if (r != null) wRep += r * w;
+    if (ind != null) wInd += ind * w;
+    if (lib != null) wLib += lib * w;
+    if (mod != null) wMod += mod * w;
+    if (con != null) wCon += con * w;
+  });
+
+  if (!any || tw === 0) return null;
+
+  const dem = wDem / tw;
+  const rep = wRep / tw;
+  const ind = wInd / tw;
+  const lib = wLib / tw;
+  const mod = wMod / tw;
+  const con = wCon / tw;
+  const hasParty = dem + rep + ind > 0.5;
+  const hasIdeo = lib + mod + con > 0.5;
+
+  return {
+    veryLiberal: hasIdeo ? Math.min(100, lib * 0.25) : 8,
+    somewhatLiberal: hasIdeo ? Math.min(100, lib * 0.45) : 15,
+    middleOfRoad: hasIdeo ? Math.min(100, mod) : 35,
+    somewhatConservative: hasIdeo ? Math.min(100, con * 0.45) : 22,
+    veryConservative: hasIdeo ? Math.min(100, con * 0.25) : 12,
+    registeredDemocrat: hasParty ? Math.min(100, dem) : 33,
+    registeredRepublican: hasParty ? Math.min(100, rep) : 33,
+    registeredIndependent: hasParty ? Math.min(100, ind) : 29,
+    registeredOther: 5,
+    likelyVoters: 70,
+  };
+}
+
 /**
  * Aggregate data from multiple precincts into a single PoliticalProfileConfig
  */
@@ -198,7 +440,7 @@ function aggregatePrecinctData(
     customAreaName ||
     (precincts.length === 1
       ? precincts[0].precinctName
-      : `${precincts.length} Precincts in Ingham County`);
+      : `${precincts.length} Precincts (${REPORT_COUNTY})`);
 
   // Aggregate political scores (weighted by registered voters if available)
   const aggregatedScores = aggregatePoliticalScores(precincts);
@@ -209,17 +451,25 @@ function aggregatePrecinctData(
   // Aggregate demographics (sum populations, weighted averages for percentages)
   const aggregatedDemographics = aggregateDemographics(precincts);
 
-  // Aggregate attitudes (weighted by population)
-  const aggregatedAttitudes = aggregateAttitudes(precincts);
+  const baAttitudes = aggregateAttitudes(precincts) as PoliticalAttitudes;
+  let aggregatedAttitudes: PoliticalAttitudes | undefined = isEffectivelyZeroAttitudes(baAttitudes)
+    ? aggregateAttitudesFromTargeting(precincts) ?? undefined
+    : baAttitudes;
 
-  // Aggregate engagement (weighted by population)
-  const aggregatedEngagement = aggregateEngagement(precincts);
+  const baEngagement = aggregateEngagement(precincts) as PoliticalEngagement;
+  let aggregatedEngagement: PoliticalEngagement | undefined = isEffectivelyZeroEngagement(baEngagement)
+    ? undefined
+    : baEngagement;
 
   // Build included precincts list
   const includedPrecincts = precincts.map((p) => ({
     name: p.precinctName,
     overlapRatio: 1.0, // Full precinct included
-    registeredVoters: p.demographics?.registeredVoters || 0,
+    registeredVoters:
+      p.demographics?.registeredVoters ||
+      num((p.targetingScores as Record<string, unknown>)?.registered_voters) ||
+      num((p.targetingScores as Record<string, unknown>)?.active_voters) ||
+      0,
   }));
 
   // Build area selection metadata
@@ -237,20 +487,13 @@ function aggregatePrecinctData(
     areaSelection: finalAreaSelection,
     areaName,
     areaDescription,
-    county: 'Ingham County',
-    state: 'Michigan',
+    county: REPORT_COUNTY,
+    state: REPORT_STATE,
     politicalScores: aggregatedScores,
     electionHistory: aggregatedElectionHistory,
     demographics: aggregatedDemographics,
     politicalAttitudes: aggregatedAttitudes,
     engagement: aggregatedEngagement,
-    psychographics: {
-      primarySegment: 'Mixed',
-      primarySegmentCode: '',
-      communityInvolvement: 0,
-      religiousAttendance: 0,
-      unionMembership: 0,
-    },
     includedPrecincts,
     mapThumbnail,
     chartImages,
@@ -269,7 +512,15 @@ function aggregatePrecinctData(
  */
 function aggregatePoliticalScores(precincts: PrecinctData[]): PrecinctPoliticalScores {
   // Calculate total weight (registered voters if available, else equal weight)
-  const weights = precincts.map((p) => p.demographics?.registeredVoters || 1000);
+  const weights = precincts.map((p) => {
+    const t = p.targetingScores as Record<string, unknown> | null | undefined;
+    return (
+      p.demographics?.registeredVoters ||
+      num(t?.registered_voters) ||
+      num(t?.active_voters) ||
+      1000
+    );
+  });
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
 
   // Weighted averages
@@ -290,16 +541,16 @@ function aggregatePoliticalScores(precincts: PrecinctData[]): PrecinctPoliticalS
     const weight = weights[i];
     weightedLean += p.scores.partisanLean.value * weight;
     weightedSwing += p.scores.swingPotential.value * weight;
-    weightedTurnout += p.scores.turnout.averageTurnout * weight;
+    weightedTurnout += (p.scores.turnout?.averageTurnout ?? 65) * weight;
     totalElections = Math.max(totalElections, p.scores.partisanLean.electionsAnalyzed);
 
-    if (p.scores.turnout.presidentialAvg !== null) {
+    if (p.scores.turnout?.presidentialAvg != null) {
       presidentialTurnoutSum += p.scores.turnout.presidentialAvg * weight;
       presidentialCount += weight;
       hasPresidentialData = true;
     }
 
-    if (p.scores.turnout.midtermAvg !== null) {
+    if (p.scores.turnout?.midtermAvg != null) {
       midtermTurnoutSum += p.scores.turnout.midtermAvg * weight;
       midtermCount += weight;
       hasMidtermData = true;

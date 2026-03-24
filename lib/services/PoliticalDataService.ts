@@ -28,6 +28,7 @@ import type {
 } from '@/types/political';
 
 import { loadGeoJSONMerged, resolveGeoJSONData } from '@/lib/map/geojsonMergeLoader';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // ============================================================================
 // Configuration
@@ -35,8 +36,8 @@ import { loadGeoJSONMerged, resolveGeoJSONData } from '@/lib/map/geojsonMergeLoa
 
 // Blob URL keys (loaded from /data/blob-urls.json)
 const BLOB_KEYS = {
-  precinctBoundaries: 'political/precincts/ingham_county_2024',
-  electionResults: 'political/elections/ingham_results',
+  precinctBoundaries: 'political/precincts/pa_2020_presidential',
+  electionResults: 'political/elections/pa_precinct_results',
   targetingScores: 'political/targeting/precinct_scores',
   politicalScores: 'political/targeting/political_scores',
   demographics: 'political/demographics/precinct_ba',
@@ -50,7 +51,7 @@ const BLOB_KEYS = {
 // PA data lives in public/data/political/pensylvania/
 const LOCAL_PATHS = {
   precinctBoundaries: '/data/political/pensylvania/pa_2020_presidential.geojson',
-  electionResults: '/data/political/election-history.json',
+  electionResults: '/data/political/pensylvania/pa_precinct_election_history.json',
   targetingScores: '/data/political/pensylvania/precinct_targeting_scores.json',
   politicalScores: '/data/processed/precinct_political_scores.json',
   demographics: '/data/processed/precinct_ba_demographics.json',
@@ -445,6 +446,46 @@ async function loadBlobUrlMappings(): Promise<Record<string, string>> {
 }
 
 /**
+ * Read a JSON file from `public/` given a browser-style path (e.g. `/data/foo.json`).
+ */
+async function readJsonFromPublicPath(localPath: string): Promise<unknown> {
+  const path = await import('path');
+  const fs = await import('fs/promises');
+  const trimmed = localPath.startsWith('/') ? localPath.slice(1) : localPath;
+  const filePath = path.join(process.cwd(), 'public', trimmed);
+  const raw = await fs.readFile(filePath, 'utf-8');
+  return JSON.parse(raw);
+}
+
+/**
+ * `fetch` implementation for Node: loads `/data/...` from `public/data/...` so GeoJSON merge
+ * manifests can resolve part URLs the same way as in the browser.
+ */
+async function nodePublicFetch(input: RequestInfo | URL): Promise<Response> {
+  let pathname: string;
+  if (typeof input === 'string') {
+    pathname =
+      input.startsWith('http://') || input.startsWith('https://')
+        ? new URL(input).pathname
+        : input.startsWith('/')
+          ? input
+          : `/${input}`;
+  } else if (input instanceof URL) {
+    pathname = input.pathname;
+  } else {
+    pathname = new URL((input as Request).url).pathname;
+  }
+  const path = await import('path');
+  const fs = await import('fs/promises');
+  const filePath = path.join(process.cwd(), 'public', pathname.replace(/^\//, ''));
+  const buf = await fs.readFile(filePath);
+  return new Response(new Uint8Array(buf), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/**
  * Fetch data from blob storage with fallback to local files
  */
 async function fetchFromBlobOrLocal<T>(blobKey: string, localPath: string): Promise<T> {
@@ -467,7 +508,19 @@ async function fetchFromBlobOrLocal<T>(blobKey: string, localPath: string): Prom
     }
   }
 
-  // Fallback to local file
+  // Fallback: Node server — read from public/ on disk (fetch(relative path) throws Invalid URL)
+  if (isNodeRuntime()) {
+    console.log(`[PoliticalDataService] Loading ${blobKey} from local filesystem: public/${localPath.replace(/^\//, '')}`);
+    try {
+      const data = await readJsonFromPublicPath(localPath);
+      return data as T;
+    } catch (error) {
+      console.error(`[PoliticalDataService] Failed to read ${blobKey} from public/:`, error);
+      throw error;
+    }
+  }
+
+  // Browser: same-origin fetch to public asset
   console.log(`[PoliticalDataService] Loading ${blobKey} from local path: ${localPath}`);
   const response = await fetch(localPath);
   if (!response.ok) {
@@ -496,6 +549,14 @@ async function fetchGeoJSONFromBlobOrLocal(
     } catch (error) {
       console.warn(`[PoliticalDataService] Blob fetch failed for ${blobKey}:`, error);
     }
+  }
+
+  if (isNodeRuntime()) {
+    console.log(
+      `[PoliticalDataService] Loading ${blobKey} from local filesystem: public/${localPath.replace(/^\//, '')}`,
+    );
+    const data = await readJsonFromPublicPath(localPath);
+    return resolveGeoJSONData(data, nodePublicFetch);
   }
 
   console.log(`[PoliticalDataService] Loading ${blobKey} from local path: ${localPath}`);
@@ -635,11 +696,22 @@ export class PoliticalDataService {
   private async loadCrosswalk(): Promise<CrosswalkEntry[]> {
     if (cache.crosswalk) return cache.crosswalk;
 
-    const data = await fetchFromBlobOrLocal<{ crosswalk?: CrosswalkEntry[] }>(
+    const data = await fetchFromBlobOrLocal<{ crosswalk?: unknown[] }>(
       BLOB_KEYS.crosswalk,
       LOCAL_PATHS.crosswalk
     );
-    cache.crosswalk = data.crosswalk || (data as unknown as CrosswalkEntry[]);
+    const raw = data.crosswalk || (data as unknown as unknown[]);
+    cache.crosswalk = (Array.isArray(raw) ? raw : []).map((e: unknown) => {
+      const o = e as Record<string, unknown>;
+      return {
+        precinctId: String(o.precinctId ?? o.precinct_id ?? ''),
+        precinctName: String(o.precinctName ?? o.precinct_name ?? ''),
+        blockGroupGeoid: String(o.blockGroupGeoid ?? o.block_group_geoid ?? ''),
+        overlapRatio: Number(o.overlapRatio ?? o.overlap_ratio ?? 0),
+        precinctArea: o.precinctArea != null ? Number(o.precinctArea) : undefined,
+        overlapArea: o.overlapArea != null ? Number(o.overlapArea) : undefined,
+      } as CrosswalkEntry;
+    });
     return cache.crosswalk!;
   }
 
@@ -1268,15 +1340,16 @@ export class PoliticalDataService {
       `[PoliticalDataService] getPrecinctDataFileFormat: Built ${Object.keys(precincts).length} precincts, ${jurisdictions.length} jurisdictions`
     );
 
+    const region = getPoliticalRegionEnv();
     return {
       metadata: {
-        county: 'Ingham',
-        state: 'Michigan',
+        county: region.county,
+        state: region.state,
         created: new Date().toISOString(),
         precinctCount: Object.keys(precincts).length,
         dataYear: 2024,
-        description: 'Unified precinct data from blob storage',
-        sources: ['Vercel Blob Storage - targeting_scores', 'Vercel Blob Storage - political_scores'],
+        description: 'Unified precinct data (targeting + optional political scores)',
+        sources: ['precinct_targeting_scores', 'optional precinct_political_scores'],
       },
       jurisdictions,
       precincts,
@@ -1889,10 +1962,11 @@ export class PoliticalDataService {
       turnouts.push(scores.turnout.averageTurnout);
     }
 
+    const region = getPoliticalRegionEnv();
     return {
-      name: 'Ingham County',
-      state: 'Michigan',
-      fips: '26065',
+      name: region.summaryAreaName,
+      state: region.state,
+      fips: region.stateFips,
       totalPrecincts: allScores.size,
       totalRegisteredVoters: totalVoters,
       overallLean: this.mean(leans),

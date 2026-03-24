@@ -259,10 +259,10 @@ export class PoliticalProfilePDFGeneratorV2 {
       buildPage(6, () => page6Data && this.buildPage6(page6Data));
       buildPage(7, () => page7Data && this.buildPage7(page7Data));
 
-      // Generate output
-      const pdfBlob = this.pdf.output('blob');
+      // Single output: some jsPDF builds misbehave when output() is called twice.
       const pdfArrayBuffer = this.pdf.output('arraybuffer');
       const pdfBuffer = Buffer.from(pdfArrayBuffer);
+      const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
 
       this.performanceMonitor?.setContext({ pageCount: selectedPages.length });
       this.performanceMonitor?.end(pdfBuffer);
@@ -640,6 +640,20 @@ export class PoliticalProfilePDFGeneratorV2 {
         data.ownerOccupied
       );
     }
+
+    this.renderer.renderText(
+      {
+        x: MARGINS.left,
+        y: 252,
+        width: CONTENT_AREA.width,
+        height: 12,
+        fontSize: 6,
+        font: FONT_SPECS.family,
+        maxLines: 4,
+      },
+      'Note: Demographics use available precinct-level estimates. Renter share may be derived from owner %. Detailed ACS / Esri BA block-group breakdown is not loaded for this dataset.',
+      { color: POLITICAL_COLORS.textMuted, truncate: true },
+    );
 
     this.renderer.renderPageFooter('Political Analysis Report');
   }
