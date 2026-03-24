@@ -45,10 +45,11 @@ const BLOB_KEYS = {
 };
 
 // Fallback local paths (for development)
+// PA data lives in public/data/political/pensylvania/
 const LOCAL_PATHS = {
-  precinctBoundaries: '/data/political/ingham_precincts.geojson',
+  precinctBoundaries: '/data/political/pensylvania/pa_2020_presidential.geojson',
   electionResults: '/data/political/election-history.json',
-  targetingScores: '/data/processed/precinct_targeting_scores.json',
+  targetingScores: '/data/political/pensylvania/precinct_targeting_scores.json',
   politicalScores: '/data/processed/precinct_political_scores.json',
   demographics: '/data/processed/precinct_ba_demographics.json',
   crosswalk: '/data/processed/precinct_blockgroup_crosswalk.json',
@@ -677,13 +678,13 @@ export class PoliticalDataService {
 
     // Try to load from local GeoJSON first (faster)
     try {
-      const response = await fetch('/data/political/ingham_precincts.geojson');
+      const response = await fetch(LOCAL_PATHS.precinctBoundaries);
       if (response.ok) {
         const geojson = await response.json() as GeoJSON.FeatureCollection;
 
-        // Build centroids for all precincts
+        // Build centroids for all precincts (PA: UNIQUE_ID, MI: PRECINCT_ID)
         for (const feature of geojson.features) {
-          const id = (feature.properties?.PRECINCT_ID || feature.properties?.id || '').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+          const id = (feature.properties?.UNIQUE_ID || feature.properties?.PRECINCT_ID || feature.properties?.id || feature.properties?.NAME || '').toLowerCase().replace(/[^a-z0-9-]/g, '-');
           if (feature.geometry?.type === 'Polygon') {
             const centroid = calculatePolygonCentroid((feature.geometry as GeoJSON.Polygon).coordinates);
             centroidCache.set(id, centroid);
@@ -704,8 +705,8 @@ export class PoliticalDataService {
       console.warn('[PoliticalDataService] Failed to load precinct GeoJSON for centroids:', error);
     }
 
-    // Fallback: Use Ingham County center
-    return [-84.55, 42.60];
+    // Fallback: Use Pennsylvania state center
+    return [-77.27, 40.89];
   }
 
   /**

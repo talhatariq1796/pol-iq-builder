@@ -25,7 +25,7 @@ export default function RootLayout({
       <head>
         {/* Preload critical data files for faster initial load */}
         <link rel="preload" href="/data/blob-urls.json" as="fetch" crossOrigin="anonymous" />
-        <link rel="preload" href="/data/political/ingham_precincts.geojson" as="fetch" crossOrigin="anonymous" />
+        <link rel="preload" href="/data/political/pensylvania/pa_2020_presidential.geojson" as="fetch" crossOrigin="anonymous" />
 
         {/* Preconnect to Vercel Blob Storage - set NEXT_PUBLIC_BLOB_STORE_URL in .env.local */}
       </head>

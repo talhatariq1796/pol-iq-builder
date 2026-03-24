@@ -63,55 +63,6 @@ function normalizePrecinctName(boundaryName: string): string {
 }
 
 /**
- * Resolves a boundary precinct name to a targeting score key.
- * Attempts multiple normalization strategies to find matches.
- * Returns the matching key from targetingScoreKeys, or undefined if not found.
- */
-function resolveTargetingScoreKey(
-  boundaryName: string,
-  targetingScoreKeys: string[],
-  normalizedScoreKeys: Map<string, string>,
-): string | undefined {
-  if (!boundaryName) return undefined;
-
-  // 1. Exact match
-  if (targetingScoreKeys.includes(boundaryName)) {
-    return boundaryName;
-  }
-
-  // 2. Normalized match (strip "City of ", "Charter Township", etc.)
-  const normalized = normalizePrecinctName(boundaryName);
-  if (targetingScoreKeys.includes(normalized)) {
-    return normalized;
-  }
-
-  // 3. Lowercase match
-  const normalizedLower = normalized.toLowerCase();
-  if (normalizedScoreKeys.has(normalizedLower)) {
-    return normalizedScoreKeys.get(normalizedLower);
-  }
-
-  // 4. No-spaces match
-  const noSpaces = normalizedLower.replace(/\s+/g, "");
-  if (normalizedScoreKeys.has(noSpaces)) {
-    return normalizedScoreKeys.get(noSpaces);
-  }
-
-  // 5. Partial match: check if any targeting key starts with the normalized name
-  for (const key of targetingScoreKeys) {
-    const keyLower = key.toLowerCase();
-    if (
-      keyLower.startsWith(normalizedLower) ||
-      normalizedLower.startsWith(keyLower)
-    ) {
-      return key;
-    }
-  }
-
-  return undefined;
-}
-
-/**
  * Builds a pre-computed lookup map from normalized boundary name variants
  * to their canonical targeting score key for O(1) lookups.
  */
@@ -589,10 +540,13 @@ export function PrecinctChoroplethLayer({
         // Initialize service (needed for targeting scores, election data, and service-registered uploads)
         await politicalDataService.initialize();
 
-        // Load municipality boundaries directly + targeting scores and election data
+        // Load boundaries + targeting scores and election data
+        // PA: pa_2020_presidential (precinct-level, UNIQUE_ID)
+        // MI: ingham_municipalities (municipality-level, JURISDICTION_NAME)
+        const boundariesPath = boundariesUrl || "/data/political/pensylvania/pa_2020_presidential.geojson";
         const [boundaryResponse, targetingScores, electionResults] =
           await Promise.all([
-            fetch("/data/political/ingham_municipalities.geojson"),
+            fetch(boundariesPath),
             politicalDataService.getAllTargetingScores(),
             politicalDataService.getAllElectionResults(),
           ]);
@@ -605,8 +559,9 @@ export function PrecinctChoroplethLayer({
 
         if (!isMounted) return;
 
+        const isPA = boundaries.features.length > 0 && boundaries.features[0]?.properties?.UNIQUE_ID != null;
         console.log(
-          `[PrecinctChoroplethLayer] Loaded ${boundaries.features.length} municipality boundaries`,
+          `[PrecinctChoroplethLayer] Loaded ${boundaries.features.length} ${isPA ? "precinct" : "municipality"} boundaries (${isPA ? "PA" : "MI"})`,
         );
         console.log(
           `[PrecinctChoroplethLayer] Loaded ${Object.keys(targetingScores).length} targeting scores`,
@@ -621,159 +576,41 @@ export function PrecinctChoroplethLayer({
           );
         }
 
-        // Create normalized lookup for matching boundary names to targeting score keys
         const targetingScoreKeys = Object.keys(targetingScores);
-        const normalizedScoreKeys =
-          buildNormalizedScoreKeyMap(targetingScoreKeys);
-
-        // Debug: Log first few municipality names from boundaries
-        console.log(
-          "[PrecinctChoroplethLayer] Sample boundary municipality names:",
-          boundaries.features
-            .slice(0, 3)
-            .map(
-              (f) =>
-                f.properties?.JURISDICTION_NAME ||
-                f.properties?.PRECINCT_NAME ||
-                f.properties?.NAME,
-            ),
-        );
-
-        // Debug: Log first few keys from targeting scores
-        console.log(
-          "[PrecinctChoroplethLayer] Sample targeting score keys:",
-          targetingScoreKeys.slice(0, 3),
-        );
-
-        // Date-to-year mapping for election results lookup
         const electionDateToYear: Record<string, number> = {
           "2020-11-03": 2020,
           "2022-11-08": 2022,
           "2024-11-05": 2024,
         };
 
-        // Join targeting data and election data to municipality features
-        // Each municipality (township/city) contains multiple precincts — we aggregate their scores
-        let matchedCount = 0;
-        let unmatchedCount = 0;
-        const enrichedFeatures = boundaries.features.map((feature) => {
-          // Municipality GeoJSON uses JURISDICTION_NAME (e.g. "Alaiedon", "East Lansing")
-          const jurisdictionName =
-            feature.properties?.JURISDICTION_NAME ||
-            feature.properties?.PRECINCT_NAME ||
-            feature.properties?.NAME;
-          const jurisdictionType = feature.properties?.JURISDICTION_TYPE || "";
-
-          // Find all precinct-level targeting score keys that belong to this municipality
-          const matchingKeys = findMunicipalityScoreKeys(
-            jurisdictionName,
-            jurisdictionType,
-            targetingScoreKeys,
-          );
-          const scoresList = matchingKeys
-            .map((k) => targetingScores[k])
-            .filter(Boolean);
-          const scores = aggregateMunicipalityScores(scoresList);
-
-          // Debug: Track matches
-          if (scores) {
-            matchedCount++;
-          } else {
-            unmatchedCount++;
-            console.warn(
-              `[PrecinctChoroplethLayer] No targeting scores found for municipality: "${jurisdictionName}" (matched ${matchingKeys.length} precinct keys)`,
-            );
-          }
-
-          // Look up election data - aggregate across constituent precincts
-          const electionsByDate: Record<string, Record<string, any>> = {};
-          for (const key of matchingKeys) {
-            const electionPrecinctData = electionResults?.precincts?.[key];
-            if (electionPrecinctData?.elections) {
-              for (const [date, races] of Object.entries(
-                electionPrecinctData.elections,
-              )) {
-                if (!electionsByDate[date]) electionsByDate[date] = {};
-                for (const [race, data] of Object.entries(
-                  races as Record<string, any>,
-                )) {
-                  if (!electionsByDate[date][race]) {
-                    electionsByDate[date][race] = { ...data };
-                  } else {
-                    // Average numeric fields across precincts
-                    const existing = electionsByDate[date][race];
-                    ["dem_pct", "rep_pct", "turnout"].forEach((f) => {
-                      if (
-                        typeof data[f] === "number" &&
-                        typeof existing[f] === "number"
-                      ) {
-                        existing[f] = (existing[f] + data[f]) / 2;
-                      }
-                    });
-                    if (typeof data.total_votes === "number")
-                      existing.total_votes =
-                        (existing.total_votes || 0) + data.total_votes;
-                  }
-                }
-              }
-            }
-          }
-
-          // Build election year fields for temporal rendering
-          // Election data is keyed by date (e.g., "2020-11-03"), not year
+        const buildElectionFields = (matchKey: string): Record<string, number | null> => {
           const electionFields: Record<string, number | null> = {};
+          const electionPrecinctData = electionResults?.precincts?.[matchKey];
+          const electionsByDate = electionPrecinctData?.elections || {};
           for (const year of [2020, 2022, 2024]) {
-            // Find the election date for this year
-            const dateKey = Object.keys(electionDateToYear).find(
-              (d) => electionDateToYear[d] === year,
-            );
+            const dateKey = Object.keys(electionDateToYear).find((d) => electionDateToYear[d] === year);
             const electionData = dateKey ? electionsByDate[dateKey] : null;
-
-            // Extract presidential/gubernatorial race data
-            // Data structure: { "President": { dem_pct, rep_pct, margin, turnout }, ... }
-            const raceData = electionData
-              ? electionData["President"] ||
-                electionData["Governor"] ||
-                Object.values(electionData)[0]
-              : null;
-
+            const raceData = electionData ? (electionData["President"] || electionData["Governor"] || Object.values(electionData)[0]) : null;
             if (raceData) {
-              // Parse percentage strings like "55.2%" to numbers
-              const parsePercent = (
-                val: string | number | null | undefined,
-              ): number | null => {
+              const parsePercent = (val: string | number | null | undefined): number | null => {
                 if (val === null || val === undefined) return null;
                 if (typeof val === "number") return val;
-                const parsed = parseFloat(val.replace("%", ""));
+                const parsed = parseFloat(String(val).replace("%", ""));
                 return isNaN(parsed) ? null : parsed;
               };
-              const parseMargin = (
-                val: string | number | null | undefined,
-              ): number | null => {
+              const parseMargin = (val: string | number | null | undefined): number | null => {
                 if (val === null || val === undefined) return null;
                 if (typeof val === "number") return val;
-                // Margin format: "D+15" or "R+8" or "+15" etc
-                const match = val.toString().match(/([DR]?)[+]?([-\d.]+)/);
+                const match = String(val).match(/([DR]?)[+]?([-\d.]+)/);
                 if (!match) return null;
                 const num = parseFloat(match[2]);
-                // D+ is positive, R+ is negative
                 return match[1] === "R" ? -num : num;
               };
-
-              electionFields[`election_${year}_margin`] = parseMargin(
-                raceData.margin,
-              );
-              electionFields[`election_${year}_turnout`] = parsePercent(
-                raceData.turnout,
-              );
-              electionFields[`election_${year}_demPct`] = parsePercent(
-                raceData.dem_pct,
-              );
-              electionFields[`election_${year}_repPct`] = parsePercent(
-                raceData.rep_pct,
-              );
-              electionFields[`election_${year}_ballotsCast`] =
-                raceData.total_votes ?? null;
+              electionFields[`election_${year}_margin`] = parseMargin(raceData.margin);
+              electionFields[`election_${year}_turnout`] = parsePercent(raceData.turnout);
+              electionFields[`election_${year}_demPct`] = parsePercent(raceData.dem_pct);
+              electionFields[`election_${year}_repPct`] = parsePercent(raceData.rep_pct);
+              electionFields[`election_${year}_ballotsCast`] = raceData.total_votes ?? null;
             } else {
               electionFields[`election_${year}_margin`] = null;
               electionFields[`election_${year}_turnout`] = null;
@@ -782,52 +619,148 @@ export function PrecinctChoroplethLayer({
               electionFields[`election_${year}_ballotsCast`] = null;
             }
           }
+          return electionFields;
+        };
 
-          // Merge targeting data into feature properties
-          return {
-            ...feature,
-            properties: {
-              ...feature.properties,
-              precinct_name: jurisdictionName, // Use jurisdiction name as display name
-              jurisdiction_name: jurisdictionName,
-              jurisdiction_type: jurisdictionType,
-              precinct_ids: (feature.properties?.PRECINCT_IDS || []).join(", "),
-              precinct_count:
-                feature.properties?.PRECINCT_COUNT ?? matchingKeys.length,
-              targeting_strategy: scores?.targeting_strategy || "Unknown",
-              gotv_priority: scores?.gotv_priority ?? null,
-              persuasion_opportunity: scores?.persuasion_opportunity ?? null,
-              combined_score: scores?.combined_score ?? null,
-              gotv_classification: scores?.gotv_classification || "Unknown",
-              persuasion_classification:
-                scores?.persuasion_classification || "Unknown",
-              recommendation: scores?.recommendation || "No data available",
-              // Include political scores if available
-              partisan_lean: scores?.political_scores?.partisan_lean ?? null,
-              swing_potential:
-                scores?.political_scores?.swing_potential ?? null,
-              // Voter metrics: prefer municipality-level GeoJSON fields (more accurate totals)
-              registered_voters:
-                feature.properties?.REGISTERED_VOTERS ??
-                scores?.registered_voters ??
-                null,
-              active_voters:
-                feature.properties?.ACTIVE_VOTERS ??
-                scores?.active_voters ??
-                null,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              turnout:
-                (scores?.political_scores as any)?.turnout?.average ?? null,
-              // Demographics
-              total_population: scores?.total_population ?? null,
-              median_income: scores?.median_household_income ?? null,
-              dem_affiliation_pct: scores?.dem_affiliation_pct ?? null,
-              rep_affiliation_pct: scores?.rep_affiliation_pct ?? null,
-              // Election year data for temporal mode
-              ...electionFields,
-            },
-          };
-        });
+        let matchedCount = 0;
+        let unmatchedCount = 0;
+        let enrichedFeatures: GeoJSON.Feature[];
+
+        if (isPA) {
+          // PA: precinct-level 1:1 join by UNIQUE_ID
+          enrichedFeatures = boundaries.features.map((feature) => {
+            const uniqueId = feature.properties?.UNIQUE_ID as string;
+            const scores = uniqueId ? targetingScores[uniqueId] : null;
+            if (scores) matchedCount++; else unmatchedCount++;
+
+            const p = feature.properties || {};
+            const dem = Number(p.G20PREDBID) || 0;
+            const rep = Number(p.G20PRERTRU) || 0;
+            const total = dem + rep;
+            const demPct = total > 0 ? (dem / total) * 100 : 50;
+            const margin = demPct - (100 - demPct);
+            const electionFields = buildElectionFields(uniqueId);
+            if (Object.keys(electionFields).length > 0 && electionFields.election_2020_margin === null && scores) {
+              electionFields.election_2020_margin = margin;
+              electionFields.election_2020_demPct = demPct;
+              electionFields.election_2020_repPct = 100 - demPct;
+            }
+
+            return {
+              ...feature,
+              properties: {
+                ...feature.properties,
+                precinct_id: uniqueId,
+                precinct_name: p.NAME || uniqueId,
+                targeting_strategy: scores?.targeting_strategy || "Unknown",
+                gotv_priority: scores?.gotv_priority ?? null,
+                persuasion_opportunity: scores?.persuasion_opportunity ?? null,
+                combined_score: scores?.combined_score ?? null,
+                gotv_classification: scores?.gotv_classification || "Unknown",
+                persuasion_classification: scores?.persuasion_classification || "Unknown",
+                recommendation: scores?.recommendation || "No data available",
+                partisan_lean: scores?.political_scores?.partisan_lean ?? null,
+                swing_potential: scores?.political_scores?.swing_potential ?? null,
+                registered_voters: (scores?.registered_voters ?? (Number(p.G20AUDDAHM) || 0) + (Number(p.G20AUDRDEF) || 0)) || null,
+                ...electionFields,
+              },
+            };
+          });
+        } else {
+          // MI: municipality-level aggregation
+          enrichedFeatures = boundaries.features.map((feature) => {
+            const jurisdictionName = feature.properties?.JURISDICTION_NAME || feature.properties?.PRECINCT_NAME || feature.properties?.NAME;
+            const jurisdictionType = feature.properties?.JURISDICTION_TYPE || "";
+            const matchingKeys = findMunicipalityScoreKeys(jurisdictionName, jurisdictionType, targetingScoreKeys);
+            const scoresList = matchingKeys.map((k) => targetingScores[k]).filter(Boolean);
+            const scores = aggregateMunicipalityScores(scoresList);
+            if (scores) matchedCount++; else unmatchedCount++;
+
+            const electionsByDate: Record<string, Record<string, any>> = {};
+            for (const key of matchingKeys) {
+              const electionPrecinctData = electionResults?.precincts?.[key];
+              if (electionPrecinctData?.elections) {
+                for (const [date, races] of Object.entries(electionPrecinctData.elections)) {
+                  if (!electionsByDate[date]) electionsByDate[date] = {};
+                  for (const [race, data] of Object.entries(races as Record<string, any>)) {
+                    if (!electionsByDate[date][race]) electionsByDate[date][race] = { ...data };
+                    else {
+                      const existing = electionsByDate[date][race];
+                      ["dem_pct", "rep_pct", "turnout"].forEach((f) => {
+                        if (typeof data[f] === "number" && typeof existing[f] === "number")
+                          existing[f] = (existing[f] + data[f]) / 2;
+                      });
+                      if (typeof data.total_votes === "number") existing.total_votes = (existing.total_votes || 0) + data.total_votes;
+                    }
+                  }
+                }
+              }
+            }
+
+            const electionFields: Record<string, number | null> = {};
+            for (const year of [2020, 2022, 2024]) {
+              const dateKey = Object.keys(electionDateToYear).find((d) => electionDateToYear[d] === year);
+              const electionData = dateKey ? electionsByDate[dateKey] : null;
+              const raceData = electionData ? (electionData["President"] || electionData["Governor"] || Object.values(electionData)[0]) : null;
+              if (raceData) {
+                const parsePercent = (val: string | number | null | undefined): number | null => {
+                  if (val === null || val === undefined) return null;
+                  if (typeof val === "number") return val;
+                  const parsed = parseFloat(String(val).replace("%", ""));
+                  return isNaN(parsed) ? null : parsed;
+                };
+                const parseMargin = (val: string | number | null | undefined): number | null => {
+                  if (val === null || val === undefined) return null;
+                  if (typeof val === "number") return val;
+                  const match = String(val).match(/([DR]?)[+]?([-\d.]+)/);
+                  if (!match) return null;
+                  const num = parseFloat(match[2]);
+                  return match[1] === "R" ? -num : num;
+                };
+                electionFields[`election_${year}_margin`] = parseMargin(raceData.margin);
+                electionFields[`election_${year}_turnout`] = parsePercent(raceData.turnout);
+                electionFields[`election_${year}_demPct`] = parsePercent(raceData.dem_pct);
+                electionFields[`election_${year}_repPct`] = parsePercent(raceData.rep_pct);
+                electionFields[`election_${year}_ballotsCast`] = raceData.total_votes ?? null;
+              } else {
+                electionFields[`election_${year}_margin`] = null;
+                electionFields[`election_${year}_turnout`] = null;
+                electionFields[`election_${year}_demPct`] = null;
+                electionFields[`election_${year}_repPct`] = null;
+                electionFields[`election_${year}_ballotsCast`] = null;
+              }
+            }
+
+            return {
+              ...feature,
+              properties: {
+                ...feature.properties,
+                precinct_name: jurisdictionName,
+                jurisdiction_name: jurisdictionName,
+                jurisdiction_type: jurisdictionType,
+                precinct_ids: (feature.properties?.PRECINCT_IDS || []).join(", "),
+                precinct_count: feature.properties?.PRECINCT_COUNT ?? matchingKeys.length,
+                targeting_strategy: scores?.targeting_strategy || "Unknown",
+                gotv_priority: scores?.gotv_priority ?? null,
+                persuasion_opportunity: scores?.persuasion_opportunity ?? null,
+                combined_score: scores?.combined_score ?? null,
+                gotv_classification: scores?.gotv_classification || "Unknown",
+                persuasion_classification: scores?.persuasion_classification || "Unknown",
+                recommendation: scores?.recommendation || "No data available",
+                partisan_lean: scores?.political_scores?.partisan_lean ?? null,
+                swing_potential: scores?.political_scores?.swing_potential ?? null,
+                registered_voters: feature.properties?.REGISTERED_VOTERS ?? scores?.registered_voters ?? null,
+                active_voters: feature.properties?.ACTIVE_VOTERS ?? scores?.active_voters ?? null,
+                turnout: (scores?.political_scores as any)?.turnout?.average ?? null,
+                total_population: scores?.total_population ?? null,
+                median_income: scores?.median_household_income ?? null,
+                dem_affiliation_pct: scores?.dem_affiliation_pct ?? null,
+                rep_affiliation_pct: scores?.rep_affiliation_pct ?? null,
+                ...electionFields,
+              },
+            };
+          });
+        }
 
         // Debug: Log join results
         console.log(
@@ -914,9 +847,9 @@ export function PrecinctChoroplethLayer({
         // Choose renderer based on temporal mode
         const renderer = temporalConfig?.enabled
           ? createTemporalRenderer(
-              temporalConfig.metric,
-              temporalConfig.electionYear,
-            )
+            temporalConfig.metric,
+            temporalConfig.electionYear,
+          )
           : createRenderer();
 
         const layer = new GeoJSONLayer({
@@ -1154,9 +1087,12 @@ export function PrecinctChoroplethLayer({
         // Wait for layer view
         const layerView = await view.whenLayerView(layer);
 
-        // Query the selected feature
+        // Query the selected feature (PA: precinct_id is UNIQUE_ID; MI: precinct_name)
         const query = layer.createQuery();
-        query.where = `precinct_name = '${effectiveSelectedName.replace(/'/g, "''")}'`;
+        const escaped = effectiveSelectedName.replace(/'/g, "''");
+        query.where = effectiveSelectedName.includes(":-")
+          ? `precinct_id = '${escaped}'`
+          : `precinct_name = '${escaped}'`;
         query.returnGeometry = true;
 
         const result = await layer.queryFeatures(query);

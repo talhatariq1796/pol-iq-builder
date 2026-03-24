@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
+import config from '@arcgis/core/config';
 import Map from '@arcgis/core/Map';
 import { getStateManager, type StateEvent } from '@/lib/ai-native/ApplicationStateManager';
 import MapView from '@arcgis/core/views/MapView';
@@ -81,12 +82,12 @@ function geojsonToArcGIS(geojson: GeoJSON.Geometry): __esri.Geometry | null {
 // County center is approximately: [-84.38, 42.60] (slightly east of Lansing)
 // Zoomed in tight for precinct visibility while covering the county
 // Width: 0.40 degree (0.20 each side), Height: 0.18 degree (0.09 each side)
-const INGHAM_EXTENT = {
-  xmin: -84.58,   // West (-84.38 - 0.20)
-  xmax: -84.18,   // East (-84.38 + 0.20)
-  ymin: 42.51,    // South (42.60 - 0.09)
-  ymax: 42.69,    // North (42.60 + 0.09)
-  spatialReference: { wkid: 4326 }
+const PENSYLVANIA_EXTENT = {
+  xmin: -80.52,
+  ymin: 39.72,
+  xmax: -74.69,
+  ymax: 42.27,
+  spatialReference: { wkid: 4326 },
 };
 
 // IQ Action types for sync with AI chat
@@ -239,6 +240,12 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
     try {
       setMapState((prev: MapState) => ({ ...prev, isLoading: true, error: null }));
 
+      // Set ArcGIS API key for basemaps (required for JS API 4.20+)
+      const apiKey = typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_ARCGIS_API_KEY : undefined;
+      if (apiKey && !config.apiKey) {
+        config.apiKey = apiKey;
+      }
+
       // Initialize data service
       await politicalDataService.initialize();
 
@@ -249,24 +256,28 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
 
         precinctBoundaries.features.forEach((feature: any) => {
           const props = feature.properties || {};
-          const precinctId = props.precinct_id || props.id || props.PRECINCT_ID;
+          const precinctId = props.UNIQUE_ID || props.precinct_id || props.id || props.PRECINCT_ID;
 
-          if (precinctId && feature.geometry && feature.geometry.type === 'Polygon') {
-            // Compute centroid from polygon coordinates
-            const ring = feature.geometry.coordinates[0];
-            if (ring && ring.length > 0) {
-              let sumLng = 0;
-              let sumLat = 0;
-              let count = 0;
+          if (!precinctId || !feature.geometry) return;
+          let ring: number[][];
+          if (feature.geometry.type === 'Polygon') {
+            ring = feature.geometry.coordinates[0];
+          } else if (feature.geometry.type === 'MultiPolygon') {
+            ring = feature.geometry.coordinates[0][0];
+          } else return;
 
-              for (const coord of ring) {
-                sumLng += coord[0];
-                sumLat += coord[1];
-                count++;
-              }
+          if (ring && ring.length > 0) {
+            let sumLng = 0;
+            let sumLat = 0;
+            let count = 0;
 
-              centroids[precinctId] = [sumLng / count, sumLat / count];
+            for (const coord of ring) {
+              sumLng += coord[0];
+              sumLat += coord[1];
+              count++;
             }
+
+            centroids[precinctId] = [sumLng / count, sumLat / count];
           }
         });
 
@@ -282,7 +293,7 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
       });
 
       // Create extent for Ingham County
-      const extent = new Extent(INGHAM_EXTENT);
+      const extent = new Extent(PENSYLVANIA_EXTENT);
 
       // Create view with padding to account for asymmetric UI panels
       // Layout: Nav (56px) + Left AI panel (320px) = 376px left, Right panel = 400px
@@ -626,6 +637,7 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
         const feature = precinctBoundaries.features.find(f => {
           const props = f.properties || {};
           return (
+            props.UNIQUE_ID === id ||
             props.precinct_id === id ||
             props.id === id ||
             props.name === id ||

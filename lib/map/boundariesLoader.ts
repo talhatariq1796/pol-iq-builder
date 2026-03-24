@@ -12,7 +12,7 @@
 import { politicalDataService } from "@/lib/services/PoliticalDataService";
 
 const DEFAULT_PRECINCT_GEOJSON =
-  "/data/political/ingham_municipalities.geojson";
+  "/data/political/pensylvania/pa_2020_presidential.geojson";
 
 /** Minimum number of features expected from a valid precinct boundary file */
 const MIN_EXPECTED_FEATURES = 10;
@@ -31,6 +31,7 @@ function isValidPrecinctGeoJSON(geojson: GeoJSON.FeatureCollection): boolean {
     "PRECINCT_NAME" in props ||
     "Precinct_Long_Name" in props ||
     "NAME" in props ||
+    "UNIQUE_ID" in props ||
     "precinct_name" in props ||
     "name" in props;
   return hasNameField;
