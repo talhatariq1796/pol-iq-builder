@@ -631,6 +631,9 @@ export function PrecinctChoroplethLayer({
             const total = dem + rep;
             const demPct = total > 0 ? (dem / total) * 100 : 50;
             const margin = demPct - (100 - demPct);
+            // When blob political_scores are missing, approximate lean from 2020 presidential margin (-100..+100).
+            const approxLean2020 =
+              total > 0 ? Math.round((demPct - 50) * 2 * 10) / 10 : null;
             const electionFields = buildElectionFields(uniqueId);
             if (Object.keys(electionFields).length > 0 && electionFields.election_2020_margin === null && scores) {
               electionFields.election_2020_margin = margin;
@@ -651,8 +654,13 @@ export function PrecinctChoroplethLayer({
                 gotv_classification: scores?.gotv_classification || "Unknown",
                 persuasion_classification: scores?.persuasion_classification || "Unknown",
                 recommendation: scores?.recommendation || "No data available",
-                partisan_lean: scores?.political_scores?.partisan_lean ?? null,
-                swing_potential: scores?.political_scores?.swing_potential ?? null,
+                partisan_lean:
+                  scores?.political_scores?.partisan_lean ?? approxLean2020,
+                swing_potential:
+                  scores?.political_scores?.swing_potential ??
+                  scores?.swing_potential ??
+                  null,
+                total_population: scores?.total_population ?? null,
                 registered_voters: (scores?.registered_voters ?? (Number(p.G20AUDDAHM) || 0) + (Number(p.G20AUDRDEF) || 0)) || null,
                 ...electionFields,
               },

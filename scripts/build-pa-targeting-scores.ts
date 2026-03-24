@@ -7,16 +7,25 @@
  *   - public/data/political/pensylvania/pa_2020_presidential.geojson
  *   - public/data/political/pensylvania/pa_2022_precinct.geojson
  *   - public/data/political/pensylvania/pa_2024_precincts_with_votes.geojson
+ *   - public/data/political/pensylvania/pa_total_population_2025.geojson (block groups, optional)
  *
  * Outputs:
  *   - public/data/political/pensylvania/precinct_targeting_scores.json
+ *
+ * Each precinct includes:
+ *   - political_scores.partisan_lean / swing_potential (for UnifiedPrecinct merge)
+ *   - swing_potential (0–100): volatility of D–R margin across 2020/22/24 when available
+ *   - total_population: block-group 2025 population where precinct centroid falls (approximate)
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as turf from '@turf/turf';
+import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson';
 
 const DATA_DIR = path.join(process.cwd(), 'public/data/political/pensylvania');
 const OUTPUT_FILE = path.join(DATA_DIR, 'precinct_targeting_scores.json');
+const POP_BG_FILE = path.join(DATA_DIR, 'pa_total_population_2025.geojson');
 
 interface ElectionRecord {
   key: string;
@@ -37,9 +46,9 @@ function normalizeKey(countyFp: string, vtdst: string): string {
   return `${String(countyFp).padStart(3, '0')}_${String(vtdst).padStart(6, '0')}`;
 }
 
-function loadPa2020(): Map<string, ElectionRecord> {
-  const file = path.join(DATA_DIR, 'pa_2020_presidential.geojson');
-  const gj = JSON.parse(fs.readFileSync(file, 'utf8')) as { features: Array<{ properties?: Record<string, unknown> }> };
+function loadPa2020FromGeoJSON(
+  gj: FeatureCollection,
+): Map<string, ElectionRecord> {
   const map = new Map<string, ElectionRecord>();
 
   for (const f of gj.features || []) {
@@ -77,6 +86,85 @@ function loadPa2020(): Map<string, ElectionRecord> {
     map.set(uniqueId, record);
   }
   return map;
+}
+
+function marginStdDev(values: number[]): number {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance =
+    values.reduce((s, x) => s + (x - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+/**
+ * Assign each precinct the TOTPOP_CY of the block group polygon that contains its centroid.
+ */
+function estimatePopulationByPrecinct(
+  precinctFeatures: Feature[],
+  popGeojsonPath: string,
+): Map<string, number> {
+  const result = new Map<string, number>();
+  if (!fs.existsSync(popGeojsonPath)) {
+    console.warn(
+      '[build-pa-targeting-scores] No block-group population file; total_population will be omitted.',
+    );
+    return result;
+  }
+
+  const popGj = JSON.parse(
+    fs.readFileSync(popGeojsonPath, 'utf8'),
+  ) as FeatureCollection;
+  const byCounty = new Map<string, Feature[]>();
+
+  for (const bg of popGj.features || []) {
+    const id = String((bg.properties as Record<string, unknown>)?.ID ?? '');
+    if (id.length < 5) continue;
+    const county = id.slice(2, 5);
+    if (!byCounty.has(county)) byCounty.set(county, []);
+    byCounty.get(county)!.push(bg);
+  }
+
+  let hit = 0;
+  let miss = 0;
+  for (const f of precinctFeatures) {
+    const p = (f.properties || {}) as Record<string, unknown>;
+    const uid = String(p.UNIQUE_ID || '');
+    const cfp = String(p.COUNTYFP || '').padStart(3, '0');
+    if (!uid) continue;
+    try {
+      const cent = turf.centroid(f as Feature);
+      const bgs = byCounty.get(cfp) || [];
+      let pop = 0;
+      for (const bg of bgs) {
+        const g = bg.geometry;
+        if (!g || (g.type !== 'Polygon' && g.type !== 'MultiPolygon')) continue;
+        if (
+          turf.booleanPointInPolygon(
+            cent,
+            { type: 'Feature', geometry: g, properties: {} } as Feature<
+              Polygon | MultiPolygon
+            >,
+          )
+        ) {
+          pop = Number((bg.properties as Record<string, unknown>)?.TOTPOP_CY) || 0;
+          break;
+        }
+      }
+      if (pop > 0) {
+        result.set(uid, Math.round(pop));
+        hit++;
+      } else {
+        miss++;
+      }
+    } catch {
+      miss++;
+    }
+  }
+
+  console.log(
+    `[build-pa-targeting-scores] Population (BG centroid join): ${hit} matched, ${miss} unmatched`,
+  );
+  return result;
 }
 
 function loadPa2022(): Map<string, { demVotes: number; repVotes: number }> {
@@ -185,6 +273,19 @@ function computeScores(record: ElectionRecord, data2022?: { demVotes: number; re
           ? 'Persuasion focus: Swing voters present'
           : 'Maintenance: Lower campaign priority';
 
+  // Swing 0–100: multi-election margin volatility; single-year fallback from competitiveness.
+  const volatility = marginStdDev(margins);
+  const partisan_lean = Math.round((record.demPct - 50) * 2 * 10) / 10;
+  let swing_potential: number;
+  if (margins.length >= 2 && volatility >= 0.25) {
+    swing_potential = Math.min(100, Math.round(volatility * 3.2 * 10) / 10);
+  } else {
+    swing_potential = Math.min(
+      100,
+      Math.round((100 - absMargin) * 0.62 * 10) / 10,
+    );
+  }
+
   return {
     gotv_priority: Math.round(gotvPriority * 10) / 10,
     gotv_components: {
@@ -206,12 +307,25 @@ function computeScores(record: ElectionRecord, data2022?: { demVotes: number; re
     targeting_priority: targetingPriority,
     combined_score: Math.round(combinedScore * 10) / 10,
     recommendation,
+    swing_potential,
+    political_scores: {
+      partisan_lean,
+      swing_potential,
+    },
   };
 }
 
 function main() {
   console.log('[build-pa-targeting-scores] Loading PA election data...');
-  const data2020 = loadPa2020();
+  const file2020 = path.join(DATA_DIR, 'pa_2020_presidential.geojson');
+  const gj2020 = JSON.parse(
+    fs.readFileSync(file2020, 'utf8'),
+  ) as FeatureCollection;
+  const data2020 = loadPa2020FromGeoJSON(gj2020);
+  const popByPrecinct = estimatePopulationByPrecinct(
+    gj2020.features || [],
+    POP_BG_FILE,
+  );
   const data2022 = loadPa2022();
   const data2024 = loadPa2024();
 
@@ -230,6 +344,7 @@ function main() {
     const d22 = data2022.get(compKey);
     const d24 = data2024.get(compKey);
     const scores = computeScores(record, d22, d24);
+    const pop = popByPrecinct.get(uniqueId);
 
     precincts[uniqueId] = {
       precinct_id: uniqueId,
@@ -237,6 +352,7 @@ function main() {
       short_name: record.name,
       jurisdiction: record.countyFp,
       registered_voters: record.registeredVoters,
+      ...(pop && pop > 0 ? { total_population: pop } : {}),
       ...scores,
     };
 
@@ -257,9 +373,22 @@ function main() {
   const output = {
     metadata: {
       generated: new Date().toISOString(),
-      source: 'pa_2020_presidential, pa_2022_precinct, pa_2024_precincts_with_votes',
+      source:
+        'pa_2020_presidential, pa_2022_precinct, pa_2024_precincts_with_votes, pa_total_population_2025 (BG centroid)',
       precinct_count: Object.keys(precincts).length,
-      scores_calculated: ['gotv_priority', 'persuasion_opportunity', 'combined_score', 'targeting_strategy'],
+      scores_calculated: [
+        'gotv_priority',
+        'persuasion_opportunity',
+        'combined_score',
+        'targeting_strategy',
+        'swing_potential',
+        'political_scores',
+        'total_population',
+      ],
+      population_note:
+        'total_population is TOTPOP_CY of the block group containing the precinct centroid (approximate).',
+      swing_note:
+        'swing_potential uses standard deviation of D-R margin across 2020/22/24 when multiple years exist; otherwise a competitiveness-based estimate.',
     },
     summary: {
       strategy_distribution: strategyCounts,

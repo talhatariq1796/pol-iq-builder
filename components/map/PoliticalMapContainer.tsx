@@ -1950,10 +1950,14 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
   // Handle precinct selection for AI mode
   const handlePrecinctClickForAI = useCallback(
     (precinctName: string, data: any) => {
+      const isPA =
+        data?.STATEFP === '42' ||
+        data?.STATEFP === 42 ||
+        (typeof data?.UNIQUE_ID === 'string' && data.UNIQUE_ID.includes('-:-'));
       const precinctInfo = {
-        precinctId: data?.id || precinctName,
-        precinctName: precinctName,
-        county: data?.county || 'Ingham',
+        precinctId: data?.precinct_id || data?.UNIQUE_ID || data?.id || precinctName,
+        precinctName: data?.precinct_name || data?.NAME || precinctName,
+        county: isPA ? 'Pennsylvania' : data?.county || 'Ingham',
         attributes: data,
       };
 

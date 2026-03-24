@@ -16,6 +16,10 @@ import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 
 import { BOUNDARY_LAYERS } from './BoundaryLayerPicker';
 import type { BoundaryLayerType } from '@/types/political';
+import {
+  boundaryLayerUsesMergedBlobUrl,
+  loadBoundaryFeatureCollection,
+} from '@/lib/map/geojsonMergeLoader';
 
 interface BoundaryMapLayerProps {
   view: __esri.MapView;
@@ -42,6 +46,7 @@ export function BoundaryMapLayer({
   const highlightRef = useRef<__esri.Handle | null>(null);
   const clickHandlerRef = useRef<IHandle | null>(null);
   const hoverHandlerRef = useRef<IHandle | null>(null);
+  const mergedBlobUrlRef = useRef<string | null>(null);
   const [isLayerReady, setIsLayerReady] = useState(false);
 
   // Create renderer for the boundary layer
@@ -129,93 +134,125 @@ export function BoundaryMapLayer({
     [layerType, showPoliticalScores]
   );
 
-  // Load and add layer when type changes
+  // Load and add layer when type changes (single URL or merged multi-part / manifest → blob URL)
   useEffect(() => {
-    if (!view || !layerType) {
-      // Remove existing layer
-      if (layerRef.current) {
-        view?.map?.remove(layerRef.current);
+    const disposeHandlers = () => {
+      clickHandlerRef.current?.remove();
+      clickHandlerRef.current = null;
+      hoverHandlerRef.current?.remove();
+      hoverHandlerRef.current = null;
+    };
+
+    const removeLayerAndBlob = () => {
+      disposeHandlers();
+      if (layerRef.current && view?.map) {
+        view.map.remove(layerRef.current);
         layerRef.current = null;
       }
+      if (mergedBlobUrlRef.current) {
+        URL.revokeObjectURL(mergedBlobUrlRef.current);
+        mergedBlobUrlRef.current = null;
+      }
       setIsLayerReady(false);
+    };
+
+    if (!view || !layerType) {
+      removeLayerAndBlob();
       return;
     }
 
     const config = BOUNDARY_LAYERS[layerType];
+    removeLayerAndBlob();
 
-    // Remove existing layer
-    if (layerRef.current) {
-      view.map.remove(layerRef.current);
-      setIsLayerReady(false);
-    }
+    let cancelled = false;
 
-    // Create new GeoJSON layer
-    const layer = new GeoJSONLayer({
-      url: config.dataPath,
-      title: config.pluralName,
-      visible,
-      outFields: ['*'],
-      renderer: createRenderer(config),
-      popupEnabled: false, // We handle clicks ourselves
-    });
-
-    // Add to map
-    view.map.add(layer);
-    layerRef.current = layer;
-
-    // Wait for layer to load before marking as ready
-    layer.load().then(() => {
-      console.log('[BoundaryMapLayer] Layer loaded:', layerType);
-      setIsLayerReady(true);
-    }).catch((err) => {
-      console.warn('[BoundaryMapLayer] Error loading layer:', err);
-    });
-
-    // Set up click handler
-    if (onFeatureClick) {
-      clickHandlerRef.current?.remove();
-      clickHandlerRef.current = view.on('click', async (event) => {
-        const response = await view.hitTest(event);
-        const hit = response.results.find(
-          (result) => 'graphic' in result && result.graphic.layer === layer
-        ) as { graphic: __esri.Graphic } | undefined;
-
-        if (hit) {
-          const id = hit.graphic.getAttribute(config.idField);
-          if (id) {
-            onFeatureClick(String(id));
-          }
-        }
-      });
-    }
-
-    // Set up hover handler
-    if (onFeatureHover) {
-      hoverHandlerRef.current?.remove();
-      hoverHandlerRef.current = view.on('pointer-move', async (event) => {
-        const response = await view.hitTest(event);
-        const hit = response.results.find(
-          (result) => 'graphic' in result && result.graphic.layer === layer
-        ) as { graphic: __esri.Graphic } | undefined;
-
-        if (hit) {
-          const id = hit.graphic.getAttribute(config.idField);
-          onFeatureHover(id ? String(id) : null);
+    (async () => {
+      let layerUrl: string;
+      try {
+        if (boundaryLayerUsesMergedBlobUrl(config)) {
+          const fc = await loadBoundaryFeatureCollection(config);
+          if (cancelled) return;
+          const blob = new Blob([JSON.stringify(fc)], {
+            type: 'application/geo+json',
+          });
+          mergedBlobUrlRef.current = URL.createObjectURL(blob);
+          layerUrl = mergedBlobUrlRef.current;
         } else {
-          onFeatureHover(null);
+          layerUrl = config.dataPath;
         }
-      });
-    }
-
-    // Cleanup
-    return () => {
-      clickHandlerRef.current?.remove();
-      hoverHandlerRef.current?.remove();
-      if (layerRef.current) {
-        view.map?.remove(layerRef.current);
-        layerRef.current = null;
+      } catch (err) {
+        console.warn('[BoundaryMapLayer] Failed to resolve GeoJSON URL:', err);
+        return;
       }
-      setIsLayerReady(false);
+
+      if (cancelled) {
+        if (mergedBlobUrlRef.current) {
+          URL.revokeObjectURL(mergedBlobUrlRef.current);
+          mergedBlobUrlRef.current = null;
+        }
+        return;
+      }
+
+      const layer = new GeoJSONLayer({
+        url: layerUrl,
+        title: config.pluralName,
+        visible,
+        outFields: ['*'],
+        renderer: createRenderer(config),
+        popupEnabled: false,
+      });
+
+      view.map.add(layer);
+      layerRef.current = layer;
+
+      try {
+        await layer.load();
+        if (cancelled) return;
+        console.log('[BoundaryMapLayer] Layer loaded:', layerType);
+        setIsLayerReady(true);
+      } catch (err) {
+        console.warn('[BoundaryMapLayer] Error loading layer:', err);
+        return;
+      }
+
+      if (cancelled) return;
+
+      if (onFeatureClick) {
+        clickHandlerRef.current = view.on('click', async (event) => {
+          const response = await view.hitTest(event);
+          const hit = response.results.find(
+            (result) => 'graphic' in result && result.graphic.layer === layer
+          ) as { graphic: __esri.Graphic } | undefined;
+
+          if (hit) {
+            const id = hit.graphic.getAttribute(config.idField);
+            if (id) {
+              onFeatureClick(String(id));
+            }
+          }
+        });
+      }
+
+      if (onFeatureHover) {
+        hoverHandlerRef.current = view.on('pointer-move', async (event) => {
+          const response = await view.hitTest(event);
+          const hit = response.results.find(
+            (result) => 'graphic' in result && result.graphic.layer === layer
+          ) as { graphic: __esri.Graphic } | undefined;
+
+          if (hit) {
+            const id = hit.graphic.getAttribute(config.idField);
+            onFeatureHover(id ? String(id) : null);
+          } else {
+            onFeatureHover(null);
+          }
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      removeLayerAndBlob();
     };
   }, [view, layerType, visible, createRenderer, onFeatureClick, onFeatureHover]);
 

@@ -128,6 +128,8 @@ interface TargetingScoresPrecinct {
   targeting_priority: number;
   combined_score: number;
   recommendation: string;
+  /** PA build: electoral volatility 0–100 (multi-year margin stdev or competitiveness fallback). */
+  swing_potential?: number;
   political_scores?: {
     partisan_lean: number;
     swing_potential: number;

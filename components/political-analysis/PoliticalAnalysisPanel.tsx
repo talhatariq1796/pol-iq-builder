@@ -44,8 +44,14 @@ import {
 } from 'lucide-react';
 
 import { PoliticalAreaSelector } from './PoliticalAreaSelector';
+import { BOUNDARY_LAYERS } from './BoundaryLayerPicker';
 import { QuickStartIQDialog } from './QuickStartIQDialog';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import {
+  formatPaPrecinctLocation,
+  isPaPrecinctAttributes,
+} from '@/lib/political/paCountyFips';
+import { loadBoundaryFeatureCollection } from '@/lib/map/geojsonMergeLoader';
 import { Report } from '@/services/ReportsService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -267,41 +273,104 @@ export function PoliticalAnalysisPanel({
     7: 'AI Analysis - Insights, recommendations',
   };
 
-  // Load precinct details when selection changes
-  // Uses attributes passed from click handler (already enriched by PrecinctChoroplethLayer)
+  // Load precinct details when selection changes (map attributes + unified service for gaps)
   useEffect(() => {
     if (!selectedPrecinct) {
       setPrecinctDetails(null);
       return;
     }
 
-    // The attributes from the map click contain the enriched data
-    // (joined by PrecinctChoroplethLayer from blob storage)
     const attrs = selectedPrecinct.attributes || {};
+    const pa = isPaPrecinctAttributes(attrs);
+    const unifiedKey =
+      (attrs.precinct_id as string | undefined) ||
+      (attrs.UNIQUE_ID as string | undefined) ||
+      selectedPrecinct.precinctId;
 
-    console.log('[PoliticalAnalysisPanel] Loading details for:', selectedPrecinct.precinctName);
-    console.log('[PoliticalAnalysisPanel] Using enriched attributes from click:', attrs);
+    let cancelled = false;
 
-    setPrecinctDetails({
-      name: selectedPrecinct.precinctName,
-      county: selectedPrecinct.county,
-      // Political scores from enriched attributes
-      partisanLean: attrs.partisan_lean ?? 0,
-      swingPotential: attrs.swing_potential ?? 0,
-      // Targeting scores from enriched attributes
-      registeredVoters: attrs.Registered_Voters || attrs.registered_voters || 0,
-      gotvPriority: attrs.gotv_priority ?? 0,
-      persuasionOpportunity: attrs.persuasion_opportunity ?? 0,
-      targetingStrategy: attrs.targeting_strategy || 'Unknown',
-      // Demographics from enriched attributes
-      population: attrs.total_population || 0,
-      // Additional fields available
-      combinedScore: attrs.combined_score ?? 0,
-      gotvClassification: attrs.gotv_classification || 'Unknown',
-      persuasionClassification: attrs.persuasion_classification || 'Unknown',
-      recommendation: attrs.recommendation || 'No data available',
-      medianIncome: attrs.median_income ?? 0,
-    });
+    (async () => {
+      let unified: Awaited<
+        ReturnType<typeof politicalDataService.getUnifiedPrecinct>
+      > = null;
+      if (unifiedKey) {
+        try {
+          unified = await politicalDataService.getUnifiedPrecinct(String(unifiedKey));
+        } catch {
+          // ignore
+        }
+      }
+      if (cancelled) return;
+
+      const leanAttr = attrs.partisan_lean;
+      const swingAttr = attrs.swing_potential;
+      const leanNum =
+        leanAttr != null && leanAttr !== ''
+          ? Number(leanAttr)
+          : unified?.electoral?.partisanLean;
+      const swingNum =
+        swingAttr != null && swingAttr !== ''
+          ? Number(swingAttr)
+          : unified?.electoral?.swingPotential;
+
+      const registeredVoters = Number(
+        attrs.Registered_Voters ??
+          attrs.registered_voters ??
+          unified?.demographics?.registeredVoters ??
+          0,
+      );
+      const population = Number(
+        attrs.total_population ?? unified?.demographics?.totalPopulation ?? 0,
+      );
+
+      console.log('[PoliticalAnalysisPanel] Precinct card:', {
+        displayName: selectedPrecinct.precinctName,
+        unifiedKey,
+        pa,
+        leanNum,
+        swingNum,
+      });
+
+      setPrecinctDetails({
+        name:
+          (attrs.precinct_name as string) ||
+          (attrs.NAME as string) ||
+          selectedPrecinct.precinctName,
+        locationLine: pa
+          ? formatPaPrecinctLocation(attrs)
+          : `${selectedPrecinct.county || 'Ingham'} County, Michigan`,
+        partisanLean:
+          leanNum != null && !Number.isNaN(leanNum) ? leanNum : null,
+        swingPotential:
+          swingNum != null && !Number.isNaN(swingNum) ? swingNum : null,
+        registeredVoters,
+        gotvPriority: Number(
+          attrs.gotv_priority ?? unified?.targeting?.gotvPriority ?? 0,
+        ),
+        persuasionOpportunity: Number(
+          attrs.persuasion_opportunity ??
+            unified?.targeting?.persuasionOpportunity ??
+            0,
+        ),
+        targetingStrategy:
+          (attrs.targeting_strategy as string) ||
+          unified?.targeting?.strategy ||
+          'Unknown',
+        population,
+        combinedScore: Number(attrs.combined_score ?? 0),
+        gotvClassification:
+          (attrs.gotv_classification as string) || 'Unknown',
+        persuasionClassification:
+          (attrs.persuasion_classification as string) || 'Unknown',
+        recommendation:
+          (attrs.recommendation as string) || 'No data available',
+        medianIncome: Number(attrs.median_income ?? 0),
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedPrecinct]);
 
   // Load county-wide targeting summary on mount
@@ -694,7 +763,9 @@ export function PoliticalAnalysisPanel({
     // For boundary-select and click-select methods, use selected boundaries directly
     if ((selection.method === 'boundary-select' || selection.method === 'click-select') && selection.metadata.boundaryNames) {
       const includedPrecincts = selection.metadata.boundaryNames.map((name) => {
-        const scores = Array.from(allPrecinctScores.values()).find(s => s.precinctName === name);
+        const scores =
+          allPrecinctScores.get(name) ??
+          Array.from(allPrecinctScores.values()).find((s) => s.precinctName === name);
         const targeting = allTargetingScores[name] as any || {};
 
         return {
@@ -724,8 +795,8 @@ export function PoliticalAnalysisPanel({
     }
 
     // For other methods (draw, click-buffer, search)
-    // Load precinct boundaries to determine spatial overlap
-    const boundaries = await politicalDataService.loadPrecinctBoundaries();
+    // Pennsylvania precinct boundaries (same source as Select tab)
+    const boundaries = await loadBoundaryFeatureCollection(BOUNDARY_LAYERS.precinct);
 
     // Find precincts that intersect the selection geometry
     const intersectingPrecincts: Array<{
@@ -736,13 +807,23 @@ export function PoliticalAnalysisPanel({
     }> = [];
 
     for (const feature of boundaries.features) {
-      const precinctName = feature.properties?.Precinct_Long_Name || feature.properties?.NAME || '';
-      if (!precinctName) continue;
+      const props = feature.properties as Record<string, unknown> | undefined;
+      const precinctKey =
+        props?.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ''
+          ? String(props.UNIQUE_ID)
+          : props?.precinct_id != null && String(props.precinct_id) !== ''
+            ? String(props.precinct_id)
+            : props?.NAME != null && String(props.NAME) !== ''
+              ? String(props.NAME)
+              : '';
+      if (!precinctKey) continue;
 
       // Simple containment check - if precinct centroid is inside selection
       // For production, would use proper geometry intersection
-      const scores = Array.from(allPrecinctScores.values()).find(s => s.precinctName === precinctName);
-      const targeting = allTargetingScores[precinctName] as any || {};
+      const scores =
+        allPrecinctScores.get(precinctKey) ??
+        Array.from(allPrecinctScores.values()).find((s) => s.precinctName === precinctKey);
+      const targeting = allTargetingScores[precinctKey] as any || {};
 
       // Estimate overlap ratio based on selection method
       let overlapRatio = 0;
@@ -759,7 +840,7 @@ export function PoliticalAnalysisPanel({
 
       if (overlapRatio > 0) {
         intersectingPrecincts.push({
-          name: precinctName,
+          name: precinctKey,
           overlapRatio,
           registeredVoters: targeting.registered_voters || targeting.active_voters || 0,
           partisanLean: scores?.partisanLean?.value ?? 0,
@@ -1194,7 +1275,7 @@ export function PoliticalAnalysisPanel({
                         <h3 className="font-semibold text-xs text-gray-900">Selected Precinct</h3>
                       </div>
                       <p className="text-xs font-medium text-gray-900">{precinctDetails.name}</p>
-                      <p className="text-xs text-gray-700">{precinctDetails.county} County</p>
+                      <p className="text-xs text-gray-700">{precinctDetails.locationLine}</p>
                     </div>
                     {onClearSelection && (
                       <Button
@@ -1215,16 +1296,26 @@ export function PoliticalAnalysisPanel({
                       </span>
                       <Badge
                         variant="outline"
-                        className={getLeanColor(precinctDetails.partisanLean)}
+                        className={
+                          precinctDetails.partisanLean != null
+                            ? getLeanColor(precinctDetails.partisanLean)
+                            : 'bg-gray-100 text-gray-600'
+                        }
                       >
-                        {formatLean(precinctDetails.partisanLean)}
+                        {precinctDetails.partisanLean != null
+                          ? formatLean(precinctDetails.partisanLean)
+                          : 'N/A'}
                       </Badge>
                     </div>
                     <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
                       <span className="text-[#33a852] font-medium block mb-1">
                         <MetricLabel metric="swing_potential">Swing Potential</MetricLabel>
                       </span>
-                      <span className="font-bold text-gray-900">{precinctDetails.swingPotential.toFixed(0)}/100</span>
+                      <span className="font-bold text-gray-900">
+                        {precinctDetails.swingPotential != null
+                          ? `${precinctDetails.swingPotential.toFixed(0)}/100`
+                          : 'N/A'}
+                      </span>
                     </div>
                     <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
                       <span className="text-[#33a852] font-medium block mb-1">Voters</span>
@@ -1232,7 +1323,11 @@ export function PoliticalAnalysisPanel({
                     </div>
                     <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 shadow-sm">
                       <span className="text-[#33a852] font-medium block mb-1">Population</span>
-                      <span className="font-bold text-gray-900">{precinctDetails.population.toLocaleString()}</span>
+                      <span className="font-bold text-gray-900">
+                        {precinctDetails.population > 0
+                          ? precinctDetails.population.toLocaleString()
+                          : 'N/A'}
+                      </span>
                     </div>
                   </div>
 

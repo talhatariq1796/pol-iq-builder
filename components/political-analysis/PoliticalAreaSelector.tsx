@@ -46,7 +46,7 @@ import { LocationSearch, LocationResult } from '@/components/common/location-sea
 import { useDrawing } from '@/hooks/useDrawing';
 import type { BoundaryLayerType, PoliticalAreaSelection } from '@/types/political';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
-import { loadGeoJSONMerged } from '@/lib/map/geojsonMergeLoader';
+import { loadBoundaryFeatureCollection } from '@/lib/map/geojsonMergeLoader';
 
 // ArcGIS imports for buffer creation
 import Circle from '@arcgis/core/geometry/Circle';
@@ -151,7 +151,7 @@ export function PoliticalAreaSelector({
   // Draw state
   const [drawnGeometry, setDrawnGeometry] = useState<__esri.Geometry | null>(null);
 
-  // Click-select state (direct map click to select precincts)
+  // Click-select: selected Pennsylvania precinct UNIQUE_IDs (matches unified / targeting keys).
   const [selectedPrecinctNames, setSelectedPrecinctNames] = useState<string[]>([]);
   const [selectedPrecinctFeatures, setSelectedPrecinctFeatures] = useState<BoundaryFeature[]>([]);
   const [clickSelectEventHandle, setClickSelectEventHandle] = useState<__esri.WatchHandle | null>(null);
@@ -267,34 +267,39 @@ export function PoliticalAreaSelector({
     // Merges unified precinct data (scores) with GeoJSON boundaries (geometry)
     const loadPrecincts = async () => {
       try {
-        // Load both unified data and boundaries in parallel
+        // Use PA boundary config (same as Boundaries tab) so geometry always has UNIQUE_ID.
+        // politicalDataService.loadPrecinctBoundaries() may still resolve legacy blob URLs.
         const [unifiedPrecincts, boundaries] = await Promise.all([
           politicalDataService.getUnifiedPrecinctData(),
-          politicalDataService.loadPrecinctBoundaries(),
+          loadBoundaryFeatureCollection(BOUNDARY_LAYERS.precinct),
         ]);
 
-        // Create a map of name -> geometry from boundaries
-        // PA: UNIQUE_ID; MI: Precinct_Long_Name, name, precinct_name
-        const geometryMap = new Map<string, GeoJSON.Geometry>();
-        const featuresList: Array<{ name: string; geometry: GeoJSON.Geometry }> = [];
-        for (const feature of boundaries.features ?? []) {
-          const name = feature.properties?.UNIQUE_ID ||
-            feature.properties?.Precinct_Long_Name ||
-            feature.properties?.name ||
-            feature.properties?.precinct_name ||
-            feature.properties?.NAME;
-          if (name && feature.geometry) {
-            geometryMap.set(name, feature.geometry);
-            featuresList.push({ name, geometry: feature.geometry });
+        const unifiedByKey = new Map<
+          string,
+          (typeof unifiedPrecincts)[string]
+        >();
+        for (const [key, p] of Object.entries(unifiedPrecincts)) {
+          unifiedByKey.set(key, p);
+          const pid = p.id != null ? String(p.id) : '';
+          if (pid !== '' && pid !== key) {
+            unifiedByKey.set(pid, p);
           }
         }
 
-        // Merge: use geometry as source of truth to ensure we get all precincts with boundaries
-        // (unified may include MI political scores that don't match PA UNIQUE_ID)
+        // Pennsylvania precinct boundaries: key geometry by UNIQUE_ID (matches targeting / unified data).
+        const featuresList: Array<{ name: string; geometry: GeoJSON.Geometry }> = [];
+        for (const feature of boundaries.features ?? []) {
+          const id = feature.properties?.UNIQUE_ID;
+          if (id != null && id !== '' && feature.geometry) {
+            const key = String(id);
+            featuresList.push({ name: key, geometry: feature.geometry });
+          }
+        }
+
         const features: BoundaryFeature[] = featuresList
-          .filter(({ name }) => unifiedPrecincts[name]) // Only if we have unified data
           .map(({ name, geometry }) => {
-            const precinct = unifiedPrecincts[name]!;
+            const precinct = unifiedByKey.get(name);
+            if (!precinct) return null;
             return {
               id: precinct.id,
               name: name,
@@ -309,10 +314,13 @@ export function PoliticalAreaSelector({
               partisanLean: precinct.electoral.partisanLean,
               swingPotential: precinct.electoral.swingPotential,
             };
-          });
+          })
+          .filter((f): f is BoundaryFeature => f != null);
 
         setBoundaryFeatures(features);
-        console.log(`[PoliticalAreaSelector] Loaded ${features.length} precincts with geometry from PoliticalDataService (${Object.keys(unifiedPrecincts).length} data, ${boundaries.features.length} boundaries)`);
+        console.log(
+          `[PoliticalAreaSelector] Loaded ${features.length} precincts with geometry (PA ${BOUNDARY_LAYERS.precinct.dataPath}; ${Object.keys(unifiedPrecincts).length} unified, ${boundaries.features?.length ?? 0} boundary features)`,
+        );
       } catch (e) {
         console.warn('[PoliticalAreaSelector] Could not load precincts for click-select:', e);
       }
@@ -335,25 +343,29 @@ export function PoliticalAreaSelector({
           // Find a precinct feature in the results
           const precinctResult = hitResponse.results.find((result: any) => {
             const attrs = result.graphic?.attributes;
-            return attrs?.UNIQUE_ID || attrs?.Precinct_Long_Name || attrs?.name || attrs?.precinct_name;
+            return attrs?.UNIQUE_ID || attrs?.precinct_name || attrs?.NAME;
           });
 
           if (precinctResult) {
             const attrs = (precinctResult as any).graphic?.attributes;
-            const precinctName = attrs?.Precinct_Long_Name || attrs?.name || attrs?.precinct_name;
+            const precinctId =
+              attrs?.UNIQUE_ID != null && attrs.UNIQUE_ID !== ''
+                ? String(attrs.UNIQUE_ID)
+                : attrs?.precinct_name != null && attrs.precinct_name !== ''
+                  ? String(attrs.precinct_name)
+                  : attrs?.NAME != null && attrs.NAME !== ''
+                    ? String(attrs.NAME)
+                    : null;
 
-            if (precinctName) {
+            if (precinctId) {
               setSelectedPrecinctNames((prev: string[]) => {
-                if (prev.includes(precinctName)) {
-                  // Deselect if already selected
-                  return prev.filter(n => n !== precinctName);
-                } else {
-                  // Add to selection
-                  return [...prev, precinctName];
+                if (prev.includes(precinctId)) {
+                  return prev.filter(n => n !== precinctId);
                 }
+                return [...prev, precinctId];
               });
 
-              console.log('[PoliticalAreaSelector] Click-select toggled:', precinctName);
+              console.log('[PoliticalAreaSelector] Click-select toggled:', precinctId);
             }
           }
         }
@@ -386,9 +398,13 @@ export function PoliticalAreaSelector({
       const config = BOUNDARY_LAYERS[type];
       let geojson: GeoJSON.FeatureCollection;
       try {
-        geojson = await loadGeoJSONMerged(config.dataPath);
+        geojson = await loadBoundaryFeatureCollection(config);
       } catch {
-        console.info(`${config.pluralName} data not yet available: ${config.dataPath}`);
+        const hint =
+          config.dataPaths?.length && config.dataPaths.length > 0
+            ? config.dataPaths.join(', ')
+            : config.dataPath;
+        console.info(`${config.pluralName} data not yet available: ${hint}`);
         setError(`${config.pluralName} data not yet available for this area`);
         setBoundaryFeatures([]);
         setIsLoadingBoundaries(false);
@@ -397,6 +413,7 @@ export function PoliticalAreaSelector({
 
       // Load political scores for precincts using PoliticalDataService (single source of truth)
       let scores: Record<string, any> = {};
+      let scoreByPrecinctId = new Map<string, (typeof scores)[string]>();
       if (type === 'precinct') {
         try {
           const unifiedPrecincts = await politicalDataService.getUnifiedPrecinctData();
@@ -419,6 +436,13 @@ export function PoliticalAreaSelector({
               },
             ])
           );
+          scoreByPrecinctId = new Map(Object.entries(scores));
+          for (const [k, row] of Object.entries(scores)) {
+            const u = unifiedPrecincts[k];
+            if (u?.id && String(u.id) !== k) {
+              scoreByPrecinctId.set(String(u.id), row);
+            }
+          }
           console.log(`[PoliticalAreaSelector] Loaded scores for ${Object.keys(scores).length} precincts`);
         } catch (e) {
           console.warn('Could not load political scores:', e);
@@ -431,7 +455,10 @@ export function PoliticalAreaSelector({
         const name = String(f.properties[config.nameField] || id);
 
         // Get scores for this feature (precincts only)
-        const featureScores = scores[id] || {};
+        const featureScores =
+          type === 'precinct'
+            ? scoreByPrecinctId.get(id) || {}
+            : {};
 
         // Extract political metrics from precinct data structure
         const partisanLean = featureScores.electoral?.partisanLean;
@@ -793,26 +820,10 @@ export function PoliticalAreaSelector({
   const createClickSelectSelection = useCallback((): PoliticalAreaSelection | null => {
     if (selectedPrecinctNames.length === 0) return null;
 
-    // Get features for selected precincts - use flexible matching
-    const normalizePrecinctName = (name: string) =>
-      name.toLowerCase().replace(/\s+/g, ' ').trim();
-
-    const normalizedSelectedNames = selectedPrecinctNames.map(normalizePrecinctName);
-
-    const selectedFeatures = boundaryFeatures.filter((f) => {
-      const normalizedId = normalizePrecinctName(f.id);
-      const normalizedName = normalizePrecinctName(f.name);
-      const normalizedDisplayName = f.displayName ? normalizePrecinctName(f.displayName) : '';
-
-      return normalizedSelectedNames.some(selectedName =>
-        selectedName === normalizedId ||
-        selectedName === normalizedName ||
-        selectedName === normalizedDisplayName ||
-        // Also check if one contains the other (partial match for abbreviated names)
-        normalizedId.includes(selectedName) || selectedName.includes(normalizedId) ||
-        normalizedName.includes(selectedName) || selectedName.includes(normalizedName)
-      );
-    });
+    const selectedSet = new Set(selectedPrecinctNames);
+    const selectedFeatures = boundaryFeatures.filter(
+      (f) => selectedSet.has(f.name) || selectedSet.has(f.id),
+    );
 
     if (selectedFeatures.length === 0) {
       console.warn('[PoliticalAreaSelector] No features found for selected precincts:', selectedPrecinctNames);

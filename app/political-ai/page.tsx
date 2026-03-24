@@ -202,7 +202,7 @@ function PoliticalAIContent() {
             setSelectedPrecinct({
               precinctId: precinctData.id,
               precinctName: precinctData.name,
-              county: 'Ingham',
+              county: 'Pennsylvania',
               attributes: {
                 registered_voters: precinctData.demographics?.registeredVoters,
                 swing_potential: precinctData.electoral?.swingPotential,
@@ -228,7 +228,7 @@ function PoliticalAIContent() {
             setSelectedPrecinct({
               precinctId,
               precinctName: precinctId,
-              county: 'Ingham',
+              county: 'Pennsylvania',
             });
           }
         } catch (error) {
@@ -236,7 +236,7 @@ function PoliticalAIContent() {
           setSelectedPrecinct({
             precinctId,
             precinctName: precinctId,
-            county: 'Ingham',
+            county: 'Pennsylvania',
           });
         }
       },

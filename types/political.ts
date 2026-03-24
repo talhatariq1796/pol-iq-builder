@@ -2,7 +2,7 @@
  * Political Analysis Domain Types
  *
  * TypeScript definitions for the Political Landscape Analysis Platform
- * Supporting precinct-level analysis for Ingham County, Michigan
+ * Supporting precinct-level and boundary-based analysis for Pennsylvania.
  */
 
 // ============================================================================
@@ -429,15 +429,16 @@ export type BoundaryLayerType =
   | 'municipality'
   | 'township'
   | 'school-district';
-  // Note: 'county-commission' removed - no GIS data available from Ingham County
+
+// Note: 'county-commission' is not in BoundaryLayerType; add when PA county commission GeoJSON exists.
 
 /**
  * Reference layers that provide context but are not used in analysis
  */
 export type ReferencLayerType =
-  | 'university-campus'  // MSU campus boundary - helps interpret student population areas
-  | 'military-base'      // Future: similar transient population considerations
-  | 'major-employer';    // Future: large employers that may affect commute patterns
+  | 'university-campus'  // Reference campus boundary for student-population context
+  | 'military-base'      // Future: transient population considerations
+  | 'major-employer';    // Future: large employers / commute patterns
 
 export interface BoundaryLayerConfig {
   type: BoundaryLayerType;
@@ -446,9 +447,15 @@ export interface BoundaryLayerConfig {
   source: string;
   idField: string;
   nameField: string;
+  /** Primary URL: single GeoJSON FeatureCollection, or a merge manifest (see geojsonMergeLoader). */
   dataPath: string;
+  /**
+   * When set, each URL is fetched (supports manifests) and features are concatenated in order.
+   * Use for explicit multi-part layers; otherwise use dataPath only.
+   */
+  dataPaths?: string[];
   color: string;
-  hasData?: boolean; // Whether GeoJSON data file exists
+  hasData?: boolean;
 }
 
 export interface ReferenceLayerConfig {

@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import {
-  MapPin,
   Mail,
   Grid3X3,
   Building2,
@@ -24,141 +23,13 @@ import {
   GraduationCap,
   Trees,
 } from 'lucide-react';
-import type { BoundaryLayerType, BoundaryLayerConfig } from '@/types/political';
+import type { BoundaryLayerType } from '@/types/political';
+import {
+  BOUNDARY_LAYERS,
+  AVAILABLE_BOUNDARY_TYPES,
+} from '@/lib/political/paBoundaryLayers';
 
-// Boundary layer configurations
-// NOTE: hasData indicates whether the GeoJSON file exists and can be loaded
-// Data paths point to actual GeoJSON files in /public/data/political/
-export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
-  'precinct': {
-    type: 'precinct',
-    displayName: 'Precinct',
-    pluralName: 'Precincts',
-    source: 'County Clerk',
-    idField: 'PRECINCT_ID',
-    nameField: 'PRECINCT_NAME',
-    dataPath: '/data/political/ingham_precincts.geojson',
-    color: '#6366f1', // Indigo
-    hasData: true,
-  },
-  'zip-code': {
-    type: 'zip-code',
-    displayName: 'ZIP Code',
-    pluralName: 'ZIP Codes',
-    source: 'Census/USPS',
-    idField: 'ZCTA5CE20',
-    nameField: 'ZCTA5CE20',
-    dataPath: '/data/political/ingham_zipcodes.geojson',
-    color: '#8b5cf6', // Violet
-    hasData: true,
-  },
-  'block-group': {
-    type: 'block-group',
-    displayName: 'Block Group',
-    pluralName: 'Block Groups',
-    source: 'Census Bureau',
-    idField: 'GEOID',
-    nameField: 'NAMELSAD',
-    dataPath: '/data/political/ingham_block_groups.geojson',
-    color: '#06b6d4', // Cyan
-    hasData: true,
-  },
-  'census-tract': {
-    type: 'census-tract',
-    displayName: 'Census Tract',
-    pluralName: 'Census Tracts',
-    source: 'Census Bureau',
-    idField: 'GEOID',
-    nameField: 'NAMELSAD',
-    dataPath: '/data/political/ingham_tracts.geojson',
-    color: '#14b8a6', // Teal
-    hasData: true,
-  },
-  'state-house': {
-    type: 'state-house',
-    displayName: 'State House District',
-    pluralName: 'State House Districts',
-    source: 'Michigan Legislature',
-    idField: 'SLDLST',
-    nameField: 'NAMELSAD',
-    dataPath: '/data/political/michigan_state_house.geojson',
-    color: '#f59e0b', // Amber
-    hasData: true,
-  },
-  'state-senate': {
-    type: 'state-senate',
-    displayName: 'State Senate District',
-    pluralName: 'State Senate Districts',
-    source: 'Michigan Legislature',
-    idField: 'SLDUST',
-    nameField: 'NAMELSAD',
-    dataPath: '/data/political/michigan_state_senate.geojson',
-    color: '#ef4444', // Red
-    hasData: true,
-  },
-  'congressional': {
-    type: 'congressional',
-    displayName: 'Congressional District',
-    pluralName: 'Congressional Districts',
-    source: 'Census Bureau',
-    idField: 'CD118FP',
-    nameField: 'NAMELSAD',
-    dataPath: '/data/political/michigan_congressional.geojson',
-    color: '#3b82f6', // Blue
-    hasData: true,
-  },
-  'municipality': {
-    type: 'municipality',
-    displayName: 'Municipality',
-    pluralName: 'Municipalities',
-    source: 'Ingham County GIS',
-    idField: 'JURISDICTION_NAME',
-    nameField: 'JURISDICTION_NAME',
-    dataPath: '/data/political/ingham_municipalities.geojson',
-    color: '#22c55e', // Green
-    hasData: true,
-  },
-  'township': {
-    type: 'township',
-    displayName: 'Township/City',
-    pluralName: 'Townships & Cities',
-    source: 'Ingham County GIS',
-    idField: 'JURISDICTION_NAME',
-    nameField: 'JURISDICTION_NAME',
-    dataPath: '/data/political/ingham_townships.geojson',
-    color: '#84cc16', // Lime
-    hasData: true,
-  },
-  'school-district': {
-    type: 'school-district',
-    displayName: 'School District',
-    pluralName: 'School Districts',
-    source: 'Michigan GIS',
-    idField: 'DCode',
-    nameField: 'Name',
-    dataPath: '/data/political/ingham_school_districts.geojson',
-    color: '#f97316', // Orange
-    hasData: true,
-  },
-  // County Commission Districts: Hidden until GIS data is available
-  // Ingham County only publishes PDF maps, no shapefile/GeoJSON
-  // 'county-commission': {
-  //   type: 'county-commission',
-  //   displayName: 'County Commission District',
-  //   pluralName: 'County Commission Districts',
-  //   source: 'Ingham County',
-  //   idField: 'DISTRICT',
-  //   nameField: 'NAME',
-  //   dataPath: '/data/political/ingham_county_commission.geojson',
-  //   color: '#ec4899', // Pink
-  //   hasData: false,
-  // },
-};
-
-// Get boundary types that have data available
-export const AVAILABLE_BOUNDARY_TYPES = Object.values(BOUNDARY_LAYERS)
-  .filter(layer => layer.hasData)
-  .map(layer => layer.type);
+export { BOUNDARY_LAYERS, AVAILABLE_BOUNDARY_TYPES };
 
 // Icon mapping for each boundary type
 const BOUNDARY_ICONS: Record<BoundaryLayerType, React.ReactNode> = {
