@@ -73,6 +73,42 @@ interface TargetingScoreSummary {
   };
 }
 
+/** PA targeting JSON: political_scores + top-level swing_potential (legacy MI uses political map only). */
+function readTargetingPoliticalOverrides(targeting: unknown): {
+  partisan_lean?: number;
+  swing_potential?: number;
+} {
+  if (!targeting || typeof targeting !== 'object') return {};
+  const t = targeting as Record<string, unknown>;
+  const ps = t.political_scores as Record<string, unknown> | undefined;
+  const pl = ps?.partisan_lean;
+  const spTop = t.swing_potential;
+  const spNested = ps?.swing_potential;
+  const num = (x: unknown): number | undefined => {
+    if (typeof x === 'number' && !Number.isNaN(x)) return x;
+    if (x != null && x !== '') {
+      const n = Number(x);
+      if (!Number.isNaN(n)) return n;
+    }
+    return undefined;
+  };
+  return {
+    partisan_lean: num(pl),
+    swing_potential: num(spTop) ?? num(spNested),
+  };
+}
+
+function resolvePartisanLeanForDisplay(
+  political: PrecinctPoliticalScores | undefined,
+  targeting: unknown,
+): number {
+  const p = political?.partisanLean?.value;
+  if (p != null && !Number.isNaN(Number(p))) return Number(p);
+  const o = readTargetingPoliticalOverrides(targeting);
+  if (o.partisan_lean != null) return o.partisan_lean;
+  return 0;
+}
+
 interface AreaAnalysisResult {
   // Area info
   areaName: string;
@@ -634,7 +670,21 @@ export function PoliticalAnalysisPanel({
 
     // Partisan lean insight
     if (Math.abs(lean) < 5) {
-      insights.push(`This area is highly competitive with a lean of ${lean > 0 ? 'D' : 'R'}+${Math.abs(lean).toFixed(1)}. Expect tight margins in upcoming elections - every vote matters here.`);
+      if (Math.abs(lean) < 0.05) {
+        insights.push(
+          'This area is highly competitive with an essentially even partisan lean. Expect tight margins in upcoming elections — every vote matters here.',
+        );
+      } else {
+        const leanLabel =
+          lean > 0
+            ? `D+${lean.toFixed(1)}`
+            : lean < 0
+              ? `R+${Math.abs(lean).toFixed(1)}`
+              : 'even';
+        insights.push(
+          `This area is highly competitive with a lean of ${leanLabel}. Expect tight margins in upcoming elections — every vote matters here.`,
+        );
+      }
     } else if (lean > 15) {
       insights.push(`Strong Democratic territory (D+${lean.toFixed(1)}). Focus on turnout operations rather than persuasion. Base mobilization is key.`);
     } else if (lean < -15) {
@@ -766,13 +816,16 @@ export function PoliticalAnalysisPanel({
         const scores =
           allPrecinctScores.get(name) ??
           Array.from(allPrecinctScores.values()).find((s) => s.precinctName === name);
-        const targeting = allTargetingScores[name] as any || {};
+        const targeting = allTargetingScores[name] as Record<string, unknown> | undefined;
 
         return {
           name,
           overlapRatio: 1,
-          registeredVoters: targeting.registered_voters || targeting.active_voters || 0,
-          partisanLean: scores?.partisanLean?.value ?? 0,
+          registeredVoters:
+            Number(targeting?.registered_voters) ||
+            Number(targeting?.active_voters) ||
+            0,
+          partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
         };
       });
 
@@ -823,7 +876,7 @@ export function PoliticalAnalysisPanel({
       const scores =
         allPrecinctScores.get(precinctKey) ??
         Array.from(allPrecinctScores.values()).find((s) => s.precinctName === precinctKey);
-      const targeting = allTargetingScores[precinctKey] as any || {};
+      const targeting = allTargetingScores[precinctKey] as Record<string, unknown> | undefined;
 
       // Estimate overlap ratio based on selection method
       let overlapRatio = 0;
@@ -842,26 +895,50 @@ export function PoliticalAnalysisPanel({
         intersectingPrecincts.push({
           name: precinctKey,
           overlapRatio,
-          registeredVoters: targeting.registered_voters || targeting.active_voters || 0,
-          partisanLean: scores?.partisanLean?.value ?? 0,
+          registeredVoters:
+            Number(targeting?.registered_voters) ||
+            Number(targeting?.active_voters) ||
+            0,
+          partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
         });
       }
     }
 
-    // If no precincts found, use a sample for demonstration
+    // If no precincts found, sample from targeting when it is the primary dataset (e.g. PA)
     if (intersectingPrecincts.length === 0) {
-      const sampleSize = Math.min(5, allPrecinctScores.size);
-      let count = 0;
-      for (const [name, scores] of allPrecinctScores) {
-        if (count >= sampleSize) break;
-        const targeting = allTargetingScores[name] as any || {};
-        intersectingPrecincts.push({
-          name,
-          overlapRatio: 1.0,
-          registeredVoters: targeting.registered_voters || targeting.active_voters || 0,
-          partisanLean: scores.partisanLean.value,
-        });
-        count++;
+      const targetingKeys = Object.keys(allTargetingScores);
+      if (targetingKeys.length > allPrecinctScores.size) {
+        const sampleSize = Math.min(5, targetingKeys.length);
+        for (let i = 0; i < sampleSize; i++) {
+          const name = targetingKeys[i];
+          const targeting = allTargetingScores[name] as Record<string, unknown> | undefined;
+          intersectingPrecincts.push({
+            name,
+            overlapRatio: 1.0,
+            registeredVoters:
+              Number(targeting?.registered_voters) ||
+              Number(targeting?.active_voters) ||
+              0,
+            partisanLean: resolvePartisanLeanForDisplay(undefined, targeting),
+          });
+        }
+      } else {
+        const sampleSize = Math.min(5, allPrecinctScores.size);
+        let count = 0;
+        for (const [name, scores] of allPrecinctScores) {
+          if (count >= sampleSize) break;
+          const targeting = allTargetingScores[name] as Record<string, unknown> | undefined;
+          intersectingPrecincts.push({
+            name,
+            overlapRatio: 1.0,
+            registeredVoters:
+              Number(targeting?.registered_voters) ||
+              Number(targeting?.active_voters) ||
+              0,
+            partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
+          });
+          count++;
+        }
       }
     }
 
@@ -911,21 +988,30 @@ export function PoliticalAnalysisPanel({
       const targeting = targetingScores[precinct.name] || {};
 
       totalVoters += voters;
-      totalActiveVoters += (targeting.active_voters || voters) * precinct.overlapRatio;
+      totalActiveVoters +=
+        (Number(targeting.active_voters) || voters) * precinct.overlapRatio;
 
-      // Handle both snake_case (data) and camelCase (type) field names
-      const leanValue = scores.partisan_lean ?? scores.partisanLean?.value ?? 0;
-      const swingValue = scores.swing_potential ?? scores.swingPotential?.value ?? 0;
+      const tp = readTargetingPoliticalOverrides(targeting);
+      const leanValue =
+        scores.partisan_lean ??
+        scores.partisanLean?.value ??
+        tp.partisan_lean ??
+        0;
+      const swingValue =
+        scores.swing_potential ??
+        scores.swingPotential?.value ??
+        tp.swing_potential ??
+        0;
       const turnoutValue = scores.turnout?.average ?? scores.turnout?.averageTurnout ?? 65;
 
       weightedLean += leanValue * voters;
       weightedSwing += swingValue * voters;
       weightedTurnout += turnoutValue * voters;
-      weightedGOTV += (targeting.gotv_priority || 0) * voters;
-      weightedPersuasion += (targeting.persuasion_opportunity || 0) * voters;
+      weightedGOTV += (Number(targeting.gotv_priority) || 0) * voters;
+      weightedPersuasion += (Number(targeting.persuasion_opportunity) || 0) * voters;
 
       // Count targeting strategies
-      const strategy = targeting.targeting_strategy || 'Unknown';
+      const strategy = String(targeting.targeting_strategy || 'Unknown');
       strategyCount[strategy] = (strategyCount[strategy] || 0) + 1;
     }
 
@@ -1713,18 +1799,31 @@ export function PoliticalAnalysisPanel({
                         </div>
                       )}
 
-                      {/* County-Wide Strategy Summary */}
-                      {targetingSummary && (
+                      {/* Full-dataset strategy mix (counts from targeting JSON → %) */}
+                      {targetingSummary && (() => {
+                        const stratEntries = Object.entries(
+                          targetingSummary.strategy_distribution,
+                        );
+                        const stratTotal = stratEntries.reduce(
+                          (s, [, c]) => s + Number(c),
+                          0,
+                        );
+                        return (
                         <div className="space-y-2 border-t pt-4">
                           <h4 className="text-xs font-medium flex items-center gap-2">
                             <Info className="h-3 w-3 text-[#33a852]" />
-                            County Strategy Distribution
+                            Statewide strategy mix (full dataset)
                           </h4>
                           <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(targetingSummary.strategy_distribution)
+                            {stratEntries
                               .sort(([, a], [, b]) => b - a)
                               .slice(0, 4)
-                              .map(([strategy, percentage]) => (
+                              .map(([strategy, count]) => {
+                                const pct =
+                                  stratTotal > 0
+                                    ? (Number(count) / stratTotal) * 100
+                                    : 0;
+                                return (
                                 <Tooltip key={strategy}>
                                   <TooltipTrigger asChild>
                                     <div
@@ -1734,21 +1833,30 @@ export function PoliticalAnalysisPanel({
                                         <div className={`w-2 h-2 rounded-full ${getStrategyColor(strategy)}`} />
                                         <span className="text-xs font-medium truncate">{strategy}</span>
                                       </div>
-                                      <div className="text-xs font-bold">{percentage.toFixed(0)}%</div>
+                                      <div className="text-xs font-bold">
+                                        {pct.toFixed(1)}%
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground">
+                                        {Number(count).toLocaleString()} precincts
+                                      </div>
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-xs">
-                                    <p>{getStrategyTooltip(strategy)}</p>
+                                    <p>
+                                      {getStrategyTooltip(strategy)} ({Number(count).toLocaleString()}{' '}
+                                      precincts, {pct.toFixed(1)}% of dataset.)
+                                    </p>
                                   </TooltipContent>
                                 </Tooltip>
-                              ))}
+                              );})}
                           </div>
                           <div className="text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
-                            County avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
+                            Dataset avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
                             Persuasion: {targetingSummary.score_stats.persuasion.mean.toFixed(0)}
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Included Precincts */}
                       {analysisResult.includedPrecincts.length > 0 && (
