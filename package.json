@@ -28,7 +28,8 @@
     "test:routing": "jest tests/validation/QueryRoutingTests.test.ts",
     "test:patterns": "jest tests/validation/QueryPatternAnalyzer.test.ts",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "build:pa-targeting": "ts-node scripts/build-pa-targeting-scores.ts"
+    "build:pa-targeting": "ts-node scripts/build-pa-targeting-scores.ts",
+    "split-geojson": "ts-node scripts/split-geojson-for-github.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

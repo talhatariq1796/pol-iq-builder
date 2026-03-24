@@ -10,6 +10,7 @@
  */
 
 import { politicalDataService } from "@/lib/services/PoliticalDataService";
+import { loadGeoJSONMerged } from "@/lib/map/geojsonMergeLoader";
 
 const DEFAULT_PRECINCT_GEOJSON =
   "/data/political/pensylvania/pa_2020_presidential.geojson";
@@ -38,16 +39,10 @@ function isValidPrecinctGeoJSON(geojson: GeoJSON.FeatureCollection): boolean {
 }
 
 /**
- * Fetch a GeoJSON file from a URL and return it as a FeatureCollection.
+ * Fetch a GeoJSON file or manifest from a URL and return a FeatureCollection.
  */
 async function fetchGeoJSON(url: string): Promise<GeoJSON.FeatureCollection> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
-    );
-  }
-  return response.json();
+  return loadGeoJSONMerged(url);
 }
 
 /**

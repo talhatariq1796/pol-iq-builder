@@ -46,6 +46,7 @@ import { LocationSearch, LocationResult } from '@/components/common/location-sea
 import { useDrawing } from '@/hooks/useDrawing';
 import type { BoundaryLayerType, PoliticalAreaSelection } from '@/types/political';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { loadGeoJSONMerged } from '@/lib/map/geojsonMergeLoader';
 
 // ArcGIS imports for buffer creation
 import Circle from '@arcgis/core/geometry/Circle';
@@ -383,18 +384,16 @@ export function PoliticalAreaSelector({
 
     try {
       const config = BOUNDARY_LAYERS[type];
-      const response = await fetch(config.dataPath);
-
-      if (!response.ok) {
-        // Data file not available - show informative message instead of error
+      let geojson: GeoJSON.FeatureCollection;
+      try {
+        geojson = await loadGeoJSONMerged(config.dataPath);
+      } catch {
         console.info(`${config.pluralName} data not yet available: ${config.dataPath}`);
         setError(`${config.pluralName} data not yet available for this area`);
         setBoundaryFeatures([]);
         setIsLoadingBoundaries(false);
         return;
       }
-
-      const geojson = await response.json();
 
       // Load political scores for precincts using PoliticalDataService (single source of truth)
       let scores: Record<string, any> = {};

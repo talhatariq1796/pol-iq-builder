@@ -543,19 +543,11 @@ export function PrecinctChoroplethLayer({
         // Load boundaries + targeting scores and election data
         // PA: pa_2020_presidential (precinct-level, UNIQUE_ID)
         // MI: ingham_municipalities (municipality-level, JURISDICTION_NAME)
-        const boundariesPath = boundariesUrl || "/data/political/pensylvania/pa_2020_presidential.geojson";
-        const [boundaryResponse, targetingScores, electionResults] =
-          await Promise.all([
-            fetch(boundariesPath),
-            politicalDataService.getAllTargetingScores(),
-            politicalDataService.getAllElectionResults(),
-          ]);
-        if (!boundaryResponse.ok)
-          throw new Error(
-            `Failed to load boundaries: ${boundaryResponse.status}`,
-          );
-        const boundaries: GeoJSON.FeatureCollection =
-          await boundaryResponse.json();
+        const [boundaries, targetingScores, electionResults] = await Promise.all([
+          loadBoundariesWithFallback(boundariesUrl ?? undefined),
+          politicalDataService.getAllTargetingScores(),
+          politicalDataService.getAllElectionResults(),
+        ]);
 
         if (!isMounted) return;
 

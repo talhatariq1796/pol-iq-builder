@@ -27,6 +27,8 @@ import type {
   UnifiedPrecinct,
 } from '@/types/political';
 
+import { loadGeoJSONMerged, resolveGeoJSONData } from '@/lib/map/geojsonMergeLoader';
+
 // ============================================================================
 // Configuration
 // ============================================================================
@@ -472,6 +474,32 @@ async function fetchFromBlobOrLocal<T>(blobKey: string, localPath: string): Prom
   return await response.json();
 }
 
+/**
+ * Like fetchFromBlobOrLocal but supports *.manifest.json sharded GeoJSON locally and on blob.
+ */
+async function fetchGeoJSONFromBlobOrLocal(
+  blobKey: string,
+  localPath: string,
+): Promise<GeoJSON.FeatureCollection> {
+  const urlMappings = await loadBlobUrlMappings();
+  const blobUrl = urlMappings[blobKey];
+
+  if (blobUrl) {
+    try {
+      const response = await fetch(blobUrl);
+      if (response.ok) {
+        console.log(`[PoliticalDataService] Loaded ${blobKey} from blob storage`);
+        return resolveGeoJSONData(await response.json());
+      }
+    } catch (error) {
+      console.warn(`[PoliticalDataService] Blob fetch failed for ${blobKey}:`, error);
+    }
+  }
+
+  console.log(`[PoliticalDataService] Loading ${blobKey} from local path: ${localPath}`);
+  return loadGeoJSONMerged(localPath);
+}
+
 // ============================================================================
 // Core Service Class
 // ============================================================================
@@ -658,7 +686,7 @@ export class PoliticalDataService {
   async loadPrecinctBoundaries(): Promise<GeoJSON.FeatureCollection> {
     if (cache.precinctBoundaries) return cache.precinctBoundaries;
 
-    cache.precinctBoundaries = await fetchFromBlobOrLocal<GeoJSON.FeatureCollection>(
+    cache.precinctBoundaries = await fetchGeoJSONFromBlobOrLocal(
       BLOB_KEYS.precinctBoundaries,
       LOCAL_PATHS.precinctBoundaries
     );
@@ -678,28 +706,24 @@ export class PoliticalDataService {
 
     // Try to load from local GeoJSON first (faster)
     try {
-      const response = await fetch(LOCAL_PATHS.precinctBoundaries);
-      if (response.ok) {
-        const geojson = await response.json() as GeoJSON.FeatureCollection;
+      const geojson = await loadGeoJSONMerged(LOCAL_PATHS.precinctBoundaries);
 
-        // Build centroids for all precincts (PA: UNIQUE_ID, MI: PRECINCT_ID)
-        for (const feature of geojson.features) {
-          const id = (feature.properties?.UNIQUE_ID || feature.properties?.PRECINCT_ID || feature.properties?.id || feature.properties?.NAME || '').toLowerCase().replace(/[^a-z0-9-]/g, '-');
-          if (feature.geometry?.type === 'Polygon') {
-            const centroid = calculatePolygonCentroid((feature.geometry as GeoJSON.Polygon).coordinates);
-            centroidCache.set(id, centroid);
-          } else if (feature.geometry?.type === 'MultiPolygon') {
-            // For MultiPolygon, use the largest polygon's centroid
-            const multiCoords = (feature.geometry as GeoJSON.MultiPolygon).coordinates;
-            const centroid = calculatePolygonCentroid(multiCoords[0]);
-            centroidCache.set(id, centroid);
-          }
+      // Build centroids for all precincts (PA: UNIQUE_ID, MI: PRECINCT_ID)
+      for (const feature of geojson.features) {
+        const id = (feature.properties?.UNIQUE_ID || feature.properties?.PRECINCT_ID || feature.properties?.id || feature.properties?.NAME || '').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        if (feature.geometry?.type === 'Polygon') {
+          const centroid = calculatePolygonCentroid((feature.geometry as GeoJSON.Polygon).coordinates);
+          centroidCache.set(id, centroid);
+        } else if (feature.geometry?.type === 'MultiPolygon') {
+          // For MultiPolygon, use the largest polygon's centroid
+          const multiCoords = (feature.geometry as GeoJSON.MultiPolygon).coordinates;
+          const centroid = calculatePolygonCentroid(multiCoords[0]);
+          centroidCache.set(id, centroid);
         }
+      }
 
-        // Return the requested centroid
-        if (centroidCache.has(normalizedId)) {
-          return centroidCache.get(normalizedId)!;
-        }
+      if (centroidCache.has(normalizedId)) {
+        return centroidCache.get(normalizedId)!;
       }
     } catch (error) {
       console.warn('[PoliticalDataService] Failed to load precinct GeoJSON for centroids:', error);
