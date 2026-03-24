@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 
 export const maxDuration = 120;
 export const fetchCache = 'force-no-store';
@@ -52,7 +53,7 @@ Keep responses concise and focused. If asked for a simple response, provide exac
 
     console.log('[Chat API] Calling Claude API with persona:', persona);
     const response = await anthropic.messages.create({
-      model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+      model: resolveClaudeModel(),
       max_tokens: 1000,
       messages: claudeMessages,
       system: systemMessage,

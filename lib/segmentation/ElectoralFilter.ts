@@ -417,6 +417,27 @@ export class ElectoralFilter {
       return `Michigan State House ${num}`;
     }
 
+    // Pennsylvania congressional: pa-congress-07
+    if (normalized.match(/pa-congress-(\d+)/)) {
+      const match = normalized.match(/pa-congress-(\d+)/);
+      const num = match ? parseInt(match[1], 10) : 0;
+      return `Pennsylvania ${num}${this.ordinalSuffix(num)} Congressional`;
+    }
+
+    // Pennsylvania State Senate: pa-senate-3
+    if (normalized.match(/pa-senate-(\d+)/)) {
+      const match = normalized.match(/pa-senate-(\d+)/);
+      const num = match ? match[1] : '';
+      return `Pennsylvania State Senate ${num}`;
+    }
+
+    // Pennsylvania State House: pa-house-77
+    if (normalized.match(/pa-house-(\d+)/)) {
+      const match = normalized.match(/pa-house-(\d+)/);
+      const num = match ? match[1] : '';
+      return `Pennsylvania State House ${num}`;
+    }
+
     // County Commissioner: cc-1 → County Commissioner District 1
     if (normalized.match(/cc-(\d+)/)) {
       const match = normalized.match(/cc-(\d+)/);

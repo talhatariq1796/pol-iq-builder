@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 import { layers } from '@/config/layers';
 import { ExtendedLayerConfig, LayerConfig } from '@/types/layers';
 import type { AnalysisResponse, ProcessedLayerResult } from '@/types/geospatial-chat';
@@ -4118,7 +4119,7 @@ Present this analysis in your professional ${selectedPersona.name} style while p
             console.log('[Claude] Message roles:', validMessages.map(m => m.role).join(' -> '));
             
             anthropicResponse = await anthropic.messages.create({
-                model: 'claude-3-5-sonnet-20240620',
+                model: resolveClaudeModel(),
                 max_tokens: 4096,
                 system: dynamicSystemPrompt,
                 messages: validMessages

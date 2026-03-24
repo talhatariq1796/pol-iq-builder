@@ -20,6 +20,7 @@ import { getDocumentRetriever } from '@/lib/rag';
 import { getKnowledgeGraph, getGraphPopulator, Entity, Relationship } from '@/lib/knowledge-graph';
 import { enrich, formatForSystemPrompt as formatEnrichmentForSystemPrompt, type EnrichmentContext } from '@/lib/context';
 import type { MapCommand } from '@/lib/ai-native/types';
+import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 
 export const maxDuration = 120;
 export const fetchCache = 'force-no-store';
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[Political Chat API] Calling Claude...');
     const response = await anthropic.messages.create({
-      model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+      model: resolveClaudeModel(),
       max_tokens: 2000,
       messages: claudeMessages,
       system: systemPrompt,

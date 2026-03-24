@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { layers } from '@/config/layers';
+import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 
 // Initialize Anthropic client
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-3-sonnet-20240229';
 
 if (!anthropicApiKey) {
   console.error('CRITICAL: ANTHROPIC_API_KEY is not set in environment variables');
@@ -93,7 +93,7 @@ Example format:
 "Show areas with high values" -> "[valid_field] > 100"`;
 
     const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
+      model: resolveClaudeModel(),
       max_tokens: 200,
       temperature: 0.3,
       system: systemPrompt, // Using the same system prompt as in your original file

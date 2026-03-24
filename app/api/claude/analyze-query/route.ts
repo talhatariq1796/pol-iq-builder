@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { hasOwnProperty } from '@/utils/lint-helpers';
 import { mapQueryToVisualizations, QueryIntent } from '@/utils/visualizations/query-mapper';
+import { resolveClaudeModel, resolveClaudeRetryModel } from '@/lib/ai/claudeModel';
 import { VisualizationType } from '@/config/dynamic-layers';
 
 // Inline type definitions for Anthropic API
@@ -85,9 +86,6 @@ const anthropic = new Anthropic({
   apiKey: apiKey || '',
 });
 
-const PRIMARY_MODEL = 'claude-3-5-sonnet-20241022';
-const FALLBACK_MODEL = 'claude-3-5-sonnet-20240620';
-
 const systemPrompt = `You are an AI assistant that analyzes user queries to determine the most appropriate visualization type and data requirements.
 Your task is to:
 1. Understand the user's intent
@@ -122,9 +120,12 @@ export async function POST(req: Request) {
   try {
     const { query } = await req.json();
 
+    const primaryModel = resolveClaudeModel();
+    const fallbackModel = resolveClaudeRetryModel(primaryModel);
+
     // Call Claude API to analyze the query using the SDK
     const response = await anthropic.messages.create({
-      model: PRIMARY_MODEL,
+      model: primaryModel,
       max_tokens: 1000,
       system: systemPrompt,
       messages: [
@@ -145,7 +146,7 @@ export async function POST(req: Request) {
       if (data.error.type === 'invalid_request_error' || data.error.type === 'model_not_found') {
         console.log('Primary model failed, trying fallback model...');
         const fallbackResponse = await anthropic.messages.create({
-          model: FALLBACK_MODEL,
+          model: fallbackModel,
           max_tokens: 1000,
           system: systemPrompt,
           messages: [

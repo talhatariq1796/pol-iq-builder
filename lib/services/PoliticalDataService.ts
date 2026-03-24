@@ -42,6 +42,8 @@ const BLOB_KEYS = {
   politicalScores: 'political/targeting/political_scores',
   demographics: 'political/demographics/precinct_ba',
   crosswalk: 'political/crosswalk/precinct_blockgroup',
+  /** Precinct → state house / senate / congress / municipality (PA build). */
+  districtCrosswalk: 'political/crosswalk/pa_precinct_districts',
   h3Aggregates: 'political/h3/aggregates',
   h3GeoJSON: 'political/h3/aggregates_geojson',
   modelRegistry: 'political/models/registry',
@@ -53,6 +55,7 @@ const LOCAL_PATHS = {
   precinctBoundaries: '/data/political/pensylvania/pa_2020_presidential.geojson',
   electionResults: '/data/political/pensylvania/pa_precinct_election_history.json',
   targetingScores: '/data/political/pensylvania/precinct_targeting_scores.json',
+  districtCrosswalk: '/data/political/pensylvania/pa_precinct_district_crosswalk.json',
   politicalScores: '/data/processed/precinct_political_scores.json',
   demographics: '/data/processed/precinct_ba_demographics.json',
   crosswalk: '/data/processed/precinct_blockgroup_crosswalk.json',
@@ -2475,28 +2478,15 @@ export class PoliticalDataService {
     if (this.districtCrosswalk) return this.districtCrosswalk;
 
     try {
-      // Use the same fetchFromBlobOrLocal pattern for consistency
-      // Browser context - use relative URL
-      if (typeof window !== 'undefined') {
-        const response = await fetch('/data/political/precinct_crosswalk_complete.json');
-        if (response.ok) {
-          const data = await response.json();
-          this.districtCrosswalk = data.precincts || {};
-          console.log(`[PoliticalDataService] Loaded district crosswalk for ${Object.keys(this.districtCrosswalk!).length} precincts`);
-          return this.districtCrosswalk!;
-        }
-      }
-      // Server/Node context - use filesystem
-      else {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const filePath = path.join(process.cwd(), 'public/data/political/precinct_crosswalk_complete.json');
-        const fileContent = await fs.readFile(filePath, 'utf-8');
-        const data = JSON.parse(fileContent);
-        this.districtCrosswalk = data.precincts || {};
-        console.log(`[PoliticalDataService] Loaded district crosswalk for ${Object.keys(this.districtCrosswalk!).length} precincts`);
-        return this.districtCrosswalk!;
-      }
+      const data = await fetchFromBlobOrLocal<{ precincts?: Record<string, any> }>(
+        BLOB_KEYS.districtCrosswalk,
+        LOCAL_PATHS.districtCrosswalk,
+      );
+      this.districtCrosswalk = data.precincts || {};
+      console.log(
+        `[PoliticalDataService] Loaded district crosswalk for ${Object.keys(this.districtCrosswalk!).length} precincts`,
+      );
+      return this.districtCrosswalk!;
     } catch (error) {
       console.warn('[PoliticalDataService] Failed to load district crosswalk:', error);
     }
@@ -2514,10 +2504,12 @@ export class PoliticalDataService {
     const crosswalk = await this.loadDistrictCrosswalk();
     const unified = await this.getUnifiedPrecinctData();
 
-    // Normalize district ID (handle "73" or "mi-house-73")
-    const normalizedId = districtId.startsWith('mi-house-')
-      ? districtId
-      : `mi-house-${districtId}`;
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
+    const prefix = isPA ? 'pa-house-' : 'mi-house-';
+    const normalizedId =
+      districtId.startsWith('pa-house-') || districtId.startsWith('mi-house-')
+        ? districtId
+        : `${prefix}${districtId}`;
 
     const matchingPrecincts: UnifiedPrecinct[] = [];
 
@@ -2543,10 +2535,12 @@ export class PoliticalDataService {
     const crosswalk = await this.loadDistrictCrosswalk();
     const unified = await this.getUnifiedPrecinctData();
 
-    // Normalize district ID
-    const normalizedId = districtId.startsWith('mi-senate-')
-      ? districtId
-      : `mi-senate-${districtId}`;
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
+    const prefix = isPA ? 'pa-senate-' : 'mi-senate-';
+    const normalizedId =
+      districtId.startsWith('pa-senate-') || districtId.startsWith('mi-senate-')
+        ? districtId
+        : `${prefix}${districtId}`;
 
     const matchingPrecincts: UnifiedPrecinct[] = [];
 
@@ -2572,9 +2566,18 @@ export class PoliticalDataService {
     const crosswalk = await this.loadDistrictCrosswalk();
     const unified = await this.getUnifiedPrecinctData();
 
-    // Normalize district ID
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
     let normalizedId: string;
-    if (districtId.startsWith('mi-')) {
+    if (isPA) {
+      if (districtId.startsWith('pa-congress-')) {
+        normalizedId = districtId;
+      } else {
+        const num = parseInt(districtId, 10);
+        normalizedId = Number.isFinite(num)
+          ? `pa-congress-${num.toString().padStart(2, '0')}`
+          : districtId;
+      }
+    } else if (districtId.startsWith('mi-')) {
       normalizedId = districtId;
     } else {
       const num = parseInt(districtId, 10);

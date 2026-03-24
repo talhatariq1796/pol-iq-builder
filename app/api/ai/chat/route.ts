@@ -31,6 +31,7 @@ interface ChatRequest {
 
 // Import system prompt generator (async version for blob storage data)
 import { getSystemPromptAsync } from '@/lib/ai/toolPrompts';
+import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 
 export const runtime = 'edge';
 
@@ -89,7 +90,7 @@ Adjust response detail based on expertise level:
     let stream: any;
     try {
       stream = await anthropic.messages.stream({
-        model: 'claude-sonnet-4-20250514',
+        model: resolveClaudeModel(),
         max_tokens: 4096,
         system: systemPrompt,
         messages: messages.map((msg) => ({

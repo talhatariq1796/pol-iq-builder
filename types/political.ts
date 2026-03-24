@@ -415,6 +415,8 @@ export interface PoliticalAreaSelection {
     boundaryType?: BoundaryLayerType;
     boundaryIds?: string[]; // For multi-select
     boundaryNames?: string[];
+    /** Census INTPTLON/INTPTLAT per selected feature when polygon coords are unusable (e.g. PA block groups). */
+    boundaryCentroids?: [number, number][];
   };
 }
 

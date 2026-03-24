@@ -57,7 +57,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import Polygon from '@arcgis/core/geometry/Polygon';
+import Point from '@arcgis/core/geometry/Point';
 import Extent from '@arcgis/core/geometry/Extent';
+import * as projection from '@arcgis/core/geometry/projection';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import type { PoliticalAreaSelection, PrecinctPoliticalScores, BoundaryLayerType } from '@/types/political';
 import { colors, getPartisanColorClass, getStrategyColor } from '@/lib/ui/colors';
 import { MetricLabel } from '@/components/ui/metric-label';
@@ -200,52 +204,256 @@ interface PoliticalAnalysisPanelProps {
 }
 
 /**
- * Calculate the extent (bounding box) of a GeoJSON geometry
- * Returns an ArcGIS Extent with 30% buffer for better visualization
+ * Draw/buffer flows copy ArcGIS ring coordinates in the map's spatial reference (usually Web Mercator).
  */
-function getGeometryExtent(geometry: GeoJSON.Geometry): Extent | null {
-  try {
-    let coords: number[][] = [];
-
-    // Extract all coordinates from the geometry
-    if (geometry.type === 'Point') {
-      const pt = geometry as GeoJSON.Point;
-      coords = [[pt.coordinates[0], pt.coordinates[1]]];
-    } else if (geometry.type === 'Polygon') {
-      const poly = geometry as GeoJSON.Polygon;
-      coords = poly.coordinates[0];
-    } else if (geometry.type === 'MultiPolygon') {
-      const multi = geometry as GeoJSON.MultiPolygon;
-      coords = multi.coordinates.flatMap(p => p[0]);
-    } else if (geometry.type === 'LineString') {
-      const line = geometry as GeoJSON.LineString;
-      coords = line.coordinates;
+function inferGeoJsonPlanarWkid(geometry: GeoJSON.Geometry): 4326 | 3857 {
+  const nums: number[] = [];
+  const walk = (g: GeoJSON.Geometry) => {
+    if (g.type === 'Point') nums.push(...g.coordinates);
+    else if (g.type === 'LineString') g.coordinates.forEach((c) => nums.push(c[0], c[1]));
+    else if (g.type === 'Polygon') g.coordinates.forEach((ring) => ring.forEach((c) => nums.push(c[0], c[1])));
+    else if (g.type === 'MultiPolygon') {
+      g.coordinates.forEach((poly) => poly.forEach((ring) => ring.forEach((c) => nums.push(c[0], c[1]))));
     }
+  };
+  walk(geometry);
+  const maxAbs = nums.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+  return maxAbs > 180 ? 3857 : 4326;
+}
 
-    if (coords.length === 0) return null;
+function isFiniteExtent(xmin: number, ymin: number, xmax: number, ymax: number): boolean {
+  return (
+    [xmin, ymin, xmax, ymax].every((n) => Number.isFinite(n)) &&
+    xmin <= xmax &&
+    ymin <= ymax
+  );
+}
 
-    // Calculate bounding box
-    const xs = coords.map(c => c[0]);
-    const ys = coords.map(c => c[1]);
-    const xmin = Math.min(...xs);
-    const ymin = Math.min(...ys);
-    const xmax = Math.max(...xs);
-    const ymax = Math.max(...ys);
-
-    // Create extent with 30% buffer for better visualization
-    const extent = new Extent({
-      xmin,
-      ymin,
-      xmax,
-      ymax,
-      spatialReference: { wkid: 4326 },
-    });
-
-    return extent.expand(1.3);
-  } catch (err) {
-    console.error('[getGeometryExtent] Error calculating extent:', err);
+/** GeoJSON rings → ArcGIS Polygon in the given planar WKID (4326 or 3857). */
+function geoJsonToArcgisPolygonInSR(
+  geometry: GeoJSON.Geometry,
+  wkid: number,
+): __esri.Polygon | null {
+  try {
+    if (geometry.type === 'Polygon') {
+      const rings = geometry.coordinates as number[][][];
+      if (!rings?.length) return null;
+      return new Polygon({ rings, spatialReference: { wkid } });
+    }
+    if (geometry.type === 'MultiPolygon') {
+      const polys = geometry.coordinates as number[][][][];
+      const rings: number[][][] = [];
+      for (const poly of polys) {
+        for (const ring of poly) rings.push(ring);
+      }
+      if (rings.length === 0) return null;
+      return new Polygon({ rings, spatialReference: { wkid } });
+    }
+    return null;
+  } catch {
     return null;
   }
+}
+
+function geojsonBBox(
+  geometry: GeoJSON.Geometry,
+): { xmin: number; ymin: number; xmax: number; ymax: number } | null {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const walk = (g: GeoJSON.Geometry) => {
+    if (g.type === 'Point') {
+      xs.push(g.coordinates[0]);
+      ys.push(g.coordinates[1]);
+    } else if (g.type === 'LineString') {
+      g.coordinates.forEach((c) => {
+        xs.push(c[0]);
+        ys.push(c[1]);
+      });
+    } else if (g.type === 'Polygon') {
+      g.coordinates.forEach((ring) =>
+        ring.forEach((c) => {
+          xs.push(c[0]);
+          ys.push(c[1]);
+        }),
+      );
+    } else if (g.type === 'MultiPolygon') {
+      g.coordinates.forEach((poly) =>
+        poly.forEach((ring) =>
+          ring.forEach((c) => {
+            xs.push(c[0]);
+            ys.push(c[1]);
+          }),
+        ),
+      );
+    }
+  };
+  walk(geometry);
+  if (xs.length === 0) return null;
+  const xmin = Math.min(...xs);
+  const xmax = Math.max(...xs);
+  const ymin = Math.min(...ys);
+  const ymax = Math.max(...ys);
+  if (!isFiniteExtent(xmin, ymin, xmax, ymax)) return null;
+  return { xmin, ymin, xmax, ymax };
+}
+
+function bboxesOverlap(
+  a: { xmin: number; ymin: number; xmax: number; ymax: number },
+  b: { xmin: number; ymin: number; xmax: number; ymax: number },
+): boolean {
+  return !(a.xmax < b.xmin || a.xmin > b.xmax || a.ymax < b.ymin || a.ymin > b.ymax);
+}
+
+async function selectionGeometryToPolygon4326(
+  geometry: GeoJSON.Geometry,
+): Promise<__esri.Polygon | null> {
+  const wkid = inferGeoJsonPlanarWkid(geometry);
+  const local = geoJsonToArcgisPolygonInSR(geometry, wkid);
+  if (!local) return null;
+  await projection.load();
+  const out = projection.project(local, { wkid: 4326 }) as __esri.Polygon | null;
+  return out ?? null;
+}
+
+/** Project selection into the map SR and zoom; avoids mis-tagged 4326 extents that blank the view. */
+async function goToSelectionGeometry(
+  mapView: __esri.MapView,
+  geometry: GeoJSON.Geometry,
+): Promise<void> {
+  try {
+    const wkid = inferGeoJsonPlanarWkid(geometry);
+    const local = geoJsonToArcgisPolygonInSR(geometry, wkid);
+    if (!local) return;
+    await projection.load();
+    const projected = projection.project(local, mapView.spatialReference) as __esri.Polygon | null;
+    const ext = projected?.extent;
+    if (!ext || !isFiniteExtent(ext.xmin, ext.ymin, ext.xmax, ext.ymax)) return;
+    if (!Number.isFinite(ext.width) || !Number.isFinite(ext.height) || ext.width <= 0 || ext.height <= 0) {
+      return;
+    }
+    await mapView.goTo(ext.expand(1.3), { duration: 500 });
+  } catch (e) {
+    console.warn('[goToSelectionGeometry] Zoom skipped:', e);
+  }
+}
+
+/** PA block group / census tract files ship broken polygon coords; Census internal points are valid WGS84. */
+async function goToBoundaryCentroids(
+  mapView: __esri.MapView,
+  points: [number, number][],
+): Promise<void> {
+  if (points.length === 0) return;
+  try {
+    await projection.load();
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const xmin = Math.min(...xs);
+    const xmax = Math.max(...xs);
+    const ymin = Math.min(...ys);
+    const ymax = Math.max(...ys);
+    const pad = 0.02;
+    const extent4326 = new Extent({
+      xmin: xmin - pad,
+      ymin: ymin - pad,
+      xmax: xmax + pad,
+      ymax: ymax + pad,
+      spatialReference: { wkid: 4326 },
+    });
+    const projected = projection.project(extent4326, mapView.spatialReference) as __esri.Extent | null;
+    if (!projected?.width || !projected?.height) return;
+    await mapView.goTo(projected.expand(1.2), { duration: 500 });
+  } catch (e) {
+    console.warn('[goToBoundaryCentroids] Zoom skipped:', e);
+  }
+}
+
+function collectPrecinctsForCensusInternalPoints(
+  centroidLngLat: [number, number][],
+  boundaries: GeoJSON.FeatureCollection,
+  allPrecinctScores: Map<string, PrecinctPoliticalScores>,
+  allTargetingScores: Record<string, unknown>,
+): Array<{
+  name: string;
+  overlapRatio: number;
+  registeredVoters: number;
+  partisanLean: number;
+}> {
+  if (centroidLngLat.length === 0) return [];
+
+  const points = centroidLngLat.map(
+    ([lng, lat]) =>
+      new Point({ longitude: lng, latitude: lat, spatialReference: { wkid: 4326 } }),
+  );
+  const matchedPrecincts = new Set<string>();
+  const out: Array<{
+    name: string;
+    overlapRatio: number;
+    registeredVoters: number;
+    partisanLean: number;
+  }> = [];
+
+  for (const feature of boundaries.features) {
+    const g = feature.geometry;
+    if (!g || (g.type !== 'Polygon' && g.type !== 'MultiPolygon')) continue;
+
+    const props = feature.properties as Record<string, unknown> | undefined;
+    const precinctKey =
+      props?.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ''
+        ? String(props.UNIQUE_ID)
+        : props?.precinct_id != null && String(props.precinct_id) !== ''
+          ? String(props.precinct_id)
+          : props?.NAME != null && String(props.NAME) !== ''
+            ? String(props.NAME)
+            : '';
+    if (!precinctKey || matchedPrecincts.has(precinctKey)) continue;
+
+    const precBbox = geojsonBBox(g);
+    const precinctPoly = geoJsonToArcgisPolygonInSR(g, 4326);
+    if (!precinctPoly) continue;
+
+    let anyPointInside = false;
+    for (const pt of points) {
+      const lng = pt.longitude;
+      const lat = pt.latitude;
+      if (
+        precBbox &&
+        (lng < precBbox.xmin ||
+          lng > precBbox.xmax ||
+          lat < precBbox.ymin ||
+          lat > precBbox.ymax)
+      ) {
+        continue;
+      }
+      try {
+        if (geometryEngine.contains(precinctPoly, pt) || geometryEngine.intersects(precinctPoly, pt)) {
+          anyPointInside = true;
+          break;
+        }
+      } catch {
+        /* invalid geom pair */
+      }
+    }
+
+    if (!anyPointInside) continue;
+
+    matchedPrecincts.add(precinctKey);
+    const scores =
+      allPrecinctScores.get(precinctKey) ??
+      Array.from(allPrecinctScores.values()).find((s) => s.precinctName === precinctKey);
+    const targeting = allTargetingScores[precinctKey] as Record<string, unknown> | undefined;
+
+    out.push({
+      name: precinctKey,
+      overlapRatio: 1,
+      registeredVoters:
+        Number(targeting?.registered_voters) ||
+        Number(targeting?.active_voters) ||
+        0,
+      partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
+    });
+  }
+
+  return out;
 }
 
 export function PoliticalAnalysisPanel({
@@ -256,8 +464,6 @@ export function PoliticalAnalysisPanel({
   selectedH3Cell,
   onClearSelection,
   onBoundarySelectionChange,
-  enableAIMode = false,
-  onAreaAnalyzed,
   onIQAction,
 }: PoliticalAnalysisPanelProps) {
   // State
@@ -351,9 +557,9 @@ export function PoliticalAnalysisPanel({
 
       const registeredVoters = Number(
         attrs.Registered_Voters ??
-          attrs.registered_voters ??
-          unified?.demographics?.registeredVoters ??
-          0,
+        attrs.registered_voters ??
+        unified?.demographics?.registeredVoters ??
+        0,
       );
       const population = Number(
         attrs.total_population ?? unified?.demographics?.totalPopulation ?? 0,
@@ -385,8 +591,8 @@ export function PoliticalAnalysisPanel({
         ),
         persuasionOpportunity: Number(
           attrs.persuasion_opportunity ??
-            unified?.targeting?.persuasionOpportunity ??
-            0,
+          unified?.targeting?.persuasionOpportunity ??
+          0,
         ),
         targetingStrategy:
           (attrs.targeting_strategy as string) ||
@@ -668,6 +874,13 @@ export function PoliticalAnalysisPanel({
     const voters = result.totalRegisteredVoters;
     const turnout = result.estimatedTurnout;
 
+    if (result.totalPrecincts === 0 || voters === 0) {
+      insights.push(
+        'No precincts intersect your buffer or drawn shape. Enlarge the buffer, redraw over Pennsylvania, or use the Select tab to choose precincts.',
+      );
+      return insights;
+    }
+
     // Partisan lean insight
     if (Math.abs(lean) < 5) {
       if (Math.abs(lean) < 0.05) {
@@ -723,9 +936,9 @@ export function PoliticalAnalysisPanel({
     // Strategy distribution insight
     const strategies = result.targetingScores?.strategyDistribution || {};
     const topStrategy = Object.entries(strategies).sort(([, a], [, b]) => b - a)[0];
-    if (topStrategy) {
+    if (topStrategy && result.totalPrecincts > 0) {
       const [strategy, count] = topStrategy;
-      const percentage = (count / result.totalPrecincts * 100).toFixed(0);
+      const percentage = ((count / result.totalPrecincts) * 100).toFixed(0);
       insights.push(`${percentage}% of precincts recommend "${strategy}" strategy. This should inform your overall campaign approach for this area.`);
     }
 
@@ -741,12 +954,20 @@ export function PoliticalAnalysisPanel({
     setIsAnalyzing(true);
     setActiveTab('results');
 
-    // Zoom map to the selected area's extent
+    // Zoom map (block group / census tract polygons in PA data are invalid; use Census internal points)
     if (view && selection.geometry) {
       try {
-        const extent = getGeometryExtent(selection.geometry);
-        if (extent) {
-          await view.goTo(extent, { duration: 500 });
+        const cents = selection.metadata.boundaryCentroids;
+        const bt = selection.metadata.boundaryType;
+        if (
+          selection.method === 'boundary-select' &&
+          (bt === 'block-group' || bt === 'census-tract') &&
+          Array.isArray(cents) &&
+          cents.length > 0
+        ) {
+          await goToBoundaryCentroids(view, cents);
+        } else {
+          await goToSelectionGeometry(view, selection.geometry);
         }
       } catch (zoomError) {
         console.warn('[PoliticalAnalysisPanel] Could not zoom to selection:', zoomError);
@@ -772,7 +993,10 @@ export function PoliticalAnalysisPanel({
             aggregatedMetrics: {
               avg_swing_potential: result.weightedSwingPotential,
               total_registered_voters: result.totalRegisteredVoters,
-              avg_turnout: result.estimatedTurnout / result.totalRegisteredVoters,
+              avg_turnout:
+                result.totalRegisteredVoters > 0
+                  ? result.estimatedTurnout / result.totalRegisteredVoters
+                  : 0,
             },
             timestamp: new Date(),
           }
@@ -810,13 +1034,19 @@ export function PoliticalAnalysisPanel({
     const allPrecinctScores = await politicalDataService.getAllPrecinctScores();
     const allTargetingScores = await politicalDataService.getAllTargetingScores();
 
-    // For boundary-select and click-select methods, use selected boundaries directly
-    if ((selection.method === 'boundary-select' || selection.method === 'click-select') && selection.metadata.boundaryNames) {
-      const includedPrecincts = selection.metadata.boundaryNames.map((name) => {
+    // Precinct pick lists only: names are UNIQUE_IDs. ZIP/tract/etc. must use spatial ∩ precincts.
+    const isPrecinctIdListSelection =
+      (selection.method === 'boundary-select' || selection.method === 'click-select') &&
+      selection.metadata.boundaryType === 'precinct' &&
+      Array.isArray(selection.metadata.boundaryNames) &&
+      selection.metadata.boundaryNames.length > 0;
+
+    if (isPrecinctIdListSelection) {
+      const includedPrecincts = selection.metadata.boundaryNames!.map((name) => {
         const scores =
           allPrecinctScores.get(name) ??
           Array.from(allPrecinctScores.values()).find((s) => s.precinctName === name);
-        const targeting = allTargetingScores[name] as Record<string, unknown> | undefined;
+        const targeting = allTargetingScores[name] as unknown as Record<string, unknown> | undefined;
 
         return {
           name,
@@ -829,7 +1059,6 @@ export function PoliticalAnalysisPanel({
         };
       });
 
-      // Convert Map to Record for compatibility
       const scoresRecord: Record<string, any> = {};
       allPrecinctScores.forEach((scores, name) => {
         scoresRecord[name] = {
@@ -847,11 +1076,25 @@ export function PoliticalAnalysisPanel({
       return calculateAggregateMetrics(selection, includedPrecincts, scoresRecord, allTargetingScores);
     }
 
-    // For other methods (draw, click-buffer, search)
-    // Pennsylvania precinct boundaries (same source as Select tab)
+    // For other methods (draw, click-buffer, search): real polygon ∩ precinct (WGS84 file data)
     const boundaries = await loadBoundaryFeatureCollection(BOUNDARY_LAYERS.precinct);
 
-    // Find precincts that intersect the selection geometry
+    const selectionPoly4326 = await selectionGeometryToPolygon4326(selection.geometry);
+    if (!selectionPoly4326) {
+      throw new Error('Could not build selection geometry for spatial filter');
+    }
+
+    const ext4326 = selectionPoly4326.extent;
+    const selBbox =
+      ext4326 &&
+        isFiniteExtent(ext4326.xmin, ext4326.ymin, ext4326.xmax, ext4326.ymax)
+        ? {
+          xmin: ext4326.xmin,
+          ymin: ext4326.ymin,
+          xmax: ext4326.xmax,
+          ymax: ext4326.ymax,
+        }
+        : null;
     const intersectingPrecincts: Array<{
       name: string;
       overlapRatio: number;
@@ -860,6 +1103,9 @@ export function PoliticalAnalysisPanel({
     }> = [];
 
     for (const feature of boundaries.features) {
+      const g = feature.geometry;
+      if (!g || (g.type !== 'Polygon' && g.type !== 'MultiPolygon')) continue;
+
       const props = feature.properties as Record<string, unknown> | undefined;
       const precinctKey =
         props?.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ''
@@ -871,75 +1117,36 @@ export function PoliticalAnalysisPanel({
               : '';
       if (!precinctKey) continue;
 
-      // Simple containment check - if precinct centroid is inside selection
-      // For production, would use proper geometry intersection
+      if (selBbox) {
+        const precBbox = geojsonBBox(g);
+        if (!precBbox || !bboxesOverlap(selBbox, precBbox)) continue;
+      }
+
+      const precinctPoly = geoJsonToArcgisPolygonInSR(g, 4326);
+      if (!precinctPoly) continue;
+
+      let hits = false;
+      try {
+        hits = geometryEngine.intersects(selectionPoly4326, precinctPoly);
+      } catch {
+        continue;
+      }
+      if (!hits) continue;
+
       const scores =
         allPrecinctScores.get(precinctKey) ??
         Array.from(allPrecinctScores.values()).find((s) => s.precinctName === precinctKey);
       const targeting = allTargetingScores[precinctKey] as Record<string, unknown> | undefined;
 
-      // Estimate overlap ratio based on selection method
-      let overlapRatio = 0;
-      if (selection.method === 'click-buffer') {
-        // For buffer, assume 100% if close to center
-        overlapRatio = 1.0;
-      } else if (selection.method === 'draw') {
-        // For drawn polygon, would need spatial analysis
-        overlapRatio = 0.8;
-      } else if (selection.method === 'search') {
-        // For search, assume full inclusion
-        overlapRatio = 1.0;
-      }
-
-      if (overlapRatio > 0) {
-        intersectingPrecincts.push({
-          name: precinctKey,
-          overlapRatio,
-          registeredVoters:
-            Number(targeting?.registered_voters) ||
-            Number(targeting?.active_voters) ||
-            0,
-          partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
-        });
-      }
-    }
-
-    // If no precincts found, sample from targeting when it is the primary dataset (e.g. PA)
-    if (intersectingPrecincts.length === 0) {
-      const targetingKeys = Object.keys(allTargetingScores);
-      if (targetingKeys.length > allPrecinctScores.size) {
-        const sampleSize = Math.min(5, targetingKeys.length);
-        for (let i = 0; i < sampleSize; i++) {
-          const name = targetingKeys[i];
-          const targeting = allTargetingScores[name] as Record<string, unknown> | undefined;
-          intersectingPrecincts.push({
-            name,
-            overlapRatio: 1.0,
-            registeredVoters:
-              Number(targeting?.registered_voters) ||
-              Number(targeting?.active_voters) ||
-              0,
-            partisanLean: resolvePartisanLeanForDisplay(undefined, targeting),
-          });
-        }
-      } else {
-        const sampleSize = Math.min(5, allPrecinctScores.size);
-        let count = 0;
-        for (const [name, scores] of allPrecinctScores) {
-          if (count >= sampleSize) break;
-          const targeting = allTargetingScores[name] as Record<string, unknown> | undefined;
-          intersectingPrecincts.push({
-            name,
-            overlapRatio: 1.0,
-            registeredVoters:
-              Number(targeting?.registered_voters) ||
-              Number(targeting?.active_voters) ||
-              0,
-            partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
-          });
-          count++;
-        }
-      }
+      intersectingPrecincts.push({
+        name: precinctKey,
+        overlapRatio: 1,
+        registeredVoters:
+          Number(targeting?.registered_voters) ||
+          Number(targeting?.active_voters) ||
+          0,
+        partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
+      });
     }
 
     // Convert Map to Record for compatibility
@@ -1809,52 +2016,53 @@ export function PoliticalAnalysisPanel({
                           0,
                         );
                         return (
-                        <div className="space-y-2 border-t pt-4">
-                          <h4 className="text-xs font-medium flex items-center gap-2">
-                            <Info className="h-3 w-3 text-[#33a852]" />
-                            Statewide strategy mix (full dataset)
-                          </h4>
-                          <div className="grid grid-cols-2 gap-2">
-                            {stratEntries
-                              .sort(([, a], [, b]) => b - a)
-                              .slice(0, 4)
-                              .map(([strategy, count]) => {
-                                const pct =
-                                  stratTotal > 0
-                                    ? (Number(count) / stratTotal) * 100
-                                    : 0;
-                                return (
-                                <Tooltip key={strategy}>
-                                  <TooltipTrigger asChild>
-                                    <div
-                                      className="bg-muted/30 rounded-lg p-2 space-y-1 cursor-help hover:bg-muted/50 transition-colors"
-                                    >
-                                      <div className="flex items-center gap-1">
-                                        <div className={`w-2 h-2 rounded-full ${getStrategyColor(strategy)}`} />
-                                        <span className="text-xs font-medium truncate">{strategy}</span>
-                                      </div>
-                                      <div className="text-xs font-bold">
-                                        {pct.toFixed(1)}%
-                                      </div>
-                                      <div className="text-[10px] text-muted-foreground">
-                                        {Number(count).toLocaleString()} precincts
-                                      </div>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs">
-                                    <p>
-                                      {getStrategyTooltip(strategy)} ({Number(count).toLocaleString()}{' '}
-                                      precincts, {pct.toFixed(1)}% of dataset.)
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              );})}
+                          <div className="space-y-2 border-t pt-4">
+                            <h4 className="text-xs font-medium flex items-center gap-2">
+                              <Info className="h-3 w-3 text-[#33a852]" />
+                              Statewide strategy mix (full dataset)
+                            </h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              {stratEntries
+                                .sort(([, a], [, b]) => b - a)
+                                .slice(0, 4)
+                                .map(([strategy, count]) => {
+                                  const pct =
+                                    stratTotal > 0
+                                      ? (Number(count) / stratTotal) * 100
+                                      : 0;
+                                  return (
+                                    <Tooltip key={strategy}>
+                                      <TooltipTrigger asChild>
+                                        <div
+                                          className="bg-muted/30 rounded-lg p-2 space-y-1 cursor-help hover:bg-muted/50 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-1">
+                                            <div className={`w-2 h-2 rounded-full ${getStrategyColor(strategy)}`} />
+                                            <span className="text-xs font-medium truncate">{strategy}</span>
+                                          </div>
+                                          <div className="text-xs font-bold">
+                                            {pct.toFixed(1)}%
+                                          </div>
+                                          <div className="text-[10px] text-muted-foreground">
+                                            {Number(count).toLocaleString()} precincts
+                                          </div>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs">
+                                        <p>
+                                          {getStrategyTooltip(strategy)} ({Number(count).toLocaleString()}{' '}
+                                          precincts, {pct.toFixed(1)}% of dataset.)
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                            </div>
+                            <div className="text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
+                              Dataset avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
+                              Persuasion: {targetingSummary.score_stats.persuasion.mean.toFixed(0)}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
-                            Dataset avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
-                            Persuasion: {targetingSummary.score_stats.persuasion.mean.toFixed(0)}
-                          </div>
-                        </div>
                         );
                       })()}
 

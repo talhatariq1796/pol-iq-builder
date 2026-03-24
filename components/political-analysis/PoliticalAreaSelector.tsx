@@ -100,12 +100,12 @@ const SELECTION_METHODS: Array<{
       icon: <Search className="h-3.5 w-3.5 shrink-0" />,
       description: 'Search for an address and create a buffer around it',
     },
-    {
-      id: 'boundary-select',
-      label: 'Boundaries',
-      icon: <Layers className="h-3.5 w-3.5 shrink-0" />,
-      description: 'Select from precincts, ZIP codes, or other boundaries',
-    },
+    // {
+    //   id: 'boundary-select',
+    //   label: 'Boundaries',
+    //   icon: <Layers className="h-3.5 w-3.5 shrink-0" />,
+    //   description: 'Select from precincts, ZIP codes, or other boundaries',
+    // },
   ];
 
 // Buffer presets (miles for US users)
@@ -1045,7 +1045,7 @@ export function PoliticalAreaSelector({
           ) : (
             <>
               {/* Buffer type selector */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label className="text-xs font-medium">Buffer Type</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
@@ -1076,7 +1076,7 @@ export function PoliticalAreaSelector({
                     Walk
                   </Button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Buffer value selector */}
               <div className="space-y-2">
@@ -1192,7 +1192,7 @@ export function PoliticalAreaSelector({
               )}
 
               {/* Buffer type selector */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label className="text-xs font-medium">Buffer Type</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
@@ -1223,7 +1223,7 @@ export function PoliticalAreaSelector({
                     Walk
                   </Button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Buffer value selector */}
               <div className="space-y-2">

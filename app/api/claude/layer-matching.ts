@@ -1,6 +1,7 @@
 // pages/api/layer-matching.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 import { layers, concepts } from '../../../config/layers';
 import type { LayerConfig } from '../../../types/layers';
 import type { LayerMatch } from '../../../types/layer-matching';
@@ -191,7 +192,7 @@ async function performAIMatching(anthropic: Anthropic, question: string, layers:
       question.toLowerCase().includes('neighborhood') || question.toLowerCase().includes('zone'));
 
   const response = await anthropic.messages.create({
-    model: "claude-3-sonnet-20240229",
+    model: resolveClaudeModel(),
     max_tokens: 1024,
     temperature: 0,
     system: `You are a geospatial data expert. Only return matches from these valid layer IDs: ${validLayerIds.join(', ')}. 

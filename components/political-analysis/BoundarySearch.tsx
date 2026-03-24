@@ -15,7 +15,6 @@ import {
   Search,
   Loader2,
   MapPin,
-  ChevronRight,
   Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -226,23 +225,15 @@ export function BoundarySearch({
                   </Badge>
 
                   {/* Priority badge */}
-                  {feature.targetingPriority && (
+                  {/* {feature.targetingPriority && (
                     <Badge
                       variant={getPriorityVariant(feature.targetingPriority)}
                       className="text-xs px-1.5 py-0 h-5"
                     >
                       {feature.targetingPriority}
                     </Badge>
-                  )}
+                  )} */}
                 </div>
-
-                {/* Arrow indicator */}
-                <ChevronRight
-                  className={cn(
-                    'h-4 w-4 text-muted-foreground transition-transform',
-                    isSelected && 'text-primary'
-                  )}
-                />
               </div>
             );
           })}
@@ -271,6 +262,7 @@ export function BoundarySearch({
           >
             Clear selection
           </Button>
+          {/* Select all — disabled: selects thousands of features and is easy to mis-click
           <Button
             variant="ghost"
             size="sm"
@@ -278,6 +270,7 @@ export function BoundarySearch({
           >
             Select all ({features.length})
           </Button>
+          */}
         </div>
       )}
     </div>
