@@ -33,7 +33,8 @@ export const defaultSegments: SegmentDefinition[] = [
   {
     id: 'preset-base-mobilization',
     name: 'Base Mobilization Targets',
-    description: 'Strong partisan areas with lower turnout - focus on GOTV',
+    description:
+      'Strong Democratic areas with room for turnout improvement — GOTV focus (thresholds tuned for PA targeting score scale 0–~52, not legacy 0–100)',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     filters: {
@@ -42,16 +43,17 @@ export const defaultSegments: SegmentDefinition[] = [
         competitiveness: ['safe_d', 'likely_d'],
       },
       targeting: {
-        min_gotv_priority: 70,
-        max_turnout: 60,
-        targeting_strategy: ['Base Mobilization'],
+        min_gotv_priority: 35,
+        max_turnout: 95,
+        // PA build uses Maintenance / Persuasion Target / Battleground — not the label "Base Mobilization"
       },
     },
   },
   {
     id: 'preset-college-independents',
     name: 'College-Educated Independents',
-    description: 'High-education independent voters in competitive areas',
+    description:
+      'High-education voters in competitive areas (min_independent_pct 18 matches PA-derived affiliation model; 25% excluded swing precincts)',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     filters: {
@@ -59,7 +61,7 @@ export const defaultSegments: SegmentDefinition[] = [
         min_college_pct: 60,
       },
       political: {
-        min_independent_pct: 25,
+        min_independent_pct: 18,
         competitiveness: ['toss_up', 'lean_d', 'lean_r'],
       },
       targeting: {
@@ -103,7 +105,8 @@ export const defaultSegments: SegmentDefinition[] = [
   {
     id: 'preset-rural-conservative',
     name: 'Rural Conservative Base',
-    description: 'Rural, conservative-leaning areas for Republican base mobilization',
+    description:
+      'Rural, conservative-leaning areas (min GOTV aligned with PA statewide targeting scale ~0–52)',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     filters: {
@@ -115,7 +118,7 @@ export const defaultSegments: SegmentDefinition[] = [
         party_lean: 'strong_rep',
       },
       targeting: {
-        min_gotv_priority: 60,
+        min_gotv_priority: 35,
       },
     },
   },

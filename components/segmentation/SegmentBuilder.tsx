@@ -854,47 +854,6 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     });
   };
 
-  /**
-   * Handle AI actions
-   */
-  const handleAIAction = (action: { type: string; payload: Record<string, unknown> }) => {
-    console.log('[SegmentBuilder] AI action received:', action);
-
-    switch (action.type) {
-      case 'applyFilter':
-        // Apply filters from AI suggestion
-        if (action.payload.filters) {
-          setFilters(action.payload.filters as ExtendedSegmentFilters);
-        }
-        break;
-
-      case 'createSegment':
-        // Create a segment from AI parameters
-        if (action.payload.name && action.payload.filters) {
-          setSegmentName(action.payload.name as string);
-          setFilters(action.payload.filters as ExtendedSegmentFilters);
-          setIsSaveDialogOpen(true);
-        }
-        break;
-
-      case 'showOnMap':
-        // Show results on map
-        handleShowOnMap();
-        break;
-
-      case 'navigateTo':
-        // Navigate to a different page with context preservation
-        if (action.payload.url) {
-          const url = action.payload.url as string;
-          // Extract tool name from URL path
-          const toolMatch = url.match(/^\/([\w-]+)/);
-          const tool = toolMatch ? toolMatch[1] : 'political-ai';
-          CrossToolNavigator.navigateWithContext(tool as 'segments' | 'donors' | 'canvass' | 'compare' | 'political-ai', {});
-        }
-        break;
-    }
-  };
-
   // Preset options
   const presetOptions = useMemo(() => getAllPresets(), []);
 
@@ -1146,7 +1105,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               Export...
             </Button>
 
-            <Button
+            {/* <Button
               variant="outline"
               className="w-full"
               onClick={handleShowOnMap}
@@ -1154,7 +1113,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
             >
               <Map className="h-4 w-4 mr-2" />
               View on Map
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>
@@ -1316,7 +1275,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLoadPreset('swing_voters')}
+                        onClick={() => handleLoadPreset('preset-suburban-swing')}
                       >
                         <Target className="h-4 w-4 mr-1" />
                         Swing Voters
@@ -1324,7 +1283,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLoadPreset('gotv_targets')}
+                        onClick={() => handleLoadPreset('preset-base-mobilization')}
                       >
                         <Target className="h-4 w-4 mr-1" />
                         GOTV Targets
@@ -1332,7 +1291,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLoadPreset('high_turnout_dems')}
+                        onClick={() => handleLoadPreset('preset-college-independents')}
                       >
                         <Target className="h-4 w-4 mr-1" />
                         High Turnout Dems

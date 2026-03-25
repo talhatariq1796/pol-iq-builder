@@ -29,6 +29,7 @@
     "test:patterns": "jest tests/validation/QueryPatternAnalyzer.test.ts",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "build:pa-targeting": "ts-node scripts/build-pa-targeting-scores.ts",
+    "build:pa-demographics": "ts-node scripts/build-pa-precinct-demographics.ts",
     "build:pa-district-crosswalk": "ts-node scripts/build-pa-precinct-district-crosswalk.ts",
     "split-geojson": "ts-node scripts/split-geojson-for-github.ts"
   },

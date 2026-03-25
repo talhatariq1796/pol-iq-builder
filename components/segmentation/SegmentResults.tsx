@@ -45,11 +45,10 @@ const PrecinctRow = React.memo(function PrecinctRow({
       key={precinct.precinctId}
       onClick={onClick}
       tabIndex={0}
-      className={`cursor-pointer transition-colors focus:outline-none ${
-        isSelected
-          ? 'bg-[#33a852]/10 dark:bg-green-900/20 ring-2 ring-[#33a852] ring-inset'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-      }`}
+      className={`cursor-pointer transition-colors focus:outline-none ${isSelected
+        ? 'bg-[#33a852]/10 dark:bg-green-900/20 ring-2 ring-[#33a852] ring-inset'
+        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+        }`}
       data-precinct-id={precinct.precinctId}
     >
       <TableCell className="font-medium">{precinct.precinctName}</TableCell>
@@ -322,7 +321,7 @@ export function SegmentResults({ results, onShowOnMap, onExportCSV, onPrecinctSe
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        <Button
+        {/* <Button
           onClick={() => {
             if (onShowOnMap) {
               onShowOnMap();
@@ -342,8 +341,8 @@ export function SegmentResults({ results, onShowOnMap, onExportCSV, onPrecinctSe
         >
           <Map className="h-4 w-4" />
           View on Map
-        </Button>
-        <Button onClick={onExportCSV} variant="outline" className="flex items-center gap-2">
+        </Button> */}
+        <Button onClick={onExportCSV} variant="default" className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Export CSV
         </Button>

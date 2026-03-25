@@ -57,6 +57,8 @@ interface PrecinctData {
     persuasionOpportunity: number;
     combinedScore: number;
     strategy: string;
+    /** PA export: GOTV tier label (e.g. "Low Priority") — pairs with UI `low_priority` strategy filter */
+    gotvClassification?: string;
   };
 
   engagement?: {
@@ -149,6 +151,28 @@ export class SegmentEngine {
   }
 
   /**
+   * PA targeting JSON uses `Maintenance` / `Persuasion Target` / `Battleground` on `targeting_strategy`,
+   * and `Low Priority` on `gotv_classification` — not the same strings as the UI campaign strategy checkboxes.
+   * Map filter tokens to those fields so Base Mobilization / Low Priority return results.
+   */
+  private precinctMatchesCampaignStrategyToken(
+    precinct: PrecinctData,
+    normalizedFilter: string,
+  ): boolean {
+    const strat = precinct.targeting.strategy?.toLowerCase().replace(/\s+/g, '_') ?? '';
+    const gotvCls =
+      precinct.targeting.gotvClassification?.toLowerCase().replace(/\s+/g, '_') ?? '';
+
+    if (normalizedFilter === 'base_mobilization') {
+      return strat === 'base_mobilization' || strat === 'maintenance';
+    }
+    if (normalizedFilter === 'low_priority') {
+      return strat === 'low_priority' || gotvCls === 'low_priority';
+    }
+    return strat === normalizedFilter;
+  }
+
+  /**
    * Check if a precinct matches all filter categories
    */
   private matchesAllFilters(precinct: PrecinctData, filters: ExtendedSegmentFilters): boolean {
@@ -156,23 +180,23 @@ export class SegmentEngine {
     const topLevelStrategy = (filters as any).targeting_strategy || (filters as any).strategy;
     if (topLevelStrategy && topLevelStrategy.length > 0) {
       const precinctStrategy = precinct.targeting.strategy;
-      
+      const normalizedFilters = topLevelStrategy.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
+
       // If strategy is 'Unknown', derive it from scores instead of rejecting
       if (precinctStrategy === 'Unknown' || !precinctStrategy) {
-        // Derive strategy from scores when strategy is unknown
         const derivedStrategy = this.deriveStrategyFromScores(precinct);
-        const normalizedPrecinctStrategy = derivedStrategy?.toLowerCase().replace(/\s+/g, '_');
-        const normalizedFilters = topLevelStrategy.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
-        if (!normalizedFilters.includes(normalizedPrecinctStrategy)) {
-          return false;
-        }
+        const derivedNorm = derivedStrategy?.toLowerCase().replace(/\s+/g, '_') ?? '';
+        const matches = normalizedFilters.some((f: string) => {
+          if (f === 'base_mobilization') return derivedNorm === 'base_mobilization';
+          if (f === 'low_priority') return derivedNorm === 'low_priority';
+          return derivedNorm === f;
+        });
+        if (!matches) return false;
       } else {
-        // Normalize strategy values for comparison (handle both 'Persuasion Target' and 'persuasion_target')
-        const normalizedPrecinctStrategy = precinctStrategy?.toLowerCase().replace(/\s+/g, '_');
-        const normalizedFilters = topLevelStrategy.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
-        if (!normalizedFilters.includes(normalizedPrecinctStrategy)) {
-          return false;
-        }
+        const strategyOk = normalizedFilters.some((f: string) =>
+          this.precinctMatchesCampaignStrategyToken(precinct, f),
+        );
+        if (!strategyOk) return false;
       }
     }
 
@@ -600,12 +624,19 @@ export class SegmentEngine {
     const pol = precinct.political;
     const elec = precinct.electoral;
 
-    // Party lean (accepts array)
-    if (filters.partyLean && filters.partyLean.length > 0) {
+    const partyLeanList =
+      filters.partyLean && filters.partyLean.length > 0
+        ? filters.partyLean
+        : filters.party_lean
+          ? [filters.party_lean]
+          : undefined;
+
+    // Party lean (accepts array; preset single value uses party_lean)
+    if (partyLeanList && partyLeanList.length > 0) {
       const lean = elec.partisanLean;
       let matches = false;
 
-      for (const leanType of filters.partyLean) {
+      for (const leanType of partyLeanList) {
         switch (leanType) {
           case 'strong_dem':
             if (lean < -20) matches = true;
@@ -640,13 +671,14 @@ export class SegmentEngine {
       return false;
     }
 
-    // Political outlook
-    if (filters.politicalOutlook) {
+    // Political outlook (component: politicalOutlook; preset: outlook)
+    const outlookFilter = filters.politicalOutlook ?? filters.outlook;
+    if (outlookFilter) {
       const liberalPct = pol.liberalPct;
       const moderatePct = pol.moderatePct;
       const conservativePct = pol.conservativePct;
 
-      switch (filters.politicalOutlook) {
+      switch (outlookFilter) {
         case 'liberal':
           if (liberalPct <= moderatePct || liberalPct <= conservativePct) return false;
           break;
@@ -772,13 +804,12 @@ export class SegmentEngine {
         // Top-level check in matchesAllFilters will derive and check strategy
         return true;
       }
-      
-      // Normalize strategy values for comparison (handle both 'Persuasion Target' and 'persuasion_target')
-      const normalizedPrecinctStrategy = tgt.strategy?.toLowerCase().replace(/\s+/g, '_');
+
       const normalizedFilters = strategyFilter.map((s: string) => s.toLowerCase().replace(/\s+/g, '_'));
-      if (!normalizedFilters.includes(normalizedPrecinctStrategy)) {
-        return false;
-      }
+      const strategyOk = normalizedFilters.some((f: string) =>
+        this.precinctMatchesCampaignStrategyToken(precinct, f),
+      );
+      if (!strategyOk) return false;
     }
 
     // Turnout range (component format)
@@ -847,7 +878,14 @@ export class SegmentEngine {
           if (Math.abs(eng.cnnMsnbcPct - eng.foxNewsmaxPct) > 10) return false;
           break;
         case 'social_first':
+          // "Social first" = leading platform vs cable (not merely any use >=50%)
           if (eng.socialMediaPct < 50) return false;
+          if (
+            eng.socialMediaPct <= eng.cnnMsnbcPct ||
+            eng.socialMediaPct <= eng.foxNewsmaxPct
+          ) {
+            return false;
+          }
           break;
         case 'npr':
           if (eng.nprPct < 20) return false;
@@ -867,7 +905,14 @@ export class SegmentEngine {
           if (Math.abs(eng.cnnMsnbcPct - eng.foxNewsmaxPct) > 10) return false;
           break;
         case 'social_first':
+          // "Social first" = leading platform vs cable (not merely any use >=50%)
           if (eng.socialMediaPct < 50) return false;
+          if (
+            eng.socialMediaPct <= eng.cnnMsnbcPct ||
+            eng.socialMediaPct <= eng.foxNewsmaxPct
+          ) {
+            return false;
+          }
           break;
         case 'npr':
           if (eng.nprPct < 20) return false;

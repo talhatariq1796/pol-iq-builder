@@ -1,45 +1,99 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { ElectoralFilters as ElectoralFiltersType } from '@/lib/segmentation/types';
+import { formatPoliticalDistrictLabel } from '@/lib/political/formatPoliticalDistrictLabel';
 
 interface ElectoralFiltersProps {
   filters: ElectoralFiltersType;
   onChange: (filters: ElectoralFiltersType) => void;
 }
 
-// Sample options for Pennsylvania (canonical ids match pa_precinct_district_crosswalk.json)
-const STATE_HOUSE_DISTRICTS = [
-  { id: 'pa-house-100', name: '100th House District', representative: 'See crosswalk' },
-  { id: 'pa-house-171', name: '171st House District', representative: 'See crosswalk' },
-  { id: 'pa-house-23', name: '23rd House District', representative: 'See crosswalk' },
-  { id: 'pa-house-50', name: '50th House District', representative: 'See crosswalk' },
-  { id: 'pa-house-200', name: '200th House District', representative: 'See crosswalk' },
-];
+const PA_CROSSWALK_URL = '/data/political/pensylvania/precincts/pa_precinct_district_crosswalk.json';
 
-const STATE_SENATE_DISTRICTS = [
-  { id: 'pa-senate-45', name: '45th Senate District' },
-  { id: 'pa-senate-48', name: '48th Senate District' },
-  { id: 'pa-senate-12', name: '12th Senate District' },
-];
+function titleCaseWords(s: string): string {
+  return s
+    .split(/\s+/)
+    .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(' ');
+}
 
-const CONGRESSIONAL_DISTRICT = {
-  id: 'pa-congress-07',
-  name: 'PA 7th Congressional District',
-};
+/** Crosswalk slugs like `columbia-beaver` → readable label */
+function formatMunicipalitySlug(slug: string): string {
+  const parts = slug.split('-');
+  if (parts.length < 2) return slug;
+  const county = parts[0];
+  const place = parts.slice(1).join(' ');
+  return `${titleCaseWords(place)} (${titleCaseWords(county)} Co.)`;
+}
 
-const MUNICIPALITIES = [
-  { id: 'philadelphia-philadelphia', name: 'Philadelphia (city)', type: 'city' as const },
-  { id: 'allegheny-pittsburgh', name: 'Pittsburgh (city)', type: 'city' as const },
-  { id: 'dauphin-harrisburg', name: 'Harrisburg (city)', type: 'city' as const },
-  { id: 'columbia-beaver', name: 'Beaver (township, Columbia Co.)', type: 'township' as const },
-];
+interface PaDistrictLists {
+  stateHouse: string[];
+  stateSenate: string[];
+  congressional: string[];
+  municipalities: string[];
+}
 
 export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
+  const [paLists, setPaLists] = useState<PaDistrictLists | null>(null);
+  const [paLoadError, setPaLoadError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(PA_CROSSWALK_URL);
+        if (!res.ok) {
+          if (!cancelled) {
+            setPaLoadError(true);
+            setPaLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
+          }
+          return;
+        }
+        const data = await res.json();
+        const precincts = data.precincts as Record<string, Record<string, string | null>> | undefined;
+        if (!precincts) {
+          if (!cancelled) {
+            setPaLoadError(true);
+            setPaLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
+          }
+          return;
+        }
+        const sh = new Set<string>();
+        const ss = new Set<string>();
+        const cd = new Set<string>();
+        const mun = new Set<string>();
+        for (const a of Object.values(precincts)) {
+          if (a.stateHouse) sh.add(String(a.stateHouse));
+          if (a.stateSenate) ss.add(String(a.stateSenate));
+          if (a.congressional) cd.add(String(a.congressional));
+          if (a.municipality) mun.add(String(a.municipality));
+        }
+        if (!cancelled) {
+          setPaLists({
+            stateHouse: [...sh].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+            stateSenate: [...ss].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+            congressional: [...cd].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+            municipalities: [...mun].sort((a, b) => a.localeCompare(b)),
+          });
+          setPaLoadError(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setPaLoadError(true);
+          setPaLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const updateFilter = <K extends keyof ElectoralFiltersType>(
     key: K,
     value: ElectoralFiltersType[K]
@@ -63,11 +117,12 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
     updateFilter('stateSenateDistricts', updated.length > 0 ? updated : undefined);
   };
 
-  const toggleCongressionalDistrict = (checked: boolean) => {
-    updateFilter(
-      'congressionalDistricts',
-      checked ? [CONGRESSIONAL_DISTRICT.id] : undefined
-    );
+  const toggleCongressionalDistrict = (districtId: string) => {
+    const current = filters.congressionalDistricts || [];
+    const updated = current.includes(districtId)
+      ? current.filter((d) => d !== districtId)
+      : [...current, districtId];
+    updateFilter('congressionalDistricts', updated.length > 0 ? updated : undefined);
   };
 
   const toggleMunicipality = (municipalityId: string) => {
@@ -88,96 +143,115 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
 
   return (
     <div className="space-y-6">
+      {paLoadError && (
+        <p className="text-sm text-muted-foreground">
+          Could not load Pennsylvania district lists. Place{' '}
+          <code className="text-xs">pa_precinct_district_crosswalk.json</code> under public data paths.
+        </p>
+      )}
+
       {/* State House Districts */}
       <div className="space-y-3">
         <Label>State House Districts</Label>
-        <div className="space-y-2">
-          {STATE_HOUSE_DISTRICTS.map((district) => (
-            <div key={district.id} className="flex items-start space-x-2">
-              <Checkbox
-                id={`state-house-${district.id}`}
-                checked={filters.stateHouseDistricts?.includes(district.id) ?? false}
-                onCheckedChange={() => toggleStateHouseDistrict(district.id)}
-              />
-              <div className="flex-1">
+        {!paLists ? (
+          <p className="text-sm text-muted-foreground">Loading districts…</p>
+        ) : (
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {paLists.stateHouse.map((id) => (
+              <div key={id} className="flex items-start space-x-2">
+                <Checkbox
+                  id={`state-house-${id}`}
+                  checked={filters.stateHouseDistricts?.includes(id) ?? false}
+                  onCheckedChange={() => toggleStateHouseDistrict(id)}
+                />
                 <label
-                  htmlFor={`state-house-${district.id}`}
+                  htmlFor={`state-house-${id}`}
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  {district.name}
+                  {formatPoliticalDistrictLabel(id)}
                 </label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {district.representative}
-                </p>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* State Senate Districts */}
       <div className="space-y-3">
         <Label>State Senate Districts</Label>
-        <div className="space-y-2">
-          {STATE_SENATE_DISTRICTS.map((district) => (
-            <div key={district.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`state-senate-${district.id}`}
-                checked={filters.stateSenateDistricts?.includes(district.id) ?? false}
-                onCheckedChange={() => toggleStateSenateDistrict(district.id)}
-              />
-              <label
-                htmlFor={`state-senate-${district.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {district.name}
-              </label>
-            </div>
-          ))}
-        </div>
+        {!paLists ? (
+          <p className="text-sm text-muted-foreground">Loading districts…</p>
+        ) : (
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {paLists.stateSenate.map((id) => (
+              <div key={id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`state-senate-${id}`}
+                  checked={filters.stateSenateDistricts?.includes(id) ?? false}
+                  onCheckedChange={() => toggleStateSenateDistrict(id)}
+                />
+                <label
+                  htmlFor={`state-senate-${id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {formatPoliticalDistrictLabel(id)}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Congressional District */}
+      {/* Congressional Districts */}
       <div className="space-y-3">
-        <Label>Congressional District</Label>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="congressional-pa-07"
-            checked={filters.congressionalDistricts?.includes(CONGRESSIONAL_DISTRICT.id) ?? false}
-            onCheckedChange={toggleCongressionalDistrict}
-          />
-          <label
-            htmlFor="congressional-pa-07"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            {CONGRESSIONAL_DISTRICT.name}
-          </label>
-        </div>
+        <Label>Congressional Districts</Label>
+        {!paLists ? (
+          <p className="text-sm text-muted-foreground">Loading districts…</p>
+        ) : (
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {paLists.congressional.map((id) => (
+              <div key={id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`congressional-${id}`}
+                  checked={filters.congressionalDistricts?.includes(id) ?? false}
+                  onCheckedChange={() => toggleCongressionalDistrict(id)}
+                />
+                <label
+                  htmlFor={`congressional-${id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {formatPoliticalDistrictLabel(id)}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Municipalities */}
       <div className="space-y-3">
         <Label>Municipalities</Label>
-        <div className="space-y-2">
-          {MUNICIPALITIES.map((municipality) => (
-            <div key={municipality.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`municipality-${municipality.id}`}
-                checked={filters.municipalities?.includes(municipality.id) ?? false}
-                onCheckedChange={() => toggleMunicipality(municipality.id)}
-              />
-              <label
-                htmlFor={`municipality-${municipality.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {municipality.name}
-              </label>
-              <span className="text-xs text-muted-foreground capitalize">
-                ({municipality.type})
-              </span>
-            </div>
-          ))}
-        </div>
+        {!paLists ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {paLists.municipalities.map((id) => (
+              <div key={id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`municipality-${id}`}
+                  checked={filters.municipalities?.includes(id) ?? false}
+                  onCheckedChange={() => toggleMunicipality(id)}
+                />
+                <label
+                  htmlFor={`municipality-${id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {formatMunicipalitySlug(id)}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Municipality Type Filter */}

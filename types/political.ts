@@ -806,6 +806,8 @@ export interface UnifiedPrecinct {
     strategy: string;             // 'Base Mobilization', 'Persuasion', etc.
     priority: number;             // 1-10
     recommendation: string;       // Full text recommendation
+    /** PA targeting export: e.g. "Low Priority" / "Medium" — used for campaign strategy filter */
+    gotvClassification?: string;
   };
 
   // Components (for detailed analysis)
