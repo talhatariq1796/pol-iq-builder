@@ -232,4 +232,4 @@ lib/comparison/
 ---
 
 **Created:** 2025-12-01
-**Platform:** Political Landscape Analysis (Ingham County, MI MVP)
+**Platform:** Political Landscape Analysis (Pennsylvania)

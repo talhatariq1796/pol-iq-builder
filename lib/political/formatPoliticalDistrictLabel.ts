@@ -23,6 +23,16 @@ export function formatPoliticalDistrictLabel(districtId: string): string {
     const n = parseInt(raw, 10);
     return `Congressional District ${Number.isFinite(n) ? n : raw}`;
   }
+  if (districtId.startsWith('pa-county-')) {
+    const fp = districtId.replace('pa-county-', '');
+    return `County FIPS ${fp}`;
+  }
+  if (districtId.startsWith('pa-sd-')) {
+    return `School District ${districtId.replace('pa-sd-', '')}`;
+  }
+  if (districtId.startsWith('pa-zip-')) {
+    return `ZIP ${districtId.replace('pa-zip-', '')}`;
+  }
   return districtId;
 }
 

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import * as path from 'path';
 import {
   ComparisonEngine,
   FieldBriefGenerator,
@@ -10,57 +8,99 @@ import {
   type BoundaryType,
 } from '@/lib/comparison';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
-// Cache the data in memory by boundary type
+// Cache by state FIPS + boundary type
 const dataCache: Record<string, PrecinctDataFile | MunicipalityDataFile | StateHouseDataFile> = {};
 
-/**
- * Load boundary data based on type
- * Uses PoliticalDataService for precincts (blob storage),
- * local files for municipalities and state_house (not yet in blob storage)
- */
+function briefDataCacheKey(boundaryType: BoundaryType): string {
+  return `${getPoliticalRegionEnv().stateFips}:${boundaryType}`;
+}
+
+/** Load boundary data — municipalities and legislative districts are PA-only (state FIPS 42). */
 async function loadBoundaryData(
   boundaryType: BoundaryType
 ): Promise<PrecinctDataFile | MunicipalityDataFile | StateHouseDataFile> {
-  // Return cached data if available
-  if (dataCache[boundaryType]) {
-    return dataCache[boundaryType];
+  const key = briefDataCacheKey(boundaryType);
+  if (dataCache[key]) {
+    return dataCache[key];
   }
 
   // For precincts, use PoliticalDataService (single source of truth)
   if (boundaryType === 'precincts') {
     const data = await politicalDataService.getPrecinctDataFileFormat();
-    dataCache[boundaryType] = data as PrecinctDataFile;
+    dataCache[key] = data as PrecinctDataFile;
     return data as PrecinctDataFile;
   }
 
-  // For other boundary types, still use local files
-  let fileName: string;
-  switch (boundaryType) {
-    case 'municipalities':
-      fileName = 'ingham_municipalities.json';
-      break;
-    case 'state_house':
-      fileName = 'ingham_state_house.json';
-      break;
-    default:
-      fileName = 'ingham_precincts.json';
-      break;
+  if (boundaryType === 'municipalities' && getPoliticalRegionEnv().stateFips === '42') {
+    const data = await politicalDataService.getMunicipalityDataFileFormat();
+    dataCache[key] = data as MunicipalityDataFile;
+    return data as MunicipalityDataFile;
   }
 
-  const filePath = path.join(process.cwd(), 'public/data/political', fileName);
-  const fileContent = await fs.readFile(filePath, 'utf-8');
-  const data = JSON.parse(fileContent);
+  if (getPoliticalRegionEnv().stateFips === '42') {
+    if (boundaryType === 'state_house') {
+      const data = await politicalDataService.getPaDistrictChamberDataFile('state_house');
+      dataCache[key] = data as StateHouseDataFile;
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'state_senate') {
+      const data = await politicalDataService.getPaDistrictChamberDataFile('state_senate');
+      dataCache[key] = data as StateHouseDataFile;
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'congressional') {
+      const data = await politicalDataService.getPaDistrictChamberDataFile('congressional');
+      dataCache[key] = data as StateHouseDataFile;
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'county') {
+      const data = await politicalDataService.getPaCountyDataFileFormat();
+      dataCache[key] = data as StateHouseDataFile;
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'school_districts') {
+      const data = await politicalDataService.getPaSchoolDistrictDataFileFormat();
+      dataCache[key] = data as StateHouseDataFile;
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'zip_codes') {
+      const data = await politicalDataService.getPaZipCodeDataFileFormat();
+      dataCache[key] = data as StateHouseDataFile;
+      return data as StateHouseDataFile;
+    }
+  }
 
-  // Cache and return
-  dataCache[boundaryType] = data;
-  return data;
+  if (
+    boundaryType === 'municipalities' ||
+    boundaryType === 'state_house' ||
+    boundaryType === 'state_senate' ||
+    boundaryType === 'congressional' ||
+    boundaryType === 'county' ||
+    boundaryType === 'school_districts' ||
+    boundaryType === 'zip_codes'
+  ) {
+    throw new Error(
+      `Comparison boundary "${boundaryType}" requires Pennsylvania data (POLITICAL_STATE_FIPS=42).`
+    );
+  }
+
+  throw new Error(`Unsupported boundary type for brief: ${boundaryType}`);
 }
 
 interface BriefRequestBody {
   leftEntityId: string;
   rightEntityId: string;
-  boundaryType: 'precincts' | 'municipalities' | 'state_house';
+  boundaryType:
+    | 'precincts'
+    | 'municipalities'
+    | 'state_house'
+    | 'state_senate'
+    | 'congressional'
+    | 'school_districts'
+    | 'county'
+    | 'zip_codes';
   options?: {
     includeROI?: boolean;
     includeDonorData?: boolean;
@@ -123,6 +163,11 @@ export async function POST(req: NextRequest) {
         rightEntity = engine.buildMunicipalityEntity(rightEntityId);
         break;
       case 'state_house':
+      case 'state_senate':
+      case 'congressional':
+      case 'school_districts':
+      case 'county':
+      case 'zip_codes':
         leftEntity = engine.buildStateHouseEntity(leftEntityId);
         rightEntity = engine.buildStateHouseEntity(rightEntityId);
         break;
@@ -241,6 +286,11 @@ export async function GET(req: NextRequest) {
         rightEntity = engine.buildMunicipalityEntity(rightEntityId);
         break;
       case 'state_house':
+      case 'state_senate':
+      case 'congressional':
+      case 'school_districts':
+      case 'county':
+      case 'zip_codes':
         leftEntity = engine.buildStateHouseEntity(leftEntityId);
         rightEntity = engine.buildStateHouseEntity(rightEntityId);
         break;

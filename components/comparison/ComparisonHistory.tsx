@@ -101,6 +101,9 @@ export function ComparisonHistory({
       state_house: 'State House Districts',
       state_senate: 'State Senate Districts',
       congressional: 'Congressional Districts',
+      school_districts: 'School Districts',
+      county: 'Counties',
+      zip_codes: 'ZIP Codes',
     };
     return labels[boundaryType] || boundaryType;
   };

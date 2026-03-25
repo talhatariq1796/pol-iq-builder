@@ -2,6 +2,12 @@
  * Pennsylvania county FIPS (3-digit within state 42), matching COUNTYFP on PA precinct GeoJSON.
  */
 
+/** County FIPS (3 digits) from canonical precinct key `CCC-:-NAME` (PA LUSE UNIQUE_ID). */
+export function parsePaCountyFpFromPrecinctKey(canonicalKey: string): string | null {
+  const m = /^(\d{3})-:-/.exec(canonicalKey);
+  return m ? m[1] : null;
+}
+
 export const PA_COUNTY_FP_TO_NAME: Record<string, string> = {
   '001': 'Adams',
   '003': 'Allegheny',

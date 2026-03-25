@@ -316,7 +316,7 @@ export interface SegmentExportRow {
 }
 
 // ============================================================================
-// Precinct Data Types (from ingham_precincts.json)
+// Precinct data types (unified precinct / PoliticalDataService)
 // ============================================================================
 
 /**

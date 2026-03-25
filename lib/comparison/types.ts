@@ -48,7 +48,7 @@ export type TargetingStrategy =
   | 'Low Priority';
 
 /**
- * Raw precinct data from ingham_precincts.json
+ * Raw precinct record shape (PoliticalDataService / unified precinct JSON).
  */
 export interface PrecinctRawData {
   id: string;
@@ -111,7 +111,7 @@ export interface PrecinctRawData {
 }
 
 /**
- * Jurisdiction entry from ingham_precincts.json
+ * Jurisdiction entry in a precinct data file (city/township + precinct ids).
  */
 export interface JurisdictionEntry {
   id: string;

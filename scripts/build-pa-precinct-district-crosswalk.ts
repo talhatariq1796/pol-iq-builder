@@ -27,6 +27,8 @@ const HOUSE_FILE = path.join(DISTRICT_DIR, 'PaHouse2026_01.geojson');
 const SENATE_FILE = path.join(DISTRICT_DIR, 'PaSenate2026_01_w_senators.geojson');
 const CONGRESS_FILE = path.join(DISTRICT_DIR, 'PaCongressional2026_01.geojson');
 const MUNI_FILE = path.join(DISTRICT_DIR, 'PaMunicipalities2026_01.geojson');
+const SCHOOL_FILE = path.join(DISTRICT_DIR, 'pa_school_districts.geojson');
+const ZIP_FILE = path.join(DISTRICT_DIR, 'pa_zip_codes.geojson');
 const OUTPUT_FILE = path.join(PRECINCT_DIR, 'pa_precinct_district_crosswalk.json');
 
 type PolyFeat = Feature<Polygon | MultiPolygon>;
@@ -173,6 +175,55 @@ function findMunicipality(
   return { slug: null, muniType: null };
 }
 
+function findSchoolDistrict(
+  pool: IndexedPoly[],
+  lon: number,
+  lat: number,
+): { id: string; name: string } | null {
+  const pt = turf.point([lon, lat]);
+  for (const { f, bbox: bb } of pool) {
+    if (lon < bb[0] || lon > bb[2] || lat < bb[1] || lat > bb[3]) continue;
+    try {
+      if (!turf.booleanPointInPolygon(pt, f)) continue;
+      const o = f.properties as Record<string, unknown>;
+      const aun = o?.AUN_NUM;
+      if (aun == null || aun === '') return null;
+      const id = `pa-sd-${String(aun)}`;
+      const name = String(o?.SCHOOL_DIS ?? o?.SCHOOL_NAM ?? '').trim() || id;
+      return { id, name };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function findZipCode(
+  pool: IndexedPoly[],
+  lon: number,
+  lat: number,
+): { id: string; name: string } | null {
+  const pt = turf.point([lon, lat]);
+  for (const { f, bbox: bb } of pool) {
+    if (lon < bb[0] || lon > bb[2] || lat < bb[1] || lat > bb[3]) continue;
+    try {
+      if (!turf.booleanPointInPolygon(pt, f)) continue;
+      const o = f.properties as Record<string, unknown>;
+      const raw = String(o?.ZIP_CODE ?? '').trim();
+      if (!raw) return null;
+      const code = raw.padStart(5, '0').slice(0, 5);
+      if (!/^\d{5}$/.test(code)) return null;
+      const id = `pa-zip-${code}`;
+      const po = String(o?.PO_NAME ?? '').trim();
+      const name = po ? `${code} — ${po}` : `ZIP ${code}`;
+      return { id, name };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 function main(): void {
   console.log('Loading GeoJSON…');
   const precinctFc = loadFC(PRECINCT_FILE);
@@ -180,6 +231,8 @@ function main(): void {
   const senateIdx = indexPolygons(loadFC(SENATE_FILE));
   const congressIdx = indexPolygons(reproject3857FeatureCollection(loadFC(CONGRESS_FILE)));
   const muniFc = reproject3857FeatureCollection(loadFC(MUNI_FILE));
+  const schoolIdx = indexPolygons(loadFC(SCHOOL_FILE));
+  const zipIdx = indexPolygons(loadFC(ZIP_FILE));
 
   const muniByCounty = new Map<string, IndexedPoly[]>();
   const muniAll: IndexedPoly[] = [];
@@ -202,6 +255,8 @@ function main(): void {
     stateSenate: 0,
     congressional: 0,
     municipalities: 0,
+    schoolDistricts: 0,
+    zcta: 0,
   };
 
   let n = 0;
@@ -262,6 +317,11 @@ function main(): void {
     if (congressNum) coverage.congressional++;
     if (muniSlug) coverage.municipalities++;
 
+    const schoolInfo = findSchoolDistrict(schoolIdx, lon, lat);
+    const zipInfo = findZipCode(zipIdx, lon, lat);
+    if (schoolInfo) coverage.schoolDistricts++;
+    if (zipInfo) coverage.zcta++;
+
     const jurisdiction = String(props.NAME ?? uniqueId.split('-:-')[1] ?? uniqueId).trim();
 
     precincts[uniqueId] = {
@@ -275,7 +335,10 @@ function main(): void {
       municipality: muniSlug,
       municipalityType: muniType,
       cityWard: null,
-      schoolDistrict: null,
+      schoolDistrict: schoolInfo?.id ?? null,
+      schoolDistrictName: schoolInfo?.name ?? null,
+      zcta: zipInfo?.id ?? null,
+      zctaName: zipInfo?.name ?? null,
       registeredVoters: null,
       activeVoters: null,
       centroid: centroidOut,
@@ -293,13 +356,10 @@ function main(): void {
       generated: new Date().toISOString(),
       precinctCount: keys.length,
       dataSource:
-        'PA 2020 precinct boundaries (LUSE), PA House/Congressional 2026 layers, TIGER SLDU senate, DCED municipalities 2026',
+        'PA 2020 precinct boundaries (LUSE), PA House/Congressional 2026 layers, TIGER SLDU senate, DCED municipalities 2026, pa_school_districts.geojson, pa_zip_codes.geojson',
       methodology:
-        'Spatial join: turf.pointOnFeature (fallback centroid) in WGS84 point-in-polygon; House/Congress/Municipal reprojected from EPSG:3857',
-      districtCoverage: {
-        ...coverage,
-        schoolDistricts: 0,
-      },
+        'Spatial join: turf.pointOnFeature (fallback centroid) in WGS84 point-in-polygon; House/Congress/Municipal reprojected from EPSG:3857; school + ZIP from WGS84 layers',
+      districtCoverage: coverage,
     },
     precincts,
   };

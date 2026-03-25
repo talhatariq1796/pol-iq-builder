@@ -81,18 +81,47 @@ export class ComparisonEngine {
     }
 
     // Get election years sorted descending
-    const electionYears = Object.keys(precinct.elections)
+    const electionYears = Object.keys(precinct.elections || {})
       .map(Number)
+      .filter((y) => Number.isFinite(y))
       .sort((a, b) => b - a);
 
-    const lastYear = electionYears[0];
-    const lastElection = precinct.elections[lastYear];
+    let lastYear = electionYears[0] ?? 2024;
+    let lastElection = electionYears.length > 0 ? precinct.elections[lastYear] : undefined;
+
+    if (!lastElection) {
+      const lean = precinct.electoral.partisanLean;
+      const demPct = Math.max(0, Math.min(100, 50 + lean / 2));
+      const repPct = Math.max(0, Math.min(100, 100 - demPct));
+      const margin = demPct - repPct;
+      const avgTurnout = precinct.electoral.avgTurnout ?? 0;
+      const voters =
+        precinct.demographics.population18up ||
+        Math.round(precinct.demographics.totalPopulation * 0.75);
+      const ballotsCast = Math.max(0, Math.round(voters * (avgTurnout / 100)));
+      lastElection = {
+        demPct,
+        repPct,
+        margin,
+        turnout: avgTurnout,
+        ballotsCast,
+      };
+      lastYear = 2024;
+    }
 
     // Build election history
-    const electionHistory = electionYears.map(year => ({
-      year,
-      ...precinct.elections[year],
-    }));
+    const electionHistory =
+      electionYears.length > 0
+        ? electionYears.map((year) => ({
+            year,
+            ...precinct.elections[year],
+          }))
+        : [
+            {
+              year: lastYear,
+              ...lastElection,
+            },
+          ];
 
     return {
       id: precinct.id,
@@ -233,7 +262,15 @@ export class ComparisonEngine {
       throw new Error('Not a state house data file');
     }
 
-    const district = this.data.districts.find(d => d.id === districtId);
+    let district = this.data.districts.find(d => d.id === districtId);
+    if (!district) {
+      const q = districtId.trim().toLowerCase();
+      district = this.data.districts.find(
+        d =>
+          d.id.toLowerCase() === q ||
+          d.name.toLowerCase() === q
+      );
+    }
     if (!district) {
       throw new Error(`State house district not found: ${districtId}`);
     }
@@ -384,8 +421,21 @@ export class ComparisonEngine {
         };
       });
 
-    const lastElection = electionHistory[0];
     const partisanLean = weightedAvg(p => p.electoral.partisanLean);
+    let lastElection = electionHistory[0];
+    if (!lastElection) {
+      const avgTurn = weightedAvg(p => p.electoral.avgTurnout);
+      const demPct = Math.max(0, Math.min(100, 50 + partisanLean / 2));
+      const repPct = Math.max(0, Math.min(100, 100 - demPct));
+      lastElection = {
+        year: 2024,
+        demPct,
+        repPct,
+        margin: demPct - repPct,
+        turnout: avgTurn,
+        ballotsCast: Math.max(0, Math.round(totalPop * 0.75 * (avgTurn / 100))),
+      };
+    }
     const gotvPriority = weightedAvg(p => p.targeting.gotvPriority);
     const persuasionOpportunity = weightedAvg(p => p.targeting.persuasionOpportunity);
 
@@ -470,7 +520,16 @@ export class ComparisonEngine {
    */
   buildEntityByType(
     entityId: string,
-    boundaryType: 'precincts' | 'municipalities' | 'state_house' | 'jurisdictions'
+    boundaryType:
+      | 'precincts'
+      | 'municipalities'
+      | 'state_house'
+      | 'state_senate'
+      | 'congressional'
+      | 'school_districts'
+      | 'county'
+      | 'zip_codes'
+      | 'jurisdictions'
   ): ComparisonEntity {
     switch (boundaryType) {
       case 'precincts':
@@ -478,6 +537,11 @@ export class ComparisonEngine {
       case 'municipalities':
         return this.buildMunicipalityEntity(entityId);
       case 'state_house':
+      case 'state_senate':
+      case 'congressional':
+      case 'school_districts':
+      case 'county':
+      case 'zip_codes':
         return this.buildStateHouseEntity(entityId);
       case 'jurisdictions':
         return this.buildJurisdictionEntity(entityId);
@@ -541,7 +605,16 @@ export class ComparisonEngine {
    */
   findSimilarEntities(
     entity: ComparisonEntity,
-    targetType: 'precincts' | 'municipalities' | 'state_house' | 'jurisdictions',
+    targetType:
+      | 'precincts'
+      | 'municipalities'
+      | 'state_house'
+      | 'state_senate'
+      | 'congressional'
+      | 'school_districts'
+      | 'county'
+      | 'zip_codes'
+      | 'jurisdictions',
     targetData: PrecinctDataFile | MunicipalityDataFile | StateHouseDataFile,
     maxResults: number = 5
   ): Array<{ entity: ComparisonEntity; similarityScore: number; matchingFactors: string[] }> {
@@ -568,6 +641,11 @@ export class ComparisonEngine {
           }
           break;
         case 'state_house':
+        case 'state_senate':
+        case 'congressional':
+        case 'school_districts':
+        case 'county':
+        case 'zip_codes':
           if ('districts' in targetData) {
             targetEntities = targetData.districts.map(d =>
               this.buildStateHouseEntity(d.id)
@@ -711,7 +789,14 @@ export class ComparisonEngine {
   /**
    * Get list of all municipalities for search
    */
-  getMunicipalityList(): Array<{ id: string; name: string; type: string; partisanLean: number; population: number }> {
+  getMunicipalityList(): Array<{
+    id: string;
+    name: string;
+    type: string;
+    partisanLean: number;
+    population: number;
+    precinctCount: number;
+  }> {
     if (!('municipalities' in this.data)) {
       throw new Error('Not a municipality data file');
     }
@@ -721,13 +806,22 @@ export class ComparisonEngine {
       type: m.type,
       partisanLean: m.partisanLean,
       population: m.population,
+      precinctCount: m.precinctCount ?? 0,
     }));
   }
 
   /**
    * Get list of all state house districts for search
    */
-  getStateHouseList(): Array<{ id: string; name: string; representative: string; party: string; partisanLean: number; population: number }> {
+  getStateHouseList(): Array<{
+    id: string;
+    name: string;
+    representative: string;
+    party: string;
+    partisanLean: number;
+    population: number;
+    precinctCount: number;
+  }> {
     if (!('districts' in this.data)) {
       throw new Error('Not a state house data file');
     }
@@ -738,6 +832,7 @@ export class ComparisonEngine {
       party: d.party,
       partisanLean: d.partisanLean,
       population: d.population,
+      precinctCount: d.precinctCount ?? 0,
     }));
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,9 @@ interface EntitySelectorProps {
   placeholder?: string;
 }
 
+/** Server-capped list page size for precinct + municipality pickers (PA). */
+const LIST_PAGE_LIMIT = 80;
+
 export function EntitySelector({
   value,
   onChange,
@@ -39,22 +42,48 @@ export function EntitySelector({
   const [filteredEntities, setFilteredEntities] = useState<EntityOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityOption | null>(null);
+  const [listMeta, setListMeta] = useState<{ truncated: boolean; total: number } | null>(null);
 
-  // Load entities based on type
+  /** Precinct, municipalities, and legislative districts: server search + cap (PA-scale lists). */
+  const largeListMode = useMemo((): 'precincts' | 'municipalities' | 'districts' | null => {
+    if (boundaryType === 'precincts' && entityType === 'precinct') return 'precincts';
+    if (boundaryType === 'municipalities' && entityType === 'jurisdiction') return 'municipalities';
+    if (
+      (boundaryType === 'state_house' ||
+        boundaryType === 'state_senate' ||
+        boundaryType === 'congressional' ||
+        boundaryType === 'school_districts' ||
+        boundaryType === 'county' ||
+        boundaryType === 'zip_codes') &&
+      entityType === 'jurisdiction'
+    ) {
+      return 'districts';
+    }
+    return null;
+  }, [boundaryType, entityType]);
+
+  const skipDebounceNextFetch = useRef(false);
+
+  // When popover opens, next fetch runs immediately (no 280ms wait)
   useEffect(() => {
+    if (open && largeListMode) {
+      skipDebounceNextFetch.current = true;
+    }
+  }, [open, largeListMode]);
+
+  // Small lists: load full dataset once (jurisdictions for legacy flows, etc.)
+  useEffect(() => {
+    if (largeListMode) return;
+
     const loadEntities = async () => {
       setIsLoading(true);
       try {
-        // Determine list type based on boundary type
         let listType: string;
         if (boundaryType === 'precincts') {
           listType = 'precincts';
         } else if (boundaryType === 'municipalities') {
           listType = 'municipalities';
-        } else if (boundaryType === 'state_house') {
-          listType = 'state_house';
         } else {
-          // Default to jurisdictions for other types
           listType = 'jurisdictions';
         }
 
@@ -74,17 +103,14 @@ export function EntitySelector({
           setEntities(precinctList);
           setFilteredEntities(precinctList);
 
-          // Update selected entity if value matches
           if (value) {
-            const found = precinctList.find(e => e.id === value);
+            const found = precinctList.find((e) => e.id === value);
             if (found) setSelectedEntity(found);
           }
         } else {
-          // Handle different jurisdiction data structures
           let jurisdictionList: EntityOption[] = [];
 
           if (data.jurisdictions) {
-            // From precinct data file (cities/townships)
             jurisdictionList = data.jurisdictions.map((j: any) => ({
               id: j.id,
               name: j.name,
@@ -94,17 +120,15 @@ export function EntitySelector({
               population: 0,
             }));
           } else if (data.municipalities) {
-            // From municipality data file
             jurisdictionList = data.municipalities.map((m: any) => ({
               id: m.id,
               name: m.name,
               type: m.type,
-              precinctCount: 0,
+              precinctCount: m.precinctCount ?? 0,
               partisanLean: m.partisanLean,
               population: m.population,
             }));
           } else if (data.districts) {
-            // From state house data file
             jurisdictionList = data.districts.map((d: any) => ({
               id: d.id,
               name: d.name,
@@ -118,9 +142,8 @@ export function EntitySelector({
           setEntities(jurisdictionList);
           setFilteredEntities(jurisdictionList);
 
-          // Update selected entity if value matches
           if (value) {
-            const found = jurisdictionList.find(e => e.id === value);
+            const found = jurisdictionList.find((e) => e.id === value);
             if (found) setSelectedEntity(found);
           }
         }
@@ -132,10 +155,158 @@ export function EntitySelector({
     };
 
     loadEntities();
-  }, [entityType, boundaryType, value]);
+  }, [entityType, boundaryType, value, largeListMode]);
 
-  // Filter entities based on search query
+  // Large lists: resolve label for controlled value without loading full dataset
   useEffect(() => {
+    if (!largeListMode) return;
+
+    if (!value) {
+      setSelectedEntity(null);
+      return;
+    }
+
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const listParam =
+          largeListMode === 'precincts'
+            ? 'precincts'
+            : largeListMode === 'municipalities'
+              ? 'municipalities'
+              : boundaryType;
+        const r = await fetch(
+          `/api/comparison?list=${listParam}&boundaryType=${encodeURIComponent(boundaryType)}&id=${encodeURIComponent(value)}`,
+          { signal: ac.signal }
+        );
+        if (!r.ok) return;
+        const data = await r.json();
+        if (largeListMode === 'precincts') {
+          const p = data.precincts?.[0];
+          if (p) {
+            setSelectedEntity({
+              id: p.id,
+              name: p.name,
+              jurisdiction: p.jurisdiction,
+              partisanLean: p.partisanLean,
+              population: p.population,
+            });
+          }
+        } else if (largeListMode === 'municipalities') {
+          const m = data.municipalities?.[0];
+          if (m) {
+            setSelectedEntity({
+              id: m.id,
+              name: m.name,
+              type: m.type,
+              precinctCount: m.precinctCount ?? 0,
+              partisanLean: m.partisanLean,
+              population: m.population,
+            });
+          }
+        } else {
+          const d = data.districts?.[0];
+          if (d) {
+            setSelectedEntity({
+              id: d.id,
+              name: d.name,
+              type: boundaryType,
+              precinctCount: d.precinctCount ?? 0,
+              partisanLean: d.partisanLean,
+              population: d.population,
+            });
+          }
+        }
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') console.error(e);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [value, boundaryType, largeListMode]);
+
+  // Large precinct / municipality: server-side search + capped list (only while popover open)
+  useEffect(() => {
+    if (!largeListMode || !open) return;
+
+    const ac = new AbortController();
+    const delay = skipDebounceNextFetch.current ? 0 : 280;
+    skipDebounceNextFetch.current = false;
+
+    const t = window.setTimeout(() => {
+      (async () => {
+        setIsLoading(true);
+        try {
+          const listParam =
+            largeListMode === 'precincts'
+              ? 'precincts'
+              : largeListMode === 'municipalities'
+                ? 'municipalities'
+                : boundaryType;
+          const params = new URLSearchParams({
+            list: listParam,
+            boundaryType,
+            limit: String(LIST_PAGE_LIMIT),
+          });
+          const q = searchQuery.trim();
+          if (q) params.set('q', q);
+
+          const r = await fetch(`/api/comparison?${params.toString()}`, { signal: ac.signal });
+          if (!r.ok) throw new Error(`Failed to load ${listParam}`);
+          const data = await r.json();
+
+          let list: EntityOption[];
+          if (largeListMode === 'precincts') {
+            list = (data.precincts || []).map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              jurisdiction: p.jurisdiction,
+              partisanLean: p.partisanLean,
+              population: p.population,
+            }));
+          } else if (largeListMode === 'municipalities') {
+            list = (data.municipalities || []).map((m: any) => ({
+              id: m.id,
+              name: m.name,
+              type: m.type,
+              precinctCount: m.precinctCount ?? 0,
+              partisanLean: m.partisanLean,
+              population: m.population,
+            }));
+          } else {
+            list = (data.districts || []).map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              type: boundaryType,
+              precinctCount: d.precinctCount ?? 0,
+              partisanLean: d.partisanLean,
+              population: d.population,
+            }));
+          }
+          setEntities(list);
+          setFilteredEntities(list);
+          setListMeta({
+            truncated: Boolean(data.truncated),
+            total: typeof data.total === 'number' ? data.total : list.length,
+          });
+        } catch (e) {
+          if ((e as Error).name !== 'AbortError') console.error(e);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    }, delay);
+
+    return () => {
+      window.clearTimeout(t);
+      ac.abort();
+    };
+  }, [open, searchQuery, boundaryType, largeListMode]);
+
+  // Client filter only for small lists
+  useEffect(() => {
+    if (largeListMode) return;
+
     if (!searchQuery.trim()) {
       setFilteredEntities(entities);
       return;
@@ -148,9 +319,8 @@ export function EntitySelector({
         entity.jurisdiction?.toLowerCase().includes(query)
     );
     setFilteredEntities(filtered);
-  }, [searchQuery, entities]);
+  }, [searchQuery, entities, largeListMode]);
 
-  // Handle entity selection
   const handleSelect = useCallback(
     (entity: EntityOption) => {
       setSelectedEntity(entity);
@@ -161,21 +331,18 @@ export function EntitySelector({
     [onChange]
   );
 
-  // Get partisan lean color
   const getLeanColor = (lean: number): string => {
     if (lean >= 10) return 'text-blue-600 dark:text-blue-400';
     if (lean <= -10) return 'text-red-600 dark:text-red-400';
     return 'text-purple-600 dark:text-purple-400';
   };
 
-  // Format partisan lean
   const formatLean = (lean: number): string => {
     if (Math.abs(lean) < 1) return 'Even';
     const prefix = lean > 0 ? 'D+' : 'R+';
     return `${prefix}${Math.abs(lean).toFixed(0)}`;
   };
 
-  // Get entity icon
   const EntityIcon = entityType === 'precinct' ? MapPin : Building2;
 
   return (
@@ -198,19 +365,45 @@ export function EntitySelector({
       </PopoverTrigger>
       <PopoverContent className="w-[320px] p-0" align="start">
         <div className="flex flex-col">
-          {/* Search Input */}
           <div className="flex items-center border-b px-3 py-2">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <input
               type="text"
-              placeholder={`Search ${entityType}s...`}
+              placeholder={
+                largeListMode === 'precincts'
+                  ? 'Search by name, ID, or municipality…'
+                  : largeListMode === 'municipalities'
+                    ? 'Search municipality name or ID…'
+                    : largeListMode === 'districts'
+                      ? 'Search district name or ID…'
+                      : `Search ${entityType}s...`
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
 
-          {/* Entity List */}
+          {largeListMode && listMeta && (
+            <div className="px-3 py-1.5 text-[11px] text-muted-foreground border-b bg-muted/30">
+              {(() => {
+                const kind =
+                  largeListMode === 'precincts'
+                    ? 'precincts'
+                    : largeListMode === 'municipalities'
+                      ? 'municipalities'
+                      : 'districts';
+                return searchQuery.trim()
+                  ? listMeta.truncated
+                    ? `Showing ${Math.min(LIST_PAGE_LIMIT, filteredEntities.length)} of ${listMeta.total} matches — refine search`
+                    : `${listMeta.total} match${listMeta.total === 1 ? '' : 'es'}`
+                  : listMeta.truncated
+                    ? `First ${LIST_PAGE_LIMIT} ${kind} (A–Z). Type to search all ${listMeta.total.toLocaleString()}.`
+                    : `${listMeta.total.toLocaleString()} ${kind}`;
+              })()}
+            </div>
+          )}
+
           <ScrollArea className="h-[280px]">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -225,6 +418,7 @@ export function EntitySelector({
                 {filteredEntities.map((entity) => (
                   <button
                     key={entity.id}
+                    type="button"
                     onClick={() => handleSelect(entity)}
                     className={`w-full flex items-center justify-between px-2 py-2 text-sm rounded hover:bg-accent hover:text-accent-foreground transition-colors ${
                       value === entity.id ? 'bg-accent' : ''
@@ -241,7 +435,7 @@ export function EntitySelector({
                         )}
                         {entity.type && entityType !== 'precinct' && (
                           <div className="text-xs text-muted-foreground capitalize">
-                            {entity.type}
+                            {String(entity.type).replace(/_/g, ' ')}
                             {entity.precinctCount && entity.precinctCount > 0 && ` • ${entity.precinctCount} precincts`}
                           </div>
                         )}

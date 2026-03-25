@@ -1,69 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { ComparisonEngine, InsightGenerator } from '@/lib/comparison';
 import type { PrecinctDataFile, MunicipalityDataFile, StateHouseDataFile, BoundaryType } from '@/lib/comparison';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
-// Force dynamic rendering for this route (uses fs for non-precinct data)
 export const dynamic = 'force-dynamic';
 
-// Cache the data in memory by boundary type
+// Cache the data in memory by state FIPS + boundary type (avoids stale data if region env changes)
 const dataCache: Record<string, PrecinctDataFile | MunicipalityDataFile | StateHouseDataFile> = {};
 
-/**
- * Load boundary data based on type
- * Uses PoliticalDataService for precincts (blob storage),
- * local files for municipalities and state_house (not yet in blob storage)
- */
+function comparisonDataCacheKey(boundaryType: BoundaryType): string {
+  return `${getPoliticalRegionEnv().stateFips}:${boundaryType}`;
+}
+
+/** Load boundary data — municipalities and legislative districts are PA-only (state FIPS 42). */
 async function loadBoundaryData(
   boundaryType: BoundaryType
 ): Promise<PrecinctDataFile | MunicipalityDataFile | StateHouseDataFile> {
-  // Return cached data if available
-  if (dataCache[boundaryType]) {
-    return dataCache[boundaryType];
+  const key = comparisonDataCacheKey(boundaryType);
+  if (dataCache[key]) {
+    return dataCache[key];
   }
 
   // For precincts, use PoliticalDataService (single source of truth)
   if (boundaryType === 'precincts') {
     const data = await politicalDataService.getPrecinctDataFileFormat();
-    dataCache[boundaryType] = data as PrecinctDataFile;
+    dataCache[key] = data as PrecinctDataFile;
     console.log(`[comparison/route] Loaded ${Object.keys(data.precincts).length} precincts from PoliticalDataService`);
     return data as PrecinctDataFile;
   }
 
-  // For other boundary types, still use local files
-  let fileName: string;
-  switch (boundaryType) {
-    case 'municipalities':
-      fileName = 'ingham_municipalities.json';
-      break;
-    case 'state_house':
-      fileName = 'ingham_state_house.json';
-      break;
-    default:
-      fileName = 'ingham_precincts.json';
-      break;
+  // Pennsylvania: municipalities aggregated from unified precincts
+  if (boundaryType === 'municipalities' && getPoliticalRegionEnv().stateFips === '42') {
+    const data = await politicalDataService.getMunicipalityDataFileFormat();
+    dataCache[key] = data as MunicipalityDataFile;
+    console.log(
+      `[comparison/route] Loaded ${data.municipalities.length} PA municipalities from PoliticalDataService`,
+    );
+    return data as MunicipalityDataFile;
   }
 
-  const filePath = path.join(process.cwd(), 'public/data/political', fileName);
-  const fileContent = await fs.readFile(filePath, 'utf-8');
-  const data = JSON.parse(fileContent);
+  // Pennsylvania: state house / senate / congress from precincts + crosswalk
+  if (getPoliticalRegionEnv().stateFips === '42') {
+    if (boundaryType === 'state_house') {
+      const data = await politicalDataService.getPaDistrictChamberDataFile('state_house');
+      dataCache[key] = data as StateHouseDataFile;
+      console.log(`[comparison/route] Loaded ${data.districts.length} PA state house districts`);
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'state_senate') {
+      const data = await politicalDataService.getPaDistrictChamberDataFile('state_senate');
+      dataCache[key] = data as StateHouseDataFile;
+      console.log(`[comparison/route] Loaded ${data.districts.length} PA state senate districts`);
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'congressional') {
+      const data = await politicalDataService.getPaDistrictChamberDataFile('congressional');
+      dataCache[key] = data as StateHouseDataFile;
+      console.log(`[comparison/route] Loaded ${data.districts.length} PA congressional districts`);
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'county') {
+      const data = await politicalDataService.getPaCountyDataFileFormat();
+      dataCache[key] = data as StateHouseDataFile;
+      console.log(`[comparison/route] Loaded ${data.districts.length} PA counties`);
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'school_districts') {
+      const data = await politicalDataService.getPaSchoolDistrictDataFileFormat();
+      dataCache[key] = data as StateHouseDataFile;
+      console.log(`[comparison/route] Loaded ${data.districts.length} PA school districts`);
+      return data as StateHouseDataFile;
+    }
+    if (boundaryType === 'zip_codes') {
+      const data = await politicalDataService.getPaZipCodeDataFileFormat();
+      dataCache[key] = data as StateHouseDataFile;
+      console.log(`[comparison/route] Loaded ${data.districts.length} PA ZIP / ZCTA areas`);
+      return data as StateHouseDataFile;
+    }
+  }
 
-  // Cache and return
-  dataCache[boundaryType] = data;
-  return data;
+  if (
+    boundaryType === 'municipalities' ||
+    boundaryType === 'state_house' ||
+    boundaryType === 'state_senate' ||
+    boundaryType === 'congressional' ||
+    boundaryType === 'county' ||
+    boundaryType === 'school_districts' ||
+    boundaryType === 'zip_codes'
+  ) {
+    throw new Error(
+      `Comparison boundary "${boundaryType}" requires Pennsylvania data (POLITICAL_STATE_FIPS=42).`
+    );
+  }
+
+  throw new Error(`Unsupported boundary type for comparison: ${boundaryType}`);
 }
 
 /**
  * Valid boundary types for comparison
  */
-const VALID_BOUNDARY_TYPES: BoundaryType[] = ['precincts', 'municipalities', 'state_house'];
+const VALID_BOUNDARY_TYPES: BoundaryType[] = [
+  'precincts',
+  'municipalities',
+  'state_house',
+  'state_senate',
+  'congressional',
+  'school_districts',
+  'county',
+  'zip_codes',
+];
 
 /**
  * Valid list types
  */
-const VALID_LIST_TYPES = ['precincts', 'jurisdictions', 'municipalities', 'state_house'] as const;
+const VALID_LIST_TYPES = [
+  'precincts',
+  'jurisdictions',
+  'municipalities',
+  'state_house',
+  'state_senate',
+  'congressional',
+  'school_districts',
+  'county',
+  'zip_codes',
+] as const;
+
+/** District-style lists (StateHouseDataFile + getStateHouseList). */
+const PA_DISTRICT_STYLE_BOUNDARIES: BoundaryType[] = [
+  'state_house',
+  'state_senate',
+  'congressional',
+  'school_districts',
+  'county',
+  'zip_codes',
+];
 
 /**
  * GET /api/comparison
@@ -79,6 +150,10 @@ const VALID_LIST_TYPES = ['precincts', 'jurisdictions', 'municipalities', 'state
  * - list: 'precincts' | 'jurisdictions' | 'municipalities' | 'state_house'
  * - boundaryType: 'precincts' | 'municipalities' | 'state_house' (required for list)
  * - jurisdiction: (optional) filter precincts by jurisdiction
+ * - q: (optional) case-insensitive substring on name, id, jurisdiction (precinct list only)
+ * - limit: (optional) max rows returned for precinct list (default 80, max 200); without q, list is sorted A–Z then capped
+ * - id: (optional) return at most one precinct matching this id (for label lookup without loading full list)
+ * - For list=municipalities: same q, limit, id, truncated, total as precincts (PA large lists)
  */
 export async function GET(req: NextRequest) {
   try {
@@ -118,7 +193,21 @@ export async function GET(req: NextRequest) {
     // List mode
     if (list === 'precincts') {
       const jurisdiction = searchParams.get('jurisdiction');
+      const lookupId = searchParams.get('id')?.trim();
+      const qRaw = searchParams.get('q');
+      const q = qRaw?.trim().toLowerCase() ?? '';
+      const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '80', 10)));
+
       let precincts = engine.getPrecinctList();
+
+      if (lookupId) {
+        const found = precincts.find(
+          p =>
+            p.id === lookupId ||
+            p.name.toLowerCase() === lookupId.toLowerCase()
+        );
+        return NextResponse.json({ precincts: found ? [found] : [] });
+      }
 
       if (jurisdiction) {
         precincts = precincts.filter(
@@ -126,7 +215,30 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      return NextResponse.json({ precincts });
+      let totalAfterFilter = precincts.length;
+
+      if (q) {
+        precincts = precincts.filter(
+          p =>
+            p.name.toLowerCase().includes(q) ||
+            p.id.toLowerCase().includes(q) ||
+            (p.jurisdiction && p.jurisdiction.toLowerCase().includes(q))
+        );
+        totalAfterFilter = precincts.length;
+      } else {
+        precincts = [...precincts].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        );
+      }
+
+      const truncated = precincts.length > limit;
+      precincts = precincts.slice(0, limit);
+
+      return NextResponse.json({
+        precincts,
+        truncated,
+        total: totalAfterFilter,
+      });
     }
 
     if (list === 'jurisdictions') {
@@ -135,13 +247,99 @@ export async function GET(req: NextRequest) {
     }
 
     if (list === 'municipalities') {
-      const municipalities = engine.getMunicipalityList();
-      return NextResponse.json({ municipalities });
+      const lookupId = searchParams.get('id')?.trim();
+      const qRaw = searchParams.get('q');
+      const q = qRaw?.trim().toLowerCase() ?? '';
+      const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '80', 10)));
+
+      let municipalities = engine.getMunicipalityList();
+
+      if (lookupId) {
+        const found = municipalities.find(
+          (m) =>
+            m.id === lookupId ||
+            m.name.toLowerCase() === lookupId.toLowerCase()
+        );
+        return NextResponse.json({ municipalities: found ? [found] : [] });
+      }
+
+      let totalAfterFilter = municipalities.length;
+
+      if (q) {
+        municipalities = municipalities.filter(
+          (m) =>
+            m.name.toLowerCase().includes(q) ||
+            m.id.toLowerCase().includes(q) ||
+            (m.type && m.type.toLowerCase().includes(q))
+        );
+        totalAfterFilter = municipalities.length;
+      } else {
+        municipalities = [...municipalities].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        );
+      }
+
+      const truncated = municipalities.length > limit;
+      municipalities = municipalities.slice(0, limit);
+
+      return NextResponse.json({
+        municipalities,
+        truncated,
+        total: totalAfterFilter,
+      });
     }
 
-    if (list === 'state_house') {
-      const districts = engine.getStateHouseList();
-      return NextResponse.json({ districts });
+    if (list && PA_DISTRICT_STYLE_BOUNDARIES.includes(list as BoundaryType)) {
+      if (list !== boundaryType) {
+        return NextResponse.json(
+          {
+            error: 'Invalid list / boundaryType',
+            message: 'For district lists, list must match boundaryType (e.g. list=county&boundaryType=county)',
+            received: { list, boundaryType },
+          },
+          { status: 400 },
+        );
+      }
+
+      const lookupId = searchParams.get('id')?.trim();
+      const qRaw = searchParams.get('q');
+      const q = qRaw?.trim().toLowerCase() ?? '';
+      const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '80', 10)));
+
+      let districts = engine.getStateHouseList();
+
+      if (lookupId) {
+        const found = districts.find(
+          (d) =>
+            d.id === lookupId ||
+            d.name.toLowerCase() === lookupId.toLowerCase()
+        );
+        return NextResponse.json({ districts: found ? [found] : [] });
+      }
+
+      let totalAfterFilter = districts.length;
+
+      if (q) {
+        districts = districts.filter(
+          (d) =>
+            d.name.toLowerCase().includes(q) ||
+            d.id.toLowerCase().includes(q)
+        );
+        totalAfterFilter = districts.length;
+      } else {
+        districts = [...districts].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        );
+      }
+
+      const truncated = districts.length > limit;
+      districts = districts.slice(0, limit);
+
+      return NextResponse.json({
+        districts,
+        truncated,
+        total: totalAfterFilter,
+      });
     }
 
     // Comparison mode
@@ -196,6 +394,11 @@ export async function GET(req: NextRequest) {
         rightEntity = engine.buildMunicipalityEntity(trimmedRightId);
         break;
       case 'state_house':
+      case 'state_senate':
+      case 'congressional':
+      case 'school_districts':
+      case 'county':
+      case 'zip_codes':
         leftEntity = engine.buildStateHouseEntity(trimmedLeftId);
         rightEntity = engine.buildStateHouseEntity(trimmedRightId);
         break;

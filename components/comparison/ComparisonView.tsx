@@ -312,40 +312,6 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
     });
   }, [selectedBoundaryType, toast]);
 
-  // Handle AI actions
-  const handleAIAction = useCallback((action: { type: string; payload: Record<string, unknown> }) => {
-    console.log('[ComparisonView] AI action received:', action);
-
-    switch (action.type) {
-      case 'setComparison':
-        // Set both comparison entities from AI
-        if (action.payload.left && action.payload.right) {
-          setLeftEntityId(action.payload.left as string);
-          setRightEntityId(action.payload.right as string);
-        }
-        break;
-
-      case 'highlightEntity':
-        // Highlight a specific entity
-        if (action.payload.entityId) {
-          // Could trigger map highlight here if integrated
-          console.log('[ComparisonView] Highlight entity:', action.payload.entityId);
-        }
-        break;
-
-      case 'navigateTo':
-        // Navigate to a different page with context preservation
-        if (action.payload.url) {
-          const url = action.payload.url as string;
-          // Extract tool name from URL path
-          const toolMatch = url.match(/^\/([\w-]+)/);
-          const tool = toolMatch ? toolMatch[1] : 'political-ai';
-          CrossToolNavigator.navigateWithContext(tool as 'segments' | 'donors' | 'canvass' | 'compare' | 'political-ai', {});
-        }
-        break;
-    }
-  }, []);
-
   // Get current boundary type info
   const currentBoundaryInfo = useMemo(() => {
     return getBoundaryTypeInfo(selectedBoundaryType) || BOUNDARY_TYPES[0];
@@ -461,7 +427,7 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
         </div>
 
         {/* Actions: Save & History */}
-        <div className="flex items-center justify-center gap-3 max-w-4xl mx-auto">
+        {/* <div className="flex items-center justify-center gap-3 max-w-4xl mx-auto">
           <Button
             variant="default"
             size="sm"
@@ -477,7 +443,7 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
             onLoadComparison={handleLoadComparison}
             currentBoundaryType={selectedBoundaryType}
           />
-        </div>
+        </div> */}
 
         {/* Status */}
         {isLoading && (

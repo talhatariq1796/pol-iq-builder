@@ -4,11 +4,12 @@
  * @example
  * ```typescript
  * import { ComparisonEngine, InsightGenerator } from '@/lib/comparison';
- * import precinctData from '@/public/data/political/ingham_precincts.json';
+ * import { politicalDataService } from '@/lib/services/PoliticalDataService';
  *
+ * const precinctData = await politicalDataService.getPrecinctDataFileFormat();
  * const engine = new ComparisonEngine(precinctData);
- * const left = engine.buildJurisdictionEntity('east-lansing');
- * const right = engine.buildJurisdictionEntity('meridian-township');
+ * const left = engine.buildPrecinctEntity('some-precinct-id');
+ * const right = engine.buildPrecinctEntity('other-precinct-id');
  * const comparison = engine.compare(left, right);
  *
  * const generator = new InsightGenerator();

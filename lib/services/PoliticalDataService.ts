@@ -26,6 +26,14 @@ import type {
   CountySummary,
   UnifiedPrecinct,
 } from '@/types/political';
+import type {
+  MunicipalityDataFile,
+  MunicipalityRawData,
+  StateHouseDataFile,
+  StateHouseRawData,
+} from '@/lib/comparison/types';
+import { formatPoliticalDistrictLabel } from '@/lib/political/formatPoliticalDistrictLabel';
+import { PA_COUNTY_FP_TO_NAME, parsePaCountyFpFromPrecinctKey } from '@/lib/political/paCountyFips';
 
 import { loadGeoJSONMerged, resolveGeoJSONData } from '@/lib/map/geojsonMergeLoader';
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
@@ -1501,7 +1509,10 @@ export class PoliticalDataService {
             ? { gotvClassification: p.targeting.gotvClassification }
             : {}),
         },
-        elections: {}, // Election history not included in unified format
+        elections: {} as Record<
+          string,
+          { demPct: number; repPct: number; margin: number; turnout: number; ballotsCast: number }
+        >,
         ...(p.engagement && { engagement: p.engagement }),
         ...(p.tapestryCode && { tapestryCode: p.tapestryCode }),
         ...(p.tapestrySegment && { tapestrySegment: p.tapestrySegment }),
@@ -1513,6 +1524,8 @@ export class PoliticalDataService {
       id,
       ...data,
     }));
+
+    await this.mergeElectionHistoryIntoPrecinctRecords(precincts);
 
     console.log(
       `[PoliticalDataService] getPrecinctDataFileFormat: Built ${Object.keys(precincts).length} precincts, ${jurisdictions.length} jurisdictions`
@@ -1535,6 +1548,536 @@ export class PoliticalDataService {
   }
 
   /**
+   * Municipality list + metrics for Compare (aggregated from unified precincts by jurisdiction label).
+   */
+  async getMunicipalityDataFileFormat(): Promise<MunicipalityDataFile> {
+    const data = await this.getPrecinctDataFileFormat();
+    const { jurisdictions, precincts } = data;
+    const municipalities: MunicipalityRawData[] = [];
+
+    const wAvg = (list: any[], getter: (p: any) => number): number => {
+      const totalPop = list.reduce((s, p) => s + (p.demographics?.totalPopulation ?? 0), 0);
+      if (totalPop <= 0) return 0;
+      return (
+        list.reduce((acc, p) => acc + getter(p) * (p.demographics?.totalPopulation ?? 0), 0) / totalPop
+      );
+    };
+
+    for (const j of jurisdictions) {
+      const list = Object.values(precincts).filter(
+        (p: any) => p.jurisdiction === j.id || p.jurisdiction === j.name,
+      );
+      if (list.length === 0) continue;
+
+      const totalPop = list.reduce((s, p: any) => s + (p.demographics?.totalPopulation ?? 0), 0);
+      if (totalPop <= 0) continue;
+
+      const avgDensity = wAvg(list, (p) => p.demographics?.populationDensity ?? 0);
+      const density: MunicipalityRawData['density'] =
+        avgDensity >= 2800 ? 'urban' : avgDensity >= 900 ? 'suburban' : 'rural';
+
+      const strategyWeights = new Map<string, number>();
+      for (const p of list) {
+        const strat = String((p as any).targeting?.strategy || 'Low Priority');
+        strategyWeights.set(
+          strat,
+          (strategyWeights.get(strat) || 0) + ((p as any).demographics?.totalPopulation ?? 0),
+        );
+      }
+      let dominantStrategy = 'Low Priority';
+      let maxW = 0;
+      for (const [strat, w] of strategyWeights) {
+        if (w > maxW) {
+          maxW = w;
+          dominantStrategy = strat;
+        }
+      }
+
+      municipalities.push({
+        id: j.id,
+        name: j.name,
+        type: j.type,
+        population: Math.round(totalPop),
+        precinctCount: list.length,
+        partisanLean: Math.round(wAvg(list, (p) => p.electoral?.partisanLean ?? 0) * 10) / 10,
+        swingPotential: Math.round(wAvg(list, (p) => p.electoral?.swingPotential ?? 0) * 10) / 10,
+        gotvPriority: Math.round(wAvg(list, (p) => p.targeting?.gotvPriority ?? 0) * 10) / 10,
+        persuasionOpportunity: Math.round(wAvg(list, (p) => p.targeting?.persuasionOpportunity ?? 0) * 10) / 10,
+        avgTurnout: Math.round(wAvg(list, (p) => p.electoral?.avgTurnout ?? 0) * 10) / 10,
+        dominantStrategy,
+        density,
+      });
+    }
+
+    municipalities.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+    const sumPop = municipalities.reduce((s, m) => s + m.population, 0);
+    const overallLean =
+      sumPop > 0
+        ? municipalities.reduce((s, m) => s + m.partisanLean * m.population, 0) / sumPop
+        : 0;
+    const avgTurnoutMeta =
+      sumPop > 0
+        ? municipalities.reduce((s, m) => s + m.avgTurnout * m.population, 0) / sumPop
+        : 0;
+
+    const region = getPoliticalRegionEnv();
+    console.log(
+      `[PoliticalDataService] getMunicipalityDataFileFormat: ${municipalities.length} municipalities from jurisdictions`,
+    );
+
+    return {
+      municipalities,
+      metadata: {
+        county: region.county,
+        state: region.state,
+        totalMunicipalities: municipalities.length,
+        totalPopulation: Math.round(sumPop),
+        avgTurnout: Math.round(avgTurnoutMeta * 10) / 10,
+        overallPartisanLean: Math.round(overallLean * 10) / 10,
+        dataSource: 'Aggregated from unified precinct jurisdictions (targeting + election history)',
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Weighted precinct aggregates → StateHouseRawData rows (Compare: chambers, counties, school, ZIP).
+   */
+  private aggregatePaPrecinctGroupsToStateHouseRows(
+    groups: Map<string, { list: any[]; displayName: string }>,
+  ): StateHouseRawData[] {
+    const wAvg = (list: any[], getter: (p: any) => number): number => {
+      const totalPop = list.reduce((s, p) => s + (p.demographics?.totalPopulation ?? 0), 0);
+      if (totalPop <= 0) return 0;
+      return (
+        list.reduce((acc, p) => acc + getter(p) * (p.demographics?.totalPopulation ?? 0), 0) / totalPop
+      );
+    };
+
+    const latestElectionYear = (p: any): number | null => {
+      const years = Object.keys(p.elections || {})
+        .map((y) => parseInt(y, 10))
+        .filter((n) => Number.isFinite(n));
+      if (years.length === 0) return null;
+      return Math.max(...years);
+    };
+
+    const marginAtYear = (p: any, year: number): number | null => {
+      const row = p.elections?.[String(year)];
+      if (row && typeof row.margin === 'number') return row.margin;
+      return null;
+    };
+
+    const competitivenessMode = (list: any[]): string => {
+      const counts = new Map<string, number>();
+      for (const p of list) {
+        const c = String(p.electoral?.competitiveness ?? 'toss_up');
+        counts.set(c, (counts.get(c) || 0) + (p.demographics?.totalPopulation ?? 0));
+      }
+      let best = 'toss_up';
+      let maxW = 0;
+      for (const [c, w] of counts) {
+        if (w > maxW) {
+          maxW = w;
+          best = c;
+        }
+      }
+      return best;
+    };
+
+    const partyFromLean = (lean: number): 'D' | 'R' | 'I' => {
+      if (lean > 5) return 'D';
+      if (lean < -5) return 'R';
+      return 'I';
+    };
+
+    const districts: StateHouseRawData[] = [];
+
+    for (const [districtId, { list, displayName }] of groups) {
+      const totalPop = list.reduce((s, p) => s + (p.demographics?.totalPopulation ?? 0), 0);
+      if (totalPop <= 0) continue;
+
+      const lean = wAvg(list, (p) => p.electoral?.partisanLean ?? 0);
+      const avgDensity = wAvg(list, (p) => p.demographics?.populationDensity ?? 0);
+      const densStr: StateHouseRawData['keyDemographics']['density'] =
+        avgDensity >= 2800 ? 'urban' : avgDensity >= 900 ? 'suburban' : 'rural';
+
+      const strategyWeights = new Map<string, number>();
+      for (const p of list) {
+        const strat = String((p as any).targeting?.strategy || 'Low Priority');
+        strategyWeights.set(
+          strat,
+          (strategyWeights.get(strat) || 0) + ((p as any).demographics?.totalPopulation ?? 0),
+        );
+      }
+      let dominantStrategy = 'Low Priority';
+      let maxW = 0;
+      for (const [strat, w] of strategyWeights) {
+        if (w > maxW) {
+          maxW = w;
+          dominantStrategy = strat;
+        }
+      }
+
+      let sumMarginW = 0;
+      let marginPop = 0;
+      let maxYear = 0;
+      for (const p of list) {
+        const y = latestElectionYear(p);
+        if (y != null) {
+          maxYear = Math.max(maxYear, y);
+          const m = marginAtYear(p, y);
+          if (m != null) {
+            const pop = p.demographics?.totalPopulation ?? 0;
+            sumMarginW += m * pop;
+            marginPop += pop;
+          }
+        }
+      }
+      const lastElectionMargin =
+        marginPop > 0 ? Math.round((sumMarginW / marginPop) * 10) / 10 : Math.round(lean * 10) / 10;
+      const rowElectionYear = maxYear > 0 ? maxYear : 2024;
+
+      districts.push({
+        id: districtId,
+        name: displayName,
+        representative: '—',
+        party: partyFromLean(lean),
+        population: Math.round(totalPop),
+        precinctCount: list.length,
+        partisanLean: Math.round(lean * 10) / 10,
+        swingPotential: Math.round(wAvg(list, (p) => p.electoral?.swingPotential ?? 0) * 10) / 10,
+        gotvPriority: Math.round(wAvg(list, (p) => p.targeting?.gotvPriority ?? 0) * 10) / 10,
+        persuasionOpportunity: Math.round(wAvg(list, (p) => p.targeting?.persuasionOpportunity ?? 0) * 10) / 10,
+        avgTurnout: Math.round(wAvg(list, (p) => p.electoral?.avgTurnout ?? 0) * 10) / 10,
+        competitiveness: competitivenessMode(list),
+        lastElectionMargin,
+        lastElectionYear: rowElectionYear,
+        coverage: 'Pennsylvania',
+        dominantStrategy,
+        keyDemographics: {
+          medianAge: Math.round(wAvg(list, (p) => p.demographics?.medianAge ?? 35)),
+          medianIncome: Math.round(wAvg(list, (p) => p.demographics?.medianHHI ?? 0)),
+          bachelorsPct: Math.round(wAvg(list, (p) => p.demographics?.collegePct ?? 0) * 10) / 10,
+          density: densStr,
+        },
+      });
+    }
+
+    return districts;
+  }
+
+  /**
+   * PA state house / senate / congressional districts for Compare — aggregated from precincts + district crosswalk.
+   */
+  async getPaDistrictChamberDataFile(
+    chamber: 'state_house' | 'state_senate' | 'congressional',
+  ): Promise<StateHouseDataFile> {
+    const data = await this.getPrecinctDataFileFormat();
+    const crosswalk = await this.loadDistrictCrosswalk();
+    const field =
+      chamber === 'state_house'
+        ? 'stateHouse'
+        : chamber === 'state_senate'
+          ? 'stateSenate'
+          : 'congressional';
+
+    const groupsBare = new Map<string, any[]>();
+    for (const [canonicalKey, p] of Object.entries(data.precincts)) {
+      const assignment =
+        crosswalk[canonicalKey] ||
+        crosswalk[(p as any).name] ||
+        ((p as any).id ? crosswalk[(p as any).id] : undefined);
+      const dk = assignment?.[field];
+      if (!dk || typeof dk !== 'string') continue;
+      if (!groupsBare.has(dk)) groupsBare.set(dk, []);
+      groupsBare.get(dk)!.push(p);
+    }
+
+    const groups = new Map<string, { list: any[]; displayName: string }>();
+    for (const [id, list] of groupsBare) {
+      groups.set(id, { list, displayName: formatPoliticalDistrictLabel(id) });
+    }
+
+    const districts = this.aggregatePaPrecinctGroupsToStateHouseRows(groups);
+
+    districts.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+    const sumPop = districts.reduce((s, d) => s + d.population, 0);
+    const overallLean =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.partisanLean * d.population, 0) / sumPop : 0;
+    const avgTurnoutMeta =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.avgTurnout * d.population, 0) / sumPop : 0;
+
+    const competitiveDistricts = districts.filter((d) => Math.abs(d.partisanLean) < 15).length;
+
+    const region = getPoliticalRegionEnv();
+    const chamberLabel =
+      chamber === 'state_house'
+        ? 'State House'
+        : chamber === 'state_senate'
+          ? 'State Senate'
+          : 'Congressional';
+
+    console.log(
+      `[PoliticalDataService] getPaDistrictChamberDataFile(${chamber}): ${districts.length} districts`,
+    );
+
+    return {
+      districts,
+      metadata: {
+        county: region.county,
+        state: region.state,
+        chamber: chamberLabel,
+        totalDistricts: districts.length,
+        totalPopulation: Math.round(sumPop),
+        avgTurnout: Math.round(avgTurnoutMeta * 10) / 10,
+        overallPartisanLean: Math.round(overallLean * 10) / 10,
+        competitiveDistricts,
+        dataSource: `PA precinct aggregates + district crosswalk (${field})`,
+        lastElectionCycle: 2024,
+        nextElectionCycle: 2026,
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Pennsylvania counties — aggregated by precinct key `CCC-:-…` (COUNTYFP = CCC).
+   */
+  async getPaCountyDataFileFormat(): Promise<StateHouseDataFile> {
+    const data = await this.getPrecinctDataFileFormat();
+    const groupsBare = new Map<string, any[]>();
+    for (const [canonicalKey, p] of Object.entries(data.precincts)) {
+      const fp = parsePaCountyFpFromPrecinctKey(canonicalKey);
+      if (!fp) continue;
+      const id = `pa-county-${fp}`;
+      if (!groupsBare.has(id)) groupsBare.set(id, []);
+      groupsBare.get(id)!.push(p);
+    }
+
+    const groups = new Map<string, { list: any[]; displayName: string }>();
+    for (const [id, list] of groupsBare) {
+      const fp = id.replace('pa-county-', '');
+      const countyName = PA_COUNTY_FP_TO_NAME[fp];
+      const displayName = countyName ? `${countyName} County` : `County ${fp}`;
+      groups.set(id, { list, displayName });
+    }
+
+    const districts = this.aggregatePaPrecinctGroupsToStateHouseRows(groups);
+    districts.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+    const sumPop = districts.reduce((s, d) => s + d.population, 0);
+    const overallLean =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.partisanLean * d.population, 0) / sumPop : 0;
+    const avgTurnoutMeta =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.avgTurnout * d.population, 0) / sumPop : 0;
+    const competitiveDistricts = districts.filter((d) => Math.abs(d.partisanLean) < 15).length;
+    const region = getPoliticalRegionEnv();
+
+    console.log(`[PoliticalDataService] getPaCountyDataFileFormat: ${districts.length} counties`);
+
+    return {
+      districts,
+      metadata: {
+        county: region.county,
+        state: region.state,
+        chamber: 'County',
+        totalDistricts: districts.length,
+        totalPopulation: Math.round(sumPop),
+        avgTurnout: Math.round(avgTurnoutMeta * 10) / 10,
+        overallPartisanLean: Math.round(overallLean * 10) / 10,
+        competitiveDistricts,
+        dataSource: 'PA precinct aggregates + county FIPS from precinct UNIQUE_ID',
+        lastElectionCycle: 2024,
+        nextElectionCycle: 2026,
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Pennsylvania school districts — requires `schoolDistrict` + optional `schoolDistrictName` on crosswalk.
+   */
+  async getPaSchoolDistrictDataFileFormat(): Promise<StateHouseDataFile> {
+    const data = await this.getPrecinctDataFileFormat();
+    const crosswalk = await this.loadDistrictCrosswalk();
+    const groupsBare = new Map<string, any[]>();
+    const labelById = new Map<string, string>();
+
+    for (const [canonicalKey, p] of Object.entries(data.precincts)) {
+      const assignment =
+        crosswalk[canonicalKey] ||
+        crosswalk[(p as any).name] ||
+        ((p as any).id ? crosswalk[(p as any).id] : undefined);
+      const dk = assignment?.schoolDistrict;
+      if (!dk || typeof dk !== 'string') continue;
+      if (!groupsBare.has(dk)) {
+        groupsBare.set(dk, []);
+        const nm = assignment?.schoolDistrictName;
+        labelById.set(
+          dk,
+          typeof nm === 'string' && nm.trim() ? nm.trim() : formatPoliticalDistrictLabel(dk),
+        );
+      }
+      groupsBare.get(dk)!.push(p);
+    }
+
+    const groups = new Map<string, { list: any[]; displayName: string }>();
+    for (const [id, list] of groupsBare) {
+      groups.set(id, {
+        list,
+        displayName: labelById.get(id) ?? formatPoliticalDistrictLabel(id),
+      });
+    }
+
+    const districts = this.aggregatePaPrecinctGroupsToStateHouseRows(groups);
+    districts.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+    const sumPop = districts.reduce((s, d) => s + d.population, 0);
+    const overallLean =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.partisanLean * d.population, 0) / sumPop : 0;
+    const avgTurnoutMeta =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.avgTurnout * d.population, 0) / sumPop : 0;
+    const competitiveDistricts = districts.filter((d) => Math.abs(d.partisanLean) < 15).length;
+    const region = getPoliticalRegionEnv();
+
+    console.log(`[PoliticalDataService] getPaSchoolDistrictDataFileFormat: ${districts.length} districts`);
+
+    return {
+      districts,
+      metadata: {
+        county: region.county,
+        state: region.state,
+        chamber: 'School District',
+        totalDistricts: districts.length,
+        totalPopulation: Math.round(sumPop),
+        avgTurnout: Math.round(avgTurnoutMeta * 10) / 10,
+        overallPartisanLean: Math.round(overallLean * 10) / 10,
+        competitiveDistricts,
+        dataSource: 'PA precinct aggregates + pa_precinct_district_crosswalk (schoolDistrict)',
+        lastElectionCycle: 2024,
+        nextElectionCycle: 2026,
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Pennsylvania ZCTA / ZIP tabulation areas — requires `zcta` + optional `zctaName` on crosswalk.
+   */
+  async getPaZipCodeDataFileFormat(): Promise<StateHouseDataFile> {
+    const data = await this.getPrecinctDataFileFormat();
+    const crosswalk = await this.loadDistrictCrosswalk();
+    const groupsBare = new Map<string, any[]>();
+    const labelById = new Map<string, string>();
+
+    for (const [canonicalKey, p] of Object.entries(data.precincts)) {
+      const assignment =
+        crosswalk[canonicalKey] ||
+        crosswalk[(p as any).name] ||
+        ((p as any).id ? crosswalk[(p as any).id] : undefined);
+      const dk = assignment?.zcta;
+      if (!dk || typeof dk !== 'string') continue;
+      if (!groupsBare.has(dk)) {
+        groupsBare.set(dk, []);
+        const nm = assignment?.zctaName;
+        labelById.set(
+          dk,
+          typeof nm === 'string' && nm.trim() ? nm.trim() : formatPoliticalDistrictLabel(dk),
+        );
+      }
+      groupsBare.get(dk)!.push(p);
+    }
+
+    const groups = new Map<string, { list: any[]; displayName: string }>();
+    for (const [id, list] of groupsBare) {
+      groups.set(id, {
+        list,
+        displayName: labelById.get(id) ?? formatPoliticalDistrictLabel(id),
+      });
+    }
+
+    const districts = this.aggregatePaPrecinctGroupsToStateHouseRows(groups);
+    districts.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+    const sumPop = districts.reduce((s, d) => s + d.population, 0);
+    const overallLean =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.partisanLean * d.population, 0) / sumPop : 0;
+    const avgTurnoutMeta =
+      sumPop > 0 ? districts.reduce((s, d) => s + d.avgTurnout * d.population, 0) / sumPop : 0;
+    const competitiveDistricts = districts.filter((d) => Math.abs(d.partisanLean) < 15).length;
+    const region = getPoliticalRegionEnv();
+
+    console.log(`[PoliticalDataService] getPaZipCodeDataFileFormat: ${districts.length} ZIP areas`);
+
+    return {
+      districts,
+      metadata: {
+        county: region.county,
+        state: region.state,
+        chamber: 'ZIP Code',
+        totalDistricts: districts.length,
+        totalPopulation: Math.round(sumPop),
+        avgTurnout: Math.round(avgTurnoutMeta * 10) / 10,
+        overallPartisanLean: Math.round(overallLean * 10) / 10,
+        competitiveDistricts,
+        dataSource: 'PA precinct aggregates + pa_precinct_district_crosswalk (zcta)',
+        lastElectionCycle: 2024,
+        nextElectionCycle: 2026,
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Merge election history into precinct records (ComparisonEngine + SegmentEngine).
+   * Mutates `precincts` in place. PA: from pa_precinct_election_history; MI: precinctHistory via name map.
+   */
+  private async mergeElectionHistoryIntoPrecinctRecords(precincts: Record<string, any>): Promise<void> {
+    if (!precincts || Object.keys(precincts).length === 0) return;
+
+    const electionResults = await this.loadElectionResults();
+    const electionKeyByPrecinctName = await this.loadElectionHistoryPrecinctKeyMap();
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
+
+    for (const [canonicalPrecinctKey, p] of Object.entries(precincts)) {
+      if (isPA) {
+        const paRow =
+          electionResults.precincts?.[canonicalPrecinctKey] ??
+          electionResults.precincts?.[p.name] ??
+          (p.id ? electionResults.precincts?.[p.id] : undefined);
+        if (paRow?.elections) {
+          const converted = this.convertPaPrecinctElectionJsonToSegmentYears(paRow);
+          if (Object.keys(converted).length > 0) {
+            p.elections = converted;
+          }
+        }
+      } else {
+        const shortId = electionKeyByPrecinctName.get(this.normalizePrecinctNameForElection(p.name));
+        const rawHistory = shortId && electionResults.precinctHistory?.[shortId];
+        if (rawHistory) {
+          p.elections = this.convertToPrecinctElectionResults(rawHistory);
+        }
+      }
+
+      if (isPA && p.elections && Object.keys(p.elections).length > 0) {
+        const ev = p.elections as Record<string, { turnout?: number }>;
+        const turnouts = ['2020', '2022', '2024']
+          .map((y) => ev[y]?.turnout)
+          .filter((t): t is number => typeof t === 'number' && !Number.isNaN(t));
+        if (turnouts.length > 0 && p.electoral) {
+          p.electoral.avgTurnout = turnouts.reduce((a, b) => a + b, 0) / turnouts.length;
+        }
+        if (p.electoral && ev['2024']?.turnout != null && ev['2022']?.turnout != null) {
+          p.electoral.turnoutDropoff = ev['2024'].turnout! - ev['2022'].turnout!;
+        }
+      }
+    }
+  }
+
+  /**
    * Get precincts formatted for SegmentEngine
    *
    * Returns an array of precincts in the format expected by SegmentEngine.
@@ -1547,8 +2090,6 @@ export class PoliticalDataService {
   async getSegmentEnginePrecincts(): Promise<any> {
     const data = await this.getPrecinctDataFileFormat();
     const crosswalk = await this.loadDistrictCrosswalk();
-    const electionResults = await this.loadElectionResults();
-    const electionKeyByPrecinctName = await this.loadElectionHistoryPrecinctKeyMap();
     const tapestrySegmentsMap = await this.loadTapestrySegmentsMap();
     const isPA = getPoliticalRegionEnv().stateFips === '42';
 
@@ -1576,39 +2117,7 @@ export class PoliticalDataService {
         result.municipalityType = assignment.municipalityType ?? undefined;
       }
 
-      // Election history: PA file uses precincts[canonicalKey].elections[date]; MI uses precinctHistory[shortId]
-      if (isPA) {
-        const paRow =
-          electionResults.precincts?.[canonicalPrecinctKey] ??
-          electionResults.precincts?.[p.name] ??
-          (p.id ? electionResults.precincts?.[p.id] : undefined);
-        if (paRow?.elections) {
-          const converted = this.convertPaPrecinctElectionJsonToSegmentYears(paRow);
-          if (Object.keys(converted).length > 0) {
-            result.elections = converted;
-          }
-        }
-      } else {
-        const shortId = electionKeyByPrecinctName.get(this.normalizePrecinctNameForElection(p.name));
-        const rawHistory = shortId && electionResults.precinctHistory?.[shortId];
-        if (rawHistory) {
-          result.elections = this.convertToPrecinctElectionResults(rawHistory);
-        }
-      }
-
-      // PA: avg turnout / dropoff from merged presidential years for targeting turnout filters
-      if (isPA && result.elections && Object.keys(result.elections).length > 0) {
-        const ev = result.elections as Record<string, { turnout?: number }>;
-        const turnouts = ['2020', '2022', '2024']
-          .map((y) => ev[y]?.turnout)
-          .filter((t): t is number => typeof t === 'number' && !Number.isNaN(t));
-        if (turnouts.length > 0) {
-          result.electoral.avgTurnout = turnouts.reduce((a, b) => a + b, 0) / turnouts.length;
-        }
-        if (ev['2024']?.turnout != null && ev['2022']?.turnout != null) {
-          result.electoral.turnoutDropoff = ev['2024'].turnout! - ev['2022'].turnout!;
-        }
-      }
+      // Election history + PA turnout/dropoff: merged in getPrecinctDataFileFormat (mergeElectionHistoryIntoPrecinctRecords)
 
       // Attach Tapestry segment metadata for Tapestry filters
       const code = result.tapestryCode || p.tapestryCode;
@@ -2822,6 +3331,9 @@ export class PoliticalDataService {
     stateHouse: string | null;
     municipality: string | null;
     schoolDistrict: string | null;
+    schoolDistrictName?: string | null;
+    zcta?: string | null;
+    zctaName?: string | null;
   }> | null = null;
 
   /**
