@@ -31,6 +31,12 @@ import { getSuggestionEngine } from '@/lib/ai-native/SuggestionEngine';
 import {
   frameAsDiscovery,
 } from '@/lib/ai/insights';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import {
+  formatPoliticalDistrictLabel,
+  stripDistrictIdForEnrichment,
+  isPAPoliticalRegion,
+} from '@/lib/political/formatPoliticalDistrictLabel';
 
 import {
   getCitationService,
@@ -183,6 +189,16 @@ export async function handleDistrictAnalysis(
       districtParams.countyCommissioner;
 
     if (!districtType || !districtId) {
+      if (isPAPoliticalRegion()) {
+        return {
+          response: `Please specify a district to analyze. Examples:\n• "Analyze State House 171"\n• "Show PA-07"\n• "What's in Senate District 45?"\n• "School district Pittsburgh"`,
+          suggestedActions: [
+            { id: 'ph-171', label: 'State House 171', action: 'Show State House 171', icon: 'map-pin' },
+            { id: 'ps-45', label: 'Senate District 45', action: 'Show Senate District 45', icon: 'map-pin' },
+            { id: 'pa-07', label: 'PA-07 Congressional', action: 'Analyze PA-07', icon: 'map-pin' },
+          ],
+        };
+      }
       return {
         response: `Please specify a district to analyze. Examples:\n• "Analyze State House 73"\n• "Show MI-07"\n• "What's in Senate District 21?"\n• "Mason Public Schools district"`,
         suggestedActions: [
@@ -190,7 +206,7 @@ export async function handleDistrictAnalysis(
           { id: 'hd-74', label: 'State House 74', action: 'Show State House 74', icon: 'map-pin' },
           { id: 'sd-21', label: 'Senate District 21', action: 'Show Senate District 21', icon: 'map-pin' },
           { id: 'mi-07', label: 'MI-07 Congressional', action: 'Analyze MI-07', icon: 'map-pin' },
-        ]
+        ],
       };
     }
 
@@ -199,34 +215,39 @@ export async function handleDistrictAnalysis(
     let districtLabel = '';
     let candidateContext: CandidateContext | null = null;
 
+    const summaryArea = getPoliticalRegionEnv().summaryAreaName;
+
     if (districtType === 'congressional') {
       precincts = await politicalDataService.getPrecinctsByCongressionalDistrict(districtId);
-      districtLabel = `Congressional District ${districtId.replace('mi-', '').toUpperCase()}`;
-      // Load candidate context from Knowledge Graph
-      try {
-        candidateContext = await getCongressionalContext();
-      } catch (e) {
-        console.warn('[handleDistrictAnalysis] Could not load congressional context:', e);
+      districtLabel = formatPoliticalDistrictLabel(districtId);
+      if (!isPAPoliticalRegion()) {
+        try {
+          candidateContext = await getCongressionalContext();
+        } catch (e) {
+          console.warn('[handleDistrictAnalysis] Could not load congressional context:', e);
+        }
       }
     } else if (districtType === 'state_senate') {
       precincts = await politicalDataService.getPrecinctsByStateSenateDistrict(districtId);
-      const distNum = districtId.replace('mi-senate-', '');
-      districtLabel = `State Senate District ${distNum}`;
-      // Load candidate context from Knowledge Graph
-      try {
-        candidateContext = await getStateSenateContext(distNum);
-      } catch (e) {
-        console.warn('[handleDistrictAnalysis] Could not load state senate context:', e);
+      districtLabel = formatPoliticalDistrictLabel(districtId);
+      if (!isPAPoliticalRegion()) {
+        const distNum = stripDistrictIdForEnrichment(districtId, 'state_senate');
+        try {
+          candidateContext = await getStateSenateContext(distNum);
+        } catch (e) {
+          console.warn('[handleDistrictAnalysis] Could not load state senate context:', e);
+        }
       }
     } else if (districtType === 'state_house') {
       precincts = await politicalDataService.getPrecinctsByStateHouseDistrict(districtId);
-      const distNum = districtId.replace('mi-house-', '');
-      districtLabel = `State House District ${distNum}`;
-      // Load candidate context from Knowledge Graph
-      try {
-        candidateContext = await getStateHouseContext(distNum);
-      } catch (e) {
-        console.warn('[handleDistrictAnalysis] Could not load state house context:', e);
+      districtLabel = formatPoliticalDistrictLabel(districtId);
+      if (!isPAPoliticalRegion()) {
+        const distNum = stripDistrictIdForEnrichment(districtId, 'state_house');
+        try {
+          candidateContext = await getStateHouseContext(distNum);
+        } catch (e) {
+          console.warn('[handleDistrictAnalysis] Could not load state house context:', e);
+        }
       }
     } else if (districtType === 'school') {
       precincts = await politicalDataService.getPrecinctsBySchoolDistrict(districtId);
@@ -236,20 +257,37 @@ export async function handleDistrictAnalysis(
       // County commissioner districts need to be implemented separately if needed
       return {
         response: `County Commissioner district analysis is coming soon. For now, try State House, State Senate, Congressional, or School districts.`,
-        suggestedActions: [
-          { id: 'hd-73', label: 'State House 73', action: 'Show State House 73', icon: 'map-pin' },
-          { id: 'sd-21', label: 'Senate District 21', action: 'Show Senate District 21', icon: 'map-pin' },
-        ]
+        suggestedActions: isPAPoliticalRegion()
+          ? [
+              { id: 'ph-171', label: 'State House 171', action: 'Show State House 171', icon: 'map-pin' },
+              { id: 'ps-45', label: 'Senate District 45', action: 'Show Senate District 45', icon: 'map-pin' },
+            ]
+          : [
+              { id: 'hd-73', label: 'State House 73', action: 'Show State House 73', icon: 'map-pin' },
+              { id: 'sd-21', label: 'Senate District 21', action: 'Show Senate District 21', icon: 'map-pin' },
+            ],
       };
     }
 
     if (precincts.length === 0) {
       return {
-        response: `No precincts found for ${districtLabel}. This district may not be in Ingham County or the data is not available yet.`,
+        response: `No precincts found for ${districtLabel}. This district may not intersect ${summaryArea} precinct data, or boundaries are not available yet.`,
         suggestedActions: [
-          { id: 'list-districts', label: 'List available districts', action: 'What districts are in Ingham County?', icon: 'list' },
-          { id: 'try-hd', label: 'Try State House 73', action: 'Show State House 73', icon: 'map-pin' },
-        ]
+          {
+            id: 'list-districts',
+            label: 'List example districts',
+            action: isPAPoliticalRegion()
+              ? 'What Pennsylvania legislative districts can I analyze?'
+              : 'What districts are in Ingham County?',
+            icon: 'list',
+          },
+          {
+            id: 'try-hd',
+            label: isPAPoliticalRegion() ? 'Try State House 171' : 'Try State House 73',
+            action: isPAPoliticalRegion() ? 'Show State House 171' : 'Show State House 73',
+            icon: 'map-pin',
+          },
+        ],
       };
     }
 
@@ -259,7 +297,14 @@ export async function handleDistrictAnalysis(
       const enrichDistrictType = districtType === 'state_house' ? 'state_house' :
         districtType === 'state_senate' ? 'state_senate' :
           districtType === 'congressional' ? 'congressional' : 'county';
-      const distNum = districtId.replace(/mi-(house|senate)-/, '');
+      let distNum = '';
+      if (districtType === 'congressional') {
+        distNum = stripDistrictIdForEnrichment(districtId, 'congressional');
+      } else if (districtType === 'state_senate') {
+        distNum = stripDistrictIdForEnrichment(districtId, 'state_senate');
+      } else if (districtType === 'state_house') {
+        distNum = stripDistrictIdForEnrichment(districtId, 'state_house');
+      }
       enrichmentContext = await enrichDistrictAnalysis(enrichDistrictType, distNum);
       console.log('[handleDistrictAnalysis] Enrichment:', {
         ragDocs: enrichmentContext.rag.documents.length,
@@ -431,15 +476,27 @@ export async function handleDistrictAnalysis(
 
     // Add compare suggestion if state house
     if (districtType === 'state_house') {
-      const currentNum = parseInt(districtId.replace('mi-house-', ''));
-      const otherDistricts = [73, 74, 75, 77].filter(n => n !== currentNum);
-      if (otherDistricts.length > 0) {
-        suggestedActions.push({
-          id: 'compare-district',
-          label: `Compare to HD-${otherDistricts[0]}`,
-          action: `Compare State House ${currentNum} to State House ${otherDistricts[0]}`,
-          icon: 'git-compare'
-        });
+      const currentNum = parseInt(stripDistrictIdForEnrichment(districtId, 'state_house'), 10);
+      if (isPAPoliticalRegion() && Number.isFinite(currentNum)) {
+        const next = Math.min(203, Math.max(1, currentNum + 1));
+        if (next !== currentNum) {
+          suggestedActions.push({
+            id: 'compare-district',
+            label: `Compare to HD-${next}`,
+            action: `Compare State House ${currentNum} to State House ${next}`,
+            icon: 'git-compare',
+          });
+        }
+      } else if (!isPAPoliticalRegion() && Number.isFinite(currentNum)) {
+        const otherDistricts = [73, 74, 75, 77].filter(n => n !== currentNum);
+        if (otherDistricts.length > 0) {
+          suggestedActions.push({
+            id: 'compare-district',
+            label: `Compare to HD-${otherDistricts[0]}`,
+            action: `Compare State House ${currentNum} to State House ${otherDistricts[0]}`,
+            icon: 'git-compare',
+          });
+        }
       }
     }
 
@@ -470,9 +527,16 @@ export async function handleDistrictAnalysis(
     return {
       response: `I encountered an error analyzing this district. Let me help you recover.`,
       suggestedActions: [
-        { id: 'retry', label: 'Try again', action: 'What districts are in Ingham County?', icon: 'refresh-cw' },
+        {
+          id: 'retry',
+          label: 'Try again',
+          action: isPAPoliticalRegion()
+            ? 'What Pennsylvania districts can I analyze?'
+            : 'What districts are in Ingham County?',
+          icon: 'refresh-cw',
+        },
         { id: 'browse', label: 'Browse all precincts', action: 'Show me all precincts', icon: 'list' },
-      ]
+      ],
     };
   }
 }
@@ -651,8 +715,9 @@ export async function handleDataRequest(dataType: string, entity?: string): Prom
         const avgMedianAge = precincts.reduce((sum, p) => sum + p.demographics.medianAge, 0) / precincts.length;
         const avgMedianIncome = precincts.reduce((sum, p) => sum + p.demographics.medianHHI, 0) / precincts.length;
 
+        const demoLabel = getPoliticalRegionEnv().summaryAreaName;
         return {
-          response: `Ingham County Demographics:\n\n` +
+          response: `${demoLabel} Demographics:\n\n` +
             `Total Population: ${totalPop.toLocaleString()}\n` +
             `Average Median Age: ${avgMedianAge.toFixed(1)} years\n` +
             `Average Median Income: ${formatCurrency(avgMedianIncome)}\n\n` +
@@ -1696,7 +1761,8 @@ export async function handleGraphQuery(graphParams?: {
       const statsResponse = await fetch('/api/knowledge-graph?action=stats');
       const statsData = await statsResponse.json();
 
-      let introMessage = `**Knowledge Graph** lets you explore relationships between entities in Ingham County:\n`;
+      const kgArea = getPoliticalRegionEnv().summaryAreaName;
+      let introMessage = `**Knowledge Graph** lets you explore relationships between political entities in ${kgArea}:\n`;
 
       if (statsData.success && statsData.stats) {
         const stats = statsData.stats;
@@ -2556,9 +2622,12 @@ function getExplorationContext(): ExplorationContext {
 }
 
 function generateRecoverySuggestions(missingContext: 'selection' | 'segment' | 'comparison' | 'filter'): SuggestedAction[] {
+  const browsePrecinctsAction = isPAPoliticalRegion()
+    ? `Show me precincts in ${getPoliticalRegionEnv().summaryAreaName}`
+    : 'Show me all precincts in Ingham County';
   const baseActions: SuggestedAction[] = [
     { id: 'click-map', label: 'Click map to select', action: 'Click on the map to select a precinct', icon: 'map-pin' },
-    { id: 'browse-all', label: 'Browse all precincts', action: 'Show me all precincts in Ingham County', icon: 'list' },
+    { id: 'browse-all', label: 'Browse all precincts', action: browsePrecinctsAction, icon: 'list' },
   ];
 
   switch (missingContext) {
@@ -2577,7 +2646,14 @@ function generateRecoverySuggestions(missingContext: 'selection' | 'segment' | '
     case 'comparison':
       return [
         { id: 'select-first', label: 'Select first precinct', action: 'Click on a precinct to start comparison', icon: 'target' },
-        { id: 'compare-example', label: 'Example comparison', action: 'Compare East Lansing to Meridian Township', icon: 'git-compare' },
+        {
+          id: 'compare-example',
+          label: 'Example comparison',
+          action: isPAPoliticalRegion()
+            ? 'Compare Philadelphia to Pittsburgh'
+            : 'Compare East Lansing to Meridian Township',
+          icon: 'git-compare',
+        },
       ];
     case 'filter':
       return [

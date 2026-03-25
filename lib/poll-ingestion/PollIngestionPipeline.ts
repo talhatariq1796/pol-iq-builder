@@ -88,9 +88,8 @@ export class PollIngestionPipeline {
       // Default to all sources if none specified
       const sources = options.sources || ['fivethirtyeight', 'votehub'];
 
-      // Default fetch options for Michigan
       const fetchOptions: FetchOptions = {
-        state: 'Michigan',
+        state: 'Pennsylvania',
         ...options.fetchOptions,
       };
 
@@ -193,7 +192,7 @@ export class PollIngestionPipeline {
   async fetchOnly(options: PipelineOptions = {}): Promise<Poll[]> {
     const sources = options.sources || ['fivethirtyeight', 'votehub'];
     const fetchOptions: FetchOptions = {
-      state: 'Michigan',
+      state: 'Pennsylvania',
       ...options.fetchOptions,
     };
 
@@ -246,7 +245,7 @@ export class PollIngestionPipeline {
   }
 
   /**
-   * Get Michigan-specific aggregates
+   * Get aggregates for the configured state (legacy method name)
    */
   async getMichiganAggregates(): Promise<PollAggregate[]> {
     if (!this.store.isLoaded()) {

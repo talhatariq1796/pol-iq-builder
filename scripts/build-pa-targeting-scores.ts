@@ -4,13 +4,13 @@
  * Usage: npx ts-node scripts/build-pa-targeting-scores.ts
  *
  * Reads:
- *   - public/data/political/pensylvania/pa_2020_presidential.geojson
- *   - public/data/political/pensylvania/pa_2022_precinct.geojson
- *   - public/data/political/pensylvania/pa_2024_precincts_with_votes.geojson
- *   - public/data/political/pensylvania/pa_total_population_2025.geojson (block groups, optional)
+ *   - public/data/political/pensylvania/precincts/pa_2020_presidential.geojson
+ *   - public/data/political/pensylvania/precincts/pa_2022_precinct.geojson
+ *   - public/data/political/pensylvania/precincts/pa_2024_precincts_with_votes.geojson
+ *   - public/data/political/pensylvania/demographics/pa_total_population_2025.geojson (block groups, optional)
  *
  * Outputs:
- *   - public/data/political/pensylvania/precinct_targeting_scores.json
+ *   - public/data/political/pensylvania/precincts/precinct_targeting_scores.json
  *
  * Each precinct includes:
  *   - political_scores.partisan_lean / swing_potential (for UnifiedPrecinct merge)
@@ -24,9 +24,11 @@ import * as turf from '@turf/turf';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson';
 
 const DATA_DIR = path.join(process.cwd(), 'public/data/political/pensylvania');
-const OUTPUT_FILE = path.join(DATA_DIR, 'precinct_targeting_scores.json');
-const ELECTION_HISTORY_FILE = path.join(DATA_DIR, 'pa_precinct_election_history.json');
-const POP_BG_FILE = path.join(DATA_DIR, 'pa_total_population_2025.geojson');
+const PRECINCT_DIR = path.join(DATA_DIR, 'precincts');
+const DEMO_DIR = path.join(DATA_DIR, 'demographics');
+const OUTPUT_FILE = path.join(PRECINCT_DIR, 'precinct_targeting_scores.json');
+const ELECTION_HISTORY_FILE = path.join(PRECINCT_DIR, 'pa_precinct_election_history.json');
+const POP_BG_FILE = path.join(DEMO_DIR, 'pa_total_population_2025.geojson');
 
 const PA_ELECTION_DATES = {
   '2020': { date: '2020-11-03', type: 'general' as const },
@@ -217,7 +219,7 @@ function estimatePopulationByPrecinct(
 }
 
 function loadPa2022(): Map<string, { demVotes: number; repVotes: number }> {
-  const file = path.join(DATA_DIR, 'pa_2022_precinct.geojson');
+  const file = path.join(PRECINCT_DIR, 'pa_2022_precinct.geojson');
   const gj = JSON.parse(fs.readFileSync(file, 'utf8')) as { features: Array<{ properties?: Record<string, unknown> }> };
   const map = new Map<string, { demVotes: number; repVotes: number }>();
 
@@ -234,7 +236,7 @@ function loadPa2022(): Map<string, { demVotes: number; repVotes: number }> {
 }
 
 function loadPa2024(): Map<string, { demVotes: number; repVotes: number }> {
-  const file = path.join(DATA_DIR, 'pa_2024_precincts_with_votes.geojson');
+  const file = path.join(PRECINCT_DIR, 'pa_2024_precincts_with_votes.geojson');
   const gj = JSON.parse(fs.readFileSync(file, 'utf8')) as { features: Array<{ properties?: Record<string, unknown> }> };
   const map = new Map<string, { demVotes: number; repVotes: number }>();
 
@@ -366,7 +368,7 @@ function computeScores(record: ElectionRecord, data2022?: { demVotes: number; re
 
 function main() {
   console.log('[build-pa-targeting-scores] Loading PA election data...');
-  const file2020 = path.join(DATA_DIR, 'pa_2020_presidential.geojson');
+  const file2020 = path.join(PRECINCT_DIR, 'pa_2020_presidential.geojson');
   const gj2020 = JSON.parse(
     fs.readFileSync(file2020, 'utf8'),
   ) as FeatureCollection;

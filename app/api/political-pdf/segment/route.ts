@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SegmentReportPDFGenerator } from '@/lib/pdf/political/SegmentReportPDFGenerator';
 import type { SegmentReportConfig, SegmentPrecinctData, SegmentFilter } from '@/lib/pdf/political/SegmentReportPDFGenerator';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,6 +43,7 @@ interface SegmentReportRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const region = getPoliticalRegionEnv();
     const body: SegmentReportRequest = await request.json();
 
     console.log('[Segment Report API] Generating for:', body.segmentName, 'with', body.precinctNames.length, 'precincts');
@@ -196,8 +198,8 @@ export async function POST(request: NextRequest) {
 
       recommendations: body.recommendations || generateDefaultRecommendations(precinctData, count, sumSwing / count, sumGotv / count),
 
-      county: 'Ingham',
-      state: 'Michigan',
+      county: region.county,
+      state: region.state,
       generatedBy: 'Political Analysis Platform',
       reportDate: new Date().toLocaleDateString('en-US', {
         year: 'numeric',

@@ -102,7 +102,7 @@ export interface ConfidentDataPoint<T = number> {
  */
 export type CitationKey =
   // === DATA SOURCES ===
-  | 'ELECTIONS'           // Ingham County election results
+  | 'ELECTIONS'           // Precinct election results (PA build in this app)
   | 'DEMOGRAPHICS'        // Census/ACS demographic data
   | 'PSYCHOGRAPHICS'      // GfK MRI political attitudes
   | 'TAPESTRY'            // Esri Tapestry segmentation
@@ -113,9 +113,9 @@ export type CitationKey =
   | 'NEWS'                // News coverage
   | 'CENSUS_ACS'          // American Community Survey specifics
   | 'GFK_MRI'             // GfK MRI Survey methodology
-  | 'MICHIGAN_GIS'        // Michigan GIS Open Data
-  | 'INGHAM_CLERK'        // Ingham County Clerk
-  | 'MICHIGAN_SOS'        // Michigan Secretary of State
+  | 'MICHIGAN_GIS'        // Precinct/district boundary reference (legacy key name)
+  | 'INGHAM_CLERK'        // Legacy key; treat as county-level election reporting
+  | 'MICHIGAN_SOS'        // Legacy key; use state election authority for the deployment
   | 'ESRI_BA'             // Esri Business Analyst
   // === ACADEMIC RESEARCH ===
   | 'GERBER_GREEN'        // GOTV field experiments
@@ -156,9 +156,9 @@ export type CitationKey =
 export interface Citation {
   key: CitationKey;
   displayKey: string;            // e.g., "[ELECTIONS]"
-  title: string;                 // e.g., "Ingham County Election Results"
+  title: string;                 // e.g., "Pennsylvania precinct results"
   description: string;           // What this source contains
-  source: string;                // e.g., "Ingham County Clerk"
+  source: string;                // e.g., "County board of elections"
   url?: string;                  // Link to source
   lastUpdated?: Date;
   vintage?: string;              // e.g., "2020-2024"
@@ -185,12 +185,12 @@ export const CITATION_REGISTRY: Record<CitationKey, Citation> = {
   ELECTIONS: {
     key: 'ELECTIONS',
     displayKey: '[ELECTIONS]',
-    title: 'Ingham County Election Results',
-    description: 'Precinct-level election results for 2020, 2022, 2024 general elections',
-    source: 'Ingham County Clerk',
-    url: 'https://clerk.ingham.org/elections',
+    title: 'Pennsylvania Precinct Election History',
+    description: 'Precinct-level general election results (2020, 2022, 2024) in the loaded PA dataset',
+    source: 'Compiled PA precinct results (application data pipeline)',
+    url: 'https://www.vote.pa.gov/',
     vintage: '2020-2024',
-    coverage: 'Precinct-level',
+    coverage: 'Pennsylvania precincts in deployment',
     reliability: 0.95,
   },
 
@@ -256,8 +256,8 @@ export const CITATION_REGISTRY: Record<CitationKey, Citation> = {
     key: 'POLL',
     displayKey: '[POLL]',
     title: 'Polling Data',
-    description: 'Public opinion polls for Michigan races',
-    source: 'Various polling organizations (538 aggregated)',
+    description: 'Public opinion polls for Pennsylvania and federal races (when ingested)',
+    source: 'Various polling organizations',
     reliability: 0.60,
   },
 
@@ -266,8 +266,8 @@ export const CITATION_REGISTRY: Record<CitationKey, Citation> = {
     displayKey: '[UPCOMING]',
     title: 'Upcoming Elections',
     description: 'Scheduled elections, candidates, filing deadlines',
-    source: 'Michigan Secretary of State',
-    url: 'https://mvic.sos.state.mi.us/',
+    source: 'Pennsylvania Department of State',
+    url: 'https://www.vote.pa.gov/',
     reliability: 0.95,
   },
 
@@ -275,7 +275,7 @@ export const CITATION_REGISTRY: Record<CitationKey, Citation> = {
     key: 'NEWS',
     displayKey: '[NEWS]',
     title: 'News Coverage',
-    description: 'Recent news articles about Michigan politics',
+    description: 'Recent news articles about Pennsylvania politics',
     source: 'Various news sources',
     reliability: 0.65,
   },
@@ -308,34 +308,34 @@ export const CITATION_REGISTRY: Record<CitationKey, Citation> = {
   MICHIGAN_GIS: {
     key: 'MICHIGAN_GIS',
     displayKey: '[MICHIGAN_GIS]',
-    title: 'Michigan GIS Open Data',
-    description: 'Statewide precinct boundaries and district shapefiles',
-    source: 'State of Michigan',
-    url: 'https://gis-michigan.opendata.arcgis.com/',
-    vintage: '2024 (post-redistricting)',
-    coverage: 'Statewide precinct boundaries',
+    title: 'Precinct & District Boundaries',
+    description: 'Pennsylvania precinct and legislative/congressional layers loaded by the app (legacy citation key)',
+    source: 'PA LUSE / Census / DCED layers (see repository data readme)',
+    url: 'https://www.census.gov/geographies/mapping-files.html',
+    vintage: '2024–2026 (layer-dependent)',
+    coverage: 'Pennsylvania (deployment)',
     reliability: 0.95,
   },
 
   INGHAM_CLERK: {
     key: 'INGHAM_CLERK',
     displayKey: '[INGHAM_CLERK]',
-    title: 'Ingham County Clerk',
-    description: 'Official certified election results at precinct level',
-    source: 'Ingham County Clerk\'s Office',
-    url: 'https://clerk.ingham.org/',
-    vintage: '2020-2024',
-    coverage: 'All Ingham County precincts',
-    reliability: 0.98,
+    title: 'County Election Reporting',
+    description: 'Certified precinct results are typically published by county boards of elections',
+    source: 'County boards of elections (Pennsylvania)',
+    url: 'https://www.vote.pa.gov/',
+    vintage: 'Varies',
+    coverage: 'Pennsylvania counties',
+    reliability: 0.95,
   },
 
   MICHIGAN_SOS: {
     key: 'MICHIGAN_SOS',
     displayKey: '[MICHIGAN_SOS]',
-    title: 'Michigan Secretary of State',
-    description: 'Statewide election administration, voter registration, candidate filings',
-    source: 'Michigan Department of State',
-    url: 'https://mvic.sos.state.mi.us/',
+    title: 'State Election Authority',
+    description: 'Voter registration, election calendars, and official state election information',
+    source: 'Pennsylvania Department of State',
+    url: 'https://www.vote.pa.gov/',
     reliability: 0.95,
   },
 

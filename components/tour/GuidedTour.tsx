@@ -86,7 +86,7 @@ const DEMO_SCENARIO_ITEMS: TourMenuItem[] = [
   {
     theme: 'demo-scenario-congress',
     label: 'US House Campaign',
-    description: 'Flip MI-07 (competitive R+2.5)',
+    description: 'PA-07-style competitive House scenario',
     icon: Building2,
   },
 ];

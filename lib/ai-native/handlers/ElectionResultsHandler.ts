@@ -17,6 +17,11 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+
+function enrichmentAreaLabel(): string {
+  return getPoliticalRegionEnv().summaryAreaName;
+}
 
 // ============================================================================
 // Query Patterns
@@ -84,11 +89,7 @@ interface ElectionResult {
   totalVotes: number;
 }
 
-/**
- * Fallback county-level election results for Ingham County
- * Used when precinct-level data cannot be aggregated.
- * Source: Michigan Secretary of State official election results
- */
+/** Fallback when precinct-level data cannot be aggregated (Michigan / legacy). */
 const INGHAM_RESULTS_FALLBACK: ElectionResult[] = [
   { year: 2024, race: 'President', demCandidate: 'Harris', repCandidate: 'Trump', demPct: 62.1, repPct: 36.2, turnout: 72.5, totalVotes: 152000 },
   { year: 2024, race: 'Senate', demCandidate: 'Slotkin', repCandidate: 'Rogers', demPct: 58.3, repPct: 39.8, turnout: 72.5, totalVotes: 148000 },
@@ -99,6 +100,17 @@ const INGHAM_RESULTS_FALLBACK: ElectionResult[] = [
   { year: 2018, race: 'Governor', demCandidate: 'Whitmer', repCandidate: 'Schuette', demPct: 68.5, repPct: 29.2, turnout: 61.5, totalVotes: 132000 },
   { year: 2016, race: 'President', demCandidate: 'Clinton', repCandidate: 'Trump', demPct: 60.2, repPct: 34.1, turnout: 70.8, totalVotes: 155000 },
 ];
+
+/** Rough statewide presidential placeholders when PA precinct aggregation is unavailable. */
+const PA_RESULTS_FALLBACK: ElectionResult[] = [
+  { year: 2024, race: 'President', demCandidate: 'Harris', repCandidate: 'Trump', demPct: 50.0, repPct: 48.8, turnout: 71.0, totalVotes: 6_970_000 },
+  { year: 2020, race: 'President', demCandidate: 'Biden', repCandidate: 'Trump', demPct: 50.0, repPct: 48.8, turnout: 76.5, totalVotes: 6_900_000 },
+  { year: 2016, race: 'President', demCandidate: 'Clinton', repCandidate: 'Trump', demPct: 47.9, repPct: 48.8, turnout: 72.0, totalVotes: 6_100_000 },
+];
+
+function regionalElectionFallback(): ElectionResult[] {
+  return getPoliticalRegionEnv().stateFips === '42' ? PA_RESULTS_FALLBACK : INGHAM_RESULTS_FALLBACK;
+}
 
 /**
  * Candidate name lookup for known elections
@@ -142,8 +154,7 @@ async function getCountyElectionResults(): Promise<ElectionResult[]> {
     console.warn('[ElectionResultsHandler] Failed to load election data from service:', error);
   }
 
-  // Fallback to hardcoded county-level data
-  return INGHAM_RESULTS_FALLBACK;
+  return regionalElectionFallback();
 }
 
 /**
@@ -159,7 +170,7 @@ function mergeWithFallback(aggregated: ElectionResult[]): ElectionResult[] {
   }
 
   // Fill in missing years/races from fallback
-  for (const fallback of INGHAM_RESULTS_FALLBACK) {
+  for (const fallback of regionalElectionFallback()) {
     const key = `${fallback.year}-${fallback.race}`;
     if (!resultsByKey.has(key)) {
       resultsByKey.set(key, fallback);
@@ -215,8 +226,8 @@ function aggregatePrecinctHistoryResults(
       const avgRepPct = (agg.totalRepShare / agg.precinctCount) * 100;
       const avgTurnout = (agg.totalTurnout / agg.precinctCount) * 100;
 
-      // Estimate total votes based on average Ingham County registered voters (~215,000)
-      const estimatedRegisteredVoters = 215000;
+      const estimatedRegisteredVoters =
+        getPoliticalRegionEnv().stateFips === '42' ? 9_000_000 : 215000;
       const estimatedTotalVotes = Math.round(estimatedRegisteredVoters * (avgTurnout / 100));
 
       results.push({
@@ -332,8 +343,8 @@ function aggregatePrecinctResults(precincts: Record<string, any>): ElectionResul
   const results: ElectionResult[] = [];
   for (const agg of raceAggregates.values()) {
     if (agg.totalVotes > 0) {
-      // Estimate turnout based on Ingham County registered voters (~215,000)
-      const estimatedRegisteredVoters = 215000;
+      const estimatedRegisteredVoters =
+        getPoliticalRegionEnv().stateFips === '42' ? 9_000_000 : 215000;
       results.push({
         year: agg.year,
         race: agg.race,
@@ -424,7 +435,7 @@ export class ElectionResultsHandler implements NLPHandler {
     }
 
     const response = [
-      `**${year} Election Results - Ingham County:**`,
+      `**${year} Election Results - ${enrichmentAreaLabel()}:**`,
       '',
       '| Race | Democrat | Republican | Margin | Turnout |',
       '|------|----------|------------|--------|---------|',
@@ -490,14 +501,14 @@ export class ElectionResultsHandler implements NLPHandler {
     const margin = isDem ? result.demPct - result.repPct : result.repPct - result.demPct;
 
     const response = [
-      `**${candidate.charAt(0).toUpperCase() + candidate.slice(1)} Performance in Ingham County:**`,
+      `**${candidate.charAt(0).toUpperCase() + candidate.slice(1)} Performance in ${enrichmentAreaLabel()}:**`,
       '',
       `**Race:** ${result.race} (${result.year})`,
       `**Result:** ${pct.toFixed(1)}% (${margin > 0 ? '+' : ''}${margin.toFixed(1)} margin)`,
-      `**Outcome:** ${isDem ? 'Won' : 'Lost'} Ingham County`,
+      `**Outcome:** ${isDem ? 'Won' : 'Lost'} ${enrichmentAreaLabel()}`,
       '',
       `**Context:**`,
-      `- Ingham County is D+${(result.demPct - result.repPct).toFixed(0)} on average`,
+      `- Aggregate margin in this view: D+${(result.demPct - result.repPct).toFixed(0)}`,
       `- Turnout was ${result.turnout.toFixed(1)}%`,
       `- ~${result.totalVotes.toLocaleString()} total votes`,
     ].join('\n');
@@ -554,7 +565,7 @@ export class ElectionResultsHandler implements NLPHandler {
 
     const response = year
       ? [
-          `**${year} Turnout - Ingham County:**`,
+          `**${year} Turnout - ${enrichmentAreaLabel()}:**`,
           '',
           `**Voter Turnout:** ${turnoutData[0].turnout.toFixed(1)}%`,
           `**Total Votes:** ~${turnoutData[0].totalVotes.toLocaleString()}`,
@@ -562,7 +573,7 @@ export class ElectionResultsHandler implements NLPHandler {
           `*${year % 4 === 0 ? 'Presidential' : 'Midterm'} election*`,
         ].join('\n')
       : [
-          '**Turnout History - Ingham County:**',
+          `**Turnout History - ${enrichmentAreaLabel()}:**`,
           '',
           '| Year | Type | Turnout | Total Votes |',
           '|------|------|---------|-------------|',
@@ -602,7 +613,7 @@ export class ElectionResultsHandler implements NLPHandler {
     // Extract area from query
     const areaPattern = /(?:for|in)\s+(.+?)(?:\s*$|\s+over)/i;
     const match = query.originalQuery.match(areaPattern);
-    const area = match?.[1]?.trim() || 'Ingham County';
+    const area = match?.[1]?.trim() || enrichmentAreaLabel();
 
     // Get enrichment
     const enrichment = await getEnrichmentForQuery(query.originalQuery);
@@ -625,12 +636,12 @@ export class ElectionResultsHandler implements NLPHandler {
         `| ${r.year} | ${r.demCandidate} ${r.demPct.toFixed(1)}% | ${r.repCandidate} ${r.repPct.toFixed(1)}% | D+${(r.demPct - r.repPct).toFixed(1)} |`
       ),
       '',
-      '**Trend:** Ingham County has voted Democratic in every presidential election since 1988.',
+      '**Trend:** Use precinct-level maps for local patterns; aggregated rows above reflect the loaded dataset or fallback estimates.',
       '',
       '**Key Observations:**',
-      '- Average Democratic margin: D+28',
-      '- Turnout higher in presidential years (70%+)',
-      '- Growing partisan gap over time',
+      '- Margins vary widely by county and region within Pennsylvania',
+      '- Turnout is typically higher in presidential years',
+      '- Compare subareas with the map and segmentation tools',
     ].join('\n');
 
     return {

@@ -86,7 +86,7 @@ export interface EnrichmentOptions {
  */
 export const DEFAULT_ENRICHMENT_OPTIONS: Required<EnrichmentOptions> = {
   intent: '',
-  jurisdiction: 'Ingham County',
+  jurisdiction: 'Pennsylvania',
   districtType: 'county',
   districtNumber: '',
   precincts: [],

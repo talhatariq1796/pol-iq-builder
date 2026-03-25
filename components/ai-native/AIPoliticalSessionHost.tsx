@@ -544,11 +544,11 @@ export const AIPoliticalSessionHost: React.FC<AIPoliticalSessionHostProps> = ({
     const stateManager = getStateManager();
     const previousSession = stateManager.getPreviousSessionSummary();
 
-    let welcomeContent = `**Ingham County, Michigan - Electoral Analysis**
+    let welcomeContent = `**Pennsylvania — Electoral Analysis**
 
 Available actions:
 - Find swing areas and competitive targets
-- Analyze voter demographics and Tapestry segments
+- Analyze voter demographics and Tapestry segments (where loaded)
 - Plan canvassing routes
 - Compare areas and identify patterns
 - Generate targeting reports`;
@@ -576,12 +576,12 @@ Available actions:
       { id: 'swing', label: 'Find swing areas', action: 'Show me the most competitive swing areas', icon: 'target' },
       { id: 'gotv', label: 'GOTV priorities', action: 'Which areas should we prioritize for GOTV?', icon: 'trending-up' },
       { id: 'demographics', label: 'Explore demographics', action: 'Show me areas with young voters', icon: 'users' },
-      { id: 'lansing', label: 'Explore Lansing', action: 'Zoom to downtown Lansing and show me the political landscape', icon: 'map-pin' }
+      { id: 'harrisburg', label: 'Explore Harrisburg', action: 'Zoom to Harrisburg and show me the political landscape', icon: 'map-pin' }
     );
 
     // Only add compare if we don't have resume (to keep action count manageable)
     if (!previousSession?.resumeContext) {
-      actions.push({ id: 'compare', label: 'Compare areas', action: 'Compare East Lansing to Meridian Township', icon: 'git-compare' });
+      actions.push({ id: 'compare', label: 'Compare areas', action: 'Compare Philadelphia to Pittsburgh', icon: 'git-compare' });
     }
 
     const welcomeMessage: Message = {

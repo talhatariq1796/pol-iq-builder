@@ -362,10 +362,14 @@ export class ElectoralFilter {
   private inferDistrictType(districtId: string): string {
     const normalized = this.normalizeDistrictId(districtId);
 
-    if (normalized.startsWith('mi-') || normalized.startsWith('us-')) {
+    if (
+      normalized.startsWith('mi-') ||
+      normalized.startsWith('us-') ||
+      normalized.startsWith('pa-')
+    ) {
       if (normalized.includes('house')) return 'State House';
       if (normalized.includes('senate')) return 'State Senate';
-      if (normalized.match(/mi-\d+/)) return 'Congressional';
+      if (normalized.match(/mi-\d+/) || normalized.match(/pa-congress-\d+/)) return 'Congressional';
     }
 
     if (normalized.startsWith('cc-')) return 'County Commissioner';
@@ -379,7 +383,7 @@ export class ElectoralFilter {
   private inferDistrictLevel(districtId: string): ElectoralDistrict['level'] {
     const normalized = this.normalizeDistrictId(districtId);
 
-    if (normalized.match(/mi-\d+/) || normalized.match(/us-\d+/)) {
+    if (normalized.match(/mi-\d+/) || normalized.match(/us-\d+/) || normalized.match(/pa-congress-\d+/)) {
       return 'federal';
     }
 

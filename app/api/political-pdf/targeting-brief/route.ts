@@ -5,6 +5,7 @@ import type {
   PrecinctTargetingData,
 } from '@/lib/pdf/political/TargetingBriefPDFGenerator';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -45,6 +46,7 @@ interface TargetingBriefRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const region = getPoliticalRegionEnv();
     const body: TargetingBriefRequest = await request.json();
 
     console.log('[Targeting Brief API] Generating for precincts:', body.precinctNames?.length || 0);
@@ -118,7 +120,7 @@ export async function POST(request: NextRequest) {
 
       // Extract jurisdiction from precinct name
       const nameParts = p.precinctName.split(',');
-      const jurisdiction = nameParts.length > 1 ? nameParts[0].trim() : 'Ingham County';
+      const jurisdiction = nameParts.length > 1 ? nameParts[0].trim() : region.summaryAreaName;
 
       return {
         rank: 0, // Will be set after sorting
@@ -196,8 +198,8 @@ export async function POST(request: NextRequest) {
       filterCriteria: body.filterCriteria,
       summary,
       precincts: limitedData,
-      county: 'Ingham',
-      state: 'Michigan',
+      county: region.county,
+      state: region.state,
       generatedBy: 'Political Analysis Platform',
       reportDate: new Date().toLocaleDateString('en-US', {
         year: 'numeric',

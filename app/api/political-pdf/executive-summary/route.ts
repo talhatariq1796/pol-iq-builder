@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ExecutiveSummaryPDFGenerator } from '@/lib/pdf/political/ExecutiveSummaryPDFGenerator';
 import type { ExecutiveSummaryConfig } from '@/lib/pdf/political/ExecutiveSummaryPDFGenerator';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -85,12 +86,12 @@ export async function POST(request: NextRequest) {
     // Aggregate data
     const aggregatedMetrics = aggregateMetrics(validPrecincts);
 
-    // Build config
+    const region = getPoliticalRegionEnv();
     const config: ExecutiveSummaryConfig = {
       areaName: body.areaName || validPrecincts.map(p => p.precinctName).join(', '),
       areaDescription: body.areaDescription,
-      county: 'Ingham', // Default for MVP
-      state: 'Michigan',
+      county: region.county,
+      state: region.state,
       metrics: aggregatedMetrics,
       quickAssessment: body.quickAssessment || generateDefaultAssessment(aggregatedMetrics),
       recommendation: body.recommendation || generateDefaultRecommendation(aggregatedMetrics),

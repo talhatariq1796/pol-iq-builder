@@ -1,7 +1,9 @@
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+
 export interface ParsedIntent {
   type:
   | 'district_query'
-  | 'district_analysis'  // Multi-level district analysis (MI-07, State House 73, etc.)
+  | 'district_analysis'  // Multi-level district analysis (e.g. pa-congress-07, State House 123)
   | 'comparison'
   | 'filter'
   | 'data_request'
@@ -56,12 +58,12 @@ export interface ParsedIntent {
     party?: 'DEM' | 'REP';
     committee?: string;
   };
-  // Multi-level district analysis parameters (all Michigan elections)
+  // Multi-level district analysis parameters (canonical ids: pa-* or legacy mi-*)
   districtParams?: {
-    congressional?: string;        // 'mi-07'
-    stateSenate?: string;          // 'mi-senate-21'
-    stateHouse?: string;           // 'mi-house-73'
-    schoolDistrict?: string;       // 'mason-public-schools'
+    congressional?: string;        // 'pa-congress-07' or 'mi-07'
+    stateSenate?: string;          // 'pa-senate-21' or 'mi-senate-21'
+    stateHouse?: string;           // 'pa-house-123' or 'mi-house-73'
+    schoolDistrict?: string;       // slug matched against crosswalk
     countyCommissioner?: string;   // 'cc-district-5'
     districtLevel?: 'congressional' | 'state_senate' | 'state_house' | 'school' | 'county_commissioner';
   };
@@ -110,10 +112,10 @@ export interface ParsedIntent {
 }
 
 export interface ExtractedDistrictEntities {
-  congressional?: string;        // 'mi-07'
-  stateSenate?: string;          // 'mi-senate-21'
-  stateHouse?: string;           // 'mi-house-73'
-  schoolDistrict?: string;       // 'mason-public-schools'
+  congressional?: string;        // 'pa-congress-07' or 'mi-07'
+  stateSenate?: string;
+  stateHouse?: string;
+  schoolDistrict?: string;
   countyCommissioner?: string;   // 'cc-district-5'
   districtLevel?: 'congressional' | 'state_senate' | 'state_house' | 'school' | 'county_commissioner';
 }
@@ -674,25 +676,134 @@ export function fuzzyMatchPrecinct(query: string, precinctNames: string[]): stri
   return null;
 }
 
+function slugifySchoolPhrase(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 /**
- * Extract all district entities from query
- * Recognizes patterns for all Michigan election levels
+ * Extract all district entities from query (Pennsylvania when POLITICAL_STATE_FIPS=42).
  */
 function extractDistrictEntities(query: string): ExtractedDistrictEntities {
+  if (getPoliticalRegionEnv().stateFips === '42') {
+    return extractDistrictEntitiesPA(query);
+  }
+  return extractDistrictEntitiesMI(query);
+}
+
+function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
   const result: ExtractedDistrictEntities = {};
   const lower = query.toLowerCase();
 
-  // ============================================================================
-  // CONGRESSIONAL DISTRICT PATTERNS
-  // "MI-07", "MI-7", "Michigan 7th", "7th Congressional", "Congressional District 7"
-  // ============================================================================
   const congressionalPatterns = [
-    /\bmi[-\s]?0?(\d{1,2})\b/i,                           // MI-07, MI-7, MI 07
-    /\bmichigan\s+(\d{1,2})(?:th|st|nd|rd)?\b/i,          // Michigan 7th, Michigan 7
-    /\b(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,     // 7th Congressional
-    /\bcongressional\s+district\s+(\d{1,2})\b/i,          // Congressional District 7
-    /\bcd[-\s]?0?(\d{1,2})\b/i,                           // CD-07, CD-7
-    /\bus\s+house\s+district\s+(\d{1,2})\b/i,             // US House District 7
+    /\bpa[-\s]?0?(\d{1,2})\b/i,
+    /\bpennsylvania\s+(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
+    /\bpennsylvania\s+(\d{1,2})(?:th|st|nd|rd)?\s+congressional\s+district\b/i,
+    /\b(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
+    /\bcongressional\s+district\s+(\d{1,2})\b/i,
+    /\bcd[-\s]?0?(\d{1,2})\b/i,
+    /\bus\s+house\s+district\s+(\d{1,2})\b/i,
+  ];
+
+  for (const pattern of congressionalPatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      const num = match[1].padStart(2, '0');
+      result.congressional = `pa-congress-${num}`;
+      result.districtLevel = 'congressional';
+      break;
+    }
+  }
+
+  const stateSenatePatterns = [
+    /\b(?:pa|pennsylvania)\s+senate\s+(\d{1,3})\b/i,
+    /\b(?:state\s+)?senate\s+district\s+(\d{1,3})\b/i,
+    /\bsd[-\s]?(\d{1,3})\b/i,
+    /\bstate\s+senate\s+(\d{1,3})\b/i,
+    /\b(\d{1,3})(?:th|st|nd|rd)?\s+state\s+senate\b/i,
+    /\bsen(?:ate)?\.?\s+dist(?:rict)?\.?\s+(\d{1,3})\b/i,
+  ];
+
+  for (const pattern of stateSenatePatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      result.stateSenate = `pa-senate-${match[1]}`;
+      result.districtLevel = 'state_senate';
+      break;
+    }
+  }
+
+  const stateHousePatterns = [
+    /\b(?:pa|pennsylvania)\s+house\s+(\d{1,3})\b/i,
+    /\b(?:state\s+)?house\s+district\s+(\d{1,3})\b/i,
+    /\bhd[-\s]?(\d{1,3})\b/i,
+    /\bstate\s+house\s+(\d{1,3})\b/i,
+    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?house\b/i,
+    /\brep(?:resentative)?\.?\s+dist(?:rict)?\.?\s+(\d{1,3})\b/i,
+  ];
+
+  for (const pattern of stateHousePatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      result.stateHouse = `pa-house-${match[1]}`;
+      result.districtLevel = 'state_house';
+      break;
+    }
+  }
+
+  const schoolPatterns = [
+    /\b(.+?)\s+(?:public\s+)?school(?:s)?\s+(?:district|bond|millage|board)/i,
+    /\b(.+?)\s+(?:community\s+)?school(?:s)?(?:\s+bond|\s+millage|\s+board)?/i,
+    /\bschool\s+district\s+(?:for\s+)?(.+)/i,
+  ];
+
+  for (const pattern of schoolPatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      const slug = slugifySchoolPhrase(match[1]);
+      if (slug.length >= 2) {
+        result.schoolDistrict = slug;
+        result.districtLevel = 'school';
+        break;
+      }
+    }
+  }
+
+  const commissionerPatterns = [
+    /\bcommissioner\s+district\s+(\d{1,2})\b/i,
+    /\bcounty\s+commissioner\s+(\d{1,2})\b/i,
+    /\bcc[-\s]?district\s+(\d{1,2})\b/i,
+    /\bcc[-\s]?(\d{1,2})\b/i,
+    /\b(\d{1,2})(?:th|st|nd|rd)?\s+commissioner\b/i,
+  ];
+
+  for (const pattern of commissionerPatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      result.countyCommissioner = `cc-district-${match[1]}`;
+      result.districtLevel = 'county_commissioner';
+      break;
+    }
+  }
+
+  return result;
+}
+
+/** Legacy Michigan / non-PA FIPS extraction. */
+function extractDistrictEntitiesMI(query: string): ExtractedDistrictEntities {
+  const result: ExtractedDistrictEntities = {};
+  const lower = query.toLowerCase();
+
+  const congressionalPatterns = [
+    /\bmi[-\s]?0?(\d{1,2})\b/i,
+    /\bmichigan\s+(\d{1,2})(?:th|st|nd|rd)?\b/i,
+    /\b(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
+    /\bcongressional\s+district\s+(\d{1,2})\b/i,
+    /\bcd[-\s]?0?(\d{1,2})\b/i,
+    /\bus\s+house\s+district\s+(\d{1,2})\b/i,
   ];
 
   for (const pattern of congressionalPatterns) {
@@ -705,17 +816,13 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     }
   }
 
-  // ============================================================================
-  // STATE SENATE DISTRICT PATTERNS
-  // "Senate District 21", "SD-21", "State Senate 21", "MI Senate 21"
-  // ============================================================================
   const stateSenatePatterns = [
-    /\b(?:state\s+)?senate\s+district\s+(\d{1,2})\b/i,    // Senate District 21, State Senate District 21
-    /\bsd[-\s]?(\d{1,2})\b/i,                              // SD-21, SD 21
-    /\b(?:mi|michigan)\s+senate\s+(\d{1,2})\b/i,          // MI Senate 21, Michigan Senate 21
-    /\bstate\s+senate\s+(\d{1,2})\b/i,                    // State Senate 21
-    /\b(\d{1,2})(?:th|st|nd|rd)?\s+state\s+senate\b/i,    // 21st State Senate
-    /\bsen(?:ate)?\.?\s+dist(?:rict)?\.?\s+(\d{1,2})\b/i, // Sen. Dist. 21
+    /\b(?:state\s+)?senate\s+district\s+(\d{1,2})\b/i,
+    /\bsd[-\s]?(\d{1,2})\b/i,
+    /\b(?:mi|michigan)\s+senate\s+(\d{1,2})\b/i,
+    /\bstate\s+senate\s+(\d{1,2})\b/i,
+    /\b(\d{1,2})(?:th|st|nd|rd)?\s+state\s+senate\b/i,
+    /\bsen(?:ate)?\.?\s+dist(?:rict)?\.?\s+(\d{1,2})\b/i,
   ];
 
   for (const pattern of stateSenatePatterns) {
@@ -727,18 +834,13 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     }
   }
 
-  // ============================================================================
-  // STATE HOUSE DISTRICT PATTERNS
-  // "State House 73", "HD-73", "House District 73", "State House District 73"
-  // Ingham County has Districts 73, 74, 75, 77
-  // ============================================================================
   const stateHousePatterns = [
-    /\b(?:state\s+)?house\s+district\s+(\d{1,3})\b/i,     // House District 73, State House District 73
-    /\bhd[-\s]?(\d{1,3})\b/i,                              // HD-73, HD 73
-    /\bstate\s+house\s+(\d{1,3})\b/i,                     // State House 73
-    /\b(?:mi|michigan)\s+house\s+(\d{1,3})\b/i,           // MI House 73, Michigan House 73
-    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?house\b/i, // 73rd House, 73rd State House
-    /\brep(?:resentative)?\.?\s+dist(?:rict)?\.?\s+(\d{1,3})\b/i, // Rep. Dist. 73
+    /\b(?:state\s+)?house\s+district\s+(\d{1,3})\b/i,
+    /\bhd[-\s]?(\d{1,3})\b/i,
+    /\bstate\s+house\s+(\d{1,3})\b/i,
+    /\b(?:mi|michigan)\s+house\s+(\d{1,3})\b/i,
+    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?house\b/i,
+    /\brep(?:resentative)?\.?\s+dist(?:rict)?\.?\s+(\d{1,3})\b/i,
   ];
 
   for (const pattern of stateHousePatterns) {
@@ -750,10 +852,6 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     }
   }
 
-  // ============================================================================
-  // SCHOOL DISTRICT PATTERNS
-  // "Mason Public Schools", "Lansing School District", "Okemos Schools"
-  // ============================================================================
   const knownSchoolDistricts: Record<string, string> = {
     'mason': 'mason-public-schools-ingham',
     'mason public': 'mason-public-schools-ingham',
@@ -779,7 +877,6 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     'eaton rapids': 'eaton-rapids-public-schools',
   };
 
-  // Check for school district mentions
   const schoolPatterns = [
     /\b(.+?)\s+(?:public\s+)?school(?:s)?\s+(?:district|bond|millage|board)/i,
     /\b(.+?)\s+(?:community\s+)?school(?:s)?(?:\s+bond|\s+millage|\s+board)?/i,
@@ -790,7 +887,6 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     const match = query.match(pattern);
     if (match) {
       const schoolName = match[1].toLowerCase().trim();
-      // Check if it matches a known school district
       for (const [key, value] of Object.entries(knownSchoolDistricts)) {
         if (schoolName.includes(key) || key.includes(schoolName)) {
           result.schoolDistrict = value;
@@ -802,7 +898,6 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     }
   }
 
-  // Direct school name matches (without "school" keyword)
   if (!result.schoolDistrict) {
     for (const [key, value] of Object.entries(knownSchoolDistricts)) {
       if (lower.includes(key) && (lower.includes('school') || lower.includes('bond') || lower.includes('millage'))) {
@@ -813,16 +908,12 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
     }
   }
 
-  // ============================================================================
-  // COUNTY COMMISSIONER DISTRICT PATTERNS
-  // "Commissioner District 5", "CC District 5", "County Commissioner 5"
-  // ============================================================================
   const commissionerPatterns = [
-    /\bcommissioner\s+district\s+(\d{1,2})\b/i,           // Commissioner District 5
-    /\bcounty\s+commissioner\s+(\d{1,2})\b/i,             // County Commissioner 5
-    /\bcc[-\s]?district\s+(\d{1,2})\b/i,                  // CC District 5
-    /\bcc[-\s]?(\d{1,2})\b/i,                              // CC-5
-    /\b(\d{1,2})(?:th|st|nd|rd)?\s+commissioner\b/i,      // 5th Commissioner
+    /\bcommissioner\s+district\s+(\d{1,2})\b/i,
+    /\bcounty\s+commissioner\s+(\d{1,2})\b/i,
+    /\bcc[-\s]?district\s+(\d{1,2})\b/i,
+    /\bcc[-\s]?(\d{1,2})\b/i,
+    /\b(\d{1,2})(?:th|st|nd|rd)?\s+commissioner\b/i,
   ];
 
   for (const pattern of commissionerPatterns) {
@@ -843,22 +934,40 @@ function extractDistrictEntities(query: string): ExtractedDistrictEntities {
 function extractPrecinctNames(query: string): string[] {
   const entities: string[] = [];
 
-  // Known jurisdictions
-  const jurisdictions = [
-    'East Lansing',
-    'Lansing',
-    'Meridian Township',
-    'Delhi Township',
-    'Williamston',
-    'Mason',
-    'Leslie',
-    'Haslett',
-    'Okemos',
-    'Holt',
-    'Webberville',
-    'Stockbridge',
-    'Dansville'
-  ];
+  const jurisdictions =
+    getPoliticalRegionEnv().stateFips === '42'
+      ? [
+          'Philadelphia',
+          'Pittsburgh',
+          'Harrisburg',
+          'Allentown',
+          'Erie',
+          'Reading',
+          'Scranton',
+          'Bethlehem',
+          'Lancaster',
+          'York',
+          'Chester',
+          'Allegheny County',
+          'Montgomery County',
+          'Bucks County',
+          'Delaware County',
+        ]
+      : [
+          'East Lansing',
+          'Lansing',
+          'Meridian Township',
+          'Delhi Township',
+          'Williamston',
+          'Mason',
+          'Leslie',
+          'Haslett',
+          'Okemos',
+          'Holt',
+          'Webberville',
+          'Stockbridge',
+          'Dansville',
+        ];
 
   jurisdictions.forEach(jurisdiction => {
     if (query.toLowerCase().includes(jurisdiction.toLowerCase())) {

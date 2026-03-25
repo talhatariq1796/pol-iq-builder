@@ -3,10 +3,10 @@
  *
  * Parses natural language political queries and routes to appropriate handlers.
  * Supports queries like:
- * - "Compare Lansing vs Mason"
- * - "Which precincts in East Lansing have highest swing potential?"
- * - "Show turnout trends in Delhi Township"
- * - "What's the partisan lean of Meridian?"
+ * - "Compare Philadelphia vs Pittsburgh"
+ * - "Which precincts in Harrisburg have highest swing potential?"
+ * - "Show turnout trends in Reading"
+ * - "What's the partisan lean of Allentown?"
  */
 
 import { politicalGeoDataManager, PoliticalGeoDataManager, PoliticalGeographicEntity } from '../geo/PoliticalGeoDataManager';

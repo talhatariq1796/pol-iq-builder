@@ -12,31 +12,31 @@ interface ElectoralFiltersProps {
   onChange: (filters: ElectoralFiltersType) => void;
 }
 
-// Hardcoded options for Ingham County (MVP)
+// Sample options for Pennsylvania (canonical ids match pa_precinct_district_crosswalk.json)
 const STATE_HOUSE_DISTRICTS = [
-  { id: 'mi-house-71', name: '71st District', representative: 'Emily Dievendorf' },
-  { id: 'mi-house-72', name: '72nd District', representative: 'Kara Hope' },
-  { id: 'mi-house-73', name: '73rd District', representative: 'Angela Witwer' },
-  { id: 'mi-house-74', name: '74th District', representative: 'Penelope Tsernoglou' },
-  { id: 'mi-house-75', name: '75th District', representative: 'Joey Andrews' },
+  { id: 'pa-house-100', name: '100th House District', representative: 'See crosswalk' },
+  { id: 'pa-house-171', name: '171st House District', representative: 'See crosswalk' },
+  { id: 'pa-house-23', name: '23rd House District', representative: 'See crosswalk' },
+  { id: 'pa-house-50', name: '50th House District', representative: 'See crosswalk' },
+  { id: 'pa-house-200', name: '200th House District', representative: 'See crosswalk' },
 ];
 
 const STATE_SENATE_DISTRICTS = [
-  { id: 'mi-senate-23', name: '23rd District' },
-  { id: 'mi-senate-24', name: '24th District' },
+  { id: 'pa-senate-45', name: '45th Senate District' },
+  { id: 'pa-senate-48', name: '48th Senate District' },
+  { id: 'pa-senate-12', name: '12th Senate District' },
 ];
 
 const CONGRESSIONAL_DISTRICT = {
-  id: 'mi-07',
-  name: '7th Congressional District',
+  id: 'pa-congress-07',
+  name: 'PA 7th Congressional District',
 };
 
 const MUNICIPALITIES = [
-  { id: 'east-lansing', name: 'East Lansing', type: 'city' as const },
-  { id: 'lansing', name: 'Lansing', type: 'city' as const },
-  { id: 'meridian-township', name: 'Meridian Township', type: 'township' as const },
-  { id: 'delhi-township', name: 'Delhi Township', type: 'township' as const },
-  { id: 'williamston', name: 'Williamston', type: 'city' as const },
+  { id: 'philadelphia-philadelphia', name: 'Philadelphia (city)', type: 'city' as const },
+  { id: 'allegheny-pittsburgh', name: 'Pittsburgh (city)', type: 'city' as const },
+  { id: 'dauphin-harrisburg', name: 'Harrisburg (city)', type: 'city' as const },
+  { id: 'columbia-beaver', name: 'Beaver (township, Columbia Co.)', type: 'township' as const },
 ];
 
 export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
@@ -142,12 +142,12 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
         <Label>Congressional District</Label>
         <div className="flex items-center space-x-2">
           <Checkbox
-            id="congressional-mi-07"
+            id="congressional-pa-07"
             checked={filters.congressionalDistricts?.includes(CONGRESSIONAL_DISTRICT.id) ?? false}
             onCheckedChange={toggleCongressionalDistrict}
           />
           <label
-            htmlFor="congressional-mi-07"
+            htmlFor="congressional-pa-07"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
           >
             {CONGRESSIONAL_DISTRICT.name}

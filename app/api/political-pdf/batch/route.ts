@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PoliticalProfilePDFGeneratorV2 } from '@/lib/pdf/political/PoliticalProfilePDFGeneratorV2';
 import type { PoliticalProfileConfig } from '@/lib/pdf/political/PoliticalProfilePDFGeneratorV2';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 import type {
   PrecinctPoliticalScores,
   PoliticalAreaSelection,
@@ -194,6 +195,7 @@ function aggregatePrecinctData(
   areaDescription?: string,
   selectedPages?: number[]
 ): PoliticalProfileConfig {
+  const region = getPoliticalRegionEnv();
   const areaName =
     customAreaName ||
     (precincts.length === 1
@@ -244,8 +246,8 @@ function aggregatePrecinctData(
     } as PoliticalAreaSelection,
     areaName,
     areaDescription,
-    county: 'Ingham County',
-    state: 'Michigan',
+    county: region.county,
+    state: region.state,
     politicalScores: {
       precinctId: 'aggregated',
       precinctName: 'Aggregated Area',

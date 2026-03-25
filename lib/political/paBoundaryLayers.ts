@@ -1,11 +1,15 @@
 /**
  * Pennsylvania boundary layers for the Select tab (precincts, districts, etc.).
- * All paths are under /public/data/political/pensylvania/.
+ * Layout: /public/data/political/pensylvania/{precincts,districts,block-groups,census-tracts,demographics,gotv-layers}/.
  */
 
 import type { BoundaryLayerConfig, BoundaryLayerType } from '@/types/political';
 
 const PA = '/data/political/pensylvania';
+const PRECINCTS = `${PA}/precincts`;
+const DISTRICTS = `${PA}/districts`;
+const BLOCK_GROUPS = `${PA}/block-groups`;
+const CENSUS_TRACTS = `${PA}/census-tracts`;
 
 export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
   precinct: {
@@ -15,7 +19,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'Pennsylvania election results (2020 presidential)',
     idField: 'UNIQUE_ID',
     nameField: 'NAME',
-    dataPath: `${PA}/pa_2020_presidential.geojson`,
+    dataPath: `${PRECINCTS}/pa_2020_presidential.geojson`,
     color: '#6366f1',
     hasData: true,
   },
@@ -26,7 +30,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'U.S. Census Bureau / PA GIS',
     idField: 'ZIP_CODE',
     nameField: 'ZIP_CODE',
-    dataPath: `${PA}/pa_zip_codes.geojson`,
+    dataPath: `${DISTRICTS}/pa_zip_codes.geojson`,
     color: '#8b5cf6',
     hasData: true,
   },
@@ -37,10 +41,10 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'U.S. Census Bureau',
     idField: 'GEOID',
     nameField: 'NAMELSAD',
-    dataPath: `${PA}/pa_block_groups.part000.geojson`,
+    dataPath: `${BLOCK_GROUPS}/pa_block_groups.part000.geojson`,
     dataPaths: [
-      `${PA}/pa_block_groups.part000.geojson`,
-      `${PA}/pa_block_groups.part001.geojson`,
+      `${BLOCK_GROUPS}/pa_block_groups.part000.geojson`,
+      `${BLOCK_GROUPS}/pa_block_groups.part001.geojson`,
     ],
     color: '#06b6d4',
     hasData: true,
@@ -52,7 +56,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'U.S. Census Bureau',
     idField: 'GEOID',
     nameField: 'NAMELSAD',
-    dataPath: `${PA}/pa_census_tracts.geojson`,
+    dataPath: `${CENSUS_TRACTS}/pa_census_tracts.geojson`,
     color: '#14b8a6',
     hasData: true,
   },
@@ -63,7 +67,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'Pennsylvania legislative boundaries',
     idField: 'LEG_DISTRI',
     nameField: 'LEG_DISTRI',
-    dataPath: `${PA}/pa_state_house.geojson`,
+    dataPath: `${DISTRICTS}/pa_state_house.geojson`,
     color: '#f59e0b',
     hasData: true,
   },
@@ -74,7 +78,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'Pennsylvania legislative boundaries',
     idField: 'LEG_DISTRI',
     nameField: 'LEG_DISTRI',
-    dataPath: `${PA}/pa_state_senate.geojson`,
+    dataPath: `${DISTRICTS}/pa_state_senate.geojson`,
     color: '#ef4444',
     hasData: true,
   },
@@ -85,7 +89,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'U.S. Census Bureau / PA congressional boundaries',
     idField: 'LEG_DISTRI',
     nameField: 'LEG_DISTRI',
-    dataPath: `${PA}/pa_congressional.geojson`,
+    dataPath: `${DISTRICTS}/pa_congressional.geojson`,
     color: '#3b82f6',
     hasData: true,
   },
@@ -96,7 +100,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'PA DCED / municipal GIS',
     idField: 'GEOID',
     nameField: 'MUNICIPAL1',
-    dataPath: `${PA}/pa_municipalities.geojson`,
+    dataPath: `${DISTRICTS}/pa_municipalities.geojson`,
     color: '#22c55e',
     hasData: true,
   },
@@ -107,7 +111,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'PA DCED / municipal GIS',
     idField: 'GEOID',
     nameField: 'MUNICIPAL1',
-    dataPath: `${PA}/pa_municipalities.geojson`,
+    dataPath: `${DISTRICTS}/pa_municipalities.geojson`,
     color: '#84cc16',
     hasData: false,
   },
@@ -118,7 +122,7 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     source: 'Pennsylvania Department of Education / GIS',
     idField: 'AUN_NUM',
     nameField: 'SCHOOL_NAM',
-    dataPath: `${PA}/pa_school_districts.geojson`,
+    dataPath: `${DISTRICTS}/pa_school_districts.geojson`,
     color: '#f97316',
     hasData: true,
   },

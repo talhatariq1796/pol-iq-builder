@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ComparisonReportPDFGenerator } from '@/lib/pdf/political/ComparisonReportPDFGenerator';
 import type { ComparisonReportConfig, ComparisonEntityData } from '@/lib/pdf/political/ComparisonReportPDFGenerator';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build config
+    const region = getPoliticalRegionEnv();
     const config: ComparisonReportConfig = {
       entityA: dataA,
       entityB: dataB,
@@ -78,8 +79,8 @@ export async function POST(request: NextRequest) {
       keyDifferences: body.keyDifferences || generateDefaultDifferences(dataA, dataB),
       strategicImplications: body.strategicImplications || generateDefaultImplications(dataA, dataB),
       recommendation: body.recommendation || generateDefaultRecommendation(dataA, dataB),
-      county: 'Ingham',
-      state: 'Michigan',
+      county: region.county,
+      state: region.state,
       generatedBy: 'Political Analysis Platform',
       reportDate: new Date().toLocaleDateString('en-US', {
         year: 'numeric',

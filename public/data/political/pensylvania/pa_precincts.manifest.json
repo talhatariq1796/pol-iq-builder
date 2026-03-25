@@ -1,7 +1,0 @@
-{
-  "geojsonManifest": "1",
-  "merge": [
-    "/data/political/pensylvania/pa_precincts.part000.geojson",
-    "/data/political/pensylvania/pa_precincts.part001.geojson"
-  ]
-}

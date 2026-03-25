@@ -50,12 +50,12 @@ const BLOB_KEYS = {
 };
 
 // Fallback local paths (for development)
-// PA data lives in public/data/political/pensylvania/
+// PA data lives in public/data/political/pensylvania/precincts/ (see pensylvania/ layout)
 const LOCAL_PATHS = {
-  precinctBoundaries: '/data/political/pensylvania/pa_2020_presidential.geojson',
-  electionResults: '/data/political/pensylvania/pa_precinct_election_history.json',
-  targetingScores: '/data/political/pensylvania/precinct_targeting_scores.json',
-  districtCrosswalk: '/data/political/pensylvania/pa_precinct_district_crosswalk.json',
+  precinctBoundaries: '/data/political/pensylvania/precincts/pa_2020_presidential.geojson',
+  electionResults: '/data/political/pensylvania/precincts/pa_precinct_election_history.json',
+  targetingScores: '/data/political/pensylvania/precincts/precinct_targeting_scores.json',
+  districtCrosswalk: '/data/political/pensylvania/precincts/pa_precinct_district_crosswalk.json',
   politicalScores: '/data/processed/precinct_political_scores.json',
   demographics: '/data/processed/precinct_ba_demographics.json',
   crosswalk: '/data/processed/precinct_blockgroup_crosswalk.json',
@@ -673,6 +673,22 @@ export class PoliticalDataService {
   private async loadPoliticalScores(): Promise<PoliticalScoresData> {
     if (cache.politicalScores) return cache.politicalScores;
 
+    if (getPoliticalRegionEnv().stateFips === '42') {
+      cache.politicalScores = {
+        generated: new Date().toISOString(),
+        methodology: {
+          note: 'PA deployment uses precinct_targeting_scores.json for lean/swing; legacy precinct_political_scores is not keyed to PA precincts.',
+        },
+        summary: {
+          total_precincts: 0,
+          lean_distribution: {},
+          swing_distribution: {},
+        },
+        precincts: {},
+      };
+      return cache.politicalScores;
+    }
+
     cache.politicalScores = await fetchFromBlobOrLocal<PoliticalScoresData>(
       BLOB_KEYS.politicalScores,
       LOCAL_PATHS.politicalScores
@@ -686,6 +702,17 @@ export class PoliticalDataService {
   private async loadDemographics(): Promise<DemographicsData> {
     if (cache.demographics) return cache.demographics;
 
+    if (getPoliticalRegionEnv().stateFips === '42') {
+      cache.demographics = {
+        metadata: {
+          generated: new Date().toISOString(),
+          precinct_count: 0,
+        },
+        precincts: {},
+      };
+      return cache.demographics;
+    }
+
     cache.demographics = await fetchFromBlobOrLocal<DemographicsData>(
       BLOB_KEYS.demographics,
       LOCAL_PATHS.demographics
@@ -698,6 +725,11 @@ export class PoliticalDataService {
    */
   private async loadCrosswalk(): Promise<CrosswalkEntry[]> {
     if (cache.crosswalk) return cache.crosswalk;
+
+    if (getPoliticalRegionEnv().stateFips === '42') {
+      cache.crosswalk = [];
+      return cache.crosswalk;
+    }
 
     const data = await fetchFromBlobOrLocal<{ crosswalk?: unknown[] }>(
       BLOB_KEYS.crosswalk,
@@ -737,6 +769,18 @@ export class PoliticalDataService {
   private async loadH3Aggregates(): Promise<H3AggregatesData> {
     if (cache.h3Aggregates) return cache.h3Aggregates;
 
+    if (getPoliticalRegionEnv().stateFips === '42') {
+      cache.h3Aggregates = {
+        metadata: {
+          generated: new Date().toISOString(),
+          h3_resolution: 7,
+          cell_count: 0,
+        },
+        cells: {},
+      };
+      return cache.h3Aggregates;
+    }
+
     cache.h3Aggregates = await fetchFromBlobOrLocal<H3AggregatesData>(
       BLOB_KEYS.h3Aggregates,
       LOCAL_PATHS.h3Aggregates
@@ -749,6 +793,11 @@ export class PoliticalDataService {
    */
   async loadH3GeoJSON(): Promise<GeoJSON.FeatureCollection> {
     if (cache.h3GeoJSON) return cache.h3GeoJSON;
+
+    if (getPoliticalRegionEnv().stateFips === '42') {
+      cache.h3GeoJSON = { type: 'FeatureCollection', features: [] };
+      return cache.h3GeoJSON;
+    }
 
     cache.h3GeoJSON = await fetchFromBlobOrLocal<GeoJSON.FeatureCollection>(
       BLOB_KEYS.h3GeoJSON,

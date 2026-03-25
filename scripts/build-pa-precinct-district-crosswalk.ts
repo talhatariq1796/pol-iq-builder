@@ -3,12 +3,12 @@
  *
  * Usage: npx ts-node scripts/build-pa-precinct-district-crosswalk.ts
  *
- * Inputs (public/data/political/pensylvania/):
- *   - pa_2020_presidential.geojson (precinct polygons, UNIQUE_ID)
- *   - PaHouse2026_01.geojson (LEG_DISTRI)
- *   - PaSenate2026_01_w_senators.geojson (TIGER SLDUST)
- *   - PaCongressional2026_01.geojson (LEG_DISTRI)
- *   - PaMunicipalities2026_01.geojson (FIPS_COUNT, MUNICIPAL1, CLASS_OF_M, COUNTY_NAM)
+ * Inputs (public/data/political/pensylvania/precincts/ and districts/):
+ *   - precincts/pa_2020_presidential.geojson (precinct polygons, UNIQUE_ID)
+ *   - districts/PaHouse2026_01.geojson (LEG_DISTRI)
+ *   - districts/PaSenate2026_01_w_senators.geojson (TIGER SLDUST)
+ *   - districts/PaCongressional2026_01.geojson (LEG_DISTRI)
+ *   - districts/PaMunicipalities2026_01.geojson (FIPS_COUNT, MUNICIPAL1, CLASS_OF_M, COUNTY_NAM)
  *
  * Output keys match targeting / unified precinct names (UNIQUE_ID).
  * District slugs: pa-house-{n}, pa-senate-{n}, pa-congress-{NN}, municipality slug county-name.
@@ -20,12 +20,14 @@ import * as turf from '@turf/turf';
 import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from 'geojson';
 
 const DATA_DIR = path.join(process.cwd(), 'public/data/political/pensylvania');
-const PRECINCT_FILE = path.join(DATA_DIR, 'pa_2020_presidential.geojson');
-const HOUSE_FILE = path.join(DATA_DIR, 'PaHouse2026_01.geojson');
-const SENATE_FILE = path.join(DATA_DIR, 'PaSenate2026_01_w_senators.geojson');
-const CONGRESS_FILE = path.join(DATA_DIR, 'PaCongressional2026_01.geojson');
-const MUNI_FILE = path.join(DATA_DIR, 'PaMunicipalities2026_01.geojson');
-const OUTPUT_FILE = path.join(DATA_DIR, 'pa_precinct_district_crosswalk.json');
+const PRECINCT_DIR = path.join(DATA_DIR, 'precincts');
+const DISTRICT_DIR = path.join(DATA_DIR, 'districts');
+const PRECINCT_FILE = path.join(PRECINCT_DIR, 'pa_2020_presidential.geojson');
+const HOUSE_FILE = path.join(DISTRICT_DIR, 'PaHouse2026_01.geojson');
+const SENATE_FILE = path.join(DISTRICT_DIR, 'PaSenate2026_01_w_senators.geojson');
+const CONGRESS_FILE = path.join(DISTRICT_DIR, 'PaCongressional2026_01.geojson');
+const MUNI_FILE = path.join(DISTRICT_DIR, 'PaMunicipalities2026_01.geojson');
+const OUTPUT_FILE = path.join(PRECINCT_DIR, 'pa_precinct_district_crosswalk.json');
 
 type PolyFeat = Feature<Polygon | MultiPolygon>;
 

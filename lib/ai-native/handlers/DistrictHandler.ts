@@ -4,7 +4,7 @@
  * Translates natural language district queries into multi-level district analysis.
  * Supports queries like:
  * - "Show State House 73"
- * - "Analyze MI-07"
+ * - "Analyze PA-07" (Pennsylvania deployment)
  * - "Compare HD-73 vs HD-74"
  * - "What precincts are in Senate District 21?"
  */
@@ -20,6 +20,8 @@ import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } f
 import {
   handleDistrictAnalysis,
 } from '@/lib/ai/workflowHandlers';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { isPAPoliticalRegion, stripDistrictIdForEnrichment } from '@/lib/political/formatPoliticalDistrictLabel';
 
 // ============================================================================
 // Query Patterns
@@ -32,7 +34,7 @@ const DISTRICT_PATTERNS: QueryPattern[] = [
       // Direct commands: "Show State House 73"
       /(?:show|analyze|view|display)\s+(?:state\s+house|house\s+district|hd)\s*(?:district\s*)?\s*[-\s]?\d+/i,
       /(?:show|analyze|view|display)\s+(?:state\s+senate|senate\s+district|sd)\s*(?:district\s*)?\s*[-\s]?\d+/i,
-      /(?:show|analyze|view|display)\s+(?:congressional|mi)\s*[-\s]?\d+/i,
+      /(?:show|analyze|view|display)\s+(?:congressional|mi|pa)\s*[-\s]?\d+/i,
       /(?:show|analyze|view|display)\s+(?:school\s+district)\s+[\w\s-]+/i,
       // Flexible phrases: "Show me the political landscape of State House District 73"
       /(?:landscape|analysis|overview|profile)\s+(?:of|for)\s+(?:state\s+house|house\s+district|hd)\s*(?:district\s*)?\s*[-\s]?\d+/i,
@@ -44,7 +46,7 @@ const DISTRICT_PATTERNS: QueryPattern[] = [
       /senate\s+district\s+(\d+)/i,
       // Short forms
       /(?:hd|sd)\s*[-\s]?\d+/i,
-      /mi\s*[-\s]?\d+/i,
+      /(?:mi|pa)\s*[-\s]?\d+/i,
     ],
     keywords: ['state house', 'senate', 'congressional', 'district', 'hd', 'sd', 'mi-', 'landscape', 'political'],
     priority: 10,
@@ -82,13 +84,13 @@ const DISTRICT_PATTERNS: QueryPattern[] = [
   {
     intent: 'jurisdiction_lookup',
     patterns: [
-      /(?:show|list|display)\s+(?:me\s+)?(?:all\s+)?precincts?\s+in\s+(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)/i,
-      /(?:what|which)\s+precincts?\s+(?:are\s+)?in\s+(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)/i,
-      /precincts?\s+(?:in|of|for)\s+(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)/i,
-      /(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)\s+precincts?/i,
-      /(?:show|view|display)\s+(?:me\s+)?(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)(?:\s+city|\s+township)?/i,
+      /(?:show|list|display)\s+(?:me\s+)?(?:all\s+)?precincts?\s+in\s+(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett|philadelphia|pittsburgh|harrisburg|allentown|erie|reading|scranton|lancaster|york|chester|bethlehem)/i,
+      /(?:what|which)\s+precincts?\s+(?:are\s+)?in\s+(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett|philadelphia|pittsburgh|harrisburg|allentown|erie|reading|scranton|lancaster|york|chester|bethlehem)/i,
+      /precincts?\s+(?:in|of|for)\s+(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett|philadelphia|pittsburgh|harrisburg|allentown|erie|reading|scranton|lancaster|york|chester|bethlehem)/i,
+      /(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett|philadelphia|pittsburgh|harrisburg|allentown|erie|reading|scranton|lancaster|york|chester|bethlehem)\s+precincts?/i,
+      /(?:show|view|display)\s+(?:me\s+)?(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett|philadelphia|pittsburgh|harrisburg|allentown|erie|reading|scranton|lancaster|york|chester|bethlehem)(?:\s+city|\s+township)?/i,
     ],
-    keywords: ['precincts', 'in', 'city', 'township', 'east lansing', 'lansing', 'meridian', 'delhi', 'mason', 'okemos'],
+    keywords: ['precincts', 'in', 'city', 'township', 'east lansing', 'lansing', 'philadelphia', 'pittsburgh', 'harrisburg'],
     priority: 9,
   },
 ];
@@ -99,7 +101,8 @@ const DISTRICT_PATTERNS: QueryPattern[] = [
 
 const STATE_HOUSE_PATTERN = /(?:state\s+house\s*(?:district)?|hd|house\s+district)\s*[-\s]?(\d+)/i;
 const STATE_SENATE_PATTERN = /(?:state\s+senate\s*(?:district)?|sd|senate\s+district)\s*[-\s]?(\d+)/i;
-const CONGRESSIONAL_PATTERN = /(?:congressional|mi)\s*[-\s]?(\d+)/i;
+const CONGRESSIONAL_PATTERN_MI = /(?:congressional|mi)\s*[-\s]?(\d+)/i;
+const CONGRESSIONAL_PATTERN_PA = /(?:congressional|pa)\s*[-\s]?(\d+)/i;
 const SCHOOL_DISTRICT_PATTERN = /(?:school\s+district)\s+([\w\s-]+)/i;
 
 // ============================================================================
@@ -194,27 +197,20 @@ export class DistrictHandler implements NLPHandler {
     } else {
       return {
         success: false,
-        response: 'Please specify which district to analyze (e.g., "Show State House 73" or "Analyze MI-07").',
-        suggestedActions: [
-          {
-            id: 'hd-73',
-            label: 'State House 73',
-            action: 'Show State House 73',
-            icon: 'map-pin',
-          },
-          {
-            id: 'sd-21',
-            label: 'Senate District 21',
-            action: 'Show Senate District 21',
-            icon: 'map-pin',
-          },
-          {
-            id: 'mi-07',
-            label: 'Congressional MI-07',
-            action: 'Show Congressional District MI-07',
-            icon: 'map-pin',
-          },
-        ],
+        response: isPAPoliticalRegion()
+          ? 'Please specify which district to analyze (e.g., "Show State House 171" or "Analyze PA-07").'
+          : 'Please specify which district to analyze (e.g., "Show State House 73" or "Analyze MI-07").',
+        suggestedActions: isPAPoliticalRegion()
+          ? [
+              { id: 'ph-171', label: 'State House 171', action: 'Show State House 171', icon: 'map-pin' },
+              { id: 'ps-45', label: 'Senate District 45', action: 'Show Senate District 45', icon: 'map-pin' },
+              { id: 'pa-07', label: 'Congressional PA-07', action: 'Show Congressional District PA-07', icon: 'map-pin' },
+            ]
+          : [
+              { id: 'hd-73', label: 'State House 73', action: 'Show State House 73', icon: 'map-pin' },
+              { id: 'sd-21', label: 'Senate District 21', action: 'Show Senate District 21', icon: 'map-pin' },
+              { id: 'mi-07', label: 'Congressional MI-07', action: 'Show Congressional District MI-07', icon: 'map-pin' },
+            ],
         error: 'No district specified',
       };
     }
@@ -229,12 +225,18 @@ export class DistrictHandler implements NLPHandler {
       congressional: 'congressional',
       school: 'county', // Fall back to county for school districts
     };
+    const dLevel = districtParams.districtLevel || 'county';
+    let districtNumber: string | undefined;
+    if (dLevel === 'state_house' && entities.stateHouse) {
+      districtNumber = stripDistrictIdForEnrichment(entities.stateHouse, 'state_house');
+    } else if (dLevel === 'state_senate' && entities.stateSenate) {
+      districtNumber = stripDistrictIdForEnrichment(entities.stateSenate, 'state_senate');
+    } else if (dLevel === 'congressional' && entities.congressional) {
+      districtNumber = stripDistrictIdForEnrichment(entities.congressional, 'congressional');
+    }
     const enrichment = await getEnrichmentForQuery(query.originalQuery, {
-      districtType: districtTypeMap[districtParams.districtLevel || 'county'],
-      districtNumber: entities.stateHouse?.replace('mi-house-', '') ||
-        entities.stateSenate?.replace('mi-senate-', '') ||
-        entities.congressional?.replace('mi-', '') ||
-        undefined,
+      districtType: districtTypeMap[dLevel],
+      districtNumber,
     });
     const enrichmentSections = formatEnrichmentSections(enrichment);
 
@@ -337,26 +339,37 @@ export class DistrictHandler implements NLPHandler {
     query: ParsedQuery,
     startTime: number
   ): Promise<HandlerResult> {
-    // List available districts in Ingham County
-    const districts = {
-      congressional: ['MI-07'],
-      stateSenate: ['21', '28'],
-      stateHouse: ['73', '74', '75', '77'],
-      school: [
-        'Lansing Public Schools',
-        'East Lansing Public Schools',
-        'Okemos Public Schools',
-        'Mason Public Schools',
-        'Haslett Public Schools',
-        'Williamston Community Schools',
-      ],
-    };
+    const area = getPoliticalRegionEnv().summaryAreaName;
+    const districts = isPAPoliticalRegion()
+      ? {
+          congressional: ['PA-07', 'PA-08', 'PA-17'],
+          stateSenate: ['45', '48', '12'],
+          stateHouse: ['171', '100', '23'],
+          school: [
+            'Philadelphia City SD',
+            'Pittsburgh SD',
+            'Central Dauphin SD',
+          ],
+        }
+      : {
+          congressional: ['MI-07'],
+          stateSenate: ['21', '28'],
+          stateHouse: ['73', '74', '75', '77'],
+          school: [
+            'Lansing Public Schools',
+            'East Lansing Public Schools',
+            'Okemos Public Schools',
+            'Mason Public Schools',
+            'Haslett Public Schools',
+            'Williamston Community Schools',
+          ],
+        };
 
     const responseLines = [
-      '**Available Districts in Ingham County:**',
+      `**Example districts (${area} data):**`,
       '',
       '**Congressional:**',
-      `- MI-07 (entire county)`,
+      ...districts.congressional.map(d => `- ${d}`),
       '',
       '**State Senate:**',
       ...districts.stateSenate.map(d => `- District ${d}`),
@@ -364,41 +377,29 @@ export class DistrictHandler implements NLPHandler {
       '**State House:**',
       ...districts.stateHouse.map(d => `- District ${d}`),
       '',
-      '**School Districts:**',
+      '**School districts (examples):**',
       ...districts.school.map(d => `- ${d}`),
       '',
       '**Try asking:**',
-      '- "Show State House 73"',
-      '- "Analyze Senate District 21"',
-      '- "Compare HD-73 vs HD-74"',
+      isPAPoliticalRegion()
+        ? '- "Show State House 171"\n- "Analyze PA-07"\n- "Compare HD-100 vs HD-101"'
+        : '- "Show State House 73"\n- "Analyze Senate District 21"\n- "Compare HD-73 vs HD-74"',
     ];
 
     return {
       success: true,
       response: responseLines.join('\n'),
-      suggestedActions: [
-        {
-          id: 'hd-73',
-          label: 'State House 73',
-          action: 'Show State House 73',
-          icon: 'map-pin',
-          priority: 1,
-        },
-        {
-          id: 'sd-21',
-          label: 'Senate District 21',
-          action: 'Show Senate District 21',
-          icon: 'map-pin',
-          priority: 2,
-        },
-        {
-          id: 'mi-07',
-          label: 'Congressional MI-07',
-          action: 'Show Congressional District MI-07',
-          icon: 'map-pin',
-          priority: 3,
-        },
-      ],
+      suggestedActions: isPAPoliticalRegion()
+        ? [
+            { id: 'ph-171', label: 'State House 171', action: 'Show State House 171', icon: 'map-pin', priority: 1 },
+            { id: 'ps-45', label: 'Senate District 45', action: 'Show Senate District 45', icon: 'map-pin', priority: 2 },
+            { id: 'pa-07', label: 'Congressional PA-07', action: 'Show Congressional District PA-07', icon: 'map-pin', priority: 3 },
+          ]
+        : [
+            { id: 'hd-73', label: 'State House 73', action: 'Show State House 73', icon: 'map-pin', priority: 1 },
+            { id: 'sd-21', label: 'Senate District 21', action: 'Show Senate District 21', icon: 'map-pin', priority: 2 },
+            { id: 'mi-07', label: 'Congressional MI-07', action: 'Show Congressional District MI-07', icon: 'map-pin', priority: 3 },
+          ],
       data: districts,
       metadata: this.buildMetadata('district_list', startTime, query),
     };
@@ -446,9 +447,13 @@ export class DistrictHandler implements NLPHandler {
     });
 
     // Get enrichment context (RAG + Knowledge Graph)
+    let distNum: string | undefined;
+    if (districtType === 'state_house') distNum = stripDistrictIdForEnrichment(districtId, 'state_house');
+    else if (districtType === 'state_senate') distNum = stripDistrictIdForEnrichment(districtId, 'state_senate');
+    else if (districtType === 'congressional') distNum = stripDistrictIdForEnrichment(districtId, 'congressional');
     const enrichment = await getEnrichmentForQuery(query.originalQuery, {
       districtType: districtType === 'school' ? 'county' : districtType,
-      districtNumber: districtId?.replace(/^mi-(house|senate)-/, '').replace(/^mi-/, ''),
+      districtNumber: distNum,
     });
     const enrichmentSections = formatEnrichmentSections(enrichment);
 
@@ -467,26 +472,28 @@ export class DistrictHandler implements NLPHandler {
 
   extractEntities(query: string): ExtractedEntities {
     const entities: ExtractedEntities = {};
+    const pa = isPAPoliticalRegion();
 
-    // Extract State House district
     const houseMatch = query.match(STATE_HOUSE_PATTERN);
     if (houseMatch) {
-      entities.stateHouse = `mi-house-${houseMatch[1]}`;
+      entities.stateHouse = pa ? `pa-house-${houseMatch[1]}` : `mi-house-${houseMatch[1]}`;
     }
 
-    // Extract State Senate district
     const senateMatch = query.match(STATE_SENATE_PATTERN);
     if (senateMatch) {
-      entities.stateSenate = `mi-senate-${senateMatch[1]}`;
+      entities.stateSenate = pa ? `pa-senate-${senateMatch[1]}` : `mi-senate-${senateMatch[1]}`;
     }
 
-    // Extract Congressional district
-    const congressMatch = query.match(CONGRESSIONAL_PATTERN);
-    if (congressMatch) {
-      entities.congressional = `mi-${congressMatch[1]}`;
+    const congressMatchPA = query.match(CONGRESSIONAL_PATTERN_PA);
+    const congressMatchMI = query.match(CONGRESSIONAL_PATTERN_MI);
+    if (pa && congressMatchPA) {
+      entities.congressional = `pa-congress-${congressMatchPA[1].padStart(2, '0')}`;
+    } else if (!pa && congressMatchMI) {
+      entities.congressional = `mi-${congressMatchMI[1].padStart(2, '0')}`;
+    } else if (pa && congressMatchMI) {
+      entities.congressional = `pa-congress-${congressMatchMI[1].padStart(2, '0')}`;
     }
 
-    // Extract School district
     const schoolMatch = query.match(SCHOOL_DISTRICT_PATTERN);
     if (schoolMatch) {
       entities.schoolDistrict = schoolMatch[1].toLowerCase().replace(/\s+/g, '-');
@@ -500,31 +507,26 @@ export class DistrictHandler implements NLPHandler {
   // --------------------------------------------------------------------------
 
   private extractDistrictPair(query: string): string[] | null {
-    // Try to extract two State House districts
+    const pa = isPAPoliticalRegion();
+    const hp = pa ? 'pa-house-' : 'mi-house-';
+    const sp = pa ? 'pa-senate-' : 'mi-senate-';
+    const cp = pa ? 'pa-congress-' : 'mi-';
+
     const houseMatches = Array.from(query.matchAll(/(?:state\s+house|hd)\s*[-\s]?(\d+)/gi));
     if (houseMatches.length >= 2) {
-      return [
-        `mi-house-${houseMatches[0][1]}`,
-        `mi-house-${houseMatches[1][1]}`,
-      ];
+      return [`${hp}${houseMatches[0][1]}`, `${hp}${houseMatches[1][1]}`];
     }
 
-    // Try to extract two State Senate districts
     const senateMatches = Array.from(query.matchAll(/(?:state\s+senate|sd)\s*[-\s]?(\d+)/gi));
     if (senateMatches.length >= 2) {
-      return [
-        `mi-senate-${senateMatches[0][1]}`,
-        `mi-senate-${senateMatches[1][1]}`,
-      ];
+      return [`${sp}${senateMatches[0][1]}`, `${sp}${senateMatches[1][1]}`];
     }
 
-    // Try to extract two Congressional districts
-    const congressMatches = Array.from(query.matchAll(/(?:congressional|mi)\s*[-\s]?(\d+)/gi));
+    const congressMatches = Array.from(query.matchAll(/(?:congressional|mi|pa)\s*[-\s]?(\d+)/gi));
     if (congressMatches.length >= 2) {
-      return [
-        `mi-${congressMatches[0][1]}`,
-        `mi-${congressMatches[1][1]}`,
-      ];
+      const a = congressMatches[0][1].padStart(2, '0');
+      const b = congressMatches[1][1].padStart(2, '0');
+      return pa ? [`pa-congress-${a}`, `pa-congress-${b}`] : [`mi-${a}`, `mi-${b}`];
     }
 
     return null;
@@ -537,17 +539,20 @@ export class DistrictHandler implements NLPHandler {
     schoolDistrict?: string;
     districtLevel?: 'congressional' | 'state_senate' | 'state_house' | 'school';
   } {
-    if (districtId.startsWith('mi-house-')) {
+    if (districtId.startsWith('pa-house-') || districtId.startsWith('mi-house-')) {
       return {
         stateHouse: districtId,
         districtLevel: 'state_house',
       };
-    } else if (districtId.startsWith('mi-senate-')) {
+    } else if (districtId.startsWith('pa-senate-') || districtId.startsWith('mi-senate-')) {
       return {
         stateSenate: districtId,
         districtLevel: 'state_senate',
       };
-    } else if (districtId.startsWith('mi-') && !districtId.includes('house') && !districtId.includes('senate')) {
+    } else if (
+      districtId.startsWith('pa-congress-') ||
+      (districtId.startsWith('mi-') && !districtId.includes('house') && !districtId.includes('senate'))
+    ) {
       return {
         congressional: districtId,
         districtLevel: 'congressional',
@@ -569,28 +574,27 @@ export class DistrictHandler implements NLPHandler {
     startTime: number
   ): Promise<HandlerResult> {
     // Extract jurisdiction from query
-    const jurisdictionPattern = /(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)/i;
+    const jurisdictionPattern = isPAPoliticalRegion()
+      ? /(philadelphia|pittsburgh|harrisburg|allentown|erie|reading|scranton|lancaster|york|chester|bethlehem)/i
+      : /(east\s+lansing|lansing|meridian|delhi|williamston|mason|okemos|haslett)/i;
     const match = query.originalQuery.match(jurisdictionPattern);
     const jurisdiction = match ? match[1] : null;
 
     if (!jurisdiction) {
       return {
         success: false,
-        response: 'Please specify a city or township. Available: Lansing, East Lansing, Meridian Township, Delhi Township, Mason, Okemos, Haslett, Williamston.',
-        suggestedActions: [
-          {
-            id: 'east-lansing',
-            label: 'East Lansing Precincts',
-            action: 'Show precincts in East Lansing',
-            priority: 1,
-          },
-          {
-            id: 'lansing',
-            label: 'Lansing Precincts',
-            action: 'Show precincts in Lansing',
-            priority: 2,
-          },
-        ],
+        response: isPAPoliticalRegion()
+          ? 'Please specify a city. Examples: Philadelphia, Pittsburgh, Harrisburg, Allentown, Erie, Reading.'
+          : 'Please specify a city or township. Available: Lansing, East Lansing, Meridian Township, Delhi Township, Mason, Okemos, Haslett, Williamston.',
+        suggestedActions: isPAPoliticalRegion()
+          ? [
+              { id: 'philly', label: 'Philadelphia', action: 'Show precincts in Philadelphia', priority: 1 },
+              { id: 'pitt', label: 'Pittsburgh', action: 'Show precincts in Pittsburgh', priority: 2 },
+            ]
+          : [
+              { id: 'east-lansing', label: 'East Lansing Precincts', action: 'Show precincts in East Lansing', priority: 1 },
+              { id: 'lansing', label: 'Lansing Precincts', action: 'Show precincts in Lansing', priority: 2 },
+            ],
         error: 'No jurisdiction specified',
       };
     }
@@ -625,12 +629,12 @@ export class DistrictHandler implements NLPHandler {
         `Found **${matchingPrecincts.length} precincts** with **${totalVoters.toLocaleString()} voters**.`,
         '',
         `**Jurisdiction Average:**`,
-        `- Partisan Lean: ${avgLean > 0 ? 'R+' : 'D+'}${Math.abs(avgLean).toFixed(1)}`,
+        `- Partisan Lean: ${avgLean >= 0 ? 'D+' : 'R+'}${Math.abs(avgLean).toFixed(1)}`,
         `- GOTV Priority: ${avgGOTV.toFixed(0)}/100`,
         '',
         `**Precincts:**`,
         ...matchingPrecincts.slice(0, 8).map((p: any, i: number) =>
-          `${i + 1}. ${p.precinctName} (${p.registeredVoters?.toLocaleString() || 0} voters, ${p.partisanLean > 0 ? 'R+' : 'D+'}${Math.abs(p.partisanLean).toFixed(1)})`
+          `${i + 1}. ${p.precinctName} (${p.registeredVoters?.toLocaleString() || 0} voters, ${(p.partisanLean ?? 0) >= 0 ? 'D+' : 'R+'}${Math.abs(p.partisanLean ?? 0).toFixed(1)})`
         ),
         matchingPrecincts.length > 8 ? `\n...and ${matchingPrecincts.length - 8} more precincts` : '',
       ].join('\n');
@@ -669,8 +673,10 @@ export class DistrictHandler implements NLPHandler {
           },
           {
             id: 'compare',
-            label: 'Compare to Other Cities',
-            action: `Compare ${jurisdiction} to East Lansing`,
+            label: 'Compare to another city',
+            action: isPAPoliticalRegion()
+              ? `Compare ${jurisdiction} to Pittsburgh`
+              : `Compare ${jurisdiction} to East Lansing`,
             priority: 3,
           },
         ],

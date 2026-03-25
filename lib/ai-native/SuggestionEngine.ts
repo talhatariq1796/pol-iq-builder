@@ -31,6 +31,7 @@ import {
   frameAsDiscovery,
   getFollowUpQuestions,
 } from '@/lib/ai/insights';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // ============================================================================
 // Types
@@ -181,7 +182,9 @@ class SuggestionEngine {
     const state = getStateManager().getState();
     const suggestions = this.generateMunicipalitySuggestions(municipality, state);
 
-    const acknowledgment = `I see you selected **${municipality.name}**, a ${municipality.type || 'municipality'} in Ingham County`;
+    const regionLabel =
+      getPoliticalRegionEnv().stateFips === '42' ? 'Pennsylvania' : 'Ingham County';
+    const acknowledgment = `I see you selected **${municipality.name}**, a ${municipality.type || 'municipality'} in ${regionLabel}`;
 
     return {
       acknowledgment,
@@ -769,17 +772,20 @@ class SuggestionEngine {
           const suggestions: SuggestedAction[] = [];
 
           // Context-aware suggestions based on what's on screen
+          const pa = getPoliticalRegionEnv().stateFips === '42';
           suggestions.push({
             id: 'county-overview',
-            label: 'County overview',
-            action: 'Give me an overview of Ingham County politics',
+            label: pa ? 'State overview' : 'County overview',
+            action: pa
+              ? `Give me an overview of ${getPoliticalRegionEnv().summaryAreaName} politics`
+              : 'Give me an overview of Ingham County politics',
             priority: 85,
             category: 'analysis',
           });
           suggestions.push({
             id: 'compare-areas',
             label: 'Compare areas',
-            action: 'Compare East Lansing to Lansing',
+            action: pa ? 'Compare Philadelphia to Pittsburgh' : 'Compare East Lansing to Lansing',
             priority: 80,
             category: 'comparison',
           });
@@ -1919,14 +1925,25 @@ class SuggestionEngine {
    * Uses jurisdiction-level approximate centers with small offsets for variation
    */
   private getPrecinctCentroid(precinctId: string, jurisdiction: string): [number, number] {
-    // Approximate centers for Ingham County jurisdictions
     const JURISDICTION_CENTERS: Record<string, [number, number]> = {
       'East Lansing': [-84.4839, 42.7369],
-      'Lansing': [-84.5555, 42.7337],
-      'Meridian Township': [-84.4100, 42.7100],
-      'Delhi Township': [-84.5800, 42.6500],
-      'Williamston': [-84.2830, 42.6890],
-      'Unknown': [-84.55, 42.73],
+      Lansing: [-84.5555, 42.7337],
+      'Meridian Township': [-84.41, 42.71],
+      'Delhi Township': [-84.58, 42.65],
+      Williamston: [-84.283, 42.689],
+      Philadelphia: [-75.1652, 39.9526],
+      Pittsburgh: [-79.9959, 40.4406],
+      Harrisburg: [-76.8867, 40.2732],
+      Allentown: [-75.4772, 40.6023],
+      Erie: [-80.0851, 42.1292],
+      Reading: [-75.9269, 40.3356],
+      Scranton: [-75.6649, 41.4089],
+      Lancaster: [-76.3055, 40.0379],
+      York: [-76.7277, 39.9626],
+      Chester: [-75.3557, 39.8496],
+      Bethlehem: [-75.3705, 40.6259],
+      Unknown:
+        getPoliticalRegionEnv().stateFips === '42' ? [-77.1945, 41.2033] : [-84.55, 42.73],
     };
 
     // Get base center
@@ -1962,6 +1979,17 @@ class SuggestionEngine {
 
     // Urban indicators
     if (name.includes('lansing') && !name.includes('township')) {
+      return 'urban';
+    }
+    if (
+      name.includes('philadelphia') ||
+      name.includes('pittsburgh') ||
+      name.includes('harrisburg') ||
+      name.includes('reading') ||
+      name.includes('erie') ||
+      name.includes('allentown') ||
+      name.includes('scranton')
+    ) {
       return 'urban';
     }
     if (voters > 3000) {

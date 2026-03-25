@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CanvassingPlanPDFGenerator } from '@/lib/pdf/political/CanvassingPlanPDFGenerator';
 import type { CanvassingPlanConfig, CanvassTurfData } from '@/lib/pdf/political/CanvassingPlanPDFGenerator';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -46,6 +47,7 @@ interface CanvassingReportRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const region = getPoliticalRegionEnv();
     const body: CanvassingReportRequest = await request.json();
 
     console.log('[Canvassing Report API] Generating for:', body.operationName, 'with', body.precinctNames.length, 'precincts');
@@ -191,8 +193,8 @@ export async function POST(request: NextRequest) {
       talkingPoints: body.talkingPoints || getDefaultTalkingPoints(body.operationType),
       faqs: body.faqs,
 
-      county: 'Ingham',
-      state: 'Michigan',
+      county: region.county,
+      state: region.state,
       generatedBy: 'Political Analysis Platform',
       reportDate: new Date().toLocaleDateString('en-US', {
         year: 'numeric',

@@ -3,6 +3,12 @@
  * Identifies precincts, municipalities, and ZIP codes for interactive clicking
  */
 
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+
+function isPAPoliticalDeployment(): boolean {
+  return getPoliticalRegionEnv().stateFips === '42';
+}
+
 // Known entity patterns
 // Full precinct name patterns (matches actual data format)
 const PRECINCT_FULL_PATTERN = /\b(City of (?:East Lansing|Lansing|Mason|Williamston),?\s+Precinct\s+\d{1,2})\b/gi;
@@ -12,8 +18,14 @@ const PRECINCT_SHORT_PATTERN = /\b((?:East Lansing|Lansing|Mason|Williamston|Mer
 // Legacy short code pattern
 const PRECINCT_CODE_PATTERN = /\b([A-Z]{2,3}-\d{1,2})\b/g;  // EL-3, LAN-12, etc.
 
-const MUNICIPALITY_PATTERN = /\b(East Lansing|Lansing|Meridian Township|Delhi Township|Okemos|Haslett|Holt|Mason|Williamston|Leslie|Webberville|Stockbridge)\b/gi;
-const ZIP_PATTERN = /\b(48[0-9]{3})\b/g;  // Michigan ZIPs start with 48/49
+const MUNICIPALITY_PATTERN_MI =
+  /\b(East Lansing|Lansing|Meridian Township|Delhi Township|Okemos|Haslett|Holt|Mason|Williamston|Leslie|Webberville|Stockbridge)\b/gi;
+const MUNICIPALITY_PATTERN_PA =
+  /\b(Philadelphia|Pittsburgh|Harrisburg|Allentown|Erie|Reading|Scranton|Lancaster|York|Chester|Bethlehem|State College|Altoona|Wilkes-Barre)\b/gi;
+/** Pennsylvania precinct UNIQUE_ID style (county FIPS prefix used in crosswalk). */
+const PA_PRECINCT_UNIQUE_PATTERN = /\b(\d{3}-\:-[^\n,;]{4,120})/g;
+const ZIP_PATTERN_MI = /\b(48[0-9]{3}|49[0-9]{3})\b/g;
+const ZIP_PATTERN_PA = /\b(1[5-9][0-9]{3})\b/g;
 
 export interface EntityReference {
   text: string;
@@ -24,56 +36,73 @@ export interface EntityReference {
 
 function extractEntities(text: string): EntityReference[] {
   const entities: EntityReference[] = [];
+  const pa = isPAPoliticalDeployment();
 
   // Extract precincts - check all patterns from most specific to least
   let match;
 
-  // Full precinct names (City of X, Precinct N)
-  const fullRegex = new RegExp(PRECINCT_FULL_PATTERN.source, 'gi');
-  while ((match = fullRegex.exec(text)) !== null) {
-    entities.push({
-      text: match[1],
-      type: 'precinct',
-      startIndex: match.index,
-      endIndex: match.index + match[0].length
-    });
+  if (pa) {
+    const paUnique = new RegExp(PA_PRECINCT_UNIQUE_PATTERN.source, 'g');
+    while ((match = paUnique.exec(text)) !== null) {
+      const t = match[1].trim();
+      if (t.length >= 6) {
+        entities.push({
+          text: t,
+          type: 'precinct',
+          startIndex: match.index,
+          endIndex: match.index + match[0].length,
+        });
+      }
+    }
   }
 
-  // Township precinct names
-  const townshipRegex = new RegExp(PRECINCT_TOWNSHIP_PATTERN.source, 'gi');
-  while ((match = townshipRegex.exec(text)) !== null) {
-    entities.push({
-      text: match[1],
-      type: 'precinct',
-      startIndex: match.index,
-      endIndex: match.index + match[0].length
-    });
-  }
+  if (!pa) {
+    const fullRegex = new RegExp(PRECINCT_FULL_PATTERN.source, 'gi');
+    while ((match = fullRegex.exec(text)) !== null) {
+      entities.push({
+        text: match[1],
+        type: 'precinct',
+        startIndex: match.index,
+        endIndex: match.index + match[0].length,
+      });
+    }
 
-  // Short precinct names (East Lansing Precinct 3)
-  const shortRegex = new RegExp(PRECINCT_SHORT_PATTERN.source, 'gi');
-  while ((match = shortRegex.exec(text)) !== null) {
-    entities.push({
-      text: match[1],
-      type: 'precinct',
-      startIndex: match.index,
-      endIndex: match.index + match[0].length
-    });
-  }
+    const townshipRegex = new RegExp(PRECINCT_TOWNSHIP_PATTERN.source, 'gi');
+    while ((match = townshipRegex.exec(text)) !== null) {
+      entities.push({
+        text: match[1],
+        type: 'precinct',
+        startIndex: match.index,
+        endIndex: match.index + match[0].length,
+      });
+    }
 
-  // Legacy short codes (EL-3)
-  const codeRegex = new RegExp(PRECINCT_CODE_PATTERN.source, 'g');
-  while ((match = codeRegex.exec(text)) !== null) {
-    entities.push({
-      text: match[1],
-      type: 'precinct',
-      startIndex: match.index,
-      endIndex: match.index + match[0].length
-    });
+    const shortRegex = new RegExp(PRECINCT_SHORT_PATTERN.source, 'gi');
+    while ((match = shortRegex.exec(text)) !== null) {
+      entities.push({
+        text: match[1],
+        type: 'precinct',
+        startIndex: match.index,
+        endIndex: match.index + match[0].length,
+      });
+    }
+
+    const codeRegex = new RegExp(PRECINCT_CODE_PATTERN.source, 'g');
+    while ((match = codeRegex.exec(text)) !== null) {
+      entities.push({
+        text: match[1],
+        type: 'precinct',
+        startIndex: match.index,
+        endIndex: match.index + match[0].length,
+      });
+    }
   }
 
   // Extract municipalities
-  const municipalityRegex = new RegExp(MUNICIPALITY_PATTERN.source, 'gi');
+  const municipalityRegex = new RegExp(
+    pa ? MUNICIPALITY_PATTERN_PA.source : MUNICIPALITY_PATTERN_MI.source,
+    'gi',
+  );
   while ((match = municipalityRegex.exec(text)) !== null) {
     entities.push({
       text: match[1],
@@ -84,7 +113,7 @@ function extractEntities(text: string): EntityReference[] {
   }
 
   // Extract ZIPs
-  const zipRegex = new RegExp(ZIP_PATTERN.source, 'g');
+  const zipRegex = new RegExp(pa ? ZIP_PATTERN_PA.source : ZIP_PATTERN_MI.source, 'g');
   while ((match = zipRegex.exec(text)) !== null) {
     entities.push({
       text: match[1],
@@ -105,7 +134,7 @@ function extractEntities(text: string): EntityReference[] {
     .filter((e, i, arr) => i === 0 || e.startIndex >= arr[i - 1].endIndex);
 }
 
-// Municipality coordinates for Ingham County
+// Municipality coordinates (Ingham + major PA cities for PA deployment)
 const MUNICIPALITIES: Record<string, { lat: number; lng: number }> = {
   'east lansing': { lat: 42.7369, lng: -84.4839 },
   'lansing': { lat: 42.7325, lng: -84.5555 },
@@ -119,6 +148,20 @@ const MUNICIPALITIES: Record<string, { lat: number; lng: number }> = {
   'leslie': { lat: 42.4514, lng: -84.4283 },
   'webberville': { lat: 42.6678, lng: -84.1744 },
   'stockbridge': { lat: 42.4514, lng: -84.1808 },
+  philadelphia: { lat: 39.9526, lng: -75.1652 },
+  pittsburgh: { lat: 40.4406, lng: -79.9959 },
+  harrisburg: { lat: 40.2732, lng: -76.8867 },
+  allentown: { lat: 40.6023, lng: -75.4772 },
+  erie: { lat: 42.1292, lng: -80.0851 },
+  reading: { lat: 40.3356, lng: -75.9269 },
+  scranton: { lat: 41.4089, lng: -75.6649 },
+  lancaster: { lat: 40.0379, lng: -76.3055 },
+  york: { lat: 39.9626, lng: -76.7277 },
+  chester: { lat: 39.8496, lng: -75.3557 },
+  bethlehem: { lat: 40.6259, lng: -75.3705 },
+  'state college': { lat: 40.7934, lng: -77.86 },
+  altoona: { lat: 40.5187, lng: -78.3947 },
+  'wilkes-barre': { lat: 41.2459, lng: -75.8813 },
   'alaiedon township': { lat: 42.6506, lng: -84.3511 },
   'aurelius township': { lat: 42.6139, lng: -84.5056 },
   'bunker hill township': { lat: 42.4311, lng: -84.4156 },

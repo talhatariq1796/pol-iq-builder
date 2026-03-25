@@ -1,9 +1,11 @@
 /**
- * Political Geographic Data Manager - Ingham County, Michigan
+ * Political Geographic Data Manager
  *
- * Manages geographic data for the Political Landscape Analysis platform.
- * Covers Ingham County jurisdictions (townships, cities) and precincts.
+ * Michigan (FIPS 26): Ingham County jurisdictions for legacy query routing.
+ * Pennsylvania (FIPS 42): major cities only — statewide precinct naming uses crosswalk IDs elsewhere.
  */
+
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // Extended GeographicEntity with metadata for political context
 export interface PoliticalGeographicEntity {
@@ -69,9 +71,17 @@ export class PoliticalGeoDataManager {
   }
 
   private initializeDatabase(): void {
+    if (getPoliticalRegionEnv().stateFips === '42') {
+      console.log('[PoliticalGeoDataManager] Initializing Pennsylvania reference places...');
+      this.loadPennsylvaniaReferencePlaces();
+      console.log(
+        `[PoliticalGeoDataManager] Database initialized with ${this.database.entities.size} entities`
+      );
+      return;
+    }
+
     console.log('[PoliticalGeoDataManager] Initializing Ingham County geographic database...');
 
-    // Core geographic entities
     this.loadCounty();
     this.loadJurisdictions();
     this.loadRegionalGroups();
@@ -79,6 +89,80 @@ export class PoliticalGeoDataManager {
     console.log(
       `[PoliticalGeoDataManager] Database initialized with ${this.database.entities.size} entities`
     );
+  }
+
+  /** Minimal city list for NL query routing in PA-only deployments. */
+  private loadPennsylvaniaReferencePlaces(): void {
+    const { summaryAreaName } = getPoliticalRegionEnv();
+    const state: PoliticalGeographicEntity = {
+      name: 'Pennsylvania',
+      type: 'state',
+      aliases: ['PA', 'Penn', 'Commonwealth of Pennsylvania'],
+      confidence: 1.0,
+    };
+    this.addEntity(state);
+
+    const cities: Array<{
+      name: string;
+      aliases: string[];
+      urbanRural: 'urban' | 'suburban' | 'rural';
+      description: string;
+    }> = [
+      {
+        name: 'Philadelphia',
+        aliases: ['Philly'],
+        urbanRural: 'urban',
+        description: `Major city, ${summaryAreaName}`,
+      },
+      {
+        name: 'Pittsburgh',
+        aliases: ['Pitt'],
+        urbanRural: 'urban',
+        description: `Major city, ${summaryAreaName}`,
+      },
+      {
+        name: 'Harrisburg',
+        aliases: ['Harrisburg PA', 'Capital'],
+        urbanRural: 'urban',
+        description: `State capital, ${summaryAreaName}`,
+      },
+      {
+        name: 'Allentown',
+        aliases: [],
+        urbanRural: 'suburban',
+        description: `Lehigh Valley, ${summaryAreaName}`,
+      },
+      {
+        name: 'Erie',
+        aliases: [],
+        urbanRural: 'urban',
+        description: `Northwest PA, ${summaryAreaName}`,
+      },
+      {
+        name: 'Reading',
+        aliases: [],
+        urbanRural: 'urban',
+        description: `Southeast PA, ${summaryAreaName}`,
+      },
+    ];
+
+    for (const c of cities) {
+      this.addEntity({
+        name: c.name,
+        type: 'city',
+        aliases: c.aliases,
+        parentEntity: 'pennsylvania',
+        confidence: 0.95,
+        metadata: {
+          urbanRural: c.urbanRural,
+          description: c.description,
+        },
+      });
+    }
+
+    this.database.regionalGroups.set('southeast pa', ['philadelphia', 'reading']);
+    this.database.regionalGroups.set('southwest pa', ['pittsburgh']);
+    this.database.regionalGroups.set('capital region', ['harrisburg']);
   }
 
   private loadCounty(): void {
@@ -393,8 +477,8 @@ export class PoliticalGeoDataManager {
    */
   public getAllJurisdictions(): string[] {
     const jurisdictions: string[] = [];
-    for (const [name, entity] of this.database.entities) {
-      if (entity.type === 'city' || (entity.type === 'county' && entity.parentEntity === 'ingham county')) {
+    for (const [, entity] of this.database.entities) {
+      if (entity.type === 'city') {
         jurisdictions.push(entity.name);
       }
     }

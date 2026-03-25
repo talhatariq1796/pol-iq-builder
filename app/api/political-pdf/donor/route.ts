@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DonorAnalysisPDFGenerator } from '@/lib/pdf/political/DonorAnalysisPDFGenerator';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 import type { DonorAnalysisConfig, ZipDonorData, DonorSegment } from '@/lib/pdf/political/DonorAnalysisPDFGenerator';
 
 export const dynamic = 'force-dynamic';
@@ -73,6 +74,7 @@ interface DonorReportRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const region = getPoliticalRegionEnv();
     const body: DonorReportRequest = await request.json();
 
     console.log('[Donor Report API] Generating for:', body.reportTitle);
@@ -123,8 +125,8 @@ export async function POST(request: NextRequest) {
 
       recommendations,
 
-      county: 'Ingham',
-      state: 'Michigan',
+      county: region.county,
+      state: region.state,
       generatedBy: 'Political Analysis Platform',
       reportDate: new Date().toLocaleDateString('en-US', {
         year: 'numeric',

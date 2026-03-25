@@ -35,6 +35,7 @@ import type {
   RelevanceMetadata,
   DEFAULT_ENRICHMENT_OPTIONS,
 } from './types';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // Track initialization state
 let initialized = false;
@@ -70,8 +71,12 @@ async function getCandidateContexts(options: EnrichmentOptions): Promise<Candida
   const contexts: CandidateContext[] = [];
 
   try {
-    // Get specific district candidate if specified
-    if (options.districtType && options.districtNumber) {
+    // Knowledge-graph candidate rows are Michigan/Ingham-seeded; skip for Pennsylvania deployment.
+    if (
+      getPoliticalRegionEnv().stateFips !== '42' &&
+      options.districtType &&
+      options.districtNumber
+    ) {
       switch (options.districtType) {
         case 'state_house':
           contexts.push(await getStateHouseContext(options.districtNumber));
@@ -85,11 +90,13 @@ async function getCandidateContexts(options: EnrichmentOptions): Promise<Candida
       }
     }
 
-    // For county-level or general queries, get all representatives
-    if (options.districtType === 'county' || !options.districtType) {
+    // For county-level or general queries, inject MI knowledge-graph reps only (seed is Ingham-specific).
+    if (
+      getPoliticalRegionEnv().stateFips !== '42' &&
+      (options.districtType === 'county' || !options.districtType)
+    ) {
       const reps = await getInghamCountyRepresentatives();
 
-      // Add federal representatives
       for (const senator of reps.federal.senators) {
         if (senator.incumbent) {
           contexts.push(senator);
@@ -236,7 +243,7 @@ export async function enrich(
   // Merge with defaults
   const opts: EnrichmentOptions = {
     intent: '',
-    jurisdiction: 'Ingham County',
+    jurisdiction: getPoliticalRegionEnv().summaryAreaName,
     districtType: 'county',
     districtNumber: '',
     precincts: [],

@@ -3,9 +3,9 @@
  *
  * Natural language interface for political data queries.
  * Supports queries like:
- * - "Compare Lansing vs Mason"
+ * - "Compare Philadelphia vs Pittsburgh"
  * - "Which precincts have highest swing potential?"
- * - "What's the partisan lean of East Lansing?"
+ * - "What's the partisan lean in Allegheny County?"
  *
  * Includes RAG (Retrieval-Augmented Generation) for methodology
  * and data source documentation, with citation support.
@@ -21,6 +21,7 @@ import { getKnowledgeGraph, getGraphPopulator, Entity, Relationship } from '@/li
 import { enrich, formatForSystemPrompt as formatEnrichmentForSystemPrompt, type EnrichmentContext } from '@/lib/context';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { resolveClaudeModel } from '@/lib/ai/claudeModel';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 export const maxDuration = 120;
 export const fetchCache = 'force-no-store';
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       // Determine enrichment options from parsed query
       const jurisdiction = routeResult.parsed.locationNames.length > 0
         ? routeResult.parsed.locationNames[0]
-        : 'Ingham County';
+        : getPoliticalRegionEnv().summaryAreaName;
 
       enrichmentContext = await enrich(userQuery, {
         jurisdiction,
@@ -361,7 +362,8 @@ function formatJurisdictionRankings(rankings: any[], metric?: string): string {
       `${i + 1}. ${r.jurisdictionName}: ${r.value.toFixed(1)} (${r.precinctCount} precincts, ${r.dominantStrategy})`
   );
 
-  return `## Ingham County Jurisdictions Ranked by ${metricLabel}
+  const area = getPoliticalRegionEnv().summaryAreaName;
+  return `## ${area} Jurisdictions Ranked by ${metricLabel}
 
 ${lines.join('\n')}`;
 }
@@ -401,7 +403,8 @@ function formatJurisdictionProfile(profile: any): string {
  * Format county summary for context
  */
 function formatCountySummary(summary: any): string {
-  return `## Ingham County Political Summary
+  const area = getPoliticalRegionEnv().summaryAreaName;
+  return `## ${area} Political Summary
 
 - Total Precincts: ${summary.totalPrecincts}
 - Overall Lean: ${summary.overallLean > 0 ? 'D+' : 'R+'}${Math.abs(summary.overallLean).toFixed(1)}
@@ -412,8 +415,8 @@ function formatCountySummary(summary: any): string {
 - Swing Potential: ${summary.scoreRanges.swing_potential.min.toFixed(1)} to ${summary.scoreRanges.swing_potential.max.toFixed(1)} (mean: ${summary.scoreRanges.swing_potential.mean.toFixed(1)})
 - Turnout: ${summary.scoreRanges.turnout_avg.min.toFixed(1)}% to ${summary.scoreRanges.turnout_avg.max.toFixed(1)}% (mean: ${summary.scoreRanges.turnout_avg.mean.toFixed(1)}%)
 
-### Available Jurisdictions
-Lansing (36 precincts), Meridian (22 precincts), East Lansing (16 precincts), Delhi (9 precincts), Mason, Leslie, Williamston, and 12 townships.`;
+### Jurisdictions
+Use map and filter tools to explore municipalities and counties across Pennsylvania in this dataset.`;
 }
 
 /**
@@ -696,7 +699,8 @@ function buildPoliticalSystemPrompt(
   sessionContext: string = '',
   expertiseLevel: 'novice' | 'intermediate' | 'power_user' = 'intermediate'
 ): string {
-  const basePrompt = `You are a political analyst assistant for Ingham County, Michigan (Lansing metro area). You help campaign strategists, political consultants, and canvassing coordinators understand the political landscape.
+  const study = getPoliticalRegionEnv().summaryAreaName;
+  const basePrompt = `You are a political analyst assistant for ${study} using Pennsylvania precinct-level data in this deployment. You help campaign strategists, political consultants, and canvassing coordinators understand the political landscape.
 
 ## Your Expertise
 - Precinct-level political analysis
@@ -718,12 +722,10 @@ function buildPoliticalSystemPrompt(
 - **Persuasion Target**: Areas with many persuadable voters
 - **Maintenance**: Safe areas requiring minimal resources
 
-## Ingham County Context
-- County seat: Mason
-- State capital: Lansing (largest city)
-- Major university: Michigan State University (East Lansing)
-- 19 jurisdictions: Cities (Lansing, East Lansing, Mason, Leslie, Williamston) and Townships
-- Generally Democratic-leaning county with variation between urban/suburban/rural areas
+## Pennsylvania Context
+- Statewide precinct coverage with legislative and congressional districts from the app crosswalk (pa-house-*, pa-senate-*, pa-congress-NN)
+- Major population centers include Philadelphia, Pittsburgh, Allentown, Erie, Reading, Scranton, Harrisburg, and others in loaded boundary data
+- Urban, suburban, and rural variation is substantial; cite data for the specific geography the user asks about
 
 ## Response Guidelines
 1. Be concise and actionable
@@ -754,8 +756,8 @@ When your response should trigger a UI action (like applying filters, setting co
 Available action types:
 
 1. **setComparison** - Set comparison pane entities (Split Screen page)
-   Example: User asks "compare Lansing to East Lansing"
-   \`[ACTION:setComparison:{"left":"lansing","right":"east-lansing"}]\`
+   Example: User asks "compare Philadelphia to Pittsburgh"
+   \`[ACTION:setComparison:{"left":"philadelphia","right":"pittsburgh"}]\`
 
 2. **applyFilter** - Apply segment/donor filters
    \`[ACTION:applyFilter:{"filters":{"targeting":{"gotvPriorityRange":[70,100]}}}]\`
@@ -764,10 +766,10 @@ Available action types:
    \`[ACTION:navigateTo:{"tab":"lapsed"}]\`
 
 4. **showOnMap** - Highlight areas on the map
-   \`[ACTION:showOnMap:{"precinctIds":["EL-01","EL-02"]}]\`
+   \`[ACTION:showOnMap:{"precinctIds":["037-:-BEAVER","101-:-PHILADELPHIA-01"]}]\`
 
 5. **highlightEntity** - Highlight a specific entity
-   \`[ACTION:highlightEntity:{"entityId":"lansing"}]\`
+   \`[ACTION:highlightEntity:{"entityId":"philadelphia"}]\`
 
 IMPORTANT:
 - Only include ONE action directive per response

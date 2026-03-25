@@ -11,6 +11,7 @@
 import { getKnowledgeGraph } from './KnowledgeGraph';
 import { getGraphPopulator } from './GraphPopulator';
 import { Entity, CandidateEntity, OfficeEntity } from './types';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // Track if graph has been populated
 let graphPopulated = false;
@@ -248,6 +249,13 @@ export async function getUSSenateContext(): Promise<CandidateContext[]> {
  * Get all representatives covering Ingham County
  */
 export async function getInghamCountyRepresentatives(): Promise<DistrictRepresentatives> {
+  if (getPoliticalRegionEnv().stateFips === '42') {
+    return {
+      federal: { senators: [], representative: undefined },
+      state: { senator: undefined, representative: undefined },
+    };
+  }
+
   await ensureGraphPopulated();
 
   const senateContexts = await getUSSenateContext();
@@ -335,7 +343,12 @@ export async function getDistrictAnalysisEnrichment(
       break;
     case 'county':
     default:
-      // For county-level, return summary of all representatives
+      if (getPoliticalRegionEnv().stateFips === '42') {
+        return (
+          '### Current elected officials\n' +
+          'Statewide incumbent lists are not loaded in this Pennsylvania deployment. Use district-level analysis (State House / Senate / Congressional) for legislator context.'
+        );
+      }
       const reps = await getInghamCountyRepresentatives();
       const parts: string[] = ['### Current Elected Officials'];
 

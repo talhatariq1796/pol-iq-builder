@@ -1,5 +1,6 @@
 import type { SuggestedAction } from '@/components/ai-native/AIPoliticalSessionHost';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // ============================================================================
 // Type Definitions
@@ -257,7 +258,7 @@ function formatPrecinctCard(feature: FeatureData): FeatureSelectionResult {
   return {
     feature,
     cardTitle: feature.name,
-    cardSubtitle: m.municipality as string || 'Ingham County',
+    cardSubtitle: m.municipality as string || getPoliticalRegionEnv().summaryAreaName,
     primaryMetrics: [
       { label: 'Voters', value: voters.toLocaleString(), icon: '👥' },
       { label: 'Turnout', value: `${turnout}%`, icon: '📊' },
