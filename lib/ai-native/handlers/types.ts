@@ -6,6 +6,7 @@
  */
 
 import type { MapCommand, SuggestedAction } from '../types';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 
 // ============================================================================
 // Handler Result Types
@@ -577,13 +578,26 @@ export interface DemographicSummary {
  * Standard data sources for political analysis
  * Used across all handlers to ensure consistent attribution
  */
-export const STANDARD_SOURCES = {
-  elections: '[ELECTIONS] Ingham County Election Results — Ingham County Clerk (2020-2024)',
-  gis: '[MICHIGAN_GIS] Michigan GIS Open Data — State of Michigan (2024 redistricting)',
-  demographics: '[DEMOGRAPHICS] ACS Demographics — U.S. Census Bureau via Esri Business Analyst (2019-2023)',
-  fec: '[FEC] Federal Election Commission — Campaign finance data (2020-2024)',
-  tapestry: '[TAPESTRY] Esri Tapestry Segmentation — Lifestyle and demographic clusters',
-};
+export type StandardSourceKey = 'elections' | 'gis' | 'demographics' | 'fec' | 'tapestry';
+
+/** Region-aware election line — avoids hardcoded Ingham/MI when deployment is PA or other. */
+export function getStandardSourceLine(key: StandardSourceKey): string {
+  const { summaryAreaName, state } = getPoliticalRegionEnv();
+  switch (key) {
+    case 'elections':
+      return `[ELECTIONS] Precinct election results — ${summaryAreaName}, ${state} (2020–2024)`;
+    case 'gis':
+      return `[MICHIGAN_GIS] Precinct & district boundaries — Census / state GIS (vintage varies by layer)`;
+    case 'demographics':
+      return `[DEMOGRAPHICS] ACS Demographics — U.S. Census Bureau via Esri Business Analyst (2019–2023)`;
+    case 'fec':
+      return `[FEC] Federal Election Commission — Campaign finance data (2020–2024)`;
+    case 'tapestry':
+      return `[TAPESTRY] Esri Tapestry Segmentation — Lifestyle and demographic clusters`;
+    default:
+      return '';
+  }
+}
 
 /**
  * Generate a sources section to append to AI responses
@@ -593,10 +607,10 @@ export const STANDARD_SOURCES = {
  * @returns Formatted sources section string
  */
 export function generateSourcesSection(
-  sourceKeys: (keyof typeof STANDARD_SOURCES)[] = ['elections', 'gis', 'demographics']
+  sourceKeys: StandardSourceKey[] = ['elections', 'gis', 'demographics']
 ): string {
   const sources = sourceKeys
-    .map((key) => STANDARD_SOURCES[key])
+    .map((key) => getStandardSourceLine(key))
     .filter(Boolean)
     .map((source) => `- ${source}`)
     .join('\n');
@@ -614,7 +628,7 @@ ${sources}
  */
 export function appendSources(
   response: string,
-  sourceKeys?: (keyof typeof STANDARD_SOURCES)[]
+  sourceKeys?: StandardSourceKey[]
 ): string {
   if (response.includes('📚 Sources') || response.includes('[SECTION:📚')) {
     return response;
@@ -644,10 +658,10 @@ export function createCollapsibleSection(
  * Create a sources collapsible section
  */
 export function createSourcesSection(
-  sourceKeys: (keyof typeof STANDARD_SOURCES)[] = ['elections', 'gis', 'demographics']
+  sourceKeys: StandardSourceKey[] = ['elections', 'gis', 'demographics']
 ): string {
   const sources = sourceKeys
-    .map((key) => STANDARD_SOURCES[key])
+    .map((key) => getStandardSourceLine(key))
     .filter(Boolean)
     .map((source) => `- ${source}`)
     .join('\n');
@@ -678,7 +692,7 @@ export function createPrecinctsSection(precincts: string[], showCount = 10): str
 export function appendCollapsibleSections(
   response: string,
   options: {
-    sourceKeys?: (keyof typeof STANDARD_SOURCES)[];
+    sourceKeys?: StandardSourceKey[];
     precincts?: string[];
     maxPrecinctsShown?: number;
   } = {}

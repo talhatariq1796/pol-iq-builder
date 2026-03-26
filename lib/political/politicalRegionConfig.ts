@@ -17,3 +17,25 @@ export function getPoliticalRegionEnv(): {
     summaryAreaName: process.env.POLITICAL_SUMMARY_AREA_NAME || 'Pennsylvania',
   };
 }
+
+/**
+ * Default jurisdiction label for AI/spatial fallbacks when no place is parsed.
+ * Uses county from env when set; otherwise statewide summary name (e.g. Pennsylvania).
+ */
+export function getDefaultPoliticalJurisdictionLabel(): string {
+  const { county, state, summaryAreaName } = getPoliticalRegionEnv();
+  if (county && county !== 'Statewide' && county.trim() !== '') {
+    return `${county} County, ${state}`;
+  }
+  return summaryAreaName || state;
+}
+
+/**
+ * One-line location for precinct cards when not using PA-specific formatting.
+ */
+export function formatPrecinctLocationFallback(countyName?: string | null): string {
+  const r = getPoliticalRegionEnv();
+  const c = countyName?.trim();
+  if (c) return `${c}, ${r.state}`;
+  return getDefaultPoliticalJurisdictionLabel();
+}

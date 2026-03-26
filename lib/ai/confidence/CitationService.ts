@@ -251,8 +251,9 @@ class CitationService {
     // Keyword mappings - organized by category
     const keywordMap: Record<string, CitationKey[]> = {
       // === ELECTION DATA ===
-      election: ['ELECTIONS', 'INGHAM_CLERK'],
-      'election result': ['ELECTIONS', 'INGHAM_CLERK'],
+      // Region-specific clerk lines come from [ELECTIONS] in CITATION_REGISTRY; do not auto-tag Ingham for generic "precinct"/"election".
+      election: ['ELECTIONS'],
+      'election result': ['ELECTIONS'],
       vote: ['ELECTIONS'],
       turnout: ['ELECTIONS', 'GOTV_EFFECTIVENESS'],
       ballot: ['ELECTIONS'],

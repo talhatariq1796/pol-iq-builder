@@ -6,6 +6,7 @@ import type {
   ExtractedEntities,
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
+import { isPAPoliticalRegion } from '@/lib/political/formatPoliticalDistrictLabel';
 
 const CANDIDATE_PATTERNS: QueryPattern[] = [
   {
@@ -158,6 +159,10 @@ export class CandidateHandler implements NLPHandler {
   async handle(query: ParsedQuery): Promise<HandlerResult> {
     const startTime = Date.now();
 
+    if (isPAPoliticalRegion()) {
+      return this.paDeploymentCandidateResponse();
+    }
+
     try {
       switch (query.intent) {
         case 'candidate_profile':
@@ -189,6 +194,44 @@ export class CandidateHandler implements NLPHandler {
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
+  }
+
+  /**
+   * Pennsylvania deployment: skip legacy Michigan demo candidate tables; steer users to precinct analytics.
+   */
+  private paDeploymentCandidateResponse(): HandlerResult {
+    return {
+      success: true,
+      response: [
+        '**Pennsylvania workspace**',
+        '',
+        'Candidate bios and sample race tables in this module were written for a legacy Michigan demo. This app’s map and metrics use **Pennsylvania precinct data**.',
+        '',
+        'Ask about **precincts, districts (PA House / Senate / Congress), swing potential, GOTV, persuasion, or demographics**.',
+        '',
+        'For official filings and candidate lists, use the [Pennsylvania Department of State](https://www.dos.pa.gov) and [FEC](https://www.fec.gov).',
+      ].join('\n'),
+      suggestedActions: [
+        {
+          id: 'pa-swing',
+          label: 'Top swing precincts',
+          action: 'Which Pennsylvania precincts have the highest swing potential?',
+          priority: 1,
+        },
+        {
+          id: 'pa-competitive',
+          label: 'Competitive lean',
+          action: 'Show areas with partisan lean between -5 and +5 in Pennsylvania',
+          priority: 2,
+        },
+        {
+          id: 'pa-hd',
+          label: 'State House example',
+          action: 'Show State House 171 in Pennsylvania',
+          priority: 3,
+        },
+      ],
+    };
   }
 
   // --------------------------------------------------------------------------

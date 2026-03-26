@@ -68,7 +68,10 @@ interface QueryCategory {
 }
 
 interface QuickStartIQDialogProps {
-  onQuerySelect: (query: string, metadata?: { category: string; visualType: string }) => void;
+  onQuerySelect: (
+    query: string,
+    metadata?: { category: string; visualType: string; metric?: string; queryId?: string }
+  ) => void;
   disabled?: boolean;
   hasSelection?: boolean;
 }
@@ -119,8 +122,9 @@ const QUERY_CATEGORIES: QueryCategory[] = [
       {
         id: 'gotv-priority',
         label: 'GOTV Priority Areas',
-        query: 'Where should we focus GOTV efforts? Show precincts with high potential but lower turnout',
-        description: 'Areas where turnout mobilization can have the biggest impact',
+        query:
+          'Where should we focus GOTV? Show precincts with GOTV priority at least 60 and average turnout under 58% — high mobilization upside where participation is still low.',
+        description: 'High GOTV opportunity with below-average turnout (classic knock-and-drag targets)',
         expectedVisual: 'heatmap',
         metric: 'gotv_priority',
       },
@@ -150,24 +154,29 @@ const QUERY_CATEGORIES: QueryCategory[] = [
       {
         id: 'persuasion-targets',
         label: 'Persuasion Opportunities',
-        query: 'Which precincts have the highest concentration of persuadable voters?',
-        description: 'Areas with ticket-splitters and independents',
+        query:
+          'Which precincts have the highest persuasion opportunity scores? Show precincts with persuasion opportunity at least 65 (strong persuadable-voter modeling).',
+        description: 'High persuasion-opportunity scores — IDs, mail, and volunteer persuasion programs',
         expectedVisual: 'heatmap',
         metric: 'persuasion_opportunity',
       },
       {
         id: 'crossover-areas',
         label: 'Crossover Potential',
-        query: 'Find precincts where voters have historically crossed party lines',
-        description: 'Areas with demonstrated ticket-splitting behavior',
+        query:
+          'Find precincts with swing potential at least 40 and persuasion opportunity at least 55 — areas where ticket-splitting and crossover voting are most plausible.',
+        description: 'Swing + persuasion combined (proxy for crossover-prone turf)',
         expectedVisual: 'choropleth',
+        metric: 'swing_potential',
       },
       {
         id: 'soft-support',
         label: 'Soft Support Areas',
-        query: 'Where is our support weakest? Show areas leaning our way but not safely',
-        description: 'Lean precincts that need reinforcement',
+        query:
+          'Show competitive precincts that are not safe seats: lean Democratic, lean Republican, or toss-up only (exclude safe D and safe R).',
+        description: 'Tight margins — reinforcement and turnout, not base-only messaging',
         expectedVisual: 'highlights',
+        metric: 'partisan_lean',
       },
     ],
   },
@@ -345,6 +354,8 @@ export function QuickStartIQDialog({
     onQuerySelect(query.query, {
       category: category.id,
       visualType: query.expectedVisual,
+      metric: query.metric,
+      queryId: query.id,
     });
     setOpen(false);
   };

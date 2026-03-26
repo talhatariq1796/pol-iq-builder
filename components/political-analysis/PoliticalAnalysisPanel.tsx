@@ -45,6 +45,7 @@ import {
   formatPaPrecinctLocation,
   isPaPrecinctAttributes,
 } from '@/lib/political/paCountyFips';
+import { formatPrecinctLocationFallback } from '@/lib/political/politicalRegionConfig';
 import { loadBoundaryFeatureCollection } from '@/lib/map/geojsonMergeLoader';
 import { Report } from '@/services/ReportsService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -483,7 +484,7 @@ export function PoliticalAnalysisPanel({
           selectedPrecinct.precinctName,
         locationLine: pa
           ? formatPaPrecinctLocation(attrs)
-          : `${selectedPrecinct.county || 'Ingham'} County, Michigan`,
+          : formatPrecinctLocationFallback(selectedPrecinct.county),
         partisanLean:
           leanNum != null && !Number.isNaN(leanNum) ? leanNum : null,
         swingPotential:
@@ -556,7 +557,6 @@ export function PoliticalAnalysisPanel({
           return;
         }
 
-        // Tokens often contain +, /, = — must be encoded in query strings or + becomes a space and auth fails.
         const tokenQ = encodeURIComponent(token);
 
         const thumbnailUrlForItem = (item: {
@@ -1503,6 +1503,8 @@ export function PoliticalAnalysisPanel({
                         query,
                         category: metadata?.category,
                         visualType: metadata?.visualType,
+                        metric: metadata?.metric,
+                        queryId: metadata?.queryId,
                       }
                     });
                   }}

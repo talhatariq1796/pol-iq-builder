@@ -184,10 +184,11 @@ const DENSITY_PATTERNS: Record<string, RegExp> = {
 };
 
 const STRATEGY_PATTERNS: Record<string, RegExp> = {
-  gotv: /\b(gotv|get\s*out\s*the\s*vote|turnout|mobiliz)/i,
-  persuasion: /\b(persuad|swing|undecided|persuasion)/i,
-  battleground: /\b(battleground|competitive|toss.?up|close)/i,
-  base: /\b(base|loyal|safe|solid)/i,
+  // Do not include bare "turnout" — it matches "lower turnout" and mis-tags as GOTV strategy (PA uses Maintenance/Battleground/etc., not "Base Mobilization")
+  gotv: /\b(gotv|get\s*out\s*the\s*vote|mobiliz)/i,
+  persuasion: /\b(persuad|undecided|persuasion\b|persuasion\s+opportunity|swing\s+voters)/i,
+  battleground: /\b(battleground|competitive|toss.?up|close)\b/i,
+  base: /\b(base\s+mobil|loyal\s+supporters|safe\s+dem|safe\s+rep)\b/i,
 };
 
 const DEMOGRAPHIC_PATTERNS = {
@@ -443,6 +444,89 @@ export class SegmentationHandler implements NLPHandler {
   extractEntities(query: string): ExtractedEntities {
     const entities: ExtractedEntities = {};
 
+    const gotvLowTurnoutComposite =
+      /\b(gotv|get\s*out\s*the\s*vote|gotv\s+efforts)\b/i.test(query) &&
+      /(?:lower|low)\s*↓?\s*turnout|turnout.*(?:lower|low|below|under)/i.test(query);
+
+    // GOTV opportunity + lower turnout — score-based only (PA-compatible; avoids legacy "Base Mobilization" label)
+    if (gotvLowTurnoutComposite) {
+      entities.scoreThresholds = {
+        gotv: { min: /\bhigh\s+potential\b/i.test(query) ? 65 : 60 },
+        turnout: { max: 58 },
+      };
+    }
+
+    // Persuasion / persuadable voters — use scores (not strategy-only) so PA data matches the question
+    const persuasionAudienceQuery =
+      /\b(persuadable|persuasion\s+opportunity)\b/i.test(query) ||
+      (/\bhighest\b/i.test(query) && /\b(persuad|persuasion)\b/i.test(query)) ||
+      (/\bwhich\s+precincts\b/i.test(query) &&
+        /\bconcentration\b/i.test(query) &&
+        /\bpersuad/i.test(query));
+
+    const crossoverTicketSplit =
+      /\bcross(?:ed)?\s+party\s+lines|ticket[- ]?split|ticket[- ]?splitting|crossover\s+vot/i.test(
+        query,
+      );
+
+    const swingPersuasionComboQuery =
+      /\bswing\s+potential\s+at\s+least\s+(\d+)/i.test(query) &&
+      /\bpersuasion\s+opportunity\s+at\s+least\s+(\d+)/i.test(query);
+
+    if (swingPersuasionComboQuery) {
+      const sw = query.match(/\bswing\s+potential\s+at\s+least\s+(\d+)/i);
+      const pe = query.match(/\bpersuasion\s+opportunity\s+at\s+least\s+(\d+)/i);
+      entities.scoreThresholds = entities.scoreThresholds || {};
+      if (sw) {
+        const v = parseInt(sw[1], 10);
+        entities.scoreThresholds.swing = {
+          ...entities.scoreThresholds.swing,
+          min: Math.max(entities.scoreThresholds.swing?.min ?? 0, v),
+        };
+      }
+      if (pe) {
+        const v = parseInt(pe[1], 10);
+        entities.scoreThresholds.persuasion = {
+          ...entities.scoreThresholds.persuasion,
+          min: Math.max(entities.scoreThresholds.persuasion?.min ?? 0, v),
+        };
+      }
+    }
+
+    if (persuasionAudienceQuery && !gotvLowTurnoutComposite && !swingPersuasionComboQuery) {
+      entities.scoreThresholds = entities.scoreThresholds || {};
+      const minPers = /\bhighest\b/i.test(query) ? 70 : 65;
+      entities.scoreThresholds.persuasion = {
+        ...entities.scoreThresholds.persuasion,
+        min: Math.max(entities.scoreThresholds.persuasion?.min ?? 0, minPers),
+      };
+    }
+
+    // Ticket-split / crossover — swing + persuasion as proxy (we lack per-election ticket-split flags in segment JSON)
+    if (crossoverTicketSplit) {
+      entities.scoreThresholds = entities.scoreThresholds || {};
+      entities.scoreThresholds.swing = {
+        ...entities.scoreThresholds.swing,
+        min: Math.max(entities.scoreThresholds.swing?.min ?? 0, 40),
+      };
+      entities.scoreThresholds.persuasion = {
+        ...entities.scoreThresholds.persuasion,
+        min: Math.max(entities.scoreThresholds.persuasion?.min ?? 0, 55),
+      };
+    }
+
+    // Soft support / not safe seats — competitive leans + toss-ups only
+    const softSupportQuery =
+      /\b(soft\s+support|not\s+safely|weakest\s+support)\b/i.test(query) ||
+      (/\bwhere\b/i.test(query) &&
+        /\bweakest\b/i.test(query) &&
+        /\blean/i.test(query) &&
+        /\bway\b/i.test(query));
+
+    if (softSupportQuery) {
+      entities.competitiveness = ['lean_d', 'lean_r', 'toss_up'];
+    }
+
     // Extract density types
     const densities: ('urban' | 'suburban' | 'rural')[] = [];
     for (const [type, pattern] of Object.entries(DENSITY_PATTERNS)) {
@@ -458,7 +542,14 @@ export class SegmentationHandler implements NLPHandler {
       SCORE_PATTERNS.naturalThresholdBelow.test(query) ||
       /\b(gotv|persuasion|swing|turnout)\s*[><=]+\s*\d+/i.test(query);
 
-    if (!hasExplicitScoreThreshold) {
+    if (
+      !hasExplicitScoreThreshold &&
+      !gotvLowTurnoutComposite &&
+      !persuasionAudienceQuery &&
+      !crossoverTicketSplit &&
+      !swingPersuasionComboQuery &&
+      !softSupportQuery
+    ) {
       const strategies: ('gotv' | 'persuasion' | 'battleground' | 'base')[] = [];
       for (const [type, pattern] of Object.entries(STRATEGY_PATTERNS)) {
         if (pattern.test(query)) {
@@ -484,8 +575,10 @@ export class SegmentationHandler implements NLPHandler {
       entities.incomeRange = [0, 50000];
     }
 
-    // Extract score thresholds
-    entities.scoreThresholds = {};
+    // Extract score thresholds (may already be set, e.g. GOTV + lower turnout composite)
+    if (!entities.scoreThresholds) {
+      entities.scoreThresholds = {};
+    }
 
     // High/low modifiers
     const highMatch = query.match(SCORE_PATTERNS.high);
@@ -605,6 +698,24 @@ export class SegmentationHandler implements NLPHandler {
       if (!entities.scoreThresholds) entities.scoreThresholds = {};
       if (!entities.scoreThresholds.turnout) entities.scoreThresholds.turnout = {};
       entities.scoreThresholds.turnout.min = numValue;
+    }
+
+    // "High on both GOTV and persuasion" — require BOTH score ranges (AND), not OR of campaign strategies
+    const dualGotvPersuasion =
+      /\bgotv\b/i.test(query) &&
+      /\bpersuasion\b/i.test(query) &&
+      /\b(both|and)\b/i.test(query) &&
+      (/\b(high|higher|score\s+high|top|strong)\b/i.test(query) || /\bwhich\s+precincts?\b/i.test(query));
+
+    if (dualGotvPersuasion) {
+      entities.scoreThresholds = entities.scoreThresholds || {};
+      if (!entities.scoreThresholds.gotv?.min && !entities.scoreThresholds.gotv?.max) {
+        entities.scoreThresholds.gotv = { min: 70 };
+      }
+      if (!entities.scoreThresholds.persuasion?.min && !entities.scoreThresholds.persuasion?.max) {
+        entities.scoreThresholds.persuasion = { min: 60 };
+      }
+      delete entities.strategy;
     }
 
     // Partisan lean thresholds: "D+15 or higher", "R+10+"
@@ -900,6 +1011,15 @@ export class SegmentationHandler implements NLPHandler {
     if (entities.scoreThresholds?.gotv?.min) {
       parts.push(`GOTV priority above ${entities.scoreThresholds.gotv.min}`);
     }
+    if (entities.scoreThresholds?.persuasion?.min) {
+      parts.push(`persuasion opportunity above ${entities.scoreThresholds.persuasion.min}`);
+    }
+    if (entities.scoreThresholds?.turnout?.min != null) {
+      parts.push(`modeled turnout at least ${entities.scoreThresholds.turnout.min}%`);
+    }
+    if (entities.scoreThresholds?.turnout?.max != null) {
+      parts.push(`modeled turnout at most ${entities.scoreThresholds.turnout.max}%`);
+    }
     if (entities.educationThreshold?.min) {
       parts.push(`college education above ${entities.educationThreshold.min}%`);
     }
@@ -911,26 +1031,80 @@ export class SegmentationHandler implements NLPHandler {
       return 'These precincts match your specified criteria and represent potential targets for campaign outreach.';
     }
 
-    return `Precincts with ${parts.join(' and ')} — ideal targets for persuasion and outreach efforts.`;
+    return `These precincts match your filters: ${parts.join(' and ')}.`;
   }
 
   private generateInsight(results: SegmentResults, entities: ExtractedEntities): string {
     const insights: string[] = [];
 
-    if (results.avgGOTV >= 70 && results.avgTurnout < 60) {
-      insights.push(`High GOTV potential with room for turnout improvement (${results.avgTurnout.toFixed(0)}% avg).`);
+    const turnoutT = entities.scoreThresholds?.turnout;
+    /** User asked only for a turnout band — avoid unrelated persuasion/swing boilerplate. */
+    const turnoutOnlyAsk =
+      hasTurnoutFilter &&
+      entities.scoreThresholds?.persuasion?.min == null &&
+      entities.scoreThresholds?.swing?.min == null &&
+      entities.scoreThresholds?.gotv?.min == null &&
+      !entities.strategy?.length &&
+      !(entities.competitiveness && entities.competitiveness.length) &&
+      entities.educationThreshold?.min == null;
+
+    if (turnoutT && (turnoutT.min != null || turnoutT.max != null)) {
+      if (turnoutT.min != null && turnoutT.max != null) {
+        insights.push(
+          `You asked for modeled turnout between ${turnoutT.min}% and ${turnoutT.max}%. This segment's average modeled turnout is ${results.avgTurnout.toFixed(0)}%.`,
+        );
+      } else if (turnoutT.min != null) {
+        insights.push(
+          `You asked for precincts with modeled turnout of at least ${turnoutT.min}%. This segment averages ${results.avgTurnout.toFixed(0)}% turnout across ${results.precinctCount.toLocaleString()} precincts.`,
+        );
+      } else if (turnoutT.max != null) {
+        insights.push(
+          `You asked for precincts with modeled turnout up to ${turnoutT.max}%. This segment averages ${results.avgTurnout.toFixed(0)}% turnout.`,
+        );
+      }
     }
 
-    if (results.avgPersuasion >= 50) {
-      insights.push(`Strong persuasion opportunity — direct voter contact could be effective here.`);
-    }
+    if (!turnoutOnlyAsk) {
+      if (results.avgGOTV >= 70 && results.avgTurnout < 60) {
+        insights.push(`High GOTV potential with room for turnout improvement (${results.avgTurnout.toFixed(0)}% avg).`);
+      }
 
-    if (results.avgPartisanLean !== undefined && Math.abs(results.avgPartisanLean) < 10) {
-      insights.push(`Competitive territory — these precincts could swing either way.`);
-    }
+      const persuasionFilter =
+        entities.scoreThresholds?.persuasion?.min != null || entities.strategy?.includes('persuasion');
+      if (persuasionFilter && results.avgPersuasion >= 50) {
+        insights.push(
+          `Persuasion-forward segment — modeled persuasion opportunity averages ${results.avgPersuasion.toFixed(0)}; good for ID, persuasion mail, and volunteer contact.`,
+        );
+      } else if (!persuasionFilter && results.avgPersuasion >= 50) {
+        insights.push(`Strong persuasion opportunity — direct voter contact could be effective here.`);
+      }
 
-    if (entities.educationThreshold?.min && entities.educationThreshold.min >= 40) {
-      insights.push(`College-educated voters respond well to policy-focused messaging.`);
+      const competitivenessFilter = entities.competitiveness && entities.competitiveness.length > 0;
+      if (
+        competitivenessFilter &&
+        results.avgPartisanLean !== undefined &&
+        Math.abs(results.avgPartisanLean) < 18
+      ) {
+        insights.push(
+          `Tight margins (lean D, lean R, and toss-ups) — prioritize message tests and turnout, not base-only programming.`,
+        );
+      } else if (!persuasionFilter && results.avgPartisanLean !== undefined && Math.abs(results.avgPartisanLean) < 10) {
+        insights.push(`Competitive territory — these precincts could swing either way.`);
+      }
+
+      if (
+        entities.scoreThresholds?.swing?.min != null &&
+        results.avgSwingPotential != null &&
+        results.avgSwingPotential >= 35
+      ) {
+        insights.push(
+          `Elevated swing scores — useful proxy for areas where ticket-splitting and crossover behavior are more plausible.`,
+        );
+      }
+
+      if (entities.educationThreshold?.min && entities.educationThreshold.min >= 40) {
+        insights.push(`College-educated voters respond well to policy-focused messaging.`);
+      }
     }
 
     if (insights.length === 0) {
@@ -960,6 +1134,15 @@ export class SegmentationHandler implements NLPHandler {
     if (entities.ageRange) {
       if (entities.ageRange[0] <= 35) parts.push('Young');
       else if (entities.ageRange[0] >= 55) parts.push('Senior');
+    }
+
+    const t = entities.scoreThresholds?.turnout;
+    if (t?.min != null && t?.max != null) {
+      parts.push(`Turnout ${t.min}–${t.max}%`);
+    } else if (t?.min != null) {
+      parts.push(`Turnout ≥${t.min}%`);
+    } else if (t?.max != null) {
+      parts.push(`Turnout ≤${t.max}%`);
     }
 
     if (entities.jurisdictions) {
@@ -1031,11 +1214,13 @@ export class SegmentationHandler implements NLPHandler {
     const actions: any[] = [];
 
     if (results.precinctCount > 0) {
+      const ids = results.matchingPrecincts.slice(0, 75).map((p) => p.precinctId);
+      const qs = ids.map(encodeURIComponent).join(',');
       actions.push({
         id: 'go-to-segments',
         label: 'Build in Segment Tool',
         description: 'Save & export in /segments',
-        action: 'Navigate to /segments',
+        action: `navigate:segments?precincts=${qs}`,
         priority: 2,
       });
     }

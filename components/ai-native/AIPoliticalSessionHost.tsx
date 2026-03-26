@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useRouter } from 'next/navigation';
 import { PoliticalDataService } from '@/lib/services/PoliticalDataService';
 import type { PrecinctData } from '@/lib/segmentation/types';
@@ -18,13 +19,18 @@ import type { HandlerContext } from '@/lib/ai-native/handlers/types';
 import { isSlashCommand, executeSlashCommand } from '@/lib/ai/SlashCommandParser';
 import {
   getDistrictAnalysisInit,
+  getDistrictAnalysisFollowUpActions,
   getSwingDetectionInit,
   getCanvassingInit,
   getVoterTargetingInit
 } from './WorkflowInitializers';
 import { getStateManager, type StateEvent } from '@/lib/ai-native/ApplicationStateManager';
 import { notifyTourAIResponseComplete } from '@/lib/tour/tourActions';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { stripActionDirectives } from '@/lib/ai/stripActionDirectives';
+import { normalizeChatMarkdown } from '@/lib/ai/normalizeChatMarkdown';
 import { getSuggestionEngine } from '@/lib/ai-native/SuggestionEngine';
+import { CrossToolNavigator } from '@/lib/ai-native/navigation/CrossToolNavigator';
 import { FeatureSelectionCard } from './FeatureSelectionCard';
 import {
   extractFeatureData,
@@ -35,6 +41,7 @@ import { KnowledgeGraphViewer } from '@/components/knowledge-graph';
 import type { Entity, Relationship } from '@/lib/knowledge-graph/types';
 import { toast } from '@/hooks/use-toast';
 import { ThinkingIndicator, detectQueryContext, type QueryContext } from './ThinkingIndicator';
+import { ArrowLeftIcon } from 'lucide-react';
 
 
 async function fetchWithRetry(
@@ -72,11 +79,11 @@ async function fetchWithRetry(
 
 // Helper to add small icons to messages and clean up internal tags
 function enhanceMessage(content: string): string {
-  return content
+  return normalizeChatMarkdown(stripActionDirectives(content))
     // Remove citation tags like [DEMOGRAPHICS], [TARGETING], [ELECTIONS], etc.
     .replace(/\s*\[([A-Z_]+)\]\s*/g, ' ')
-    // Clean up any double spaces left behind
-    .replace(/\s{2,}/g, ' ')
+    // Collapse horizontal spaces only — never collapse newlines (breaks markdown headings)
+    .replace(/[ \t]{2,}/g, ' ')
     // Add trend indicators
     .replace(/\b(increase|up|growth|gain|higher|rose)\b/gi, (match) => `${match} ↑`)
     .replace(/\b(decrease|down|decline|drop|lower|fell)\b/gi, (match) => `${match} ↓`)
@@ -161,11 +168,10 @@ function parseCollapsibleSections(content: string): { mainContent: string; secti
  * Parse precinct IDs from content (comma or newline separated)
  */
 function parsePrecinctsFromContent(content: string): string[] {
-  // Split by comma, newline, or "and" and clean up
   return content
     .split(/[,\n]|(?:\s+and\s+)/i)
-    .map(p => p.trim())
-    .filter(p => p && !p.startsWith('*') && !p.startsWith('...'));
+    .map((p) => p.trim().replace(/^\d+[.)]\s+/, '').trim())
+    .filter((p) => p && !p.startsWith('*') && !p.startsWith('...'));
 }
 
 /**
@@ -205,13 +211,21 @@ const MessageContentWithSections: React.FC<{
   // Parse collapsible sections
   const { mainContent, sections } = parseCollapsibleSections(content);
 
-  // Handler for precinct clicks
-  const handlePrecinctClick = (precinctId: string) => {
-    if (onMapCommand) {
-      // Highlight the precinct and fly to it
-      onMapCommand({ type: 'highlight', target: [precinctId] });
-      onMapCommand({ type: 'flyTo', target: precinctId });
+  // Handler for precinct clicks — resolve AI display labels to map UNIQUE_IDs (PA targeting keys)
+  const handlePrecinctClick = async (rawLabel: string) => {
+    if (!onMapCommand) return;
+    const svc = PoliticalDataService.getInstance();
+    const mapKey = await svc.resolvePrecinctMapKey(rawLabel);
+    if (!mapKey) {
+      toast({
+        title: 'Could not open precinct',
+        description: `No map match for "${rawLabel.trim()}". Try selecting the precinct on the map.`,
+        variant: 'destructive',
+      });
+      return;
     }
+    onMapCommand({ type: 'highlight', target: [mapKey] });
+    onMapCommand({ type: 'flyTo', target: mapKey });
   };
 
   // Render section content based on type
@@ -259,8 +273,11 @@ const MessageContentWithSections: React.FC<{
 
     // Default: render as markdown
     return (
-      <ReactMarkdown className="prose prose-sm max-w-none">
-        {section.content}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        className="prose prose-sm max-w-none dark:prose-invert [&_h2]:mt-4 [&_h3]:mt-3 [&_p]:my-2"
+      >
+        {enhanceMessage(section.content)}
       </ReactMarkdown>
     );
   };
@@ -268,7 +285,12 @@ const MessageContentWithSections: React.FC<{
   return (
     <>
       {/* Main content */}
-      <ReactMarkdown>{enhanceMessage(mainContent)}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        className="prose prose-sm max-w-none dark:prose-invert [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:mt-5 [&_h3]:mb-2 [&_p]:my-2 [&_li]:my-0.5"
+      >
+        {enhanceMessage(mainContent)}
+      </ReactMarkdown>
 
       {/* Collapsible sections */}
       {sections.map((section, idx) => (
@@ -391,6 +413,8 @@ export interface IQAction {
     query?: string;
     category?: string;
     visualType?: string;
+    metric?: string;
+    queryId?: string;
   };
 }
 
@@ -758,7 +782,7 @@ Available actions:
       // Process the query through the AI (use handleSend equivalent)
       // We'll trigger this via a small delay to let the UI update
       setTimeout(() => {
-        processQuickStartQuery(userQuery, iqAction.data?.visualType);
+        processQuickStartQuery(userQuery, iqAction.data?.visualType, iqAction.data?.metric);
       }, 100);
 
       return;
@@ -1229,10 +1253,10 @@ Available actions:
    * Process QuickStartIQ predefined queries
    * Similar to handleUserInput but with additional visual type hints
    */
-  const processQuickStartQuery = useCallback(async (query: string, visualType?: string) => {
+  const processQuickStartQuery = useCallback(async (query: string, visualType?: string, presetMetric?: string) => {
     if (!query.trim()) return;
 
-    console.log('[AIPoliticalSessionHost] Processing QuickStartIQ query:', query, 'visualType:', visualType);
+    console.log('[AIPoliticalSessionHost] Processing QuickStartIQ query:', query, 'visualType:', visualType, 'presetMetric:', presetMetric);
     setIsProcessing(true);
     setQueryContext(detectQueryContext(query));
 
@@ -1259,7 +1283,10 @@ Available actions:
 
         switch (visualType) {
           case 'heatmap':
-            fallbackCommand = { type: 'showHeatmap', metric: 'combined_score' };
+            fallbackCommand = {
+              type: 'showHeatmap',
+              metric: (presetMetric as any) || 'combined_score',
+            };
             break;
           case 'choropleth':
             fallbackCommand = { type: 'showChoropleth', metric: 'partisan_lean' };
@@ -1582,26 +1609,7 @@ Available actions:
     // Generate actions based on current workflow type
     switch (currentWorkflow.id) {
       case 'district-analysis':
-        return [
-          {
-            id: 'show-demographics',
-            label: 'Show demographics for this district',
-            action: 'Show demographics for this district',
-            icon: 'users'
-          },
-          {
-            id: 'compare-areas',
-            label: 'Compare to similar areas',
-            action: 'Compare to similar areas',
-            icon: 'layers'
-          },
-          {
-            id: 'generate-report',
-            label: 'Generate district profile report',
-            action: 'Generate district profile report',
-            icon: 'file-text'
-          }
-        ];
+        return getDistrictAnalysisFollowUpActions(selectedPrecinct);
 
       case 'swing-detection':
         return [
@@ -1679,7 +1687,7 @@ Available actions:
           }
         ];
     }
-  }, [currentWorkflow]);
+  }, [currentWorkflow, selectedPrecinct]);
 
   // ---------------------------------------------------------------------------
   // Action Handlers
@@ -1687,6 +1695,35 @@ Available actions:
 
   const handleActionClick = useCallback(async (action: SuggestedAction) => {
     console.log('[AIPoliticalSessionHost] handleActionClick called with:', action);
+
+    // Legacy "Navigate to /segments" — do not send through chat (map context breaks parsing / flyTo)
+    const legacyNav = action.action.match(/^Navigate to\s+(\/[\w\-/]*)\s*$/i);
+    if (legacyNav) {
+      const path = legacyNav[1];
+      const sm = getStateManager();
+      const ids = sm.getState().segmentation.matchingPrecincts;
+      if (path === '/segments' && ids?.length) {
+        router.push(`/segments?precincts=${encodeURIComponent(ids.join(','))}`);
+      } else {
+        router.push(path);
+      }
+      addAssistantMessage(
+        path === '/segments' ? 'Opening the segment builder with your precinct list…' : `Opening ${path}…`
+      );
+      return;
+    }
+
+    // Cross-tool: navigate:tool?params (split(':') must not break query string)
+    if (action.action.startsWith('navigate:')) {
+      const nav = CrossToolNavigator.parseNavigateCommand(action.action);
+      if (nav) {
+        CrossToolNavigator.navigateWithContext(nav.tool, nav.params, true);
+        addAssistantMessage(
+          nav.tool === 'segments' ? 'Opening the segment builder…' : `Opening ${nav.tool}…`
+        );
+        return;
+      }
+    }
 
     // Track suggestion acceptance for learning
     const stateManager = getStateManager();
@@ -1725,44 +1762,68 @@ Available actions:
       return;
     }
 
+    // SuggestionEngine plain tokens → NL or output:* (reuses colon handlers below)
+    const nlOnlyShortcuts: Record<string, string> = {
+      analyze_persuasion:
+        'Develop a persuasion strategy for the selected area using Pennsylvania precinct persuasion opportunity and swing data.',
+      analyze_visible:
+        'Analyze the precincts currently visible on the map in Pennsylvania',
+      start_comparison:
+        'I want to compare this area to another area in Pennsylvania. Suggest a good comparison.',
+    };
+    const nl = nlOnlyShortcuts[action.action];
+    if (nl) {
+      await handleUserInput(nl);
+      return;
+    }
+
+    const outputShortcuts: Record<string, string> = {
+      generate_report: 'output:generateReport',
+      save_segment: 'output:saveSegment',
+      plan_canvassing: 'output:planCanvass',
+      export_data: 'output:exportCSV',
+    };
+    const mapped = outputShortcuts[action.action];
+    const effectiveAction = mapped ? { ...action, action: mapped } : action;
+
     // Check if action contains a colon (old format like 'map:select')
-    if (action.action.includes(':')) {
-      const [category, operation] = action.action.split(':');
+    if (effectiveAction.action.includes(':')) {
+      const [category, operation] = effectiveAction.action.split(':');
       console.log('[AIPoliticalSessionHost] Action category:', category, 'operation:', operation);
 
       switch (category) {
         case 'map':
-          handleMapAction(operation, action.metadata);
+          handleMapAction(operation, effectiveAction.metadata);
           break;
         case 'filter':
-          handleFilterAction(operation, action.metadata);
+          handleFilterAction(operation, effectiveAction.metadata);
           break;
         case 'analyze':
-          handleAnalyzeAction(operation, action.metadata);
+          handleAnalyzeAction(operation, effectiveAction.metadata);
           break;
         case 'canvassing':
-          handleCanvassingAction(operation, action.metadata);
+          handleCanvassingAction(operation, effectiveAction.metadata);
           break;
         case 'output':
-          handleOutputAction(operation, action.metadata);
+          handleOutputAction(operation, effectiveAction.metadata);
           break;
         case 'navigate':
-          handleNavigateAction(operation, action.metadata);
+          handleNavigateAction(operation, effectiveAction.metadata);
           break;
         case 'report':
-          handleReportAction(operation, action.metadata);
+          handleReportAction(operation, effectiveAction.metadata);
           break;
         case 'query':
-          handleQueryAction(operation, action.metadata);
+          handleQueryAction(operation, effectiveAction.metadata);
           break;
         case 'temporal':
-          handleTemporalAction(operation, action.metadata);
+          handleTemporalAction(operation, effectiveAction.metadata);
           break;
         case 'workflow':
-          handleWorkflowAction(operation, action.metadata);
+          handleWorkflowAction(operation, effectiveAction.metadata);
           break;
         case 'input':
-          handleInputAction(operation, action.metadata);
+          handleInputAction(operation, effectiveAction.metadata);
           break;
         case 'system':
           // Handle system actions (like help)
@@ -1778,8 +1839,7 @@ Available actions:
       }
     } else {
       // New format: action is the message to send
-      // Send the action text as a user message
-      await handleUserInput(action.action);
+      await handleUserInput(effectiveAction.action);
     }
   }, [handleUserInput, addAssistantMessage, generateContextualActions, executeMapCommand]);
 
@@ -2108,7 +2168,7 @@ Available actions:
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `ingham-precincts-${new Date().toISOString().split('T')[0]}.csv`;
+          link.download = `${getPoliticalRegionEnv().state.replace(/\s+/g, '-').toLowerCase()}-precincts-${new Date().toISOString().split('T')[0]}.csv`;
           link.click();
           URL.revokeObjectURL(url);
 
@@ -2166,7 +2226,7 @@ Available actions:
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `ingham-voter-file-${new Date().toISOString().split('T')[0]}.csv`;
+          link.download = `${getPoliticalRegionEnv().state.replace(/\s+/g, '-').toLowerCase()}-voter-file-${new Date().toISOString().split('T')[0]}.csv`;
           link.click();
           URL.revokeObjectURL(url);
 
@@ -2207,7 +2267,9 @@ Available actions:
           const rows = precinctsToExport.map((p: any, i: number) => [
             `VAN${String(i + 1).padStart(6, '0')}`,
             `"${p.name}"`,
-            'Ingham',
+            getPoliticalRegionEnv().county !== 'Statewide'
+              ? getPoliticalRegionEnv().county
+              : getPoliticalRegionEnv().state,
             Math.round((p.targeting?.gotvPriority || 0) + (p.targeting?.swingPotential || 0)),
             p.targeting?.gotvPriority >= 70 ? 'HIGH' : p.targeting?.gotvPriority >= 50 ? 'MEDIUM' : 'LOW',
             `"${p.jurisdiction}"`
@@ -2219,7 +2281,7 @@ Available actions:
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `ingham-van-export-${new Date().toISOString().split('T')[0]}.csv`;
+          link.download = `${getPoliticalRegionEnv().state.replace(/\s+/g, '-').toLowerCase()}-van-export-${new Date().toISOString().split('T')[0]}.csv`;
           link.click();
           URL.revokeObjectURL(url);
 
@@ -2264,7 +2326,7 @@ Available actions:
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `ingham-donors-${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `${getPoliticalRegionEnv().state.replace(/\s+/g, '-').toLowerCase()}-donors-${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
             URL.revokeObjectURL(url);
 
@@ -2404,13 +2466,13 @@ Available actions:
       'political-ai': '/political-ai',
     };
 
-    const route = routeMap[operation] || `/${operation}`;
-
-    // Navigate using router
-    router.push(route);
+    const opBase = operation.split('?')[0];
+    const querySuffix = operation.includes('?') ? operation.slice(operation.indexOf('?')) : '';
+    const basePath = routeMap[opBase] ?? `/${opBase}`;
+    router.push(querySuffix ? `${basePath}${querySuffix}` : basePath);
 
     addAssistantMessage(
-      `Navigating to ${operation}...`,
+      `Navigating to ${opBase}...`,
       [{ id: 'back', label: 'Go back', action: 'navigate:political-ai' }]
     );
   };
@@ -2695,6 +2757,22 @@ Available actions:
 
   return (
     <div className="ai-political-session-host h-full flex flex-col">
+      {/* Change Workflow button - S1A-010 fix */}
+      {currentWorkflow && sessionState === 'active' && (
+        <button
+          onClick={() => {
+            setSessionState('welcome');
+            setCurrentWorkflow(null);
+            setMessages([]);
+            setCurrentFeatureCard(null);
+          }}
+          className="text-xs text-gray-500 hover:text-gray-700 bg-gray-50 px-2 py-3 rounded transition-colors flex items-center gap-1"
+          title="Return to workflow selection"
+        >
+          <ArrowLeftIcon className="w-3 h-3" />
+          Change workflow
+        </button>
+      )}
       {/* Persistent Header */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-2 justify-between">
@@ -2711,24 +2789,7 @@ Available actions:
               )}
             </div>
           </div>
-          {/* Change Workflow button - S1A-010 fix */}
-          {currentWorkflow && sessionState === 'active' && (
-            <button
-              onClick={() => {
-                setSessionState('welcome');
-                setCurrentWorkflow(null);
-                setMessages([]);
-                setCurrentFeatureCard(null);
-              }}
-              className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors flex items-center gap-1"
-              title="Return to workflow selection"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Change workflow
-            </button>
-          )}
+
         </div>
       </div>
 
@@ -2902,7 +2963,7 @@ Available actions:
                   </div>
                 ) : (
                   <div
-                    className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${message.role === 'user'
+                    className={`max-w-full rounded-2xl p-4 shadow-sm ${message.role === 'user'
                       ? 'bg-gradient-to-br from-[#33a852] to-[#2d9944] text-white'
                       : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900 border border-gray-200'
                       }`}

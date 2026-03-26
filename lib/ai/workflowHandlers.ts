@@ -541,20 +541,69 @@ export async function handleDistrictAnalysis(
   }
 }
 
+/** Segment API returns PrecinctMatch (precinctName / precinctId); keep fallbacks for older shapes. */
+function filterResultPrecinctLabel(p: { precinctName?: string; name?: string }): string {
+  return p.precinctName ?? p.name ?? 'Unknown precinct';
+}
+
+function filterResultPrecinctKey(p: {
+  precinctId?: string;
+  id?: string;
+  precinctName?: string;
+  name?: string;
+}): string {
+  return p.precinctId ?? p.id ?? filterResultPrecinctLabel(p);
+}
+
+/** Map FilterHandler short metric keys to SegmentEngine / API names */
+function normalizeFilterMetric(metric: string | undefined): string | undefined {
+  if (!metric) return undefined;
+  const aliases: Record<string, string> = {
+    gotv: 'gotv_priority',
+    swing: 'swing_potential',
+    persuasion: 'persuasion_opportunity',
+    combined: 'combined_score',
+  };
+  return aliases[metric] ?? metric;
+}
+
 export async function handleFilterRequest(filterCriteria: any): Promise<HandlerResult> {
   try {
+    filterCriteria.metric = normalizeFilterMetric(filterCriteria.metric);
+
     // Build filters from criteria
     const filters: SegmentFilters = {};
 
-    if (filterCriteria.metric === 'swing_potential') {
+    // High GOTV opportunity + below-average turnout (classic mobilization target)
+    if (
+      filterCriteria.composite === 'gotv_high_turnout_low' ||
+      (filterCriteria.metric === 'gotv_priority' &&
+        filterCriteria.max_turnout != null &&
+        typeof filterCriteria.max_turnout === 'number')
+    ) {
       filters.targeting = {
-        min_swing_potential: filterCriteria.threshold || 60
+        min_gotv_priority: filterCriteria.min_gotv_priority ?? filterCriteria.threshold ?? 60,
+        max_turnout: filterCriteria.max_turnout,
+      };
+    } else if (filterCriteria.metric === 'swing_potential') {
+      filters.targeting = {
+        min_swing_potential: filterCriteria.threshold || 60,
       };
     } else if (filterCriteria.metric === 'margin') {
-      // Margin < 5% means competitive
-      filters.political = {
-        competitiveness: ['toss_up', 'lean_d', 'lean_r']
-      };
+      // Tight race: |partisan lean| within ±N points (e.g. margin under 5%)
+      if (
+        filterCriteria.marginMode === 'partisan_lean_band' &&
+        typeof filterCriteria.threshold === 'number'
+      ) {
+        const t = Math.min(50, Math.max(0, filterCriteria.threshold));
+        filters.political = {
+          partisanLeanRange: [-t, t],
+        };
+      } else {
+        filters.political = {
+          competitiveness: ['toss_up', 'lean_d', 'lean_r'],
+        };
+      }
     } else if (filterCriteria.metric === 'turnout') {
       filters.targeting = {
         min_turnout: filterCriteria.threshold || 60
@@ -566,6 +615,43 @@ export async function handleFilterRequest(filterCriteria: any): Promise<HandlerR
     } else if (filterCriteria.metric === 'persuasion_opportunity') {
       filters.targeting = {
         min_persuasion: filterCriteria.threshold || 60
+      };
+    }
+
+    // NLP / FilterHandler may send competitiveness without metric (e.g. legacy patterns)
+    if (
+      filterCriteria.competitiveness?.length &&
+      (!filters.political || filterCriteria.metric === undefined)
+    ) {
+      filters.political = {
+        ...(filters.political || {}),
+        competitiveness: filterCriteria.competitiveness,
+      };
+    }
+
+    const hasAnyFilter =
+      (filters.political && Object.keys(filters.political).length > 0) ||
+      (filters.targeting && Object.keys(filters.targeting).length > 0) ||
+      (filters.demographics && Object.keys(filters.demographics).length > 0);
+
+    if (!hasAnyFilter) {
+      return {
+        response:
+          'I could not apply a filter from that question (no metric or criteria was recognized). Try asking for **precincts with GOTV priority above 70**, **swing potential**, or **partisan lean within ±5 points**.',
+        suggestedActions: [
+          {
+            id: 'gotv',
+            label: 'High GOTV',
+            action: 'Show precincts with GOTV priority above 70',
+            icon: 'target',
+          },
+          {
+            id: 'swing',
+            label: 'Swing areas',
+            action: 'Show me swing areas with margin less than 5%',
+            icon: 'filter',
+          },
+        ],
       };
     }
 
@@ -588,7 +674,8 @@ export async function handleFilterRequest(filterCriteria: any): Promise<HandlerR
     // Get enrichment context for filter query
     let enrichmentContext: EnrichmentContext | null = null;
     try {
-      const precinctNames = results.matchingPrecincts?.slice(0, 10).map((p: any) => p.name) || [];
+      const precinctNames =
+        results.matchingPrecincts?.slice(0, 10).map((p: any) => filterResultPrecinctLabel(p)) || [];
       const queryDescription = `${filterCriteria.metric || 'filtered'} precincts`;
       enrichmentContext = await enrichFilterQuery(queryDescription, precinctNames);
     } catch (e) {
@@ -602,8 +689,14 @@ export async function handleFilterRequest(filterCriteria: any): Promise<HandlerR
     // Determine appropriate visualization
     const mapCommands: MapCommand[] = [];
 
-    // Show heatmap for numeric metrics
-    if (filterCriteria.metric && ['swing_potential', 'gotv_priority', 'persuasion_opportunity', 'combined_score', 'turnout'].includes(filterCriteria.metric)) {
+    // Show heatmap for numeric metrics; GOTV + low turnout → bivariate (both dimensions matter)
+    if (filterCriteria.composite === 'gotv_high_turnout_low') {
+      mapCommands.push({
+        type: 'showBivariate',
+        xMetric: 'gotv_priority',
+        yMetric: 'turnout',
+      });
+    } else if (filterCriteria.metric && ['swing_potential', 'gotv_priority', 'persuasion_opportunity', 'combined_score', 'turnout'].includes(filterCriteria.metric)) {
       mapCommands.push({
         type: 'showHeatmap',
         metric: filterCriteria.metric
@@ -617,10 +710,10 @@ export async function handleFilterRequest(filterCriteria: any): Promise<HandlerR
 
     // Highlight matching precincts if we have specific results
     if (results.matchingPrecincts && results.matchingPrecincts.length > 0 && results.matchingPrecincts.length <= 10) {
-      const precinctNames = results.matchingPrecincts.map((p: any) => p.name);
+      const precinctKeys = results.matchingPrecincts.map((p: any) => filterResultPrecinctKey(p));
       mapCommands.push({
         type: 'highlight',
-        target: precinctNames
+        target: precinctKeys
       });
 
       // Add numbered markers for ranked lists (top 5)
@@ -629,9 +722,9 @@ export async function handleFilterRequest(filterCriteria: any): Promise<HandlerR
         mapCommands.push({
           type: 'showNumberedMarkers',
           numberedMarkers: topPrecincts.map((p: any, i: number) => ({
-            precinctId: p.id,
+            precinctId: filterResultPrecinctKey(p),
             number: i + 1,
-            label: p.name
+            label: filterResultPrecinctLabel(p)
           }))
         });
       }
@@ -2192,16 +2285,46 @@ async function fetchPrecincts(): Promise<PrecinctData[]> {
   return data.precincts || [];
 }
 
+function getFilterMetricDisplayValue(p: any, criteria: any): number | null {
+  if (criteria.metric === 'swing_potential') {
+    return p.swingPotential ?? p.electoral?.swingPotential ?? null;
+  }
+  if (criteria.metric === 'gotv_priority') {
+    return p.gotvPriority ?? p.targeting?.gotvPriority ?? null;
+  }
+  if (criteria.metric === 'persuasion_opportunity') {
+    return p.persuasionOpportunity ?? p.targeting?.persuasionOpportunity ?? null;
+  }
+  if (criteria.metric === 'margin' && criteria.marginMode === 'partisan_lean_band') {
+    const v = p.partisanLean ?? p.electoral?.partisanLean;
+    return typeof v === 'number' && !Number.isNaN(v) ? v : null;
+  }
+  return null;
+}
+
+function formatLeanForFilterDisplay(lean: number): string {
+  if (lean >= 0) return `D+${lean.toFixed(1)}`;
+  return `R+${Math.abs(lean).toFixed(1)}`;
+}
+
 function formatFilterResults(criteria: any, results: any): string {
   const expertise = getUserExpertiseLevel();
   const count = results.matchingPrecincts?.length || 0;
   const totalVoters = results.estimatedVoters || 0;
   const matchingPrecincts = results.matchingPrecincts || [];
+  const areaName = getPoliticalRegionEnv().summaryAreaName;
+  const isTightMarginBand =
+    criteria.metric === 'margin' &&
+    criteria.marginMode === 'partisan_lean_band' &&
+    typeof criteria.threshold === 'number';
 
   let criteriaText = '';
-  if (criteria.metric) {
-    criteriaText = `with ${criteria.metric.replace(/_/g, ' ')}`;
-    if (criteria.threshold) {
+  if (isTightMarginBand) {
+    const t = criteria.threshold as number;
+    criteriaText = ` — partisan lean ±${t} points (tight races; same idea as margin under ${t}%)`;
+  } else if (criteria.metric) {
+    criteriaText = ` with ${criteria.metric.replace(/_/g, ' ')}`;
+    if (criteria.threshold !== undefined && criteria.threshold !== null) {
       const operator = criteria.operator === 'less_than' ? '<' : criteria.operator === 'greater_than' ? '>' : '=';
       criteriaText += ` ${operator} ${criteria.threshold}`;
     }
@@ -2236,15 +2359,22 @@ function formatFilterResults(criteria: any, results: any): string {
   // Wave 6D.3: Expertise-based formatting
   if (expertise === 'power_user') {
     // Terse format for power users
-    let response = `**${recommendation}** ${criteriaText}\n`;
+    const leadPrefix = isTightMarginBand
+      ? `**${count} tight-margin precincts** (${areaName}, ±${criteria.threshold} pt lean) — ${recommendation}`
+      : `**${recommendation}**`;
+    let response = isTightMarginBand ? `${leadPrefix}\n` : `${leadPrefix}${criteriaText}\n`;
     if (matchingPrecincts.length > 0 && matchingPrecincts.length <= 10) {
       const topPrecincts = matchingPrecincts.slice(0, 5);
       response += topPrecincts.map((p: any, i: number) => {
-        const metricValue = criteria.metric === 'swing_potential' ? p.electoral?.swingPotential
-          : criteria.metric === 'gotv_priority' ? p.targeting?.gotvPriority
-            : criteria.metric === 'persuasion_opportunity' ? p.targeting?.persuasionOpportunity
-              : null;
-        return `${i + 1}. ${p.name}${metricValue !== null ? ` (${Math.round(metricValue)})` : ''}`;
+        const metricValue = getFilterMetricDisplayValue(p, criteria);
+        const label = filterResultPrecinctLabel(p);
+        const suffix =
+          metricValue !== null
+            ? isTightMarginBand
+              ? ` (${formatLeanForFilterDisplay(metricValue)})`
+              : ` (${Math.round(metricValue)})`
+            : '';
+        return `${i + 1}. ${label}${suffix}`;
       }).join(' | ') + '\n';
     }
     response += `Avg: GOTV ${results.avgGOTV?.toFixed(0) || 'N/A'} | Pers ${results.avgPersuasion?.toFixed(0) || 'N/A'} | Lean ${results.avgPartisanLean > 0 ? 'R+' : 'D+'}${Math.abs(results.avgPartisanLean || 0).toFixed(0)} | TO ${results.avgTurnout?.toFixed(0) || 'N/A'}%`;
@@ -2260,22 +2390,34 @@ function formatFilterResults(criteria: any, results: any): string {
     return response + soWhat;
   }
 
-  let response = (
-    `**Filter Results ${criteriaText}:**\n\n` +
-    `Found **${count} precincts** with approximately **${totalVoters.toLocaleString()} registered voters**.\n\n`
-  );
+  let response: string;
+  if (isTightMarginBand) {
+    const t = criteria.threshold as number;
+    response =
+      `**Answer:** In **${areaName}**, these are precincts where **partisan lean is within ±${t} points** of even — ` +
+      `our stand-in for **“margin under ${t}%”** when we don’t have a single-race margin for every precinct.\n\n` +
+      `Found **${count} precincts** with approximately **${totalVoters.toLocaleString()}** registered voters.\n\n`;
+  } else {
+    response =
+      `**Filter Results${criteriaText}:**\n\n` +
+      `Found **${count} precincts** with approximately **${totalVoters.toLocaleString()}** registered voters.\n\n`;
+  }
 
   // Add top 5 precincts if available
   if (matchingPrecincts.length > 0 && matchingPrecincts.length <= 10) {
     const topPrecincts = matchingPrecincts.slice(0, 5);
-    response += `**Top ${Math.min(5, count)} Precincts:**\n`;
+    response += `**Top ${Math.min(5, count)} precincts:**\n`;
     topPrecincts.forEach((p: any, i: number) => {
-      const metricValue = criteria.metric === 'swing_potential' ? p.electoral?.swingPotential
-        : criteria.metric === 'gotv_priority' ? p.targeting?.gotvPriority
-          : criteria.metric === 'persuasion_opportunity' ? p.targeting?.persuasionOpportunity
-            : null;
+      const metricValue = getFilterMetricDisplayValue(p, criteria);
+      const label = filterResultPrecinctLabel(p);
+      const suffix =
+        metricValue !== null
+          ? isTightMarginBand
+            ? ` (${formatLeanForFilterDisplay(metricValue)})`
+            : ` (${Math.round(metricValue)})`
+          : '';
 
-      response += `${i + 1}. **${p.name}**${metricValue !== null ? ` (${Math.round(metricValue)})` : ''}\n`;
+      response += `${i + 1}. **${label}**${suffix}\n`;
     });
     response += '\n';
   }

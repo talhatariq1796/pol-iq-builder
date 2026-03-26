@@ -22,7 +22,10 @@ import type { MapCommand } from '@/lib/ai-native/types';
 import type { SelectedFeatureData } from '@/lib/ai-native/types/unified-state';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
 import { getSuggestionEngine } from '@/lib/ai-native/SuggestionEngine';
+import { getDefaultPoliticalJurisdictionLabel } from '@/lib/political/politicalRegionConfig';
 import { parseIntent } from '@/lib/ai/intentParser';
+import { stripActionDirectives } from '@/lib/ai/stripActionDirectives';
+import { normalizeChatMarkdown } from '@/lib/ai/normalizeChatMarkdown';
 import {
   handleReportHistoryRequest,
   handleReportCustomization,
@@ -185,7 +188,11 @@ function getToolConfig(tool: ToolType): ToolConfig {
         greeting: "Analyze precincts, districts, and voter targeting. Select a workflow or type a question.",
         placeholder: 'Ask about precincts, districts, or voter targeting...',
         suggestions: [
-          { id: 'analyze-swing', label: 'Find swing precincts', action: 'Find swing precincts in Ingham County' },
+          {
+            id: 'analyze-swing',
+            label: 'Find swing precincts',
+            action: `Find swing precincts in ${getDefaultPoliticalJurisdictionLabel()}`,
+          },
           { id: 'show-gotv', label: 'Show GOTV priorities', action: 'map:showHeatmap', metadata: { metric: 'gotv_priority' } },
           { id: 'compare-areas', label: 'Compare areas', action: 'navigate:/compare' },
         ],
@@ -224,11 +231,11 @@ function getToolConfig(tool: ToolType): ToolConfig {
 
 // Helper to enhance messages with icons and clean up internal tags
 function enhanceMessage(content: string): string {
-  return content
+  return normalizeChatMarkdown(stripActionDirectives(content))
     // Remove citation tags like [DEMOGRAPHICS], [TARGETING], [ELECTIONS], etc.
     .replace(/\s*\[([A-Z_]+)\]\s*/g, ' ')
-    // Clean up any double spaces left behind
-    .replace(/\s{2,}/g, ' ')
+    // Collapse horizontal spaces only — never collapse newlines (breaks markdown headings)
+    .replace(/[ \t]{2,}/g, ' ')
     // Add trend indicators
     .replace(/\b(increase|up|growth|gain|higher|rose)\b/gi, (match) => `${match} ↑`)
     .replace(/\b(decrease|down|decline|drop|lower|fell)\b/gi, (match) => `${match} ↓`)
@@ -419,9 +426,13 @@ const MessageContentWithEntities: React.FC<{
   }, [content, sections.length]);
 
   // Check if content has complex markdown (headers, tables, code blocks)
-  // If so, render as single ReactMarkdown to preserve structure
-  // Use multiline mode (m) to check for headers at start of any line
-  const hasComplexMarkdown = /^#{1,6}\s/m.test(contentAfterSections) || /^\|.*\|/m.test(contentAfterSections) || contentAfterSections.includes('```');
+  // Use the same strip + normalize pass as enhanceMessage so inline "##" is detected after fixes
+  const markdownProbe = normalizeChatMarkdown(stripActionDirectives(contentAfterSections));
+  const hasComplexMarkdown =
+    /^#{1,6}\s/m.test(markdownProbe) ||
+    /^\|.*\|/m.test(markdownProbe) ||
+    markdownProbe.includes('```') ||
+    /\n[-*]\s/.test(markdownProbe);
 
   const segments = hasComplexMarkdown ? [] : segmentTextWithEntities(contentAfterSections);
 
@@ -2807,7 +2818,7 @@ export default function UnifiedAIAssistant({
             }}
             className="flex items-center gap-2 w-full"
           >
-            <button
+            {/* <button
               type="button"
               onClick={() => setShowExamples(!showExamples)}
               className="px-3 py-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center gap-1 flex-shrink-0"
@@ -2816,7 +2827,6 @@ export default function UnifiedAIAssistant({
               <HelpCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Examples</span>
             </button>
-            {/* Wave 4: History button to show recent searches */}
             <button
               type="button"
               onClick={() => setShowRecentSearches(!showRecentSearches)}
@@ -2825,7 +2835,7 @@ export default function UnifiedAIAssistant({
             >
               <History className="w-4 h-4" />
               <span className="hidden sm:inline">History</span>
-            </button>
+            </button> */}
             <input
               ref={inputRef}
               name="input"

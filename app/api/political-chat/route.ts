@@ -15,13 +15,20 @@ import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { politicalQueryRouter, ParsedPoliticalQuery } from '@/lib/analysis/PoliticalQueryRouter';
-import { politicalDataService } from '@/lib/services/PoliticalDataService';
+import {
+  politicalDataService,
+  type PrecinctRankingMetric,
+} from '@/lib/services/PoliticalDataService';
 import { getDocumentRetriever } from '@/lib/rag';
 import { getKnowledgeGraph, getGraphPopulator, Entity, Relationship } from '@/lib/knowledge-graph';
 import { enrich, formatForSystemPrompt as formatEnrichmentForSystemPrompt, type EnrichmentContext } from '@/lib/context';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { resolveClaudeModel } from '@/lib/ai/claudeModel';
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import {
+  extractActionDirectives,
+  stripActionDirectives,
+} from '@/lib/ai/stripActionDirectives';
 
 export const maxDuration = 120;
 export const fetchCache = 'force-no-store';
@@ -171,10 +178,11 @@ export async function POST(req: NextRequest) {
 
     // Parse action directives from Claude response and convert to mapCommands
     const mapCommands = parseActionDirectivesToMapCommands(content, routeResult.parsed);
+    const contentForClient = stripActionDirectives(content);
 
     console.log('[Political Chat API] Response generated successfully');
     return NextResponse.json({
-      content,
+      content: contentForClient,
       metadata: {
         queryType: routeResult.parsed.type,
         locations: routeResult.parsed.locationNames,
@@ -213,7 +221,8 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Fetch relevant data based on parsed query
+ * Fetch relevant data based on parsed query.
+ * Uses politicalDataService (state-scoped build: Pennsylvania precincts when FIPS 42 / PA deployment).
  */
 async function fetchDataForQuery(parsed: ParsedPoliticalQuery): Promise<string> {
   const dataParts: string[] = [];
@@ -234,24 +243,52 @@ async function fetchDataForQuery(parsed: ParsedPoliticalQuery): Promise<string> 
       }
 
       case 'ranking': {
-        // Filter to metrics supported by ranking functions
-        const rankableMetric = (parsed.metric && ['partisan_lean', 'swing_potential', 'gotv_priority', 'persuasion_opportunity', 'turnout'].includes(parsed.metric))
-          ? parsed.metric as 'partisan_lean' | 'swing_potential' | 'gotv_priority' | 'persuasion_opportunity' | 'turnout'
-          : 'swing_potential';
+        const precinctRankMetrics: PrecinctRankingMetric[] = [
+          'partisan_lean',
+          'swing_potential',
+          'gotv_priority',
+          'persuasion_opportunity',
+          'turnout',
+          'combined_score',
+        ];
+        const rankablePrecinctMetric: PrecinctRankingMetric =
+          parsed.metric && precinctRankMetrics.includes(parsed.metric as PrecinctRankingMetric)
+            ? (parsed.metric as PrecinctRankingMetric)
+            : 'swing_potential';
+
+        const jurisdictionRankMetrics = [
+          'partisan_lean',
+          'swing_potential',
+          'gotv_priority',
+          'persuasion_opportunity',
+          'turnout',
+        ] as const;
+        const rankableJurisdictionMetric =
+          parsed.metric && jurisdictionRankMetrics.includes(parsed.metric as (typeof jurisdictionRankMetrics)[number])
+            ? (parsed.metric as (typeof jurisdictionRankMetrics)[number])
+            : 'swing_potential';
+
+        const wantsStatewidePrecincts =
+          parsed.locationNames.length === 0 && /\bprecincts?\b/i.test(parsed.originalQuery);
 
         if (parsed.locationNames.length > 0) {
-          // Rank precincts within a jurisdiction
           const rankings = await politicalDataService.rankPrecinctsInJurisdiction(
             parsed.locationNames[0],
-            rankableMetric,
+            rankablePrecinctMetric,
             parsed.ranking || 'highest',
             parsed.limit || 10
           );
           dataParts.push(formatPrecinctRankings(parsed.locationNames[0], rankings, parsed.metric));
+        } else if (wantsStatewidePrecincts) {
+          const rankings = await politicalDataService.rankPrecinctsStatewide(
+            rankablePrecinctMetric,
+            parsed.ranking || 'highest',
+            parsed.limit || 15
+          );
+          dataParts.push(formatStatewidePrecinctRankings(rankings, parsed.metric));
         } else {
-          // Rank jurisdictions
           const rankings = await politicalDataService.rankJurisdictionsByMetric(
-            rankableMetric,
+            rankableJurisdictionMetric,
             parsed.ranking || 'highest',
             parsed.limit || 10
           );
@@ -347,6 +384,23 @@ function formatPrecinctRankings(jurisdiction: string, rankings: any[], metric?: 
   );
 
   return `## Top Precincts in ${jurisdiction} by ${metricLabel}
+
+${lines.join('\n')}`;
+}
+
+function formatStatewidePrecinctRankings(rankings: any[], metric?: string): string {
+  const metricLabel = metric?.replace(/_/g, ' ') || 'swing potential';
+  const area = getPoliticalRegionEnv().summaryAreaName;
+  if (rankings.length === 0) {
+    return `## Precinct rankings (${area})
+
+No precinct scores matched this metric. Targeting or political score data may still be loading.`;
+  }
+  const lines = rankings.map(
+    (r, i) =>
+      `${i + 1}. ${r.precinctName}: ${r.value.toFixed(1)} (${r.competitiveness}, ${r.strategy})`
+  );
+  return `## Top Precincts (${area}) by ${metricLabel}
 
 ${lines.join('\n')}`;
 }
@@ -547,21 +601,8 @@ function parseActionDirectivesToMapCommands(
 ): MapCommand[] {
   const mapCommands: MapCommand[] = [];
 
-  // Look for [ACTION:actionType:{"key":"value"}] patterns
-  const actionRegex = /\[ACTION:(\w+):(.*?)\]/g;
-  let match;
-
-  while ((match = actionRegex.exec(content)) !== null) {
-    const actionType = match[1];
-    let actionData: Record<string, unknown> = {};
-
-    try {
-      actionData = JSON.parse(match[2]);
-    } catch (e) {
-      console.warn('[Political Chat API] Failed to parse action data:', match[2]);
-      continue;
-    }
-
+  const directives = extractActionDirectives(content);
+  for (const { actionType, data: actionData } of directives) {
     // Convert ACTION directives to MapCommand format
     switch (actionType) {
       case 'showOnMap':
@@ -738,6 +779,7 @@ function buildPoliticalSystemPrompt(
 8. If explaining methodology, reference the approach without exposing implementation details
 9. NEVER start responses with greetings like "Welcome!", "Hello!", "Hi!", or "Great question!" - jump directly into the analysis
 10. Format percentages correctly: use "52.3%" not "5230%" - never multiply by 100 twice
+11. **Markdown structure:** Put each \`##\` or \`###\` heading on its own line with a blank line above it. Separate sections (intro, metrics, lists) with blank lines so the UI can render headings and lists correctly—never glue a heading onto the end of a sentence on the same line.
 
 ## Current Intelligence Guidelines
 When current intel is provided in the context:

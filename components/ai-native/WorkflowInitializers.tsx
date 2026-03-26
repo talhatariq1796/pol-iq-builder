@@ -16,7 +16,8 @@ export function getDistrictAnalysisInit(selectedPrecinct?: { precinctName: strin
     mapCommand: {
       type: 'showChoropleth'
     },
-    message: 'The map now shows precincts colored by targeting strategy. Click on any precinct to see detailed analysis, or try one of the suggested actions below.',
+    message:
+      'The map shows Pennsylvania precinct-level data colored by targeting strategy. Click a precinct or use Select to choose boundaries, then try the suggested actions below.',
     actions: [
       {
         id: 'show-demographics',
@@ -44,10 +45,30 @@ export function getDistrictAnalysisInit(selectedPrecinct?: { precinctName: strin
         id: 'switch-to-hexagons',
         label: 'Show as H3 hexagon heatmap',
         action: 'map:showHeatmap',
+        metadata: { metric: 'swing_potential' },
         icon: 'hexagon'
       }
     ]
   };
+}
+
+/**
+ * Area Analysis follow-up chips (same as initial + report). Use after assistant turns
+ * so users always see the four core actions plus PDF report.
+ */
+export function getDistrictAnalysisFollowUpActions(
+  selectedPrecinct?: { precinctName: string } | null
+): SuggestedAction[] {
+  return [
+    ...getDistrictAnalysisInit(selectedPrecinct).actions,
+    {
+      id: 'generate-report',
+      label: 'Generate district profile report',
+      action:
+        'Generate a political profile PDF report for the selected area in Pennsylvania',
+      icon: 'file-text',
+    },
+  ];
 }
 
 export function getSwingDetectionInit(): {

@@ -272,10 +272,20 @@ export class ToolOrchestrator {
       };
 
       // GAP 5: Add confidence indicator to response if moderately uncertain
-      if (parsed.confidence < 0.6 && parsed.confidence >= 0.2 && result.success) {
-        const confidenceNote = parsed.confidence < 0.4
-          ? `\n\n*Note: I'm ${Math.round(parsed.confidence * 100)}% confident this is what you meant. Let me know if you'd like something different.*`
-          : '';
+      const skipConfidenceNote =
+        parsed.intent === 'segment_find' ||
+        parsed.intent === 'segment_create' ||
+        parsed.intent === 'map_layer_change';
+      if (
+        !skipConfidenceNote &&
+        parsed.confidence < 0.6 &&
+        parsed.confidence >= 0.2 &&
+        result.success
+      ) {
+        const confidenceNote =
+          parsed.confidence < 0.4
+            ? `\n\n*Note: I'm ${Math.round(parsed.confidence * 100)}% confident this is what you meant. Let me know if you'd like something different.*`
+            : '';
         result.response = result.response + confidenceNote;
       }
 

@@ -38,12 +38,6 @@ export function DepthIndicator({ depth, className = '', onMilestoneUnlock }: Dep
   const [recentlyUnlocked, setRecentlyUnlocked] = useState<number | null>(null);
   const previousDepthRef = useRef(depth);
 
-  const depthLabel = depth < 30 ? 'Exploring' :
-                     depth < 60 ? 'Analyzing' :
-                     depth < 80 ? 'Deep Analysis' : 'Expert Mode';
-
-  // Find next milestone
-  const nextMilestone = DEPTH_MILESTONES.find(m => depth < m.threshold);
 
   // Find unlocked milestones
   const unlockedMilestones = DEPTH_MILESTONES.filter(m => depth >= m.threshold);
@@ -73,45 +67,6 @@ export function DepthIndicator({ depth, className = '', onMilestoneUnlock }: Dep
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      {/* Progress bar with animation */}
-      <div className="flex items-center gap-2">
-        <Sparkles className={`w-3.5 h-3.5 text-[#33a852] ${recentlyUnlocked ? 'animate-pulse' : ''}`} />
-        <div className="w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full bg-gradient-to-r from-[#33a852] to-[#2d9944] transition-all duration-500 ${
-              recentlyUnlocked ? 'animate-pulse' : ''
-            }`}
-            style={{ width: `${Math.min(depth, 100)}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Label */}
-      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-        {depthLabel}
-      </span>
-
-      {/* Unlocked milestone badges */}
-      {unlockedMilestones.length > 0 && (
-        <div className="hidden sm:flex items-center gap-1">
-          {unlockedMilestones.map((milestone) => {
-            const isRecent = recentlyUnlocked === milestone.threshold;
-            return (
-              <div
-                key={milestone.threshold}
-                className={`w-4 h-4 rounded-full bg-[#33a852] flex items-center justify-center ${
-                  isRecent ? 'animate-bounce' : ''
-                }`}
-                title={`${milestone.label} unlocked`}
-              >
-                <Check className="w-2.5 h-2.5 text-white" />
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-
       {/* Tooltip */}
       {showTooltip && (
         <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
@@ -125,9 +80,8 @@ export function DepthIndicator({ depth, className = '', onMilestoneUnlock }: Dep
               return (
                 <div
                   key={milestone.threshold}
-                  className={`flex items-start gap-2 text-xs ${
-                    isUnlocked ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'
-                  }`}
+                  className={`flex items-start gap-2 text-xs ${isUnlocked ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'
+                    }`}
                 >
                   <div className={`mt-0.5 ${isUnlocked ? 'text-[#33a852]' : ''}`}>
                     {isUnlocked ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}

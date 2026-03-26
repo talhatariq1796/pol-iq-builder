@@ -853,6 +853,7 @@ export function PrecinctChoroplethLayer({
           : createRenderer();
 
         const layer = new GeoJSONLayer({
+          id: "pa-precinct-choropleth",
           url: blobUrl,
           title: temporalConfig?.enabled
             ? `Election ${temporalConfig.electionYear} - ${temporalConfig.metric}`

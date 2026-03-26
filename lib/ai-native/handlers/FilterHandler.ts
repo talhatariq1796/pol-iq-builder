@@ -70,7 +70,8 @@ const COMPETITIVENESS_PATTERNS: Record<string, RegExp> = {
   safe_d: /\b(safe\s*d|safely\s*democratic)\b/i,
   likely_d: /\b(likely\s*d|lean\s*democratic)\b/i,
   lean_d: /\b(lean\s*d)\b/i,
-  toss_up: /\b(toss.?up|competitive|swing)\b/i,
+  // Do not use bare "swing" — it matches "swing areas" and overrides margin/lean queries
+  toss_up: /\b(toss.?up|competitive|battleground)\b/i,
   lean_r: /\b(lean\s*r)\b/i,
   likely_r: /\b(likely\s*r|lean\s*republican)\b/i,
   safe_r: /\b(safe\s*r|safely\s*republican)\b/i,
@@ -159,6 +160,43 @@ export class FilterHandler implements NLPHandler {
   private extractFilterCriteria(query: string): any {
     const criteria: any = {};
 
+    // GOTV mobilization + lower turnout — phrasing often uses "high potential" not "high GOTV"
+    if (
+      /\b(gotv|get\s*out\s*the\s*vote|gotv\s+efforts)\b/i.test(query) &&
+      /(?:lower|low)\s*↓?\s*turnout|turnout.*(?:lower|low|below|under)/i.test(query)
+    ) {
+      criteria.composite = 'gotv_high_turnout_low';
+      criteria.metric = 'gotv_priority';
+      criteria.min_gotv_priority = /\bhigh\s+potential\b/i.test(query) ? 65 : 60;
+      criteria.max_turnout = 58;
+      return criteria;
+    }
+
+    // Persuadable / persuasion-opportunity lists (aligns Filter path with segment scoring)
+    if (
+      /\b(persuadable|persuasion\s+opportunity)\b/i.test(query) ||
+      (/\bhighest\b/i.test(query) && /\b(persuad|persuasion)\b/i.test(query)) ||
+      (/\bwhich\s+precincts\b/i.test(query) &&
+        /\bconcentration\b/i.test(query) &&
+        /\bpersuad/i.test(query))
+    ) {
+      criteria.metric = 'persuasion_opportunity';
+      criteria.threshold = /\bhighest\b/i.test(query) ? 70 : 65;
+      criteria.operator = '>=';
+      return criteria;
+    }
+
+    // "Margin less than 5%" = tight races → partisan lean band (not swing_potential threshold)
+    const marginLt =
+      query.match(/\bmargin\s+(?:less than|under|below)\s*(\d+(?:\.\d+)?)\s*%?/i) ||
+      query.match(/\b(?:less than|under)\s*(\d+(?:\.\d+)?)\s*%?\s*margin\b/i);
+    if (marginLt) {
+      criteria.metric = 'margin';
+      criteria.threshold = parseFloat(marginLt[1]);
+      criteria.operator = 'less_than';
+      criteria.marginMode = 'partisan_lean_band';
+    }
+
     // Extract metric
     for (const [metric, pattern] of Object.entries(METRIC_PATTERNS)) {
       if (pattern.test(query)) {
@@ -175,11 +213,13 @@ export class FilterHandler implements NLPHandler {
       }
     }
 
-    // Extract competitiveness
-    for (const [comp, pattern] of Object.entries(COMPETITIVENESS_PATTERNS)) {
-      if (pattern.test(query)) {
-        if (!criteria.competitiveness) criteria.competitiveness = [];
-        criteria.competitiveness.push(comp);
+    // Extract competitiveness (skip if we already resolved a tight-margin partisan-lean query)
+    if (!criteria.marginMode) {
+      for (const [comp, pattern] of Object.entries(COMPETITIVENESS_PATTERNS)) {
+        if (pattern.test(query)) {
+          if (!criteria.competitiveness) criteria.competitiveness = [];
+          criteria.competitiveness.push(comp);
+        }
       }
     }
 
@@ -218,6 +258,16 @@ export class FilterHandler implements NLPHandler {
     if (/\blow\b/i.test(query) && !criteria.threshold) {
       criteria.threshold = 40;
       criteria.operator = '<=';
+    }
+
+    const metricAliases: Record<string, string> = {
+      gotv: 'gotv_priority',
+      swing: 'swing_potential',
+      persuasion: 'persuasion_opportunity',
+      combined: 'combined_score',
+    };
+    if (criteria.metric && metricAliases[criteria.metric]) {
+      criteria.metric = metricAliases[criteria.metric];
     }
 
     return criteria;

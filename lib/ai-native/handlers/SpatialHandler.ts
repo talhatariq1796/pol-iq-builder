@@ -19,6 +19,7 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import type { MapCommand } from '@/lib/ai-native/types';
+import { getDefaultPoliticalJurisdictionLabel } from '@/lib/political/politicalRegionConfig';
 
 // ============================================================================
 // Query Patterns
@@ -201,7 +202,7 @@ export class SpatialHandler implements NLPHandler {
     const entities = this.extractEntities(query.originalQuery);
 
     // Extract location and distance
-    const location = entities.jurisdictions?.[0] || 'Ingham County';
+    const location = entities.jurisdictions?.[0] || getDefaultPoliticalJurisdictionLabel();
     const distance = this.extractDistance(query.originalQuery);
 
     let response = `Analyzing areas near **${location}**`;
@@ -212,7 +213,8 @@ export class SpatialHandler implements NLPHandler {
 
     // If no specific location, provide context-aware help
     if (!entities.jurisdictions || entities.jurisdictions.length === 0) {
-      response += '💡 *Tip: Specify a location for more precise results, like "What\'s near East Lansing?" or "Show precincts within 5 miles of Mason"*\n\n';
+      response +=
+        '💡 *Tip: Specify a location for more precise results, like "What\'s near Pittsburgh?" or "Show precincts within 5 miles of Harrisburg"*\n\n';
     }
 
     response += 'Use the map to:\n';

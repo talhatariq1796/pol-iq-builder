@@ -110,6 +110,8 @@ export class PoliticalQueryRouter {
     score: 'combined_score',
     overall: 'combined_score',
     combined: 'combined_score',
+    'targeting priority': 'combined_score',
+    'combined targeting': 'combined_score',
   };
 
   constructor() {
@@ -191,6 +193,51 @@ export class PoliticalQueryRouter {
   }
 
   private tryRanking(query: string, parsed: ParsedPoliticalQuery): QueryRouteResult {
+    // "Rank precincts in <jurisdiction> by <metric>" (precincts within a place)
+    const rankPrecinctsInPlace = query.match(
+      /\brank\s+(?:the\s+)?precincts?\s+(?:in|of)\s+(.+?)\s+by\b/i
+    );
+    if (rankPrecinctsInPlace) {
+      const location = this.geoManager.resolveLocation(rankPrecinctsInPlace[1].trim());
+      if (location) {
+        const isHighest = !/lowest|bottom|worst/i.test(query);
+        const limitMatch = query.match(/\b(?:top|first|bottom)\s+(\d+)\b/i);
+        const limit = limitMatch ? parseInt(limitMatch[1], 10) : 15;
+        parsed.type = 'ranking';
+        parsed.locations = [location];
+        parsed.locationNames = [location.name];
+        parsed.metric = this.extractMetric(query);
+        parsed.ranking = isHighest ? 'highest' : 'lowest';
+        parsed.limit = limit;
+        parsed.confidence = 0.88;
+        return {
+          parsed,
+          handler: 'ranking',
+          dataNeeded: ['precinct_scores', 'targeting_scores'],
+          suggestedResponse: `I'll rank precincts in ${location.name} by ${parsed.metric?.replace('_', ' ') || 'the requested metric'}.`,
+        };
+      }
+    }
+
+    // "Rank precincts by <metric>" (statewide — no jurisdiction)
+    if (/\brank\s+(?:the\s+)?precincts?\s+by\b/i.test(query)) {
+      const isHighest = !/lowest|bottom|worst/i.test(query);
+      const limitMatch = query.match(/\b(?:top|first|bottom)\s+(\d+)\b/i);
+      const limit = limitMatch ? parseInt(limitMatch[1], 10) : 15;
+      parsed.type = 'ranking';
+      parsed.locationNames = [];
+      parsed.metric = this.extractMetric(query);
+      parsed.ranking = isHighest ? 'highest' : 'lowest';
+      parsed.limit = limit;
+      parsed.confidence = 0.88;
+      return {
+        parsed,
+        handler: 'ranking',
+        dataNeeded: ['precinct_scores', 'targeting_scores'],
+        suggestedResponse: `I'll rank precincts statewide by ${parsed.metric?.replace('_', ' ') || 'targeting priority'}.`,
+      };
+    }
+
     for (const pattern of this.RANKING_PATTERNS) {
       const match = query.match(pattern);
       if (match) {

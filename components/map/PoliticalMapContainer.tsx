@@ -54,6 +54,51 @@ import { Clock, Play, Pause, ChevronLeft, ChevronRight, SkipBack, SkipForward } 
 // Import widget styles for zoom control and other ArcGIS widgets
 import '../../styles/widget-styles.css';
 
+/** Must match `id` on GeoJSONLayer in PrecinctChoroplethLayer */
+const PRECINCT_CHOROPLETH_LAYER_ID = 'pa-precinct-choropleth';
+
+function isPrecinctChoroplethLayer(layer: __esri.Layer): boolean {
+  if (layer.id === PRECINCT_CHOROPLETH_LAYER_ID) return true;
+  const t = (layer as { title?: string }).title;
+  if (typeof t !== 'string') return false;
+  return (
+    t === 'Precinct Boundaries' ||
+    t === 'Precinct Targeting Strategies' ||
+    t.startsWith('Election ')
+  );
+}
+
+/** Prefer the PA precinct choropleth — not the first arbitrary GeoJSON layer on the map */
+function getPrecinctChoroplethGeoJsonLayer(map: __esri.Map): __esri.GeoJSONLayer | undefined {
+  const byId = map.findLayerById(PRECINCT_CHOROPLETH_LAYER_ID) as __esri.GeoJSONLayer | undefined;
+  if (byId && byId.type === 'geojson') return byId;
+  return map.allLayers.find(
+    (layer: __esri.Layer) => layer.type === 'geojson' && isPrecinctChoroplethLayer(layer)
+  ) as __esri.GeoJSONLayer | undefined;
+}
+
+/** Map layer stores `precinct_id` as PA UNIQUE_ID (e.g. 037-:-BLOOMSBURG WARD 02); AI lists may show display NAME only */
+async function buildPaPrecinctWhereClause(rawLabel: string): Promise<string> {
+  await politicalDataService.initialize();
+  const trimmed = rawLabel.trim();
+  const [canonicalKey, unified] = await Promise.all([
+    politicalDataService.resolvePrecinctMapKey(trimmed),
+    politicalDataService.getUnifiedPrecinct(trimmed),
+  ]);
+  const candidates = new Set<string>();
+  if (trimmed) candidates.add(trimmed);
+  if (canonicalKey) candidates.add(canonicalKey);
+  if (unified?.id) candidates.add(unified.id);
+  if (unified?.name) candidates.add(unified.name);
+  const escapeSql = (s: string) => s.replace(/'/g, "''");
+  const parts: string[] = [];
+  for (const c of candidates) {
+    const e = escapeSql(c);
+    parts.push(`precinct_id = '${e}'`, `precinct_name = '${e}'`);
+  }
+  return parts.join(' OR ');
+}
+
 /**
  * Convert GeoJSON geometry to ArcGIS geometry
  */
@@ -928,80 +973,91 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
             break;
           }
 
-          // Otherwise, query for precinct feature
+          // Otherwise, query for precinct feature (must use PA choropleth layer id / title — not first random GeoJSON)
           console.log('[PoliticalMapContainer] Querying precinct for flyTo (municipality not found):', targetName);
-          const choroplethLayer = mapState.view.map.allLayers.find(
-            (layer: any) => layer.title === 'Precinct Boundaries' || layer.type === 'geojson'
-          ) as __esri.GeoJSONLayer | undefined;
+          setActiveLayer('choropleth');
+          setShowLegend(true);
 
-          if (choroplethLayer) {
-            // Query for the precinct feature
-            const query = choroplethLayer.createQuery();
-            // S1A-005: Escape single quotes to prevent SQL injection
-            const escapedTarget = targetName.replace(/'/g, "''");
-            query.where = `precinct_id = '${escapedTarget}' OR precinct_name = '${escapedTarget}'`;
-            console.log('[PoliticalMapContainer] Query:', query.where);
-            query.returnGeometry = true;
-            query.outSpatialReference = mapState.view.spatialReference;
+          const runFlyToPrecinct = async () => {
+            const view = mapState.view;
+            if (!view) return;
 
-            choroplethLayer.queryFeatures(query)
-              .then((result: __esri.FeatureSet) => {
-                if (result.features.length > 0) {
-                  const feature = result.features[0];
-                  mapState.view?.goTo({
-                    target: feature.geometry,
-                    zoom: 13,
-                  }).then(() => {
-                    dispatchCommandExecuted('flyTo', { target: targetName });
-                  }).catch((error: Error) => {
-                    console.error('[PoliticalMapContainer] Error flying to precinct:', error);
-                    // S8-003: Show toast notification on map command failure
-                    toast({
-                      title: 'Map Navigation Failed',
-                      description: `Unable to navigate to ${targetName}. Please try again.`,
-                      variant: 'destructive',
-                    });
-                  });
-                } else {
-                  // Precinct not found - try partial municipality match as fallback
-                  const partialMatch = Object.entries(MUNICIPALITY_COORDS).find(
-                    ([name]) => targetLower.includes(name) || name.includes(targetLower)
-                  );
-                  if (partialMatch) {
-                    console.log('[PoliticalMapContainer] Using municipality fallback for:', targetName);
-                    mapState.view?.goTo({
-                      center: partialMatch[1],
-                      zoom: 12,
-                    }).then(() => {
-                      dispatchCommandExecuted('flyTo', { target: targetName, type: 'municipality-fallback' });
-                    });
-                  } else {
-                    console.warn('[PoliticalMapContainer] Location not found for flyTo:', targetName);
-                    toast({
-                      title: 'Location Not Found',
-                      description: `Unable to locate "${targetName}" on the map.`,
-                      variant: 'destructive',
-                    });
-                  }
-                }
-              })
-              .catch((error: unknown) => {
-                console.error('[PoliticalMapContainer] Error querying precinct:', {
-                  target: targetName,
-                  error: error,
-                  errorType: typeof error,
-                  errorMessage: error instanceof Error ? error.message : String(error),
-                });
-                // S8-003: Show toast notification on query failure
-                toast({
-                  title: 'Map Query Failed',
-                  description: `Unable to find "${targetName}". Please try again.`,
-                  variant: 'destructive',
-                });
+            let choroplethLayer = getPrecinctChoroplethGeoJsonLayer(view.map);
+            let attempts = 0;
+            while (!choroplethLayer && attempts < 45) {
+              await new Promise((r) => setTimeout(r, 100));
+              choroplethLayer = getPrecinctChoroplethGeoJsonLayer(view.map);
+              attempts++;
+            }
+            if (!choroplethLayer) {
+              console.warn('[PoliticalMapContainer] Choropleth layer not found for flyTo after wait');
+              toast({
+                title: 'Map not ready',
+                description: 'Precinct boundaries layer is still loading. Switch to the Precincts map layer and try again.',
+                variant: 'destructive',
               });
-          } else {
-            console.warn('[PoliticalMapContainer] Choropleth layer not found for flyTo command');
-          }
+              return;
+            }
+
+            try {
+              await choroplethLayer.load();
+            } catch {
+              /* layer may already be loaded */
+            }
+
+            const whereClause = await buildPaPrecinctWhereClause(targetName);
+            console.log('[PoliticalMapContainer] flyTo precinct WHERE:', whereClause);
+
+            const query = choroplethLayer.createQuery();
+            query.where = whereClause;
+            query.returnGeometry = true;
+            query.outSpatialReference = view.spatialReference;
+
+            try {
+              const result = await choroplethLayer.queryFeatures(query);
+              if (result.features.length > 0) {
+                const feature = result.features[0];
+                await view.goTo({
+                  target: feature.geometry,
+                  zoom: 13,
+                });
+                dispatchCommandExecuted('flyTo', { target: targetName });
+                return;
+              }
+
+              const partialMatch = Object.entries(MUNICIPALITY_COORDS).find(
+                ([name]) => targetLower.includes(name) || name.includes(targetLower)
+              );
+              if (partialMatch) {
+                console.log('[PoliticalMapContainer] Using municipality fallback for:', targetName);
+                await view.goTo({
+                  center: partialMatch[1],
+                  zoom: 12,
+                });
+                dispatchCommandExecuted('flyTo', { target: targetName, type: 'municipality-fallback' });
+                return;
+              }
+
+              console.warn('[PoliticalMapContainer] Location not found for flyTo:', targetName);
+              toast({
+                title: 'Location Not Found',
+                description: `Unable to locate "${targetName}" on the map.`,
+                variant: 'destructive',
+              });
+            } catch (error: unknown) {
+              console.error('[PoliticalMapContainer] Error querying precinct:', {
+                target: targetName,
+                error: error instanceof Error ? error.message : String(error),
+              });
+              toast({
+                title: 'Map Query Failed',
+                description: `Unable to find "${targetName}". Please try again.`,
+                variant: 'destructive',
+              });
+            }
+          };
+
+          void runFlyToPrecinct();
         }
         break;
       }
@@ -1292,28 +1348,35 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
 
               // For each precinct in the cluster, query its geometry
               cluster.precinctIds.forEach((precinctId: string) => {
-                const choroplethLayer = mapState.view?.map.allLayers.find(
-                  (layer: any) => layer.title === 'Precinct Boundaries'
-                ) as __esri.GeoJSONLayer | undefined;
+                const choroplethLayer = mapState.view?.map
+                  ? getPrecinctChoroplethGeoJsonLayer(mapState.view.map)
+                  : undefined;
 
                 if (choroplethLayer) {
-                  const query = choroplethLayer.createQuery();
-                  query.where = `precinct_id = '${precinctId}' OR precinct_name = '${precinctId}'`;
-                  query.returnGeometry = true;
+                  void (async () => {
+                    try {
+                      await choroplethLayer.load();
+                      const whereClause = await buildPaPrecinctWhereClause(precinctId);
+                      const query = choroplethLayer.createQuery();
+                      query.where = whereClause;
+                      query.returnGeometry = true;
 
-                  choroplethLayer.queryFeatures(query).then((result: __esri.FeatureSet) => {
-                    if (result.features.length > 0) {
-                      const graphic = new Graphic({
-                        geometry: result.features[0].geometry,
-                        symbol: new SimpleFillSymbol({
-                          color: color as any,
-                          outline: { color: [color[0], color[1], color[2], 1], width: 2 },
-                        }),
-                        attributes: { clusterId: cluster.id, clusterName: cluster.name || `Cluster ${index + 1}` },
-                      });
-                      clusterLayer.add(graphic);
+                      const result = await choroplethLayer.queryFeatures(query);
+                      if (result.features.length > 0) {
+                        const graphic = new Graphic({
+                          geometry: result.features[0].geometry,
+                          symbol: new SimpleFillSymbol({
+                            color: color as any,
+                            outline: { color: [color[0], color[1], color[2], 1], width: 2 },
+                          }),
+                          attributes: { clusterId: cluster.id, clusterName: cluster.name || `Cluster ${index + 1}` },
+                        });
+                        clusterLayer.add(graphic);
+                      }
+                    } catch {
+                      /* ignore per-precinct cluster draw failures */
                     }
-                  });
+                  })();
                 }
               });
 
@@ -1444,9 +1507,9 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
 
             // Optionally highlight precincts within buffer
             // Query precincts that intersect with the buffer
-            const choroplethLayer = mapState.view?.map.allLayers.find(
-              (layer: any) => layer.title === 'Precinct Boundaries'
-            ) as __esri.GeoJSONLayer | undefined;
+            const choroplethLayer = mapState.view?.map
+              ? getPrecinctChoroplethGeoJsonLayer(mapState.view.map)
+              : undefined;
 
             if (choroplethLayer) {
               const query = choroplethLayer.createQuery();
@@ -1776,17 +1839,22 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
           }));
 
           // Query for the precinct geometry and create pulse animation
-          const choroplethLayer = mapState.view?.map.allLayers.find(
-            (layer: any) => layer.title === 'Precinct Boundaries' || layer.type === 'geojson'
-          ) as __esri.GeoJSONLayer | undefined;
+          const choroplethLayer = mapState.view?.map
+            ? getPrecinctChoroplethGeoJsonLayer(mapState.view.map)
+            : undefined;
 
           if (choroplethLayer) {
-            const query = choroplethLayer.createQuery();
-            query.where = `precinct_id = '${pulseTarget}' OR precinct_name = '${pulseTarget}'`;
-            query.returnGeometry = true;
+            void (async () => {
+              try {
+                await choroplethLayer.load();
+                const whereClause = await buildPaPrecinctWhereClause(pulseTarget);
+                const query = choroplethLayer.createQuery();
+                query.where = whereClause;
+                query.returnGeometry = true;
 
-            choroplethLayer.queryFeatures(query).then(async (result: __esri.FeatureSet) => {
-              if (result.features.length > 0) {
+                const result = await choroplethLayer.queryFeatures(query);
+                if (result.features.length === 0) return;
+
                 const geometry = result.features[0].geometry;
 
                 // Import graphics modules for pulse animation
@@ -1831,46 +1899,44 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
                 mapState.view?.map.add(pulseLayer);
 
                 // Fly to the feature
-                mapState.view?.goTo({ target: geometry, zoom: 13 }, { animate: true })
-                  .then(() => {
-                    // Create pulsing effect by animating opacity
-                    let pulseCount = 0;
-                    const maxPulses = Math.floor(pulseDuration / 400);
-                    let increasing = false;
+                await mapState.view?.goTo({ target: geometry, zoom: 13 }, { animate: true });
 
-                    const pulseInterval = setInterval(() => {
-                      if (pulseCount >= maxPulses) {
-                        clearInterval(pulseInterval);
-                        // Remove pulse layer after animation
-                        setTimeout(() => {
-                          mapState.view?.map.remove(pulseLayer);
-                        }, 500);
-                        dispatchCommandExecuted('pulseFeature', { target: pulseTarget, duration: pulseDuration });
-                        return;
-                      }
+                // Create pulsing effect by animating opacity
+                let pulseCount = 0;
+                const maxPulses = Math.floor(pulseDuration / 400);
+                let increasing = false;
 
-                      // Toggle opacity for pulse effect
-                      const opacity = increasing ? 0.6 : 0.2;
-                      increasing = !increasing;
+                const pulseInterval = setInterval(() => {
+                  if (pulseCount >= maxPulses) {
+                    clearInterval(pulseInterval);
+                    // Remove pulse layer after animation
+                    setTimeout(() => {
+                      mapState.view?.map.remove(pulseLayer);
+                    }, 500);
+                    dispatchCommandExecuted('pulseFeature', { target: pulseTarget, duration: pulseDuration });
+                    return;
+                  }
 
-                      pulseGraphic.symbol = new SimpleFillSymbol({
-                        color: [rgb[0], rgb[1], rgb[2], opacity],
-                        outline: { color: [rgb[0], rgb[1], rgb[2], increasing ? 1 : 0.6], width: increasing ? 4 : 2 }
-                      });
+                  // Toggle opacity for pulse effect
+                  const opacity = increasing ? 0.6 : 0.2;
+                  increasing = !increasing;
 
-                      pulseCount++;
-                    }, 400);
+                  pulseGraphic.symbol = new SimpleFillSymbol({
+                    color: [rgb[0], rgb[1], rgb[2], opacity],
+                    outline: { color: [rgb[0], rgb[1], rgb[2], increasing ? 1 : 0.6], width: increasing ? 4 : 2 }
                   });
+
+                  pulseCount++;
+                }, 400);
+              } catch (error: unknown) {
+                console.error('[PoliticalMapContainer] Error querying precinct for pulse:', error);
+                toast({
+                  title: 'Map Animation Failed',
+                  description: 'Unable to highlight the requested precinct.',
+                  variant: 'destructive',
+                });
               }
-            }).catch((error: Error) => {
-              console.error('[PoliticalMapContainer] Error querying precinct for pulse:', error);
-              // S8-003: Show toast notification on map command failure
-              toast({
-                title: 'Map Animation Failed',
-                description: 'Unable to highlight the requested precinct.',
-                variant: 'destructive',
-              });
-            });
+            })();
           }
         } else {
           console.warn('[PoliticalMapContainer] pulseFeature command requires target');

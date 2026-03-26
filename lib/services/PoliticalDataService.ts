@@ -301,6 +301,15 @@ interface PrecinctRanking {
   competitiveness: string;
 }
 
+/** Metrics supported by precinct-level ranking (jurisdiction or statewide). */
+export type PrecinctRankingMetric =
+  | 'partisan_lean'
+  | 'swing_potential'
+  | 'gotv_priority'
+  | 'persuasion_opportunity'
+  | 'turnout'
+  | 'combined_score';
+
 interface BABlockGroupData {
   geoid: string;
   // Political attitudes
@@ -1326,6 +1335,30 @@ export class PoliticalDataService {
       }
     }
 
+    // PA: match targeting precinct_name / unified display name (AI lists LABEL, map key is UNIQUE_ID)
+    for (const [key, value] of Object.entries(allData)) {
+      const targetingData = targeting[key];
+      const pn = targetingData?.precinct_name?.toLowerCase();
+      if (pn && pn === lowerName) {
+        return value;
+      }
+      if (value.name.toLowerCase() === lowerName) {
+        return value;
+      }
+    }
+
+    const compact = lowerName.replace(/\s+/g, ' ');
+    for (const [key, value] of Object.entries(allData)) {
+      const targetingData = targeting[key];
+      const pn = targetingData?.precinct_name?.toLowerCase()?.replace(/\s+/g, ' ');
+      if (pn && pn === compact) {
+        return value;
+      }
+      if (value.name.toLowerCase().replace(/\s+/g, ' ') === compact) {
+        return value;
+      }
+    }
+
     // Try partial match on key (for searches like "Ingham Precinct 1")
     for (const [key, value] of Object.entries(allData)) {
       if (
@@ -1342,6 +1375,75 @@ export class PoliticalDataService {
       const shortName = targetingData?.short_name?.toLowerCase();
       if (shortName && (shortName.includes(lowerName) || lowerName.includes(shortName))) {
         return value;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolve a human-readable or AI-generated precinct label to the canonical key used on the map
+   * (PA: targeting / GeoJSON UNIQUE_ID, e.g. "037-:-BLOOMSBURG WARD 02").
+   */
+  async resolvePrecinctMapKey(rawLabel: string): Promise<string | null> {
+    await this.initialize();
+
+    const trimmed = rawLabel
+      .trim()
+      .replace(/^\d+[.)]\s*/, '')
+      .replace(/^[\s*•\-]+/g, '')
+      .trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const allData = await this.getUnifiedPrecinctData();
+    const targeting = cache.targetingScores?.precincts || {};
+    const lower = trimmed.toLowerCase();
+
+    if (allData[trimmed]) {
+      return trimmed;
+    }
+
+    for (const key of Object.keys(allData)) {
+      if (key.toLowerCase() === lower) {
+        return key;
+      }
+    }
+
+    for (const [key, t] of Object.entries(targeting)) {
+      if (t?.precinct_id && t.precinct_id.toLowerCase() === lower) {
+        return allData[key] ? key : t.precinct_id;
+      }
+    }
+
+    for (const [key, u] of Object.entries(allData)) {
+      const t = targeting[key];
+      if (t?.precinct_name && t.precinct_name.toLowerCase() === lower) {
+        return key;
+      }
+      if (u.name.toLowerCase() === lower) {
+        return key;
+      }
+    }
+
+    const compact = lower.replace(/\s+/g, ' ');
+    for (const [key, u] of Object.entries(allData)) {
+      const t = targeting[key];
+      if (t?.precinct_name && t.precinct_name.toLowerCase().replace(/\s+/g, ' ') === compact) {
+        return key;
+      }
+      if (u.name.toLowerCase().replace(/\s+/g, ' ') === compact) {
+        return key;
+      }
+    }
+
+    const fuzzy = await this.getUnifiedPrecinct(trimmed);
+    if (fuzzy) {
+      for (const [key, u] of Object.entries(allData)) {
+        if (u.id === fuzzy.id) {
+          return key;
+        }
       }
     }
 
@@ -3238,7 +3340,7 @@ export class PoliticalDataService {
    */
   async rankPrecinctsInJurisdiction(
     jurisdictionName: string,
-    metric: 'partisan_lean' | 'swing_potential' | 'gotv_priority' | 'persuasion_opportunity' | 'turnout',
+    metric: PrecinctRankingMetric,
     order: 'highest' | 'lowest' = 'highest',
     limit?: number
   ): Promise<PrecinctRanking[]> {
@@ -3270,6 +3372,9 @@ export class PoliticalDataService {
         case 'turnout':
           value = political?.turnout?.average ?? null;
           break;
+        case 'combined_score':
+          value = targeting?.combined_score ?? null;
+          break;
       }
 
       if (value !== null) {
@@ -3283,6 +3388,65 @@ export class PoliticalDataService {
     }
 
     // Sort by value
+    rankings.sort((a, b) => (order === 'highest' ? b.value - a.value : a.value - b.value));
+
+    return limit ? rankings.slice(0, limit) : rankings;
+  }
+
+  /**
+   * Rank all precincts in the active region by metric (e.g. statewide PA precincts).
+   */
+  async rankPrecinctsStatewide(
+    metric: PrecinctRankingMetric,
+    order: 'highest' | 'lowest' = 'highest',
+    limit?: number
+  ): Promise<PrecinctRanking[]> {
+    await this.initialize();
+
+    const targetingData = cache.targetingScores?.precincts || {};
+    const politicalData = cache.politicalScores?.precincts || {};
+    const names = new Set([
+      ...Object.keys(targetingData),
+      ...Object.keys(politicalData),
+    ]);
+    const rankings: PrecinctRanking[] = [];
+
+    for (const precinctName of names) {
+      const targeting = targetingData[precinctName];
+      const political = politicalData[precinctName];
+
+      let value: number | null = null;
+      switch (metric) {
+        case 'partisan_lean':
+          value = political?.partisan_lean ?? null;
+          break;
+        case 'swing_potential':
+          value = political?.swing_potential ?? targeting?.swing_potential ?? null;
+          break;
+        case 'gotv_priority':
+          value = targeting?.gotv_priority ?? null;
+          break;
+        case 'persuasion_opportunity':
+          value = targeting?.persuasion_opportunity ?? null;
+          break;
+        case 'turnout':
+          value = political?.turnout?.average ?? null;
+          break;
+        case 'combined_score':
+          value = targeting?.combined_score ?? null;
+          break;
+      }
+
+      if (value !== null) {
+        rankings.push({
+          precinctName,
+          value,
+          strategy: targeting?.targeting_strategy || 'Unknown',
+          competitiveness: political?.classification?.competitiveness || 'Unknown',
+        });
+      }
+    }
+
     rankings.sort((a, b) => (order === 'highest' ? b.value - a.value : a.value - b.value));
 
     return limit ? rankings.slice(0, limit) : rankings;
