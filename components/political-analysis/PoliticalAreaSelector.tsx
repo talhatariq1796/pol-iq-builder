@@ -831,11 +831,11 @@ export function PoliticalAreaSelector({
   }, [boundaryType, selectedBoundaryIds, boundaryFeatures]);
 
   // Create selection from click-buffer or search
-  const createBufferSelection = useCallback((): PoliticalAreaSelection | null => {
+  const createBufferSelection = useCallback(async (): Promise<PoliticalAreaSelection | null> => {
     if (!bufferGeometry || !clickedPoint) return null;
 
-    // Convert ArcGIS geometry to GeoJSON
-    const geojsonGeometry = geometryToGeoJSON(bufferGeometry);
+    // Convert ArcGIS geometry to GeoJSON (project to WGS84 — buffer/draw use map SR, often 3857)
+    const geojsonGeometry = await geometryToGeoJSON(bufferGeometry);
     if (!geojsonGeometry) return null;
 
     const displayName =
@@ -860,10 +860,10 @@ export function PoliticalAreaSelector({
   }, [bufferGeometry, clickedPoint, bufferType, bufferValue, activeMethod, searchedLocation]);
 
   // Create selection from drawn geometry
-  const createDrawSelection = useCallback((): PoliticalAreaSelection | null => {
+  const createDrawSelection = useCallback(async (): Promise<PoliticalAreaSelection | null> => {
     if (!drawnGeometry) return null;
 
-    const geojsonGeometry = geometryToGeoJSON(drawnGeometry);
+    const geojsonGeometry = await geometryToGeoJSON(drawnGeometry);
     if (!geojsonGeometry) return null;
 
     // Calculate area for display name
@@ -988,7 +988,7 @@ export function PoliticalAreaSelector({
   }, [selectedPrecinctNames, selectedH3Indices, boundaryFeatures, h3ClickFeatures]);
 
   // Handle analyze button click
-  const handleAnalyze = useCallback(() => {
+  const handleAnalyze = useCallback(async () => {
     console.log('[PoliticalAreaSelector] Analyze button clicked, method:', activeMethod);
     let selection: PoliticalAreaSelection | null = null;
 
@@ -1004,11 +1004,11 @@ export function PoliticalAreaSelector({
       case 'click-buffer':
       case 'search':
         console.log('[PoliticalAreaSelector] Creating buffer selection, hasBuffer:', !!bufferGeometry);
-        selection = createBufferSelection();
+        selection = await createBufferSelection();
         break;
       case 'draw':
         console.log('[PoliticalAreaSelector] Creating draw selection, hasGeometry:', !!drawnGeometry);
-        selection = createDrawSelection();
+        selection = await createDrawSelection();
         break;
     }
 
@@ -1523,40 +1523,50 @@ export function PoliticalAreaSelector({
 }
 
 /**
- * Convert ArcGIS geometry to GeoJSON
+ * Convert ArcGIS geometry to GeoJSON in WGS84 (EPSG:4326).
+ * Map sketch/buffer geometries use the view spatial reference (often Web Mercator 3857).
+ * GeoEnrichment CreateReport expects geographic coordinates when spatialReference is 4326.
  */
-function geometryToGeoJSON(geometry: __esri.Geometry): GeoJSON.Geometry | null {
+async function geometryToGeoJSON(geometry: __esri.Geometry): Promise<GeoJSON.Geometry | null> {
   try {
-    if (geometry.type === 'polygon') {
-      const polygon = geometry as __esri.Polygon;
-      if (polygon.rings.length === 1) {
-        return {
-          type: 'Polygon',
-          coordinates: [polygon.rings[0].map((coord) => [coord[0], coord[1]])],
-        };
-      } else {
-        return {
-          type: 'MultiPolygon',
-          coordinates: polygon.rings.map((ring) => [
-            ring.map((coord) => [coord[0], coord[1]]),
-          ]),
-        };
-      }
-    } else if (geometry.type === 'point') {
-      const point = geometry as __esri.Point;
+    const projection = await import('@arcgis/core/geometry/projection');
+    const SpatialReference = (await import('@arcgis/core/geometry/SpatialReference')).default;
+    await projection.load();
+
+    const sr = geometry.spatialReference;
+    const wkid = sr?.wkid ?? sr?.latestWkid;
+    let g: __esri.Geometry = geometry;
+    if (wkid != null && wkid !== 4326) {
+      g = projection.project(geometry, new SpatialReference({ wkid: 4326 })) as __esri.Geometry;
+    }
+
+    if (g.type === 'polygon') {
+      const polygon = g as __esri.Polygon;
+      // Esri: first ring exterior, rest holes — one GeoJSON Polygon, not MultiPolygon per ring
+      const coordinates = polygon.rings.map((ring) =>
+        ring.map((coord) => [coord[0], coord[1]] as [number, number]),
+      );
+      return {
+        type: 'Polygon',
+        coordinates,
+      };
+    }
+    if (g.type === 'point') {
+      const point = g as __esri.Point;
       return {
         type: 'Point',
         coordinates: [point.longitude ?? 0, point.latitude ?? 0],
       };
-    } else if ((geometry as any).type === 'circle') {
-      // Circle is converted to polygon
-      const circle = geometry as any;
-      if (circle.rings) {
-        return {
-          type: 'Polygon',
-          coordinates: [circle.rings[0].map((coord: number[]) => [coord[0], coord[1]])],
-        };
-      }
+    }
+    if ((g as any).type === 'circle' && (g as any).rings?.length) {
+      const circle = g as any;
+      const coordinates = circle.rings.map((ring: number[][]) =>
+        ring.map((coord: number[]) => [coord[0], coord[1]] as [number, number]),
+      );
+      return {
+        type: 'Polygon',
+        coordinates,
+      };
     }
     return null;
   } catch (e) {

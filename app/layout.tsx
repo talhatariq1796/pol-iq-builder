@@ -9,7 +9,7 @@ import ThemeProvider from '@/components/theme/ThemeProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'MPIQ',
+  title: 'MPIQ - PA',
   description: '',
   icons: {
     icon: '/mpiq_pin2.png',
