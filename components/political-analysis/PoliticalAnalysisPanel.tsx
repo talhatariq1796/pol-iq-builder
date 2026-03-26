@@ -9,7 +9,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
-// Card removed - using simpler div wrapper since container provides panel chrome
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,14 +17,11 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  Vote,
   MapPin,
   BarChart3,
   FileText,
   Users,
   TrendingUp,
-  TrendingDown,
-  Minus,
   AlertCircle,
   CheckCircle,
   Loader2,
@@ -37,10 +33,8 @@ import {
   Zap,
   PieChart,
   Circle,
-  Clock,
   Footprints,
   Car,
-  X,
 } from 'lucide-react';
 
 import { PoliticalAreaSelector } from './PoliticalAreaSelector';
@@ -58,12 +52,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Polygon from '@arcgis/core/geometry/Polygon';
-import Point from '@arcgis/core/geometry/Point';
 import Extent from '@arcgis/core/geometry/Extent';
 import * as projection from '@arcgis/core/geometry/projection';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import type { PoliticalAreaSelection, PrecinctPoliticalScores, BoundaryLayerType } from '@/types/political';
-import { colors, getPartisanColorClass, getStrategyColor } from '@/lib/ui/colors';
 import { MetricLabel } from '@/components/ui/metric-label';
 
 interface TargetingScoreSummary {
@@ -367,95 +359,6 @@ async function goToBoundaryCentroids(
   }
 }
 
-function collectPrecinctsForCensusInternalPoints(
-  centroidLngLat: [number, number][],
-  boundaries: GeoJSON.FeatureCollection,
-  allPrecinctScores: Map<string, PrecinctPoliticalScores>,
-  allTargetingScores: Record<string, unknown>,
-): Array<{
-  name: string;
-  overlapRatio: number;
-  registeredVoters: number;
-  partisanLean: number;
-}> {
-  if (centroidLngLat.length === 0) return [];
-
-  const points = centroidLngLat.map(
-    ([lng, lat]) =>
-      new Point({ longitude: lng, latitude: lat, spatialReference: { wkid: 4326 } }),
-  );
-  const matchedPrecincts = new Set<string>();
-  const out: Array<{
-    name: string;
-    overlapRatio: number;
-    registeredVoters: number;
-    partisanLean: number;
-  }> = [];
-
-  for (const feature of boundaries.features) {
-    const g = feature.geometry;
-    if (!g || (g.type !== 'Polygon' && g.type !== 'MultiPolygon')) continue;
-
-    const props = feature.properties as Record<string, unknown> | undefined;
-    const precinctKey =
-      props?.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ''
-        ? String(props.UNIQUE_ID)
-        : props?.precinct_id != null && String(props.precinct_id) !== ''
-          ? String(props.precinct_id)
-          : props?.NAME != null && String(props.NAME) !== ''
-            ? String(props.NAME)
-            : '';
-    if (!precinctKey || matchedPrecincts.has(precinctKey)) continue;
-
-    const precBbox = geojsonBBox(g);
-    const precinctPoly = geoJsonToArcgisPolygonInSR(g, 4326);
-    if (!precinctPoly) continue;
-
-    let anyPointInside = false;
-    for (const pt of points) {
-      const lng = pt.longitude;
-      const lat = pt.latitude;
-      if (
-        precBbox &&
-        (lng < precBbox.xmin ||
-          lng > precBbox.xmax ||
-          lat < precBbox.ymin ||
-          lat > precBbox.ymax)
-      ) {
-        continue;
-      }
-      try {
-        if (geometryEngine.contains(precinctPoly, pt) || geometryEngine.intersects(precinctPoly, pt)) {
-          anyPointInside = true;
-          break;
-        }
-      } catch {
-        /* invalid geom pair */
-      }
-    }
-
-    if (!anyPointInside) continue;
-
-    matchedPrecincts.add(precinctKey);
-    const scores =
-      allPrecinctScores.get(precinctKey) ??
-      Array.from(allPrecinctScores.values()).find((s) => s.precinctName === precinctKey);
-    const targeting = allTargetingScores[precinctKey] as Record<string, unknown> | undefined;
-
-    out.push({
-      name: precinctKey,
-      overlapRatio: 1,
-      registeredVoters:
-        Number(targeting?.registered_voters) ||
-        Number(targeting?.active_voters) ||
-        0,
-      partisanLean: resolvePartisanLeanForDisplay(scores, targeting),
-    });
-  }
-
-  return out;
-}
-
 export function PoliticalAnalysisPanel({
   view,
   onGenerateReport,
@@ -644,11 +547,29 @@ export function PoliticalAnalysisPanel({
       try {
         console.log('[PoliticalAnalysisPanel] Loading infographic reports directly from ArcGIS...');
 
-        const token = process.env.NEXT_PUBLIC_ARCGIS_API_KEY_2;
+        const token = (process.env.NEXT_PUBLIC_ARCGIS_API_KEY || '').trim();
         if (!token) {
-          console.error('[PoliticalAnalysisPanel] No ArcGIS token available');
+          const msg =
+            'Missing NEXT_PUBLIC_ARCGIS_API_KEY in environment. Add it to .env.local and restart the dev server.';
+          console.error(`[PoliticalAnalysisPanel] ${msg}`);
+          setInfographicError(msg);
           return;
         }
+
+        // Tokens often contain +, /, = — must be encoded in query strings or + becomes a space and auth fails.
+        const tokenQ = encodeURIComponent(token);
+
+        const thumbnailUrlForItem = (item: {
+          id: string;
+          thumbnail?: string;
+        }): string => {
+          const t = item.thumbnail?.trim();
+          if (t?.startsWith('http')) return t;
+          if (t) {
+            return `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/${t}?token=${tokenQ}`;
+          }
+          return `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/thumbnail/thumbnail.png?token=${tokenQ}`;
+        };
 
         // Fetch all Synapse54 Report Templates with pagination
         const allItems: Array<{ id: string; title: string; thumbnail?: string; snippet?: string }> = [];
@@ -656,7 +577,7 @@ export function PoliticalAnalysisPanel({
         let hasMore = true;
 
         while (hasMore && allItems.length < 300) {
-          const url = `https://www.arcgis.com/sharing/rest/search?q=owner:Synapse54 AND type:"Report Template"&f=pjson&token=${token}&num=100&start=${start}&sortField=title&sortOrder=asc`;
+          const url = `https://www.arcgis.com/sharing/rest/search?q=owner:Synapse54 AND type:"Report Template"&f=pjson&token=${tokenQ}&num=100&start=${start}&sortField=title&sortOrder=asc`;
 
           const response = await fetch(url);
           if (!response.ok) break;
@@ -678,9 +599,7 @@ export function PoliticalAnalysisPanel({
             id: item.id,
             title: item.title || 'Untitled',
             description: item.snippet || 'Census demographic infographic',
-            thumbnail: item.thumbnail
-              ? `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/${item.thumbnail}?token=${token}`
-              : `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/thumbnail/thumbnail.png?token=${token}`,
+            thumbnail: thumbnailUrlForItem(item),
             categories: ['Census', 'Demographics'],
           }));
 
@@ -761,86 +680,123 @@ export function PoliticalAnalysisPanel({
     setGeneratedInfographicHtml(null);
 
     try {
-      const token = process.env.NEXT_PUBLIC_ARCGIS_API_KEY_2 || '';
+      if (!(process.env.NEXT_PUBLIC_ARCGIS_API_KEY || '').trim()) {
+        throw new Error(
+          'Missing NEXT_PUBLIC_ARCGIS_API_KEY. Add it to .env.local and restart the dev server.',
+        );
+      }
 
-      // Build study area based on buffer settings
-      let studyArea: any;
+      // Build study area(s) for GeoEnrichment CreateReport.
+      // Polygons must use plain geometry + optional attributes — not areaType "StandardGeography"
+      // (that type requires IntersectingGeographies). See Esri CreateReport polygon example.
+      const locationLabel =
+        selectedArea?.displayName ?? selectedPrecinct?.precinctName ?? 'Selected area';
 
-      if (geometry.type === 'point' && bufferType !== 'none') {
-        const point = geometry as __esri.Point;
-        if (bufferType === 'radius') {
-          studyArea = {
-            geometry: {
-              x: point.longitude,
-              y: point.latitude,
-              spatialReference: { wkid: 4326 }
-            },
-            areaType: 'RingBuffer',
-            bufferUnits: 'esriMiles',
-            bufferRadii: [bufferValue]
-          };
-        } else if (bufferType === 'drive') {
-          studyArea = {
-            geometry: {
-              x: point.longitude,
-              y: point.latitude,
-              spatialReference: { wkid: 4326 }
-            },
-            areaType: 'DriveTimeBuffer',
-            bufferUnits: 'esriDriveTimeUnitsMinutes',
-            bufferRadii: [bufferValue]
-          };
-        } else if (bufferType === 'walk') {
-          studyArea = {
-            geometry: {
-              x: point.longitude,
-              y: point.latitude,
-              spatialReference: { wkid: 4326 }
-            },
-            areaType: 'WalkTimeBuffer',
-            bufferUnits: 'esriWalkTimeUnitsMinutes',
-            bufferRadii: [bufferValue]
-          };
-        }
-      } else if (geometry.type === 'polygon') {
-        const polygon = geometry as __esri.Polygon;
-        studyArea = {
+      let studyAreas: any[];
+
+      if (selectedArea?.geometry?.type === 'MultiPolygon') {
+        const multi = selectedArea.geometry as GeoJSON.MultiPolygon;
+        studyAreas = multi.coordinates.map((polygonCoords, i) => ({
           geometry: {
-            rings: polygon.rings,
-            spatialReference: { wkid: 4326 }
+            rings: polygonCoords,
+            spatialReference: { wkid: 4326 },
           },
-          areaType: 'StandardGeography'
-        };
-      } else {
-        // Default point without buffer
+          attributes: {
+            id: String(i + 1),
+            name:
+              multi.coordinates.length > 1
+                ? `${locationLabel} (${i + 1}/${multi.coordinates.length})`
+                : locationLabel,
+          },
+        }));
+      } else if (geometry.type === 'point' && bufferType !== 'none') {
         const point = geometry as __esri.Point;
-        studyArea = {
+        const base = {
           geometry: {
             x: point.longitude,
             y: point.latitude,
-            spatialReference: { wkid: 4326 }
+            spatialReference: { wkid: 4326 },
           },
-          areaType: 'RingBuffer',
-          bufferUnits: 'esriMiles',
-          bufferRadii: [1] // Default 1 mile
         };
+        if (bufferType === 'radius') {
+          studyAreas = [
+            {
+              ...base,
+              areaType: 'RingBuffer',
+              bufferUnits: 'esriMiles',
+              bufferRadii: [bufferValue],
+            },
+          ];
+        } else if (bufferType === 'drive') {
+          studyAreas = [
+            {
+              ...base,
+              areaType: 'DriveTimeBuffer',
+              bufferUnits: 'esriDriveTimeUnitsMinutes',
+              bufferRadii: [bufferValue],
+            },
+          ];
+        } else if (bufferType === 'walk') {
+          studyAreas = [
+            {
+              ...base,
+              areaType: 'WalkTimeBuffer',
+              bufferUnits: 'esriWalkTimeUnitsMinutes',
+              bufferRadii: [bufferValue],
+            },
+          ];
+        } else {
+          studyAreas = [
+            {
+              ...base,
+              areaType: 'RingBuffer',
+              bufferUnits: 'esriMiles',
+              bufferRadii: [bufferValue],
+            },
+          ];
+        }
+      } else if (geometry.type === 'polygon') {
+        const polygon = geometry as __esri.Polygon;
+        studyAreas = [
+          {
+            geometry: {
+              rings: polygon.rings,
+              spatialReference: { wkid: 4326 },
+            },
+            attributes: { id: '1', name: locationLabel },
+          },
+        ];
+      } else {
+        const point = geometry as __esri.Point;
+        studyAreas = [
+          {
+            geometry: {
+              x: point.longitude,
+              y: point.latitude,
+              spatialReference: { wkid: 4326 },
+            },
+            areaType: 'RingBuffer',
+            bufferUnits: 'esriMiles',
+            bufferRadii: [1],
+            attributes: { id: '1', name: locationLabel },
+          },
+        ];
       }
 
       console.log('[PoliticalAnalysisPanel] Generating infographic with:', {
         template: selectedInfographicTemplate,
-        studyArea,
+        studyAreas,
         bufferType,
-        bufferValue
+        bufferValue,
       });
 
       const response = await fetch('/api/arcgis/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token,
-          studyArea,
-          reportTemplate: selectedInfographicTemplate
-        })
+          studyAreas,
+          reportTemplate: selectedInfographicTemplate,
+        }),
       });
 
       const data = await response.json();
@@ -1136,7 +1092,7 @@ export function PoliticalAnalysisPanel({
       const scores =
         allPrecinctScores.get(precinctKey) ??
         Array.from(allPrecinctScores.values()).find((s) => s.precinctName === precinctKey);
-      const targeting = allTargetingScores[precinctKey] as Record<string, unknown> | undefined;
+      const targeting = allTargetingScores[precinctKey];
 
       intersectingPrecincts.push({
         name: precinctKey,
@@ -2326,7 +2282,7 @@ export function PoliticalAnalysisPanel({
                     <span className="text-xs text-gray-500">{filteredInfographicReports.length} available</span>
                   </div>
 
-                  {/* Search and Filter */}
+                  {/* Search and Filter
                   <div className="flex gap-2">
                     <Input
                       placeholder="Search templates..."
@@ -2343,7 +2299,7 @@ export function PoliticalAnalysisPanel({
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
-                  </div>
+                  </div> */}
 
                   {/* Template Grid */}
                   <ScrollArea className="h-[280px] border rounded-lg">

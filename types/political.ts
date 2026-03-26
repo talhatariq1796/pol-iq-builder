@@ -422,6 +422,7 @@ export interface PoliticalAreaSelection {
 
 export type BoundaryLayerType =
   | 'precinct'
+  | 'h3'
   | 'zip-code'
   | 'block-group'
   | 'census-tract'

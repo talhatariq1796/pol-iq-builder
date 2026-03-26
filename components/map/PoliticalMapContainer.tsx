@@ -535,6 +535,8 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
         // Note: For full spatial query (precincts within boundary), would need GIS operation
         if (layerType === 'precinct') {
           precinctIds = selectedIds;
+        } else if (layerType === 'h3') {
+          precinctIds = [];
         } else {
           // For other boundary types, load precincts and filter by name match if possible
           const precinctData = await politicalDataService.loadPrecinctBoundaries();
@@ -2336,7 +2338,7 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
           {/* Temporal Mode Toggle & Controls */}
           {activeLayer !== 'none' && (
             <>
-              <button
+              {/* <button
                 onClick={handleTemporalToggle}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${isTemporalMode
                   ? 'bg-purple-500 text-white'
@@ -2347,7 +2349,7 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
               >
                 <Clock className="w-3.5 h-3.5" />
                 Time
-              </button>
+              </button> */}
 
               {/* Temporal Controls - Only when temporal mode is active */}
               {isTemporalMode && (

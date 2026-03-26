@@ -28,7 +28,7 @@ METHODOLOGY & DATA SOURCES:
 Multi-Resolution Analysis Framework:
 - ELECTION DATA: Precincts (geography where results are reported in the PA build)
 - TARGETING: precinct_targeting_scores.json combines election history with modeled scores
-- VISUALIZATION: Choropleth and heatmaps use precinct or other loaded layers; H3 may be absent in PA-only builds
+- VISUALIZATION: Choropleth and heatmaps use precinct or other loaded layers; PA H3 hex layer uses pa_h3_aggregates (res 7) from PoliticalDataService when state is Pennsylvania
 - Demographic enrichment: When block-group or BA joins exist for PA, use them; otherwise rely on fields embedded in targeting layers
 
 Data Sources (Pennsylvania: public/data/political/pensylvania/ with precincts/, districts/, demographics/, block-groups/, census-tracts/, gotv-layers/):

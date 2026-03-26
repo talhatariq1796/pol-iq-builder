@@ -23,6 +23,17 @@ export const BOUNDARY_LAYERS: Record<BoundaryLayerType, BoundaryLayerConfig> = {
     color: '#6366f1',
     hasData: true,
   },
+  h3: {
+    type: 'h3',
+    displayName: 'H3 Hex (res 7)',
+    pluralName: 'H3 Hex Cells',
+    source: 'Aggregated from precinct centroids (build-pa-h3-aggregates)',
+    idField: 'h3_index',
+    nameField: 'h3_index',
+    dataPath: `${PRECINCTS}/pa_h3_aggregates.geojson`,
+    color: '#a855f7',
+    hasData: false,
+  },
   'zip-code': {
     type: 'zip-code',
     displayName: 'ZIP Code',

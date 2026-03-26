@@ -5,13 +5,33 @@ import axios from 'axios';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token, studyArea, reportTemplate } = body;
+    const { studyArea, studyAreas: studyAreasBody, reportTemplate } = body;
+
+    const token = (process.env.NEXT_PUBLIC_ARCGIS_API_KEY || '').trim();
 
     if (!token) {
-      return NextResponse.json({
-        error: 'Missing API key',
-        details: 'API key is required'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing API key',
+          details:
+            'Set NEXT_PUBLIC_ARCGIS_API_KEY in .env.local and restart the dev server (or redeploy).',
+        },
+        { status: 400 },
+      );
+    }
+
+    const studyAreas =
+      Array.isArray(studyAreasBody) && studyAreasBody.length > 0
+        ? studyAreasBody
+        : studyArea
+          ? [studyArea]
+          : [];
+
+    if (studyAreas.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid request', details: 'Missing studyArea or studyAreas' },
+        { status: 400 },
+      );
     }
 
     // Format the request data
@@ -20,8 +40,13 @@ export async function POST(request: NextRequest) {
     formData.append('token', token);
     formData.append('report', reportTemplate);
     formData.append('format', 'html');
-    formData.append('studyAreas', JSON.stringify([studyArea]));
+    formData.append('studyAreas', JSON.stringify(studyAreas));
     formData.append('langCode', 'en-us');
+    // US / PA: pin country + hierarchy so enrichment uses US census-style data (faster + consistent)
+    formData.append(
+      'useData',
+      JSON.stringify({ sourceCountry: 'US', hierarchy: 'esri2025' }),
+    );
 
     // Make request to ArcGIS GeoEnrichment API
     const response = await axios.post(
@@ -58,8 +83,8 @@ export async function POST(request: NextRequest) {
 
       // Check multiple possible response formats
       reportHtml = response.data.results?.[0]?.value?.reportHtml ||
-                   response.data.results?.[0]?.reportHtml ||
-                   response.data.reportHtml;
+        response.data.results?.[0]?.reportHtml ||
+        response.data.reportHtml;
     }
 
     if (!reportHtml) {
@@ -73,7 +98,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Report generation error:', error);
-    
+
     let errorMessage = 'Unknown error';
     let statusCode = 500;
 

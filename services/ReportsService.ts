@@ -170,8 +170,13 @@ export const fetchReports = async (): Promise<Report[]> => {
   try {
     console.log('[ReportsService] Fetching reports from ArcGIS servers...');
     
-    const token = process.env.NEXT_PUBLIC_ARCGIS_API_KEY_2 || '';
-    
+    const token = (process.env.NEXT_PUBLIC_ARCGIS_API_KEY || '').trim();
+    if (!token) {
+      throw new Error('NEXT_PUBLIC_ARCGIS_API_KEY is not set in the environment.');
+    }
+
+    const tokenQ = encodeURIComponent(token);
+
     // Paginate through all Synapse54 Report Templates since API has 100-item limit
     const allItems: ArcGISItem[] = [];
     const successfulEndpoints: string[] = [];
@@ -184,7 +189,7 @@ export const fetchReports = async (): Promise<Report[]> => {
       let hasMore = true;
       
       while (hasMore && totalFetched < 300) { // Safety limit
-        const url = `https://www.arcgis.com/sharing/rest/search?q=owner:Synapse54 AND type:"Report Template"&f=pjson&token=${token}&num=100&start=${start}&sortField=title&sortOrder=asc`;
+        const url = `https://www.arcgis.com/sharing/rest/search?q=owner:Synapse54 AND type:"Report Template"&f=pjson&token=${tokenQ}&num=100&start=${start}&sortField=title&sortOrder=asc`;
         
         console.log(`[ReportsService] Fetching page starting at ${start}...`);
         const response = await fetch(url);
@@ -436,12 +441,12 @@ export const fetchReports = async (): Promise<Report[]> => {
       let thumbnailUrl = '';
       if (item.thumbnail) {
         if (!item.thumbnail.startsWith('http')) {
-          thumbnailUrl = `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/${item.thumbnail}?token=${token}`;
+          thumbnailUrl = `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/${item.thumbnail}?token=${tokenQ}`;
         } else {
           thumbnailUrl = item.thumbnail;
         }
       } else {
-        thumbnailUrl = `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/thumbnail/thumbnail.png?token=${token}`;
+        thumbnailUrl = `https://www.arcgis.com/sharing/rest/content/items/${item.id}/info/thumbnail/thumbnail.png?token=${tokenQ}`;
       }
       
       return {
@@ -480,6 +485,12 @@ export const fetchReports = async (): Promise<Report[]> => {
     
   } catch (error) {
     console.error('[ReportsService] Error fetching reports:', error);
+    if (
+      error instanceof Error &&
+      error.message.includes('NEXT_PUBLIC_ARCGIS_API_KEY is not set')
+    ) {
+      throw error;
+    }
     // Return just custom reports if fetch fails
     return CUSTOM_REPORTS;
   }

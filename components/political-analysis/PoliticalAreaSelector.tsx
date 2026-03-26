@@ -44,6 +44,7 @@ import { BoundaryLayerPicker, BOUNDARY_LAYERS } from './BoundaryLayerPicker';
 import { BoundarySearch, BoundaryFeature } from './BoundarySearch';
 import { LocationSearch, LocationResult } from '@/components/common/location-search';
 import { useDrawing } from '@/hooks/useDrawing';
+import type { Feature as GeoJSONFeature } from 'geojson';
 import type { BoundaryLayerType, PoliticalAreaSelection } from '@/types/political';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
 import { loadBoundaryFeatureCollection } from '@/lib/map/geojsonMergeLoader';
@@ -154,6 +155,9 @@ export function PoliticalAreaSelector({
   // Click-select: selected Pennsylvania precinct UNIQUE_IDs (matches unified / targeting keys).
   const [selectedPrecinctNames, setSelectedPrecinctNames] = useState<string[]>([]);
   const [selectedPrecinctFeatures, setSelectedPrecinctFeatures] = useState<BoundaryFeature[]>([]);
+  /** H3 res-7 cell indices when the heatmap layer is clicked (parallel to precinct click-select). */
+  const [selectedH3Indices, setSelectedH3Indices] = useState<string[]>([]);
+  const [h3ClickFeatures, setH3ClickFeatures] = useState<BoundaryFeature[]>([]);
   const [clickSelectEventHandle, setClickSelectEventHandle] = useState<__esri.WatchHandle | null>(null);
 
   // Boundary selection state - default to null to prevent layer showing on load
@@ -219,9 +223,12 @@ export function PoliticalAreaSelector({
       case 'click-select':
         // Auto-enable click-select mode
         setClickSelectMode(true);
-        // Also enable precinct boundary layer for visual feedback
         if (onBoundarySelectionChange) {
-          onBoundarySelectionChange('precinct', selectedPrecinctNames);
+          if (selectedH3Indices.length > 0) {
+            onBoundarySelectionChange('h3', selectedH3Indices);
+          } else {
+            onBoundarySelectionChange('precinct', selectedPrecinctNames);
+          }
         }
         break;
       case 'click-buffer':
@@ -250,7 +257,7 @@ export function PoliticalAreaSelector({
       // boundary-select: User must explicitly select a boundary type from dropdown
       // No auto-activation to keep map clean on initial load
     }
-  }, [activeMethod, isSelecting, startDrawing, onBoundarySelectionChange, selectedPrecinctNames]);
+  }, [activeMethod, isSelecting, startDrawing, onBoundarySelectionChange, selectedPrecinctNames, selectedH3Indices]);
 
   // Click-select mode: Listen for map clicks on precinct layer
   useEffect(() => {
@@ -321,6 +328,31 @@ export function PoliticalAreaSelector({
         console.log(
           `[PoliticalAreaSelector] Loaded ${features.length} precincts with geometry (PA ${BOUNDARY_LAYERS.precinct.dataPath}; ${Object.keys(unifiedPrecincts).length} unified, ${boundaries.features?.length ?? 0} boundary features)`,
         );
+
+        try {
+          const h3Fc = await politicalDataService.loadH3GeoJSON();
+          const h3Feats: BoundaryFeature[] = (h3Fc.features || [])
+            .map((f: GeoJSONFeature) => {
+              const hid = f.properties && String((f.properties as Record<string, unknown>).h3_index ?? '');
+              if (!hid || !f.geometry) return null;
+              const p = f.properties as Record<string, unknown>;
+              return {
+                id: hid,
+                name: hid,
+                displayName: `H3 ${hid.length > 12 ? `${hid.slice(0, 10)}…` : hid}`,
+                geometry: f.geometry,
+                properties: p,
+                partisanLean: typeof p.partisan_lean === 'number' ? p.partisan_lean : undefined,
+                swingPotential: typeof p.swing_potential === 'number' ? p.swing_potential : undefined,
+              } as BoundaryFeature;
+            })
+            .filter((f): f is BoundaryFeature => f != null);
+          setH3ClickFeatures(h3Feats);
+          console.log(`[PoliticalAreaSelector] Loaded ${h3Feats.length} H3 cells for click-select`);
+        } catch (h3Err) {
+          console.warn('[PoliticalAreaSelector] Could not load H3 GeoJSON for click-select:', h3Err);
+          setH3ClickFeatures([]);
+        }
       } catch (e) {
         console.warn('[PoliticalAreaSelector] Could not load precincts for click-select:', e);
       }
@@ -330,43 +362,71 @@ export function PoliticalAreaSelector({
     // Set up click handler - hitTest on the view to detect precinct features
     const handle = view.on('click', async (event) => {
       try {
-        // Hit test to find clicked features
+        // Hit test to find clicked features (precinct GeoJSON, H3 GeoJSON, feature layers)
         const hitResponse = await view.hitTest(event, {
           include: view.map.allLayers.filter(layer =>
             layer.title?.toLowerCase().includes('precinct') ||
+            layer.title?.toLowerCase().includes('h3') ||
             layer.type === 'feature' ||
             layer.type === 'geojson'
           ).toArray()
         });
 
-        if (hitResponse.results && hitResponse.results.length > 0) {
-          // Find a precinct feature in the results
-          const precinctResult = hitResponse.results.find((result: any) => {
-            const attrs = result.graphic?.attributes;
-            return attrs?.UNIQUE_ID || attrs?.precinct_name || attrs?.NAME;
-          });
+        if (!hitResponse.results || hitResponse.results.length === 0) {
+          return;
+        }
 
-          if (precinctResult) {
-            const attrs = (precinctResult as any).graphic?.attributes;
-            const precinctId =
-              attrs?.UNIQUE_ID != null && attrs.UNIQUE_ID !== ''
-                ? String(attrs.UNIQUE_ID)
-                : attrs?.precinct_name != null && attrs.precinct_name !== ''
-                  ? String(attrs.precinct_name)
-                  : attrs?.NAME != null && attrs.NAME !== ''
-                    ? String(attrs.NAME)
-                    : null;
+        const getAttrs = (r: { graphic?: __esri.Graphic }) =>
+          r.graphic?.attributes as Record<string, unknown> | undefined;
 
-            if (precinctId) {
-              setSelectedPrecinctNames((prev: string[]) => {
-                if (prev.includes(precinctId)) {
-                  return prev.filter(n => n !== precinctId);
-                }
-                return [...prev, precinctId];
-              });
+        const h3Hit = hitResponse.results.find((result: { graphic?: __esri.Graphic }) => {
+          const a = getAttrs(result);
+          return a?.h3_index != null && String(a.h3_index) !== '';
+        });
 
-              console.log('[PoliticalAreaSelector] Click-select toggled:', precinctId);
-            }
+        if (h3Hit) {
+          const attrs = getAttrs(h3Hit);
+          const h3Id = attrs ? String(attrs.h3_index) : '';
+          if (h3Id) {
+            setSelectedPrecinctNames([]);
+            setSelectedH3Indices((prev: string[]) => {
+              if (prev.includes(h3Id)) {
+                return prev.filter((n) => n !== h3Id);
+              }
+              return [...prev, h3Id];
+            });
+            console.log('[PoliticalAreaSelector] Click-select toggled H3 cell:', h3Id);
+          }
+          return;
+        }
+
+        const precinctResult = hitResponse.results.find((result: { graphic?: __esri.Graphic }) => {
+          const attrs = getAttrs(result);
+          return attrs?.UNIQUE_ID || attrs?.precinct_name || attrs?.NAME;
+        });
+
+        if (precinctResult) {
+          const attrs = getAttrs(precinctResult);
+          if (!attrs) return;
+          const precinctId =
+            attrs.UNIQUE_ID != null && attrs.UNIQUE_ID !== ''
+              ? String(attrs.UNIQUE_ID)
+              : attrs.precinct_name != null && attrs.precinct_name !== ''
+                ? String(attrs.precinct_name)
+                : attrs.NAME != null && attrs.NAME !== ''
+                  ? String(attrs.NAME)
+                  : null;
+
+          if (precinctId) {
+            setSelectedH3Indices([]);
+            setSelectedPrecinctNames((prev: string[]) => {
+              if (prev.includes(precinctId)) {
+                return prev.filter((n) => n !== precinctId);
+              }
+              return [...prev, precinctId];
+            });
+
+            console.log('[PoliticalAreaSelector] Click-select toggled precinct:', precinctId);
           }
         }
       } catch (e) {
@@ -381,12 +441,17 @@ export function PoliticalAreaSelector({
     };
   }, [view, activeMethod, clickSelectMode]);
 
-  // Notify parent when click-select selection changes
+  // Notify parent when click-select selection changes (precinct or H3 hex)
   useEffect(() => {
-    if (activeMethod === 'click-select' && onBoundarySelectionChange) {
+    if (activeMethod !== 'click-select' || !onBoundarySelectionChange) {
+      return;
+    }
+    if (selectedH3Indices.length > 0) {
+      onBoundarySelectionChange('h3', selectedH3Indices);
+    } else {
       onBoundarySelectionChange('precinct', selectedPrecinctNames);
     }
-  }, [activeMethod, selectedPrecinctNames, onBoundarySelectionChange]);
+  }, [activeMethod, selectedPrecinctNames, selectedH3Indices, onBoundarySelectionChange]);
 
   // Load boundary layer GeoJSON and transform to features
   const loadBoundaryFeatures = async (type: BoundaryLayerType) => {
@@ -816,8 +881,58 @@ export function PoliticalAreaSelector({
     };
   }, [drawnGeometry]);
 
-  // Create selection from click-select precincts
+  // Create selection from click-select precincts or H3 hex cells
   const createClickSelectSelection = useCallback((): PoliticalAreaSelection | null => {
+    if (selectedH3Indices.length > 0) {
+      const selectedSet = new Set(selectedH3Indices);
+      const selectedFeatures = h3ClickFeatures.filter(
+        (f) => selectedSet.has(f.name) || selectedSet.has(f.id),
+      );
+
+      if (selectedFeatures.length === 0) {
+        console.warn('[PoliticalAreaSelector] No H3 features for indices:', selectedH3Indices);
+        return null;
+      }
+
+      let combinedGeometry: GeoJSON.Geometry;
+      if (selectedFeatures.length === 1 && selectedFeatures[0].geometry) {
+        combinedGeometry = selectedFeatures[0].geometry;
+      } else {
+        const polygons: GeoJSON.Polygon[] = [];
+        for (const feature of selectedFeatures) {
+          if (!feature.geometry) continue;
+          if (feature.geometry.type === 'Polygon') {
+            polygons.push(feature.geometry as GeoJSON.Polygon);
+          } else if (feature.geometry.type === 'MultiPolygon') {
+            for (const poly of (feature.geometry as GeoJSON.MultiPolygon).coordinates) {
+              polygons.push({ type: 'Polygon', coordinates: poly });
+            }
+          }
+        }
+        combinedGeometry = {
+          type: 'MultiPolygon',
+          coordinates: polygons.map((p) => p.coordinates),
+        } as GeoJSON.MultiPolygon;
+      }
+
+      const displayName =
+        selectedH3Indices.length === 1
+          ? `H3 cell ${selectedH3Indices[0].slice(0, 10)}…`
+          : `${selectedH3Indices.length} H3 cells`;
+
+      return {
+        geometry: combinedGeometry,
+        method: 'click-select' as PoliticalAreaSelection['method'],
+        displayName,
+        metadata: {
+          source: 'click-select',
+          boundaryType: 'h3',
+          boundaryIds: selectedH3Indices,
+          boundaryNames: selectedH3Indices,
+        },
+      };
+    }
+
     if (selectedPrecinctNames.length === 0) return null;
 
     const selectedSet = new Set(selectedPrecinctNames);
@@ -861,7 +976,7 @@ export function PoliticalAreaSelector({
 
     return {
       geometry: combinedGeometry,
-      method: 'click-select' as any,
+      method: 'click-select' as PoliticalAreaSelection['method'],
       displayName,
       metadata: {
         source: 'click-select',
@@ -870,7 +985,7 @@ export function PoliticalAreaSelector({
         boundaryNames: selectedPrecinctNames,
       },
     };
-  }, [selectedPrecinctNames, boundaryFeatures]);
+  }, [selectedPrecinctNames, selectedH3Indices, boundaryFeatures, h3ClickFeatures]);
 
   // Handle analyze button click
   const handleAnalyze = useCallback(() => {
@@ -906,6 +1021,7 @@ export function PoliticalAreaSelector({
   }, [
     activeMethod,
     selectedPrecinctNames.length,
+    selectedH3Indices.length,
     selectedBoundaryIds.length,
     bufferGeometry,
     drawnGeometry,
@@ -920,6 +1036,7 @@ export function PoliticalAreaSelector({
   const handleCancel = useCallback(() => {
     setSelectedBoundaryIds([]);
     setSelectedPrecinctNames([]);
+    setSelectedH3Indices([]);
     setClickSelectMode(false);
     setClickedPoint(null);
     setSearchedLocation(null);
@@ -939,7 +1056,7 @@ export function PoliticalAreaSelector({
   const isSelectionValid = (() => {
     switch (activeMethod) {
       case 'click-select':
-        return selectedPrecinctNames.length > 0;
+        return selectedPrecinctNames.length > 0 || selectedH3Indices.length > 0;
       case 'boundary-select':
         return selectedBoundaryIds.length > 0;
       case 'click-buffer':
@@ -991,6 +1108,42 @@ export function PoliticalAreaSelector({
               Click again to deselect
             </p>
           </div>
+
+          {selectedH3Indices.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-600">
+                  {selectedH3Indices.length} H3 cell{selectedH3Indices.length !== 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedH3Indices([])}
+                  className="text-xs h-7 px-2"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              </div>
+
+              <div className="max-h-32 overflow-y-auto space-y-1 border rounded-md p-2">
+                {selectedH3Indices.map((hid) => (
+                  <div
+                    key={hid}
+                    className="flex items-center justify-between text-xs bg-violet-50 rounded px-2 py-1"
+                  >
+                    <span className="truncate font-mono text-[10px]">{hid}</span>
+                    <button
+                      onClick={() => setSelectedH3Indices((prev: string[]) => prev.filter((n) => n !== hid))}
+                      className="text-gray-400 hover:text-gray-600 ml-2"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {selectedPrecinctNames.length > 0 && (
             <div className="space-y-3">

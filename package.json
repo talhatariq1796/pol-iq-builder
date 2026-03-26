@@ -31,6 +31,7 @@
     "build:pa-targeting": "ts-node scripts/build-pa-targeting-scores.ts",
     "build:pa-demographics": "ts-node scripts/build-pa-precinct-demographics.ts",
     "build:pa-district-crosswalk": "ts-node scripts/build-pa-precinct-district-crosswalk.ts",
+    "build:pa-h3": "ts-node scripts/build-pa-h3-aggregates.ts",
     "split-geojson": "ts-node scripts/split-geojson-for-github.ts"
   },
   "dependencies": {
@@ -97,6 +98,7 @@
     "framer-motion": "^12.4.3",
     "geojson": "^0.5.0",
     "geolib": "^3.3.4",
+    "h3-js": "^4.4.0",
     "html2canvas": "^1.4.1",
     "https-proxy-agent": "^7.0.6",
     "idb": "^7.1.1",
@@ -150,7 +152,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/shpjs": "^3.4.7",
     "autoprefixer": "^10.4.17",
-
+    "cross-env": "^7.0.3",
     "css-loader": "^7.1.2",
     "dotenv": "^16.5.0",
     "eslint": "^8.0.0",
@@ -161,7 +163,6 @@
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^27.0.0",
     "pdfkit": "^0.17.2",
-    "cross-env": "^7.0.3",
     "postcss": "^8.4.38",
     "puppeteer": "^24.15.0",
     "sass": "^1.89.1",

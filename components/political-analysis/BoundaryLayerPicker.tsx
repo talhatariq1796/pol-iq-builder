@@ -22,6 +22,7 @@ import {
   Vote,
   GraduationCap,
   Trees,
+  Hexagon,
 } from 'lucide-react';
 import type { BoundaryLayerType } from '@/types/political';
 import {
@@ -34,6 +35,7 @@ export { BOUNDARY_LAYERS, AVAILABLE_BOUNDARY_TYPES };
 // Icon mapping for each boundary type
 const BOUNDARY_ICONS: Record<BoundaryLayerType, React.ReactNode> = {
   'precinct': <Vote className="h-4 w-4" />,
+  h3: <Hexagon className="h-4 w-4" />,
   'zip-code': <Mail className="h-4 w-4" />,
   'block-group': <Grid3X3 className="h-4 w-4" />,
   'census-tract': <Grid3X3 className="h-4 w-4" />,
