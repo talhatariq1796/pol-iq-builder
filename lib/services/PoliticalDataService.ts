@@ -430,6 +430,8 @@ function isNodeRuntime(): boolean {
 /**
  * Origin for fetching `/data/...` assets when running on Vercel: `public/` is **not** on the
  * serverless filesystem (`/var/task/public/...` is missing), but the same files are served from the deployment URL.
+ *
+ * Uses several Vercel system env vars — some builds only expose bracket `process.env['VERCEL_URL']`.
  */
 function getServerDeploymentOrigin(): string | null {
   const explicit =
@@ -441,8 +443,19 @@ function getServerDeploymentOrigin(): string | null {
     }
     return `https://${explicit.replace(/\/$/, '')}`;
   }
-  const v = process.env.VERCEL_URL?.trim();
-  if (v) return `https://${v.replace(/\/$/, '')}`;
+  const candidates = [
+    process.env['VERCEL_URL'],
+    process.env['VERCEL_PROJECT_PRODUCTION_URL'],
+    process.env['VERCEL_BRANCH_URL'],
+  ];
+  for (const c of candidates) {
+    const t = c?.trim();
+    if (!t) continue;
+    if (t.startsWith('http://') || t.startsWith('https://')) {
+      return t.replace(/\/$/, '');
+    }
+    return `https://${t.replace(/\/$/, '')}`;
+  }
   return null;
 }
 
@@ -505,24 +518,41 @@ async function loadBlobUrlMappings(): Promise<Record<string, string>> {
 
 /**
  * Read a JSON file from `public/` given a browser-style path (e.g. `/data/foo.json`).
+ * On Vercel, `public/` is not on the Lambda disk — prefer HTTP to the deployment origin first.
  */
 async function readJsonFromPublicPath(localPath: string): Promise<unknown> {
+  const trimmed = localPath.startsWith('/') ? localPath.slice(1) : localPath;
+  const origin = getServerDeploymentOrigin();
+  if (origin) {
+    const url = `${origin}/${trimmed}`;
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return await response.json();
+      }
+      console.warn(
+        `[PoliticalDataService] readJsonFromPublicPath: ${url} returned ${response.status}, trying local fs`,
+      );
+    } catch (e) {
+      console.warn(`[PoliticalDataService] readJsonFromPublicPath: fetch ${url} failed, trying fs`, e);
+    }
+  }
+
   const path = await import('path');
   const fs = await import('fs/promises');
-  const trimmed = localPath.startsWith('/') ? localPath.slice(1) : localPath;
   const filePath = path.join(process.cwd(), 'public', trimmed);
   try {
     const raw = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(raw);
   } catch (firstErr) {
-    const origin = getServerDeploymentOrigin();
-    if (!origin) throw firstErr;
-    const url = `${origin}/${trimmed}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`readJsonFromPublicPath: ${filePath} and ${url} failed (${response.status})`);
+    if (origin) {
+      const response = await fetch(`${origin}/${trimmed}`);
+      if (response.ok) return await response.json();
+      throw new Error(
+        `readJsonFromPublicPath: ${filePath} missing and ${origin}/${trimmed} returned ${response.status}`,
+      );
     }
-    return await response.json();
+    throw firstErr;
   }
 }
 
@@ -548,6 +578,17 @@ async function nodePublicFetch(input: RequestInfo | URL): Promise<Response> {
   const fs = await import('fs/promises');
   const rel = pathname.replace(/^\//, '');
   const filePath = pathMod.join(process.cwd(), 'public', rel);
+  const origin = getServerDeploymentOrigin();
+  const pathForOrigin = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  if (origin) {
+    const absoluteUrl = `${origin}${pathForOrigin}`;
+    try {
+      const res = await fetch(absoluteUrl);
+      if (res.ok) return res;
+    } catch {
+      // fall through to fs
+    }
+  }
   try {
     const buf = await fs.readFile(filePath);
     return new Response(new Uint8Array(buf), {
@@ -555,12 +596,10 @@ async function nodePublicFetch(input: RequestInfo | URL): Promise<Response> {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch {
-    const origin = getServerDeploymentOrigin();
     if (!origin) {
-      throw new Error(`nodePublicFetch: missing file ${filePath} and no VERCEL_URL / NEXT_PUBLIC_SITE_URL`);
+      throw new Error(`nodePublicFetch: missing file ${filePath} and no deployment origin (VERCEL_URL / NEXT_PUBLIC_SITE_URL)`);
     }
-    const url = `${origin}${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
-    return fetch(url);
+    return fetch(`${origin}${pathForOrigin}`);
   }
 }
 
@@ -587,9 +626,11 @@ async function fetchFromBlobOrLocal<T>(blobKey: string, localPath: string): Prom
     }
   }
 
-  // Fallback: Node server — read from public/ on disk (fetch(relative path) throws Invalid URL)
+  // Fallback: Node server — readJsonFromPublicPath (HTTP to deployment first on Vercel, else fs)
   if (isNodeRuntime()) {
-    console.log(`[PoliticalDataService] Loading ${blobKey} from local filesystem: public/${localPath.replace(/^\//, '')}`);
+    console.log(
+      `[PoliticalDataService] Loading ${blobKey} from public/ (HTTP or filesystem): ${localPath}`,
+    );
     try {
       const data = await readJsonFromPublicPath(localPath);
       return data as T;
