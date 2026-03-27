@@ -6,6 +6,7 @@
  */
 
 import { PropertyTypeClassifier } from '@/lib/analysis/PropertyTypeClassifier';
+import blobUrlsBundled from '@/public/data/blob-urls.json';
 function calculateTimeOnMarket(property: { date_bc?: string; date_pp_acpt_expiration?: string; st?: string; status?: string }): number | undefined {
   if (!property.date_bc) return undefined;
   const listingDate = new Date(property.date_bc);
@@ -140,8 +141,7 @@ export class ServerPropertyLoader {
       const firstProp = this.properties[0];
       // FORCE CACHE CLEAR: Check if status field exists and hasn't been overwritten
       // This forces a reload after fixing the ...props spread issue
-      const hasValidStructure = firstProp.sourcePropertyType &&
-                                (firstProp.st || firstProp.status);
+      const hasValidStructure = firstProp.sourcePropertyType && (firstProp.st || firstProp.status);
 
       if (!hasValidStructure) {
         console.log(`[ServerPropertyLoader] Cache invalidated - missing required fields`);
@@ -153,11 +153,15 @@ export class ServerPropertyLoader {
     }
 
     try {
-      // Load blob URL mappings from public directory
-      const blobUrlsPath = process.cwd() + '/public/data/blob-urls.json';
       const fs = await import('fs/promises');
-      const blobUrlsContent = await fs.readFile(blobUrlsPath, 'utf-8');
-      const blobUrls = JSON.parse(blobUrlsContent);
+      const blobUrlsPath = `${process.cwd()}/public/data/blob-urls.json`;
+      let blobUrls: Record<string, string>;
+      try {
+        const blobUrlsContent = await fs.readFile(blobUrlsPath, 'utf-8');
+        blobUrls = JSON.parse(blobUrlsContent);
+      } catch {
+        blobUrls = blobUrlsBundled as Record<string, string>;
+      }
 
       console.log('[ServerPropertyLoader] Loaded blob URLs:', {
         keys: Object.keys(blobUrls),

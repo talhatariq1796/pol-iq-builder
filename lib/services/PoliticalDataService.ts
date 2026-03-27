@@ -41,6 +41,7 @@ import { PA_COUNTY_FP_TO_NAME, parsePaCountyFpFromPrecinctKey } from '@/lib/poli
 
 import { loadGeoJSONMerged, resolveGeoJSONData } from '@/lib/map/geojsonMergeLoader';
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import blobUrlsBundled from '@/public/data/blob-urls.json';
 
 // ============================================================================
 // Configuration
@@ -461,13 +462,18 @@ async function loadBlobUrlMappings(): Promise<Record<string, string>> {
         return blobUrlMappings!;
       }
     }
-    // Node.js server context - load directly from file system
+    // Node.js server context — prefer `public/` on disk (local dev); on Vercel, `public/`
+    // is not present inside the serverless bundle, so use the build-time JSON import.
     else {
       const fs = await import('fs/promises');
       const path = await import('path');
       const filePath = path.join(process.cwd(), 'public/data/blob-urls.json');
-      const fileContent = await fs.readFile(filePath, 'utf-8');
-      blobUrlMappings = JSON.parse(fileContent);
+      try {
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        blobUrlMappings = JSON.parse(fileContent);
+      } catch {
+        blobUrlMappings = blobUrlsBundled as Record<string, string>;
+      }
       return blobUrlMappings!;
     }
   } catch (error) {
