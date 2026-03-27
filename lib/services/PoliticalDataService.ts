@@ -605,6 +605,17 @@ export class PoliticalDataService {
   private initialized = false;
   private initPromise: Promise<void> | null = null;
 
+  /**
+   * Memoized heavy transforms (Compare dropdown hits these repeatedly; concurrent requests share one Promise).
+   * Cleared in clearCache().
+   */
+  private unifiedPrecinctDataPromise: Promise<Record<string, UnifiedPrecinct>> | null = null;
+  /** Full Compare precinct payload (unified + election merge) — expensive; shared across callers. */
+  private precinctDataFileFormatPromise: Promise<any> | null = null;
+  private municipalityDataFileFormatPromise: Promise<MunicipalityDataFile> | null = null;
+  /** Keys: chamber:state_house | county | school_districts | zip_codes */
+  private paCompareAggregatedDistrictPromises: Map<string, Promise<StateHouseDataFile>> = new Map();
+
   private constructor() { }
 
   /**
@@ -1163,6 +1174,13 @@ export class PoliticalDataService {
   async getUnifiedPrecinctData(): Promise<Record<string, UnifiedPrecinct>> {
     await this.initialize();
 
+    if (!this.unifiedPrecinctDataPromise) {
+      this.unifiedPrecinctDataPromise = this.buildUnifiedPrecinctData();
+    }
+    return this.unifiedPrecinctDataPromise;
+  }
+
+  private async buildUnifiedPrecinctData(): Promise<Record<string, UnifiedPrecinct>> {
     const targeting = cache.targetingScores?.precincts || {};
     const political = cache.politicalScores?.precincts || {};
 
@@ -1494,7 +1512,14 @@ export class PoliticalDataService {
    *
    * @returns PrecinctDataFile compatible object
    */
-  async getPrecinctDataFileFormat(): Promise<{
+  async getPrecinctDataFileFormat() {
+    if (!this.precinctDataFileFormatPromise) {
+      this.precinctDataFileFormatPromise = this.buildPrecinctDataFileFormat();
+    }
+    return this.precinctDataFileFormatPromise;
+  }
+
+  private async buildPrecinctDataFileFormat(): Promise<{
     metadata: {
       county: string;
       state: string;
@@ -1663,42 +1688,87 @@ export class PoliticalDataService {
    * Municipality list + metrics for Compare (aggregated from unified precincts by jurisdiction label).
    */
   async getMunicipalityDataFileFormat(): Promise<MunicipalityDataFile> {
+    if (!this.municipalityDataFileFormatPromise) {
+      this.municipalityDataFileFormatPromise = this.buildMunicipalityDataFileFormat();
+    }
+    return this.municipalityDataFileFormatPromise;
+  }
+
+  private async buildMunicipalityDataFileFormat(): Promise<MunicipalityDataFile> {
     const data = await this.getPrecinctDataFileFormat();
     const { jurisdictions, precincts } = data;
-    const municipalities: MunicipalityRawData[] = [];
 
-    const wAvg = (list: any[], getter: (p: any) => number): number => {
-      const totalPop = list.reduce((s, p) => s + (p.demographics?.totalPopulation ?? 0), 0);
-      if (totalPop <= 0) return 0;
-      return (
-        list.reduce((acc, p) => acc + getter(p) * (p.demographics?.totalPopulation ?? 0), 0) / totalPop
-      );
+    /** One pass over precincts — avoid O(jurisdictions × precincts) nested filters (was freezing Compare dropdowns). */
+    type MuniAcc = {
+      id: string;
+      name: string;
+      type: 'city' | 'township';
+      precinctCount: number;
+      totalPop: number;
+      sumLean: number;
+      sumSwing: number;
+      sumGotv: number;
+      sumPersuasion: number;
+      sumTurnout: number;
+      sumDensity: number;
+      strategyWeights: Map<string, number>;
     };
 
+    const accByJurisdictionKey = new Map<string, MuniAcc>();
     for (const j of jurisdictions) {
-      const list = Object.values(precincts).filter(
-        (p: any) => p.jurisdiction === j.id || p.jurisdiction === j.name,
-      );
-      if (list.length === 0) continue;
+      const acc: MuniAcc = {
+        id: j.id,
+        name: j.name,
+        type: j.type,
+        precinctCount: 0,
+        totalPop: 0,
+        sumLean: 0,
+        sumSwing: 0,
+        sumGotv: 0,
+        sumPersuasion: 0,
+        sumTurnout: 0,
+        sumDensity: 0,
+        strategyWeights: new Map(),
+      };
+      accByJurisdictionKey.set(j.id, acc);
+      if (j.name !== j.id) accByJurisdictionKey.set(j.name, acc);
+    }
 
-      const totalPop = list.reduce((s, p: any) => s + (p.demographics?.totalPopulation ?? 0), 0);
-      if (totalPop <= 0) continue;
+    for (const p of Object.values(precincts) as any[]) {
+      const pj = p.jurisdiction as string | undefined;
+      if (!pj) continue;
+      const acc = accByJurisdictionKey.get(pj);
+      if (!acc) continue;
 
-      const avgDensity = wAvg(list, (p) => p.demographics?.populationDensity ?? 0);
+      acc.precinctCount += 1;
+      const pop = p.demographics?.totalPopulation ?? 0;
+      if (pop <= 0) continue;
+
+      acc.totalPop += pop;
+      acc.sumLean += (p.electoral?.partisanLean ?? 0) * pop;
+      acc.sumSwing += (p.electoral?.swingPotential ?? 0) * pop;
+      acc.sumGotv += (p.targeting?.gotvPriority ?? 0) * pop;
+      acc.sumPersuasion += (p.targeting?.persuasionOpportunity ?? 0) * pop;
+      acc.sumTurnout += (p.electoral?.avgTurnout ?? 0) * pop;
+      acc.sumDensity += (p.demographics?.populationDensity ?? 0) * pop;
+      const strat = String(p.targeting?.strategy || 'Low Priority');
+      acc.strategyWeights.set(strat, (acc.strategyWeights.get(strat) || 0) + pop);
+    }
+
+    const municipalities: MunicipalityRawData[] = [];
+    for (const j of jurisdictions) {
+      const acc = accByJurisdictionKey.get(j.id);
+      if (!acc || acc.precinctCount === 0 || acc.totalPop <= 0) continue;
+
+      const totalPop = acc.totalPop;
+      const wAvg = (sum: number) => Math.round((sum / totalPop) * 10) / 10;
+      const avgDensity = acc.sumDensity / totalPop;
       const density: MunicipalityRawData['density'] =
         avgDensity >= 2800 ? 'urban' : avgDensity >= 900 ? 'suburban' : 'rural';
 
-      const strategyWeights = new Map<string, number>();
-      for (const p of list) {
-        const strat = String((p as any).targeting?.strategy || 'Low Priority');
-        strategyWeights.set(
-          strat,
-          (strategyWeights.get(strat) || 0) + ((p as any).demographics?.totalPopulation ?? 0),
-        );
-      }
       let dominantStrategy = 'Low Priority';
       let maxW = 0;
-      for (const [strat, w] of strategyWeights) {
+      for (const [strat, w] of acc.strategyWeights) {
         if (w > maxW) {
           maxW = w;
           dominantStrategy = strat;
@@ -1710,12 +1780,12 @@ export class PoliticalDataService {
         name: j.name,
         type: j.type,
         population: Math.round(totalPop),
-        precinctCount: list.length,
-        partisanLean: Math.round(wAvg(list, (p) => p.electoral?.partisanLean ?? 0) * 10) / 10,
-        swingPotential: Math.round(wAvg(list, (p) => p.electoral?.swingPotential ?? 0) * 10) / 10,
-        gotvPriority: Math.round(wAvg(list, (p) => p.targeting?.gotvPriority ?? 0) * 10) / 10,
-        persuasionOpportunity: Math.round(wAvg(list, (p) => p.targeting?.persuasionOpportunity ?? 0) * 10) / 10,
-        avgTurnout: Math.round(wAvg(list, (p) => p.electoral?.avgTurnout ?? 0) * 10) / 10,
+        precinctCount: acc.precinctCount,
+        partisanLean: wAvg(acc.sumLean),
+        swingPotential: wAvg(acc.sumSwing),
+        gotvPriority: wAvg(acc.sumGotv),
+        persuasionOpportunity: wAvg(acc.sumPersuasion),
+        avgTurnout: wAvg(acc.sumTurnout),
         dominantStrategy,
         density,
       });
@@ -1886,6 +1956,18 @@ export class PoliticalDataService {
   async getPaDistrictChamberDataFile(
     chamber: 'state_house' | 'state_senate' | 'congressional',
   ): Promise<StateHouseDataFile> {
+    const key = `chamber:${chamber}`;
+    let p = this.paCompareAggregatedDistrictPromises.get(key);
+    if (!p) {
+      p = this.buildPaDistrictChamberDataFile(chamber);
+      this.paCompareAggregatedDistrictPromises.set(key, p);
+    }
+    return p;
+  }
+
+  private async buildPaDistrictChamberDataFile(
+    chamber: 'state_house' | 'state_senate' | 'congressional',
+  ): Promise<StateHouseDataFile> {
     const data = await this.getPrecinctDataFileFormat();
     const crosswalk = await this.loadDistrictCrosswalk();
     const field =
@@ -1959,6 +2041,16 @@ export class PoliticalDataService {
    * Pennsylvania counties — aggregated by precinct key `CCC-:-…` (COUNTYFP = CCC).
    */
   async getPaCountyDataFileFormat(): Promise<StateHouseDataFile> {
+    const key = 'county';
+    let p = this.paCompareAggregatedDistrictPromises.get(key);
+    if (!p) {
+      p = this.buildPaCountyDataFileFormat();
+      this.paCompareAggregatedDistrictPromises.set(key, p);
+    }
+    return p;
+  }
+
+  private async buildPaCountyDataFileFormat(): Promise<StateHouseDataFile> {
     const data = await this.getPrecinctDataFileFormat();
     const groupsBare = new Map<string, any[]>();
     for (const [canonicalKey, p] of Object.entries(data.precincts)) {
@@ -2013,6 +2105,16 @@ export class PoliticalDataService {
    * Pennsylvania school districts — requires `schoolDistrict` + optional `schoolDistrictName` on crosswalk.
    */
   async getPaSchoolDistrictDataFileFormat(): Promise<StateHouseDataFile> {
+    const key = 'school_districts';
+    let p = this.paCompareAggregatedDistrictPromises.get(key);
+    if (!p) {
+      p = this.buildPaSchoolDistrictDataFileFormat();
+      this.paCompareAggregatedDistrictPromises.set(key, p);
+    }
+    return p;
+  }
+
+  private async buildPaSchoolDistrictDataFileFormat(): Promise<StateHouseDataFile> {
     const data = await this.getPrecinctDataFileFormat();
     const crosswalk = await this.loadDistrictCrosswalk();
     const groupsBare = new Map<string, any[]>();
@@ -2080,6 +2182,16 @@ export class PoliticalDataService {
    * Pennsylvania ZCTA / ZIP tabulation areas — requires `zcta` + optional `zctaName` on crosswalk.
    */
   async getPaZipCodeDataFileFormat(): Promise<StateHouseDataFile> {
+    const key = 'zip_codes';
+    let p = this.paCompareAggregatedDistrictPromises.get(key);
+    if (!p) {
+      p = this.buildPaZipCodeDataFileFormat();
+      this.paCompareAggregatedDistrictPromises.set(key, p);
+    }
+    return p;
+  }
+
+  private async buildPaZipCodeDataFileFormat(): Promise<StateHouseDataFile> {
     const data = await this.getPrecinctDataFileFormat();
     const crosswalk = await this.loadDistrictCrosswalk();
     const groupsBare = new Map<string, any[]>();
@@ -4208,6 +4320,10 @@ export class PoliticalDataService {
     this.districtCrosswalk = null;
     this.initialized = false;
     this.initPromise = null;
+    this.unifiedPrecinctDataPromise = null;
+    this.precinctDataFileFormatPromise = null;
+    this.municipalityDataFileFormatPromise = null;
+    this.paCompareAggregatedDistrictPromises.clear();
   }
 }
 
