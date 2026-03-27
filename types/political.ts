@@ -746,6 +746,62 @@ export interface CountySummary {
   scoreRanges: Record<PrecinctScoreField, ScoreRange>;
 }
 
+/** Population-weighted partisan lean by modeled median household income band (precinct-level). */
+export interface IncomeBucketsPartisanLean {
+  areaLabel: string;
+  totalPrecinctsInSample: number;
+  buckets: Array<{
+    incomeBand: string;
+    precinctCount: number;
+    populationWeight: number;
+    avgPartisanLean: number;
+    leanDisplay: string;
+  }>;
+}
+
+/** Presidential (or top-ticket) margin movement across 2020 / 2022 / 2024 where available. */
+export interface PrecinctElectionShiftRank {
+  precinctName: string;
+  margin2020: number;
+  margin2022: number;
+  margin2024: number;
+  /** Sum of absolute year-over-year margin changes (percentage points). */
+  cumulativeAbsMarginSwing: number;
+  /** Net Dem−Rep margin change from 2020 to 2024 (positive = toward Dem). */
+  netMarginChange2020to2024: number;
+}
+
+export interface PrecinctTurnoutTrendRank {
+  precinctName: string;
+  turnout2020: number;
+  turnout2022: number;
+  turnout2024: number;
+  /** Net change in turnout (percentage points), 2024 vs 2020 — positive = higher participation in 2024. */
+  netChange2020to2024: number;
+  cumulativeAbsTurnoutSwing: number;
+}
+
+export interface TurnoutTrendExtremesResult {
+  largestIncreases: PrecinctTurnoutTrendRank[];
+  largestDecreases: PrecinctTurnoutTrendRank[];
+  /** Mean turnout % by election year (precincts with all three years). */
+  statewideMeanTurnout: { y2020: number; y2022: number; y2024: number };
+}
+
+/**
+ * Modeled canvassing yield: doors estimated from registered voters (≈1.5 voters/door),
+ * persuadable pool from persuasion_opportunity × registered voters.
+ */
+export interface PrecinctCanvassingEfficiencyRank {
+  precinctName: string;
+  registeredVoters: number;
+  estimatedDoors: number;
+  persuasionOpportunity: number;
+  estimatedPersuadableVoters: number;
+  /** Lower = fewer estimated doors per modeled persuadable (better yield under linear assumptions). */
+  doorsPerPersuadableVoter: number;
+}
+
 // ============================================================================
 // Unified Precinct Data Types (Data Consolidation)
 // ============================================================================

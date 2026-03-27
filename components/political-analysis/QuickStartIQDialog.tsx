@@ -43,14 +43,14 @@ interface PredefinedQuery {
   query: string;
   description: string;
   expectedVisual:
-    | 'heatmap'
-    | 'choropleth'
-    | 'highlights'
-    | 'chart'
-    | 'bivariate'      // Two-variable choropleth
-    | 'scatter'        // Scatter plot correlation
-    | 'proportional'   // Sized/colored symbols
-    | 'valueByAlpha';  // Confidence-weighted display
+  | 'heatmap'
+  | 'choropleth'
+  | 'highlights'
+  | 'chart'
+  | 'bivariate'      // Two-variable choropleth
+  | 'scatter'        // Scatter plot correlation
+  | 'proportional'   // Sized/colored symbols
+  | 'valueByAlpha';  // Confidence-weighted display
   metric?: string;
   // For multi-variable visualizations
   xMetric?: string;
@@ -189,8 +189,9 @@ const QUERY_CATEGORIES: QueryCategory[] = [
       {
         id: 'college-educated',
         label: 'College-Educated Areas',
-        query: 'Show precincts with the highest concentration of college-educated voters',
-        description: 'Education demographic overlay with political lean',
+        query:
+          'Show precincts with the highest concentration of college-educated voters (rank by modeled % with a bachelor’s degree or higher)',
+        description: 'Uses precinct education estimates — results ordered by college %',
         expectedVisual: 'choropleth',
       },
       {
@@ -267,75 +268,75 @@ const QUERY_CATEGORIES: QueryCategory[] = [
       },
     ],
   },
-  {
-    id: 'multivar',
-    name: 'Multi-Var',
-    icon: <Layers className="h-4 w-4" />,
-    description: 'Advanced multi-variable visualizations',
-    queries: [
-      {
-        id: 'gotv-persuasion-bivariate',
-        label: 'GOTV vs Persuasion Matrix',
-        query: 'Show me a bivariate map comparing GOTV priority against persuasion opportunity to find areas high in both',
-        description: 'Two-variable choropleth showing where both metrics are high (purple = sweet spot)',
-        expectedVisual: 'bivariate',
-        xMetric: 'gotv_priority',
-        yMetric: 'persuasion_opportunity',
-      },
-      {
-        id: 'swing-turnout-scatter',
-        label: 'Swing vs Turnout Correlation',
-        query: 'Create a scatter plot showing the relationship between swing potential and voter turnout across precincts',
-        description: 'Reveals whether swing areas have high or low participation',
-        expectedVisual: 'scatter',
-        xMetric: 'swing_potential',
-        yMetric: 'turnout',
-      },
-      {
-        id: 'voter-population-proportional',
-        label: 'Voter Density Map',
-        query: 'Show proportional symbols where size is registered voters and color is partisan lean',
-        description: 'Sized bubbles reveal where voter concentrations are and which way they lean',
-        expectedVisual: 'proportional',
-        sizeMetric: 'registered_voters',
-        colorMetric: 'partisan_lean',
-      },
-    ],
-  },
-  {
-    id: 'correlations',
-    name: 'Correlate',
-    icon: <ScatterChart className="h-4 w-4" />,
-    description: 'Explore relationships between variables',
-    queries: [
-      {
-        id: 'income-education-bivariate',
-        label: 'Income × Education',
-        query: 'Show a bivariate map of median income versus college education levels',
-        description: 'Reveals socioeconomic patterns: wealthy+educated, working class, etc.',
-        expectedVisual: 'bivariate',
-        xMetric: 'median_income',
-        yMetric: 'college_pct',
-      },
-      {
-        id: 'partisan-confidence',
-        label: 'Partisan Lean by Confidence',
-        query: 'Show partisan lean with transparency based on sample size so I can see where estimates are reliable',
-        description: 'Value-by-alpha: saturated colors where data is solid, faded where uncertain',
-        expectedVisual: 'valueByAlpha',
-        metric: 'partisan_lean',
-      },
-      {
-        id: 'donor-concentration',
-        label: 'Donor Concentration Analysis',
-        query: 'Show donor concentration with bubble size for total donations and color for average donation size',
-        description: 'Identifies both volume and engagement level of donors',
-        expectedVisual: 'proportional',
-        sizeMetric: 'donor_total',
-        colorMetric: 'avg_donation',
-      },
-    ],
-  },
+  // {
+  //   id: 'multivar',
+  //   name: 'Multi-Var',
+  //   icon: <Layers className="h-4 w-4" />,
+  //   description: 'Advanced multi-variable visualizations',
+  //   queries: [
+  //     {
+  //       id: 'gotv-persuasion-bivariate',
+  //       label: 'GOTV vs Persuasion Matrix',
+  //       query: 'Show me a bivariate map comparing GOTV priority against persuasion opportunity to find areas high in both',
+  //       description: 'Two-variable choropleth showing where both metrics are high (purple = sweet spot)',
+  //       expectedVisual: 'bivariate',
+  //       xMetric: 'gotv_priority',
+  //       yMetric: 'persuasion_opportunity',
+  //     },
+  //     {
+  //       id: 'swing-turnout-scatter',
+  //       label: 'Swing vs Turnout Correlation',
+  //       query: 'Create a scatter plot showing the relationship between swing potential and voter turnout across precincts',
+  //       description: 'Reveals whether swing areas have high or low participation',
+  //       expectedVisual: 'scatter',
+  //       xMetric: 'swing_potential',
+  //       yMetric: 'turnout',
+  //     },
+  //     {
+  //       id: 'voter-population-proportional',
+  //       label: 'Voter Density Map',
+  //       query: 'Show proportional symbols where size is registered voters and color is partisan lean',
+  //       description: 'Sized bubbles reveal where voter concentrations are and which way they lean',
+  //       expectedVisual: 'proportional',
+  //       sizeMetric: 'registered_voters',
+  //       colorMetric: 'partisan_lean',
+  //     },
+  //   ],
+  // },
+  // {
+  //   id: 'correlations',
+  //   name: 'Correlate',
+  //   icon: <ScatterChart className="h-4 w-4" />,
+  //   description: 'Explore relationships between variables',
+  //   queries: [
+  //     {
+  //       id: 'income-education-bivariate',
+  //       label: 'Income × Education',
+  //       query: 'Show a bivariate map of median income versus college education levels',
+  //       description: 'Reveals socioeconomic patterns: wealthy+educated, working class, etc.',
+  //       expectedVisual: 'bivariate',
+  //       xMetric: 'median_income',
+  //       yMetric: 'college_pct',
+  //     },
+  //     {
+  //       id: 'partisan-confidence',
+  //       label: 'Partisan Lean by Confidence',
+  //       query: 'Show partisan lean with transparency based on sample size so I can see where estimates are reliable',
+  //       description: 'Value-by-alpha: saturated colors where data is solid, faded where uncertain',
+  //       expectedVisual: 'valueByAlpha',
+  //       metric: 'partisan_lean',
+  //     },
+  //     {
+  //       id: 'donor-concentration',
+  //       label: 'Donor Concentration Analysis',
+  //       query: 'Show donor concentration with bubble size for total donations and color for average donation size',
+  //       description: 'Identifies both volume and engagement level of donors',
+  //       expectedVisual: 'proportional',
+  //       sizeMetric: 'donor_total',
+  //       colorMetric: 'avg_donation',
+  //     },
+  //   ],
+  // },
 ];
 
 // ============================================================================
@@ -398,7 +399,7 @@ export function QuickStartIQDialog({
           onValueChange={setActiveCategory}
           className="flex-1 flex flex-col min-h-0"
         >
-          <TabsList className="grid grid-cols-4 sm:grid-cols-8 h-auto p-1 bg-gray-100/80 gap-0.5">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 h-auto p-1 bg-gray-100/80 gap-0.5">
             {QUERY_CATEGORIES.map((cat) => (
               <TabsTrigger
                 key={cat.id}

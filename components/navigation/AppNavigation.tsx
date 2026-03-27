@@ -3,9 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { GitCompare, Users, Footprints, DollarSign, MessageSquare, Settings } from 'lucide-react';
+import { GitCompare, Users, MessageSquare, Settings } from 'lucide-react';
 import Image from 'next/image';
-import { GuidedTour } from '@/components/tour/GuidedTour';
 
 interface NavItem {
   href: string;
@@ -120,22 +119,22 @@ export function AppNavigation({ variant = 'sidebar', className = '' }: AppNaviga
       </nav>
 
       {/* Bottom section: Tour and Settings */}
-      <div className="pb-4 flex flex-col items-center gap-2 border-t pt-2" style={{ borderColor: 'var(--theme-border)' }}>
+      <div className="pb-4 flex flex-col items-center gap-2 border-t pt-2 " style={{ borderColor: 'var(--theme-border)' }}>
         {/* Guided Tour Button */}
-        <div className="group relative flex items-center justify-center w-10 h-10" data-tour="tour-button">
-          <GuidedTour
+        {/* <div className="group relative flex items-center justify-center w-10 h-10" data-tour="tour-button"> */}
+        {/* <GuidedTour
             autoStart={false}
             theme="welcome"
             variant="ghost"
             size="icon"
             showMenu={true}
-          />
-          {/* Tooltip */}
-          {/* <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
+          /> */}
+        {/* Tooltip */}
+        {/* <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
             Tours
             <span className="block text-gray-400 text-[10px]">Interactive platform guides</span>
           </div> */}
-        </div>
+        {/* </div> */}
 
         {/* Settings Button */}
         <Link

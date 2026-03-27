@@ -27,7 +27,9 @@ export type PoliticalMetric =
   | 'persuasion_opportunity'
   | 'turnout'
   | 'combined_score'
-  | 'demographics';
+  | 'demographics'
+  /** Modeled bachelor's+ share (precinct demographics) */
+  | 'college_pct';
 
 export interface ParsedPoliticalQuery {
   type: PoliticalQueryType;
@@ -107,6 +109,19 @@ export class PoliticalQueryRouter {
     demographic: 'demographics',
     demographics: 'demographics',
     population: 'demographics',
+    'college-educated': 'college_pct',
+    'college educated': 'college_pct',
+    'college-educated voters': 'college_pct',
+    'bachelor\'s degree': 'college_pct',
+    'bachelors degree': 'college_pct',
+    'education attainment': 'college_pct',
+    'college degree': 'college_pct',
+    'college education': 'college_pct',
+    'college concentration': 'college_pct',
+    'highly educated': 'college_pct',
+    college: 'college_pct',
+    bachelor: 'college_pct',
+    bachelors: 'college_pct',
     score: 'combined_score',
     overall: 'combined_score',
     combined: 'combined_score',
@@ -193,6 +208,39 @@ export class PoliticalQueryRouter {
   }
 
   private tryRanking(query: string, parsed: ParsedPoliticalQuery): QueryRouteResult {
+    // "Show/List precincts with the highest/top ..." (e.g. college concentration) — statewide unless "in <place>"
+    const showPrecinctsWithExtreme = query.match(
+      /(?:show|find|list)\s+(?:me\s+)?(?:the\s+)?precincts?\s+with\s+(?:the\s+)?(?:highest|top|most|lowest|least)\b/i
+    );
+    if (showPrecinctsWithExtreme) {
+      const isHighest = !/\b(?:lowest|least|worst|bottom)\b/i.test(query);
+      const limitMatch = query.match(/\b(?:top|first|bottom)\s+(\d+)\b/i);
+      const limit = limitMatch ? parseInt(limitMatch[1], 10) : 15;
+      parsed.type = 'ranking';
+      parsed.metric = this.extractMetric(query);
+      parsed.ranking = isHighest ? 'highest' : 'lowest';
+      parsed.limit = limit;
+      parsed.confidence = 0.87;
+      parsed.locationNames = [];
+      parsed.locations = [];
+      const inJurisdiction = query.match(
+        /\b(?:in|within|inside)\s+([a-z0-9][a-z0-9\s,'.-]{2,60}?)(?:\s*[.(]|$)/i
+      );
+      if (inJurisdiction) {
+        const loc = this.geoManager.resolveLocation(inJurisdiction[1].trim());
+        if (loc) {
+          parsed.locations = [loc];
+          parsed.locationNames = [loc.name];
+        }
+      }
+      return {
+        parsed,
+        handler: 'ranking',
+        dataNeeded: ['precinct_scores', 'targeting_scores', 'precinct_demographics'],
+        suggestedResponse: `I'll list precincts by ${parsed.metric?.replace('_', ' ') || 'the requested metric'}.`,
+      };
+    }
+
     // "Rank precincts in <jurisdiction> by <metric>" (precincts within a place)
     const rankPrecinctsInPlace = query.match(
       /\brank\s+(?:the\s+)?precincts?\s+(?:in|of)\s+(.+?)\s+by\b/i

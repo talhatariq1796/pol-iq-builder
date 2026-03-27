@@ -134,8 +134,18 @@ export class SegmentEngine {
       }
     }
 
-    // Sort by match score descending
-    matchingPrecincts.sort((a, b) => b.matchScore - a.matchScore);
+    // Sort by match score descending (or by college % for "highest concentration" education queries)
+    const ext = filters as ExtendedSegmentFilters;
+    if (ext.sortByCollegePctDesc) {
+      const byId = new Map(this.precincts.map((p) => [p.id, p]));
+      matchingPrecincts.sort((a, b) => {
+        const ca = byId.get(a.precinctId)?.demographics?.collegePct ?? 0;
+        const cb = byId.get(b.precinctId)?.demographics?.collegePct ?? 0;
+        return cb - ca;
+      });
+    } else {
+      matchingPrecincts.sort((a, b) => b.matchScore - a.matchScore);
+    }
 
     // Calculate aggregates
     const stats = this.calculateAggregates(matchingPrecincts);

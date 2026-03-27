@@ -213,6 +213,8 @@ export interface ExtractedEntities {
   ageRange?: [number, number];
   incomeRange?: [number, number];
   educationThreshold?: { min?: number; max?: number };
+  /** Rank segment results by modeled college % (highest first) — set for "highest concentration of college-educated" queries */
+  sortPrecinctsByCollegePctDesc?: boolean;
 
   // Political entities
   partyLean?: ('strong_dem' | 'lean_dem' | 'independent' | 'lean_rep' | 'strong_rep')[];

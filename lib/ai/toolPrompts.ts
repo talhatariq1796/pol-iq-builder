@@ -133,6 +133,7 @@ RESPONSE STYLE:
 - Jump directly into the analysis or answer
 - Be concise and data-driven
 - Use bullet points and structured formatting for readability
+- Do **not** use Markdown pipe tables (\`|\` rows/columns)—they overflow the chat UI; use numbered lists or bullets instead
 - Format percentages consistently: use "52.3%" not "5230%" (never multiply by 100 twice)
 - For partisan lean, use "D+X" or "R+X" format (e.g., "D+12.5" for Democratic lean)
 

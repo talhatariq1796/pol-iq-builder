@@ -18,12 +18,16 @@ import type {
   DemographicSummary,
   PoliticalAttitudes,
   PoliticalEngagement,
-  PsychographicProfile,
   CompetitivenessRating,
   VolatilityRating,
   TargetingPriority,
   PoliticalFilters,
   CountySummary,
+  IncomeBucketsPartisanLean,
+  PrecinctCanvassingEfficiencyRank,
+  PrecinctElectionShiftRank,
+  PrecinctTurnoutTrendRank,
+  TurnoutTrendExtremesResult,
   UnifiedPrecinct,
 } from '@/types/political';
 import type {
@@ -308,7 +312,9 @@ export type PrecinctRankingMetric =
   | 'gotv_priority'
   | 'persuasion_opportunity'
   | 'turnout'
-  | 'combined_score';
+  | 'combined_score'
+  /** Modeled % adults 25+ with bachelor's degree or higher (unified precinct demographics) */
+  | 'college_pct';
 
 interface BABlockGroupData {
   geoid: string;
@@ -2922,16 +2928,50 @@ export class PoliticalDataService {
   async getCountySummary(): Promise<CountySummary> {
     await this.initialize();
 
-    const allScores = await this.getAllPrecinctScores();
+    const politicalPrecincts = cache.politicalScores?.precincts || {};
+    const targetingPrecincts = cache.targetingScores?.precincts || {};
+    const allNames = new Set([
+      ...Object.keys(politicalPrecincts),
+      ...Object.keys(targetingPrecincts),
+    ]);
+
     const leans: number[] = [];
     const swings: number[] = [];
     const turnouts: number[] = [];
     const totalVoters = 0;
 
-    for (const scores of allScores.values()) {
-      leans.push(scores.partisanLean.value);
-      swings.push(scores.swingPotential.value);
-      turnouts.push(scores.turnout.averageTurnout);
+    for (const name of allNames) {
+      const raw = politicalPrecincts[name];
+      const t = targetingPrecincts[name];
+      if (raw) {
+        const scores = this.transformRawScores(name, raw);
+        if (scores) {
+          leans.push(scores.partisanLean.value);
+          swings.push(scores.swingPotential.value);
+          turnouts.push(scores.turnout.averageTurnout);
+        }
+      } else if (t) {
+        const pl = t.political_scores?.partisan_lean;
+        if (pl != null && pl !== undefined) leans.push(pl);
+        const sw = t.political_scores?.swing_potential ?? t.swing_potential;
+        if (sw != null && sw !== undefined) swings.push(sw);
+        const ta =
+          (t as { turnout_avg?: number }).turnout_avg ??
+          (t as { turnout?: { average?: number } }).turnout?.average;
+        if (ta != null && ta !== undefined) turnouts.push(ta);
+      }
+    }
+
+    // PA: political_scores often omit turnout — backfill from precinct election history (2024 turnout %)
+    if (turnouts.length === 0 && getPoliticalRegionEnv().stateFips === '42') {
+      const er = await this.loadElectionResults();
+      if (er?.precincts) {
+        for (const row of Object.values(er.precincts)) {
+          const c = this.convertPaPrecinctElectionJsonToSegmentYears(row);
+          const t = c['2024']?.turnout ?? c['2020']?.turnout;
+          if (t != null && !Number.isNaN(t)) turnouts.push(t);
+        }
+      }
     }
 
     const region = getPoliticalRegionEnv();
@@ -2939,7 +2979,7 @@ export class PoliticalDataService {
       name: region.summaryAreaName,
       state: region.state,
       fips: region.stateFips,
-      totalPrecincts: allScores.size,
+      totalPrecincts: allNames.size,
       totalRegisteredVoters: totalVoters,
       overallLean: this.mean(leans),
       overallTurnout: this.mean(turnouts),
@@ -3089,6 +3129,138 @@ export class PoliticalDataService {
     };
   }
 
+  /**
+   * Municipality / jurisdiction name for a precinct key. For PA, `extractJurisdiction(UNIQUE_ID)` is not
+   * meaningful — we read **Jurisdiction_Name** from precinct boundary features so income-band analysis can
+   * expand to all precincts in that municipality.
+   */
+  async getJurisdictionLabelForPrecinctKey(precinctKey: string): Promise<string | null> {
+    await this.initialize();
+
+    const boundaries = await this.loadPrecinctBoundaries();
+    for (const feature of boundaries.features) {
+      const props = feature.properties as Record<string, unknown>;
+      const uid = props?.UNIQUE_ID != null ? String(props.UNIQUE_ID) : '';
+      const pid = props?.precinct_id != null ? String(props.precinct_id) : '';
+      const longName = props?.Precinct_Long_Name != null ? String(props.Precinct_Long_Name) : '';
+      const shortName = props?.Precinct_Short_Name != null ? String(props.Precinct_Short_Name) : '';
+      const nm = props?.NAME != null ? String(props.NAME) : '';
+      if (
+        uid === precinctKey ||
+        pid === precinctKey ||
+        longName === precinctKey ||
+        shortName === precinctKey ||
+        nm === precinctKey
+      ) {
+        const jn = props?.Jurisdiction_Name;
+        if (typeof jn === 'string' && jn.trim().length > 0) {
+          return jn.trim();
+        }
+      }
+    }
+
+    const unified = await this.getUnifiedPrecinctData();
+    const j = unified[precinctKey]?.jurisdiction;
+    if (typeof j === 'string' && j.trim().length > 0 && j !== precinctKey) {
+      return j.trim();
+    }
+    return null;
+  }
+
+  /**
+   * Population-weighted partisan lean by modeled median household income band for a list of precincts.
+   * Uses the same raw partisan_lean convention as jurisdiction aggregates (positive ≈ Democratic lean).
+   */
+  async getPartisanLeanByIncomeBucketsForPrecinctNames(
+    precinctNames: string[],
+    areaLabel: string
+  ): Promise<IncomeBucketsPartisanLean | null> {
+    await this.initialize();
+    if (precinctNames.length === 0) return null;
+
+    const politicalPrecincts = cache.politicalScores?.precincts || {};
+    const targetingPrecincts = cache.targetingScores?.precincts || {};
+    const unified = await this.getUnifiedPrecinctData();
+
+    const bandKey = (h: number): string => {
+      if (h <= 0) return 'Unknown / missing income';
+      if (h < 35000) return 'Under $35k median HHI';
+      if (h < 60000) return '$35k–$60k';
+      if (h < 100000) return '$60k–$100k';
+      return '$100k+';
+    };
+
+    type Acc = { weightedLean: number; weight: number; count: number };
+    const acc = new Map<string, Acc>();
+
+    let inSample = 0;
+    for (const name of precinctNames) {
+      const raw = politicalPrecincts[name];
+      const t = targetingPrecincts[name];
+      const lean =
+        raw?.partisan_lean ??
+        (t as { political_scores?: { partisan_lean?: number } })?.political_scores?.partisan_lean ??
+        null;
+      if (lean === null || lean === undefined) continue;
+
+      const income =
+        t?.median_household_income ??
+        unified[name]?.demographics?.medianHHI ??
+        0;
+      const weight =
+        t?.total_population ??
+        unified[name]?.demographics?.totalPopulation ??
+        1000;
+
+      const key = bandKey(income);
+      const cur = acc.get(key) || { weightedLean: 0, weight: 0, count: 0 };
+      cur.weightedLean += lean * weight;
+      cur.weight += weight;
+      cur.count += 1;
+      acc.set(key, cur);
+      inSample += 1;
+    }
+
+    if (inSample === 0) return null;
+
+    const order = [
+      'Under $35k median HHI',
+      '$35k–$60k',
+      '$60k–$100k',
+      '$100k+',
+      'Unknown / missing income',
+    ];
+
+    const buckets: IncomeBucketsPartisanLean['buckets'] = [];
+    for (const incomeBand of order) {
+      const a = acc.get(incomeBand);
+      if (!a || a.count === 0) continue;
+      const avg = a.weight > 0 ? a.weightedLean / a.weight : 0;
+      const leanDisplay =
+        avg > 0 ? `D+${avg.toFixed(1)}` : `R+${Math.abs(avg).toFixed(1)}`;
+      buckets.push({
+        incomeBand,
+        precinctCount: a.count,
+        populationWeight: Math.round(a.weight),
+        avgPartisanLean: Math.round(avg * 10) / 10,
+        leanDisplay,
+      });
+    }
+
+    return {
+      areaLabel,
+      totalPrecinctsInSample: inSample,
+      buckets,
+    };
+  }
+
+  async getPartisanLeanByIncomeBucketsForJurisdiction(
+    jurisdictionName: string
+  ): Promise<IncomeBucketsPartisanLean | null> {
+    const names = await this.getPrecinctsByJurisdiction(jurisdictionName);
+    return this.getPartisanLeanByIncomeBucketsForPrecinctNames(names, jurisdictionName);
+  }
+
   // ============================================================================
   // Jurisdiction Aggregation Methods (Phase 4: Natural Language Geo-Awareness)
   // ============================================================================
@@ -3216,6 +3388,8 @@ export class PoliticalDataService {
     const boundaries = await this.loadPrecinctBoundaries();
     const precincts: string[] = [];
 
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
+
     for (const feature of boundaries.features) {
       const props = feature.properties as Record<string, any>;
       const featureJurisdiction = (props.Jurisdiction_Name || '').toLowerCase().trim();
@@ -3226,9 +3400,13 @@ export class PoliticalDataService {
         featureJurisdiction.includes(normalized) ||
         normalized.includes(featureJurisdiction)
       ) {
-        const precinctName = props.Precinct_Long_Name || props.Precinct_Short_Name || props.NAME;
-        if (precinctName) {
-          precincts.push(precinctName);
+        // PA targeting / scores use UNIQUE_ID as the precinct key — keep list aligned with that.
+        const precinctKey =
+          isPA && props.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ''
+            ? String(props.UNIQUE_ID)
+            : props.Precinct_Long_Name || props.Precinct_Short_Name || props.NAME;
+        if (precinctKey) {
+          precincts.push(precinctKey);
         }
       }
     }
@@ -3349,6 +3527,8 @@ export class PoliticalDataService {
     const precincts = await this.getPrecinctsByJurisdiction(jurisdictionName);
     const targetingData = cache.targetingScores?.precincts || {};
     const politicalData = cache.politicalScores?.precincts || {};
+    const unified =
+      metric === 'college_pct' ? await this.getUnifiedPrecinctData() : null;
     const rankings: PrecinctRanking[] = [];
 
     for (const precinctName of precincts) {
@@ -3374,6 +3554,9 @@ export class PoliticalDataService {
           break;
         case 'combined_score':
           value = targeting?.combined_score ?? null;
+          break;
+        case 'college_pct':
+          value = unified?.[precinctName]?.demographics?.collegePct ?? null;
           break;
       }
 
@@ -3405,11 +3588,30 @@ export class PoliticalDataService {
 
     const targetingData = cache.targetingScores?.precincts || {};
     const politicalData = cache.politicalScores?.precincts || {};
+    const rankings: PrecinctRanking[] = [];
+
+    if (metric === 'college_pct') {
+      const unified = await this.getUnifiedPrecinctData();
+      for (const [precinctName, p] of Object.entries(unified)) {
+        const v = p.demographics?.collegePct;
+        if (v == null || Number.isNaN(v)) continue;
+        const targeting = targetingData[precinctName];
+        const political = politicalData[precinctName];
+        rankings.push({
+          precinctName,
+          value: v,
+          strategy: targeting?.targeting_strategy || 'Unknown',
+          competitiveness: political?.classification?.competitiveness || 'Unknown',
+        });
+      }
+      rankings.sort((a, b) => (order === 'highest' ? b.value - a.value : a.value - b.value));
+      return limit ? rankings.slice(0, limit) : rankings;
+    }
+
     const names = new Set([
       ...Object.keys(targetingData),
       ...Object.keys(politicalData),
     ]);
-    const rankings: PrecinctRanking[] = [];
 
     for (const precinctName of names) {
       const targeting = targetingData[precinctName];
@@ -3450,6 +3652,208 @@ export class PoliticalDataService {
     rankings.sort((a, b) => (order === 'highest' ? b.value - a.value : a.value - b.value));
 
     return limit ? rankings.slice(0, limit) : rankings;
+  }
+
+  /**
+   * Precincts with the largest absolute partisan margin movement between 2020 → 2022 → 2024
+   * (President results in PA build). "Dramatic shift" = high sum of |Δmargin| across those steps.
+   */
+  async getTopPrecinctsByMultiYearMarginSwing(limit: number = 15): Promise<PrecinctElectionShiftRank[]> {
+    await this.initialize();
+    const data = await this.loadElectionResults();
+    const rows: PrecinctElectionShiftRank[] = [];
+
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
+    if (isPA && data?.precincts) {
+      for (const [precinctKey, row] of Object.entries(data.precincts)) {
+        const converted = this.convertPaPrecinctElectionJsonToSegmentYears(row);
+        const m20 = converted['2020']?.margin;
+        const m22 = converted['2022']?.margin;
+        const m24 = converted['2024']?.margin;
+        if (
+          m20 === undefined ||
+          m22 === undefined ||
+          m24 === undefined ||
+          Number.isNaN(m20) ||
+          Number.isNaN(m22) ||
+          Number.isNaN(m24)
+        ) {
+          continue;
+        }
+        const cumulativeAbsMarginSwing = Math.abs(m22 - m20) + Math.abs(m24 - m22);
+        rows.push({
+          precinctName: precinctKey,
+          margin2020: Math.round(m20 * 10) / 10,
+          margin2022: Math.round(m22 * 10) / 10,
+          margin2024: Math.round(m24 * 10) / 10,
+          cumulativeAbsMarginSwing: Math.round(cumulativeAbsMarginSwing * 10) / 10,
+          netMarginChange2020to2024: Math.round((m24 - m20) * 10) / 10,
+        });
+      }
+    } else if (data?.precinctHistory) {
+      for (const [precinctId, hist] of Object.entries(data.precinctHistory)) {
+        const y20 = hist['2020'];
+        const y22 = hist['2022'];
+        const y24 = hist['2024'];
+        if (!y20 || !y22 || !y24) continue;
+        const m20 = y20.margin;
+        const m22 = y22.margin;
+        const m24 = y24.margin;
+        if (
+          [m20, m22, m24].some((m) => m === undefined || m === null || Number.isNaN(m))
+        ) {
+          continue;
+        }
+        const cumulativeAbsMarginSwing = Math.abs(m22 - m20) + Math.abs(m24 - m22);
+        rows.push({
+          precinctName: precinctId,
+          margin2020: Math.round(m20 * 10) / 10,
+          margin2022: Math.round(m22 * 10) / 10,
+          margin2024: Math.round(m24 * 10) / 10,
+          cumulativeAbsMarginSwing: Math.round(cumulativeAbsMarginSwing * 10) / 10,
+          netMarginChange2020to2024: Math.round((m24 - m20) * 10) / 10,
+        });
+      }
+    }
+
+    rows.sort((a, b) => b.cumulativeAbsMarginSwing - a.cumulativeAbsMarginSwing);
+    return rows.slice(0, Math.max(1, limit));
+  }
+
+  /**
+   * Turnout % trends 2020 / 2022 / 2024 from election history — precincts voting more vs less than before,
+   * plus simple statewide means (PA: President race turnout 0–100 per precinct-year).
+   */
+  async getTurnoutTrendExtremes(limitEach: number = 10): Promise<TurnoutTrendExtremesResult | null> {
+    await this.initialize();
+    const data = await this.loadElectionResults();
+    const rows: PrecinctTurnoutTrendRank[] = [];
+    let sum20 = 0;
+    let sum22 = 0;
+    let sum24 = 0;
+    let nState = 0;
+
+    const isPA = getPoliticalRegionEnv().stateFips === '42';
+    if (isPA && data?.precincts) {
+      for (const [precinctKey, row] of Object.entries(data.precincts)) {
+        const converted = this.convertPaPrecinctElectionJsonToSegmentYears(row);
+        const t20 = converted['2020']?.turnout;
+        const t22 = converted['2022']?.turnout;
+        const t24 = converted['2024']?.turnout;
+        if (
+          t20 === undefined ||
+          t22 === undefined ||
+          t24 === undefined ||
+          Number.isNaN(t20) ||
+          Number.isNaN(t22) ||
+          Number.isNaN(t24)
+        ) {
+          continue;
+        }
+        sum20 += t20;
+        sum22 += t22;
+        sum24 += t24;
+        nState += 1;
+        const netChange2020to2024 = t24 - t20;
+        const cumulativeAbsTurnoutSwing = Math.abs(t22 - t20) + Math.abs(t24 - t22);
+        rows.push({
+          precinctName: precinctKey,
+          turnout2020: Math.round(t20 * 10) / 10,
+          turnout2022: Math.round(t22 * 10) / 10,
+          turnout2024: Math.round(t24 * 10) / 10,
+          netChange2020to2024: Math.round(netChange2020to2024 * 10) / 10,
+          cumulativeAbsTurnoutSwing: Math.round(cumulativeAbsTurnoutSwing * 10) / 10,
+        });
+      }
+    } else if (data?.precinctHistory) {
+      for (const [precinctId, hist] of Object.entries(data.precinctHistory)) {
+        const y20 = hist['2020'];
+        const y22 = hist['2022'];
+        const y24 = hist['2024'];
+        if (!y20 || !y22 || !y24) continue;
+        const t20 = (y20 as { turnout?: number }).turnout;
+        const t22 = (y22 as { turnout?: number }).turnout;
+        const t24 = (y24 as { turnout?: number }).turnout;
+        if (
+          t20 === undefined ||
+          t22 === undefined ||
+          t24 === undefined ||
+          Number.isNaN(t20) ||
+          Number.isNaN(t22) ||
+          Number.isNaN(t24)
+        ) {
+          continue;
+        }
+        sum20 += t20;
+        sum22 += t22;
+        sum24 += t24;
+        nState += 1;
+        const netChange2020to2024 = t24 - t20;
+        const cumulativeAbsTurnoutSwing = Math.abs(t22 - t20) + Math.abs(t24 - t22);
+        rows.push({
+          precinctName: precinctId,
+          turnout2020: Math.round(t20 * 10) / 10,
+          turnout2022: Math.round(t22 * 10) / 10,
+          turnout2024: Math.round(t24 * 10) / 10,
+          netChange2020to2024: Math.round(netChange2020to2024 * 10) / 10,
+          cumulativeAbsTurnoutSwing: Math.round(cumulativeAbsTurnoutSwing * 10) / 10,
+        });
+      }
+    }
+
+    if (rows.length === 0 || nState === 0) return null;
+
+    const increases = [...rows]
+      .filter((r) => r.netChange2020to2024 > 0)
+      .sort((a, b) => b.netChange2020to2024 - a.netChange2020to2024)
+      .slice(0, Math.max(1, limitEach));
+    const decreases = [...rows]
+      .filter((r) => r.netChange2020to2024 < 0)
+      .sort((a, b) => a.netChange2020to2024 - b.netChange2020to2024)
+      .slice(0, Math.max(1, limitEach));
+
+    return {
+      largestIncreases: increases,
+      largestDecreases: decreases,
+      statewideMeanTurnout: {
+        y2020: Math.round((sum20 / nState) * 10) / 10,
+        y2022: Math.round((sum22 / nState) * 10) / 10,
+        y2024: Math.round((sum24 / nState) * 10) / 10,
+      },
+    };
+  }
+
+  /**
+   * Modeled canvassing yield: estimated doors ÷ estimated persuadable voters (lower = better).
+   * Doors ≈ registered_voters / 1.5 (aligned with canvassing PDF). Persuadable pool ≈ voters × (persuasion_opportunity/100).
+   * With that linear model, ranking by ascending ratio matches high persuasion_opportunity (voters cancel).
+   */
+  async getTopPrecinctsByCanvassingEfficiencyProxy(limit: number = 15): Promise<PrecinctCanvassingEfficiencyRank[]> {
+    await this.initialize();
+    const targeting = cache.targetingScores?.precincts || {};
+    const rows: PrecinctCanvassingEfficiencyRank[] = [];
+
+    for (const [name, t] of Object.entries(targeting)) {
+      const tv = t as { registered_voters?: number; total_population?: number; persuasion_opportunity?: number };
+      const voters = tv.registered_voters ?? tv.total_population ?? 0;
+      if (voters <= 0) continue;
+      const pers = tv.persuasion_opportunity ?? 50;
+      const persuasionPct = Math.min(100, Math.max(0, pers)) / 100;
+      const doors = Math.max(1, Math.round(voters / 1.5));
+      const persuadable = Math.max(1, Math.round(voters * persuasionPct));
+      const doorsPerPersuadable = doors / persuadable;
+      rows.push({
+        precinctName: name,
+        registeredVoters: voters,
+        estimatedDoors: doors,
+        persuasionOpportunity: Math.round(pers * 10) / 10,
+        estimatedPersuadableVoters: persuadable,
+        doorsPerPersuadableVoter: Math.round(doorsPerPersuadable * 1000) / 1000,
+      });
+    }
+
+    rows.sort((a, b) => a.doorsPerPersuadableVoter - b.doorsPerPersuadableVoter);
+    return rows.slice(0, Math.max(1, limit));
   }
 
   private generateComparisonSummary(agg1: JurisdictionAggregate, agg2: JurisdictionAggregate): string {

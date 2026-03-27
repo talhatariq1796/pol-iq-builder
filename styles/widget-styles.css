@@ -990,8 +990,8 @@
 /* Zoom Control - Bottom Right */
 .esri-ui-bottom-right {
   position: absolute !important;
-  bottom: 20px !important;
-  right: 20px !important;
+  bottom: 90px !important;
+  right: 30px !important;
   z-index: 100 !important;
   display: flex !important;
   flex-direction: column !important;
@@ -1001,15 +1001,29 @@
 .esri-zoom {
   display: flex !important;
   flex-direction: column !important;
+  background-color: transparent !important;
   gap: 4px !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
+.widget-container{
+    background-color: transparent !important;
+}
+
+.widget-container{
+    background-color: transparent !important;
+}
+
+.esri-widget{
+    background-color: transparent !important;
+
+}
+
 .esri-zoom .esri-widget--button {
   width: 32px !important;
   height: 32px !important;
-  background-color: white !important;
+  background-color: transparent !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 6px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
@@ -1030,7 +1044,7 @@
 }
 
 .esri-home {
-  background-color: white;
+  /* background-color: white; */
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -1228,7 +1242,7 @@
 .widget-container {
     position: absolute !important;
     top: 8px !important;
-    background-color: var(--theme-bg-primary) !important;
+    background-color: transparent !important;
     border-radius: 12px !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12) !important;
     z-index: 1000 !important;
@@ -2197,7 +2211,7 @@ div[role="tooltip"],
 .widget-container .esri-layer-list,
 .widget-container .esri-search,
 .widget-container .esri-print {
-    background-color: var(--theme-bg-primary) !important;
+    background-color: transparent !important;
     color: var(--theme-text-primary) !important;
     border-color: var(--theme-border-primary) !important;
 }
@@ -2336,11 +2350,11 @@ div[role="tooltip"],
 
 /* Light Mode Specific Overrides */
 [data-theme="light"] .widget-container,
-[data-theme="light"] .esri-widget,
+/* [data-theme="light"] .esri-widget, */
 [data-theme="light"] .esri-widget__content {
     background-color: var(--theme-bg-primary) !important;
     color: var(--theme-text-primary) !important;
-    border-color: var(--theme-border) !important;
+    /* border-color: var(--theme-border) !important; */
 }
 
 [data-theme="light"] .esri-layer-list__item,

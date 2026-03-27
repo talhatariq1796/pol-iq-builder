@@ -1249,6 +1249,13 @@ class ApplicationStateManager {
 
     // Session metrics
     parts.push(`Session: ${metrics.precinctsViewed} precincts viewed, ${metrics.filtersApplied} filters applied, ${metrics.comparisonsMade} comparisons`);
+
+    if (this.state.iqBuilder.lastAnalysis?.areaName) {
+      const n = this.state.iqBuilder.lastAnalysis.precincts?.length ?? 0;
+      parts.push(
+        `IQ area analysis (use as "this area" when the user says so): ${this.state.iqBuilder.lastAnalysis.areaName} — ${n} precincts`
+      );
+    }
     if (metrics.toolsVisited.length > 1) {
       parts.push(`Tools visited: ${metrics.toolsVisited.join(', ')}`);
     }

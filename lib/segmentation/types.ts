@@ -1012,6 +1012,9 @@ export interface PrecinctDonorProfile {
  * Extended segment filters with all new filter categories
  */
 export interface ExtendedSegmentFilters extends SegmentFilters {
+  /** When set, sort matches by modeled % with bachelor's+ (college) descending — "highest concentration" queries */
+  sortByCollegePctDesc?: boolean;
+
   // Phase 1: Electoral filtering
   electoral?: ElectoralFilters;
 

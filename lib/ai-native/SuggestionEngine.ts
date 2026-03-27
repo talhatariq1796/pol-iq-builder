@@ -813,40 +813,40 @@ class SuggestionEngine {
       },
 
       // Multiple selections trigger - offer segment creation
-      {
-        id: 'multiple-selections',
-        category: 'exploration-tips',
-        condition: (state) => state.selection.selectionHistory.length >= 3,
-        message: (state) => {
-          const count = state.selection.selectionHistory.length;
-          return `You've explored ${count} precincts. Want to create a segment from these?`;
-        },
-        suggestions: () => [
-          {
-            id: 'create-segment-from-history',
-            label: 'Create segment from explored precincts',
-            action: 'segment_from_history',
-            priority: 85,
-            category: 'segmentation',
-          },
-          {
-            id: 'compare-explored',
-            label: 'Compare explored precincts',
-            action: 'compare_history',
-            priority: 80,
-            category: 'comparison',
-          },
-          {
-            id: 'dismiss-multiple-selections',
-            label: "Don't suggest this",
-            action: 'dismiss_trigger:multiple-selections',
-            priority: 10,
-            category: 'session',
-          },
-        ],
-        cooldownMs: 300000, // 5 minutes
-        priority: 60,
-      },
+      // {
+      //   id: 'multiple-selections',
+      //   category: 'exploration-tips',
+      //   condition: (state) => state.selection.selectionHistory.length >= 3,
+      //   message: (state) => {
+      //     const count = state.selection.selectionHistory.length;
+      //     return `You've explored ${count} precincts. Want to create a segment from these?`;
+      //   },
+      //   suggestions: () => [
+      //     {
+      //       id: 'create-segment-from-history',
+      //       label: 'Create segment from explored precincts',
+      //       action: 'segment_from_history',
+      //       priority: 85,
+      //       category: 'segmentation',
+      //     },
+      //     {
+      //       id: 'compare-explored',
+      //       label: 'Compare explored precincts',
+      //       action: 'compare_history',
+      //       priority: 80,
+      //       category: 'comparison',
+      //     },
+      //     {
+      //       id: 'dismiss-multiple-selections',
+      //       label: "Don't suggest this",
+      //       action: 'dismiss_trigger:multiple-selections',
+      //       priority: 10,
+      //       category: 'session',
+      //     },
+      //   ],
+      //   cooldownMs: 300000, // 5 minutes
+      //   priority: 60,
+      // },
 
       // Same area visited multiple times
       {

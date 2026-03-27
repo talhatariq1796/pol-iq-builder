@@ -29,10 +29,54 @@ import {
   extractActionDirectives,
   stripActionDirectives,
 } from '@/lib/ai/stripActionDirectives';
+import type {
+  IncomeBucketsPartisanLean,
+  PrecinctCanvassingEfficiencyRank,
+  PrecinctElectionShiftRank,
+  PrecinctTurnoutTrendRank,
+  TurnoutTrendExtremesResult,
+} from '@/types/political';
+
+/** NL queries about turnout changes over time (vs "swing" as partisan volatility). */
+function wantsTurnoutTrendQuery(q: string): boolean {
+  const isTurnoutTopic =
+    /\b(turnout|voting|participation|ballots?\s+cast|voter\s+participation)\b/i.test(q);
+  const isTrendTopic =
+    /\b(trend|trends|changed|change|more|less|than\s+before|historical|year|years|over\s+time|compared)\b/i.test(
+      q
+    );
+  return isTurnoutTopic && isTrendTopic;
+}
+
+/** NL queries about precinct partisan movement across recent presidential/midterm years. */
+function wantsElectionShiftQuery(q: string): boolean {
+  return (
+    /\b(precincts?|which\s+areas?|where|areas?)\b/i.test(q) &&
+    /\b(shift|shifted|dramatic|volatile|volatility|swing|changed|movement)\b/i.test(q) &&
+    /\b(election|2020|2022|2024|last\s+3|three\s+elections?|past\s+3|over\s+time)\b/i.test(q)
+  );
+}
+
+/** Modeled doors / persuadable voter (targeting scores) — not raw voter file addresses. */
+function wantsCanvassingEfficiencyQuery(q: string): boolean {
+  return (
+    /\b(canvass|canvassing|doors?|door\s+knock)\b/i.test(q) &&
+    /\b(efficiency|persuadable|per\s+voter|rank)\b/i.test(q)
+  );
+}
 
 export const maxDuration = 120;
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
+
+/** Client-supplied geographic scope for NL chat (political-ai escalation). */
+export interface ChatMapSelection {
+  selectedPrecinctName?: string;
+  /** Municipality / jurisdiction from precinct feature attributes (e.g. Jurisdiction_Name) */
+  selectedPrecinctJurisdiction?: string;
+  lastAnalysisAreaName?: string;
+  lastAnalysisPrecinctNames?: string[];
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -47,7 +91,13 @@ export async function POST(req: NextRequest) {
   console.log('[Political Chat API] Endpoint called');
 
   try {
-    const { messages, includeData = true, context, currentQuery, userContext } = await req.json();
+    const body = (await req.json()) as Record<string, unknown>;
+    const messages = body.messages;
+    const includeData = body.includeData !== false;
+    const context = typeof body.context === 'string' ? body.context : undefined;
+    const currentQuery = typeof body.currentQuery === 'string' ? body.currentQuery : undefined;
+    const userContext = body.userContext;
+    const mapSelection = body.mapSelection as ChatMapSelection | undefined;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
@@ -79,10 +129,27 @@ export async function POST(req: NextRequest) {
       confidence: routeResult.parsed.confidence,
     });
 
-    // Fetch relevant data based on parsed query
+    // Fetch relevant data based on parsed query (always attach college+precinct rankings when asked — low router confidence used to yield empty context and Claude denied we had data)
+    const wantsCollegePrecinctContext =
+      /\b(college|bachelor|educated|education\s+attainment)\b/i.test(userQuery) &&
+      /\bprecincts?\b/i.test(userQuery);
+    const wantsIncomeLeanBuckets =
+      /\b(income|affluence|median\s+household|household\s+income)\b/i.test(userQuery) &&
+      /\b(partisan|political\s+)?lean\b/i.test(userQuery);
+    const wantsElectionShiftContext = wantsElectionShiftQuery(userQuery);
+    const wantsTurnoutTrendContext = wantsTurnoutTrendQuery(userQuery);
+    const wantsCanvassingEfficiencyContext = wantsCanvassingEfficiencyQuery(userQuery);
     let contextData = '';
-    if (includeData && routeResult.parsed.confidence > 0.4) {
-      contextData = await fetchDataForQuery(routeResult.parsed);
+    if (
+      includeData &&
+      (routeResult.parsed.confidence > 0.4 ||
+        wantsCollegePrecinctContext ||
+        wantsIncomeLeanBuckets ||
+        wantsElectionShiftContext ||
+        wantsTurnoutTrendContext ||
+        wantsCanvassingEfficiencyContext)
+    ) {
+      contextData = await fetchDataForQuery(routeResult.parsed, mapSelection, userQuery);
     }
 
     // Unified Context Enrichment: RAG + Knowledge Graph in one call
@@ -224,7 +291,11 @@ export async function POST(req: NextRequest) {
  * Fetch relevant data based on parsed query.
  * Uses politicalDataService (state-scoped build: Pennsylvania precincts when FIPS 42 / PA deployment).
  */
-async function fetchDataForQuery(parsed: ParsedPoliticalQuery): Promise<string> {
+async function fetchDataForQuery(
+  parsed: ParsedPoliticalQuery,
+  mapSelection?: ChatMapSelection,
+  userQuery?: string
+): Promise<string> {
   const dataParts: string[] = [];
 
   try {
@@ -250,11 +321,19 @@ async function fetchDataForQuery(parsed: ParsedPoliticalQuery): Promise<string> 
           'persuasion_opportunity',
           'turnout',
           'combined_score',
+          'college_pct',
         ];
-        const rankablePrecinctMetric: PrecinctRankingMetric =
+        let rankablePrecinctMetric: PrecinctRankingMetric =
           parsed.metric && precinctRankMetrics.includes(parsed.metric as PrecinctRankingMetric)
             ? (parsed.metric as PrecinctRankingMetric)
             : 'swing_potential';
+        if (
+          rankablePrecinctMetric === 'swing_potential' &&
+          /\b(college|bachelor|educated|education\s+attainment)\b/i.test(parsed.originalQuery) &&
+          /\bprecinct/i.test(parsed.originalQuery)
+        ) {
+          rankablePrecinctMetric = 'college_pct';
+        }
 
         const jurisdictionRankMetrics = [
           'partisan_lean',
@@ -327,12 +406,152 @@ async function fetchDataForQuery(parsed: ParsedPoliticalQuery): Promise<string> 
         break;
       }
     }
+
+    if (
+      dataParts.length === 0 &&
+      /\b(college|bachelor|educated|education\s+attainment)\b/i.test(parsed.originalQuery) &&
+      /\bprecincts?\b/i.test(parsed.originalQuery)
+    ) {
+      const rankings = await politicalDataService.rankPrecinctsStatewide(
+        'college_pct',
+        'highest',
+        15
+      );
+      dataParts.push(formatStatewidePrecinctRankings(rankings, 'college_pct'));
+    }
+
+    if (
+      userQuery &&
+      /\b(income|affluence|median\s+household|household\s+income)\b/i.test(userQuery) &&
+      /\b(partisan|political\s+)?lean\b/i.test(userQuery) &&
+      mapSelection
+    ) {
+      if (mapSelection.lastAnalysisPrecinctNames && mapSelection.lastAnalysisPrecinctNames.length > 0) {
+        const r = await politicalDataService.getPartisanLeanByIncomeBucketsForPrecinctNames(
+          mapSelection.lastAnalysisPrecinctNames,
+          mapSelection.lastAnalysisAreaName || 'Selected area'
+        );
+        if (r) dataParts.push(formatIncomeBucketsPartisanLean(r));
+      } else if (mapSelection.selectedPrecinctJurisdiction) {
+        const r = await politicalDataService.getPartisanLeanByIncomeBucketsForJurisdiction(
+          mapSelection.selectedPrecinctJurisdiction
+        );
+        if (r) dataParts.push(formatIncomeBucketsPartisanLean(r));
+      } else if (mapSelection.selectedPrecinctName) {
+        const jurisdictionHint =
+          mapSelection.selectedPrecinctJurisdiction ||
+          (await politicalDataService.getJurisdictionLabelForPrecinctKey(mapSelection.selectedPrecinctName));
+        if (jurisdictionHint) {
+          const r =
+            await politicalDataService.getPartisanLeanByIncomeBucketsForJurisdiction(jurisdictionHint);
+          if (r) {
+            dataParts.push(
+              formatIncomeBucketsPartisanLean(r, {
+                userFocusedPrecinct: mapSelection.selectedPrecinctName,
+              })
+            );
+          }
+        } else {
+          const r = await politicalDataService.getPartisanLeanByIncomeBucketsForPrecinctNames(
+            [mapSelection.selectedPrecinctName],
+            mapSelection.selectedPrecinctName
+          );
+          if (r) {
+            dataParts.push(
+              formatIncomeBucketsPartisanLean(r, { singlePrecinctOnly: true })
+            );
+          }
+        }
+      }
+    }
+
+    if (userQuery && wantsElectionShiftQuery(userQuery)) {
+      const top = await politicalDataService.getTopPrecinctsByMultiYearMarginSwing(15);
+      if (top.length > 0) {
+        dataParts.push(formatTopPrecinctsByMultiYearMarginSwing(top));
+      }
+    }
+
+    if (userQuery && wantsTurnoutTrendQuery(userQuery)) {
+      const trend = await politicalDataService.getTurnoutTrendExtremes(10);
+      if (trend) {
+        dataParts.push(formatTurnoutTrendExtremes(trend));
+      }
+    }
+
+    if (userQuery && wantsCanvassingEfficiencyQuery(userQuery)) {
+      const eff = await politicalDataService.getTopPrecinctsByCanvassingEfficiencyProxy(15);
+      if (eff.length > 0) {
+        dataParts.push(formatCanvassingEfficiencyPrecincts(eff));
+      }
+    }
   } catch (error) {
     console.error('[Political Chat API] Error fetching data:', error);
     dataParts.push('(Note: Some data could not be loaded)');
   }
 
   return dataParts.join('\n\n');
+}
+
+function formatTopPrecinctsByMultiYearMarginSwing(rows: PrecinctElectionShiftRank[]): string {
+  const area = getPoliticalRegionEnv().summaryAreaName;
+  const lines = rows.map((r, i) => {
+    const net = r.netMarginChange2020to2024;
+    const netLabel =
+      net > 0.5 ? 'toward Dem' : net < -0.5 ? 'toward Rep' : 'roughly even';
+    return `${i + 1}. **${r.precinctName}** — cumulative |Δmargin| **${r.cumulativeAbsMarginSwing.toFixed(1)}** pp (margins 2020/2022/2024: ${r.margin2020}, ${r.margin2022}, ${r.margin2024}; net 2020→2024 ${net > 0 ? '+' : ''}${net.toFixed(1)} pp, ${netLabel})`;
+  });
+  return `## Precincts with largest partisan margin movement (2020 → 2022 → 2024) — ${area}
+
+**Method:** President race Dem−Rep margin (percentage points). "Dramatic shift" here = **|margin₂₀₂₂−margin₂₀₂₀| + |margin₂₀₂₄−margin₂₀₂₂|**. Net column is margin₂₀₂₄ − margin₂₀₂₀ (positive = overall shift toward Democrats).
+
+${lines.join('\n')}`;
+}
+
+function formatTurnoutTrendRow(r: PrecinctTurnoutTrendRank, i: number): string {
+  const dir =
+    r.netChange2020to2024 > 0.2
+      ? 'higher turnout vs 2020'
+      : r.netChange2020to2024 < -0.2
+        ? 'lower turnout vs 2020'
+        : 'roughly flat';
+  return `${i + 1}. **${r.precinctName}** — 2020/2022/2024: ${r.turnout2020}% / ${r.turnout2022}% / ${r.turnout2024}% (net ${r.netChange2020to2024 > 0 ? '+' : ''}${r.netChange2020to2024.toFixed(1)} pp, ${dir})`;
+}
+
+function formatTurnoutTrendExtremes(t: TurnoutTrendExtremesResult): string {
+  const area = getPoliticalRegionEnv().summaryAreaName;
+  const { statewideMeanTurnout: m } = t;
+  const incLines =
+    t.largestIncreases.length > 0
+      ? t.largestIncreases.map((r, i) => formatTurnoutTrendRow(r, i)).join('\n')
+      : '_(No precincts with net increase 2020→2024 in this sample.)_';
+  const decLines =
+    t.largestDecreases.length > 0
+      ? t.largestDecreases.map((r, i) => formatTurnoutTrendRow(r, i)).join('\n')
+      : '_(No precincts with net decrease 2020→2024 in this sample.)_';
+  return `## Turnout trends (2020 → 2022 → 2024) — ${area}
+
+**Statewide mean turnout** (precincts with all three years): 2020 **${m.y2020}%**, 2022 **${m.y2022}%**, 2024 **${m.y2024}%**.
+
+**Method:** Turnout from the election-history file (0–100%). "More / less than before" = **2024 minus 2020** (percentage points).
+
+### Precincts with largest **increases** (2024 vs 2020)
+${incLines}
+
+### Precincts with largest **decreases** (2024 vs 2020)
+${decLines}`;
+}
+
+function formatCanvassingEfficiencyPrecincts(rows: PrecinctCanvassingEfficiencyRank[]): string {
+  const area = getPoliticalRegionEnv().summaryAreaName;
+  const lines = rows.map((r, i) => {
+    return `${i + 1}. **${r.precinctName}** — est. **${r.estimatedDoors.toLocaleString()}** doors / **${r.estimatedPersuadableVoters.toLocaleString()}** persuadable → **${r.doorsPerPersuadableVoter.toFixed(3)}** doors per persuadable voter | registered **${r.registeredVoters.toLocaleString()}**, persuasion score **${r.persuasionOpportunity}**/100`;
+  });
+  return `## Modeled canvassing efficiency (best = lowest doors per persuadable voter) — ${area}
+
+**Data:** Registered voters and **persuasion_opportunity** from targeting scores. **Estimated doors** = registered ÷ 1.5 (same rule as canvassing reports). **Persuadable voters** = registered × (persuasion ÷ 100). This is **not** a household-level voter file — it is a **modeled** yield metric.
+
+${lines.join('\n')}`;
 }
 
 /**
@@ -377,7 +596,9 @@ ${comparison.summary}`;
  */
 function formatPrecinctRankings(jurisdiction: string, rankings: any[], metric?: string): string {
   const metricLabel =
-    metric?.replace('_', ' ') || 'swing potential';
+    metric === 'college_pct'
+      ? '% with bachelor\'s degree or higher (modeled precinct estimate)'
+      : metric?.replace('_', ' ') || 'swing potential';
   const lines = rankings.map(
     (r, i) =>
       `${i + 1}. ${r.precinctName}: ${r.value.toFixed(1)} (${r.competitiveness}, ${r.strategy})`
@@ -389,7 +610,10 @@ ${lines.join('\n')}`;
 }
 
 function formatStatewidePrecinctRankings(rankings: any[], metric?: string): string {
-  const metricLabel = metric?.replace(/_/g, ' ') || 'swing potential';
+  const metricLabel =
+    metric === 'college_pct'
+      ? '% with bachelor\'s degree or higher (modeled precinct estimate)'
+      : metric?.replace(/_/g, ' ') || 'swing potential';
   const area = getPoliticalRegionEnv().summaryAreaName;
   if (rankings.length === 0) {
     return `## Precinct rankings (${area})
@@ -471,6 +695,35 @@ function formatCountySummary(summary: any): string {
 
 ### Jurisdictions
 Use map and filter tools to explore municipalities and counties across Pennsylvania in this dataset.`;
+}
+
+function formatIncomeBucketsPartisanLean(
+  data: IncomeBucketsPartisanLean,
+  opts?: { userFocusedPrecinct?: string; singlePrecinctOnly?: boolean }
+): string {
+  const lines = data.buckets.map(
+    (b) =>
+      `- ${b.incomeBand}: ${b.leanDisplay} average partisan lean (${b.precinctCount} precincts; population-weight ≈ ${b.populationWeight.toLocaleString()})`
+  );
+  const methodNote =
+    '**Method:** Each precinct has one modeled median household income. Income *bands* group **precincts** by that value (richer vs. poorer **precincts**), not individual households within a precinct.';
+  let focusNote = '';
+  if (opts?.userFocusedPrecinct) {
+    focusNote = `The user selected precinct **${opts.userFocusedPrecinct}**; the table below covers **${data.areaLabel}** (all precincts in that jurisdiction), which is the correct scope for comparing partisan lean across income levels.`;
+  }
+  if (opts?.singlePrecinctOnly) {
+    focusNote =
+      'Only one precinct is in scope, so it appears in a single income band. Use an area analysis with multiple precincts or ask about a municipality for a multi-band comparison.';
+  }
+  return `## Partisan lean by modeled income band — ${data.areaLabel}
+
+${methodNote}
+${focusNote ? `\n${focusNote}\n` : ''}
+Precincts with modeled partisan lean in this sample: ${data.totalPrecinctsInSample}
+
+${lines.join('\n')}
+
+Lean uses the same convention as jurisdiction profiles (positive = Democratic lean, D+).`;
 }
 
 /**
@@ -756,6 +1009,7 @@ function buildPoliticalSystemPrompt(
 - **GOTV Priority**: 0-100 score. Higher = more value from turnout mobilization.
 - **Persuasion Opportunity**: 0-100 score. Higher = more persuadable voters.
 - **Turnout**: Historical average voter turnout percentage.
+- **Precinct demographics (modeled)**: Each precinct includes **collegePct** — estimated % of adults 25+ with a bachelor\'s degree or higher (sourced from block-group / demographic allocation where available). **Do not** tell the user this data is unavailable when the Current Data Context lists college or education percentages; use those numbers and cite [DEMOGRAPHICS].
 
 ## Targeting Strategies
 - **Battleground**: Competitive precincts needing both GOTV and persuasion
@@ -779,7 +1033,13 @@ function buildPoliticalSystemPrompt(
 8. If explaining methodology, reference the approach without exposing implementation details
 9. NEVER start responses with greetings like "Welcome!", "Hello!", "Hi!", or "Great question!" - jump directly into the analysis
 10. Format percentages correctly: use "52.3%" not "5230%" - never multiply by 100 twice
-11. **Markdown structure:** Put each \`##\` or \`###\` heading on its own line with a blank line above it. Separate sections (intro, metrics, lists) with blank lines so the UI can render headings and lists correctly—never glue a heading onto the end of a sentence on the same line.
+11. **Markdown structure:** Put each \`##\` or \`###\` heading on its own line with a blank line above it. Separate sections (intro, metrics, lists) with blank lines so the UI can render headings and lists correctly—never glue a heading onto the end of a sentence on the same line. **Do not** use Markdown **pipe tables** (\`|\` columns/rows)—they overflow the chat panel. Present comparable data as **numbered lists** or **bullet points** (one entity or metric group per line; bold labels are fine).
+12. **"This area" and session scope**: If **Current Session Context** mentions selected precincts, IQ area analysis, recent selections, or highlighted areas, treat **"this area"** as that scope. Do **not** ask the user to select a region when the session already specifies geography.
+13. **Non-empty data**: If **Current Data Context** shows a positive **Total Precincts** count or includes **Partisan lean by modeled income band**, do **not** claim zero precincts are loaded or that the dataset failed to initialize.
+14. **Income bands vs. one precinct**: Modeled income–partisan analysis groups **precincts** by each precinct’s **one** median household income. It does **not** produce multiple income strata *inside* a single precinct. When the user selects one precinct, the context may show **that precinct’s jurisdiction** so bands compare richer vs. poorer **precincts** in the same area. **Never** say the platform lacks income-stratified lean data when **Partisan lean by modeled income band** is present in Current Data Context.
+15. **Multi-year election shift**: If **Current Data Context** includes **Precincts with largest partisan margin movement (2020 → 2022 → 2024)**, you have precinct-level presidential margins and movement — **do not** claim this data is unavailable. Use those rows and cite [ELECTIONS].
+16. **Turnout trends**: If **Current Data Context** includes **Turnout trends (2020 → 2022 → 2024)**, you have precinct-level turnout percentages and statewide means — **do not** claim historical turnout is missing or that mean turnout is 0% unless the table explicitly shows zeros. Use the increases/decreases lists and cite [ELECTIONS].
+17. **Canvassing efficiency (modeled)**: If **Current Data Context** includes **Modeled canvassing efficiency**, you have precinct-level registered voters, persuasion opportunity, estimated doors, and a doors-per-persuadable-voter proxy from targeting scores — **do not** say voter file or address-level data is missing for this ranking. Walk through that ranked list (numbered or bullets, not a pipe table), cite [TARGETING], and explain that doors and persuadables are modeled estimates, not raw household counts.
 
 ## Current Intelligence Guidelines
 When current intel is provided in the context:
@@ -862,7 +1122,9 @@ Use this context to:
 - Reference precincts they've already explored
 - Suggest comparisons with areas they've looked at
 - Offer relevant next steps based on their exploration depth
-- Acknowledge their journey and provide continuity`;
+- Acknowledge their journey and provide continuity
+
+**Campaign context (if present above):** Session text may include **Campaign phase**, **Days until election**, and **Strategy** (e.g. hybrid = default GOTV+persuasion balance in settings). **Do not** lead every reply by repeating phase, day count, or strategy name unless the user asked about timing, calendar, or resource allocation tradeoffs. Answer the question directly; weave campaign timing in only when it changes the recommendation.`;
   }
 
   // Add user expertise context (Phase 12 - Expertise-Aware Responses)

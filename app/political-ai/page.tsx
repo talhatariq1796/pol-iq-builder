@@ -71,6 +71,7 @@ function PoliticalAIContent() {
   const [leftPanelMaximized, setLeftPanelMaximized] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [iqAction, setIQAction] = useState<IQAction | null>(null);
+  const iqInvocationSeqRef = useRef(0);
   const [mapView, setMapView] = useState<__esri.MapView | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -129,7 +130,8 @@ function PoliticalAIContent() {
    */
   const handleIQAction = useCallback((action: IQAction) => {
     console.log('[PoliticalAIPage] IQ action from IQBuilder:', action);
-    setIQAction(action);
+    const invocationId = ++iqInvocationSeqRef.current;
+    setIQAction({ ...action, invocationId });
     // Auto-expand AI panel when IQ action is triggered
     if (leftPanelCollapsed) {
       setLeftPanelCollapsed(false);

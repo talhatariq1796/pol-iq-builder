@@ -404,6 +404,8 @@ export interface Message {
 export interface IQAction {
   type: 'quickstart' | 'area-analysis' | 'report-generated';
   action: string;
+  /** Set by political-ai page per click — dedupes duplicate effect runs (welcome→active re-render, Strict Mode). */
+  invocationId?: number;
   data?: {
     precinctNames?: string[];
     areaName?: string;
@@ -488,6 +490,8 @@ export const AIPoliticalSessionHost: React.FC<AIPoliticalSessionHostProps> = ({
   const conversationHistoryRef = useRef<Message[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  /** Last QuickStart IQ invocation processed (paired with `invocationId` from page). */
+  const lastProcessedIQInvocationRef = useRef<number | null>(null);
 
   // ---------------------------------------------------------------------------
   // Session State Callback for Tour Control
@@ -753,12 +757,23 @@ Available actions:
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    if (!iqAction) return;
+    if (!iqAction) {
+      lastProcessedIQInvocationRef.current = null;
+      return;
+    }
 
     console.log('[AIPoliticalSessionHost] Processing IQ action:', iqAction);
 
     // Handle predefined queries from QuickStartIQ dialog
     if (iqAction.type === 'quickstart' && iqAction.action === 'predefined-query' && iqAction.data?.query) {
+      const inv = iqAction.invocationId;
+      if (inv != null && lastProcessedIQInvocationRef.current === inv) {
+        return;
+      }
+      if (inv != null) {
+        lastProcessedIQInvocationRef.current = inv;
+      }
+
       // Add the query as a user message and process it through the AI
       const userQuery = iqAction.data.query;
       console.log('[AIPoliticalSessionHost] Processing QuickStartIQ query:', userQuery);
@@ -774,10 +789,9 @@ Available actions:
         }
       ]);
 
-      // Transition to active state if in welcome
-      if (sessionState === 'welcome') {
-        setSessionState('active');
-      }
+      // Functional update avoids stale state; do not put sessionState in effect deps — that re-ran this
+      // effect while iqAction was still set (duplicate user message + duplicate AI response).
+      setSessionState((s: SessionState) => (s === 'welcome' ? 'active' : s));
 
       // Process the query through the AI (use handleSend equivalent)
       // We'll trigger this via a small delay to let the UI update
@@ -845,11 +859,9 @@ Available actions:
       onMapCommand(mapCommand);
     }
 
-    // Transition to active state if in welcome
-    if (sessionState === 'welcome') {
-      setSessionState('active');
-    }
-  }, [iqAction, onMapCommand, sessionState]);
+    setSessionState((s: SessionState) => (s === 'welcome' ? 'active' : s));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- processQuickStartQuery is declared below; sessionState omitted to prevent duplicate runs
+  }, [iqAction, onMapCommand]);
 
   // ---------------------------------------------------------------------------
   // Proactive Intelligence - Check triggers periodically
@@ -1385,8 +1397,8 @@ Available actions:
       contextMessage = `[MAP CONTEXT: Viewing ${mapState.activeLayer} layer${mapState.selectedMetric ? ` - ${mapState.selectedMetric}` : ''}]\n\n${input}`;
     }
 
-    // Parse intent (for report/output context and escalation logic)
-    const intent = parseIntent(contextMessage);
+    // Parse intent from the user's words only — MAP CONTEXT prefixes confuse keyword routing (e.g. layer names with "swing", "history") and trigger Claude with generic UI advice.
+    const intent = parseIntent(input);
 
     let result: HandlerResult;
 
@@ -1452,8 +1464,8 @@ Available actions:
       // Route through ToolOrchestrator for all other intents
       // GAP 1 Fix: Pass full context to enable state-aware responses
       const handlerContext = buildHandlerContext();
-      console.log('[AIPoliticalSessionHost] Routing through ToolOrchestrator:', { query: contextMessage.substring(0, 100), hasContext: true });
-      const orchestratorResult = await processQuery(contextMessage, handlerContext);
+      console.log('[AIPoliticalSessionHost] Routing through ToolOrchestrator:', { query: input.substring(0, 100), hasContext: true });
+      const orchestratorResult = await processQuery(input, handlerContext);
 
       // Check if we should escalate to Claude for complex/analytical queries
       const isAnalyticalQuery = /\b(why|how|explain|analyze|what do you think|help me understand|tell me about|what's the difference|compare|strategy|recommend)\b/i.test(input);
@@ -1462,14 +1474,20 @@ Available actions:
       const isContextualQuery = /\b(earlier|before|we discussed|you mentioned|last time|previous)\b/i.test(input);
       const matchedIntent = orchestratorResult.metadata?.parsedIntent || orchestratorResult.metadata?.matchedIntent;
       const isUnknownIntent = matchedIntent === 'unknown' || !orchestratorResult.success;
+      const toolHandledWell =
+        orchestratorResult.success &&
+        matchedIntent &&
+        matchedIntent !== 'unknown' &&
+        ['segment_find', 'segment_create', 'map_layer_change', 'filter'].includes(String(matchedIntent));
 
       const shouldEscalateToClaude =
-        isUnknownIntent ||
-        input.length > 150 ||
-        isAnalyticalQuery ||
-        isMultiPartQuery ||
-        isOpinionQuery ||
-        isContextualQuery;
+        !toolHandledWell &&
+        (isUnknownIntent ||
+          input.length > 150 ||
+          isAnalyticalQuery ||
+          isMultiPartQuery ||
+          isOpinionQuery ||
+          isContextualQuery);
 
       if (shouldEscalateToClaude) {
         console.log('[AIPoliticalSessionHost] Escalating to Claude:', {
@@ -1481,6 +1499,21 @@ Available actions:
         try {
           const escalationStateManager = getStateManager();
           const sessionContext = escalationStateManager.getContextForAI();
+          const iq = escalationStateManager.getState().iqBuilder.lastAnalysis;
+          const attrs = selectedPrecinct?.attributes || {};
+          const mapSelection = {
+            selectedPrecinctName: selectedPrecinct?.precinctName,
+            selectedPrecinctJurisdiction:
+              (attrs.Jurisdiction_Name as string | undefined) ||
+              (attrs.MunicipalityName as string | undefined) ||
+              (attrs.MUNICIPALITY as string | undefined) ||
+              (attrs.municipality as string | undefined) ||
+              undefined,
+            lastAnalysisAreaName: iq?.areaName,
+            lastAnalysisPrecinctNames: iq?.precincts
+              ?.map((p) => p.name)
+              .filter((n): n is string => Boolean(n)),
+          };
 
           const recentMessages = messages.slice(-15);
           const formattedMessages = recentMessages.map((m, idx) => {
@@ -1499,7 +1532,8 @@ Available actions:
               messages: formattedMessages,
               context: sessionContext,
               currentQuery: input,
-              includeData: true
+              includeData: true,
+              mapSelection,
             })
           });
 

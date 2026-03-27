@@ -5,8 +5,6 @@
 
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import Graphic from "@arcgis/core/Graphic";
-import Polygon from "@arcgis/core/geometry/Polygon";
-import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import ClassBreaksRenderer from "@arcgis/core/renderers/ClassBreaksRenderer";
 import { ACTIVE_COLOR_SCHEME } from '@/utils/renderer-standardization';
@@ -21,7 +19,7 @@ export interface CompositeIndexData {
 
 export class CompositeIndexLayerService {
   private baseGeometryLayer: __esri.FeatureLayer;
-  
+
   constructor(baseGeometryLayer: __esri.FeatureLayer) {
     this.baseGeometryLayer = baseGeometryLayer;
   }
@@ -33,29 +31,29 @@ export class CompositeIndexLayerService {
     indexName: 'HOT_GROWTH_INDEX' | 'NEW_HOMEOWNER_INDEX' | 'HOUSING_AFFORDABILITY_INDEX',
     layerTitle: string
   ): Promise<__esri.FeatureLayer> {
-    
+
     try {
       console.log(`[CompositeIndexLayerService] Creating ${indexName} layer: ${layerTitle}`);
-      
+
       // Fetch composite index data from microservice
       const indexData = await this.fetchCompositeIndexData();
       console.log(`[CompositeIndexLayerService] Got ${indexData.length} index records`);
-      
+
       // Get geometry from base layer
       const geometryData = await this.fetchBaseLayerGeometry();
       console.log(`[CompositeIndexLayerService] Got ${geometryData.size} geometries from base layer`);
-      
+
       // Create graphics combining index values with geometries
       const graphics = await this.createIndexGraphics(indexData, geometryData, indexName);
       console.log(`[CompositeIndexLayerService] Created ${graphics.length} graphics`);
-      
+
       // Create the feature layer
       const featureLayer = new FeatureLayer({
         title: layerTitle,
         objectIdField: "OBJECTID",
         geometryType: "polygon",
         spatialReference: { wkid: 4326 },
-        
+
         // Define the schema
         fields: [
           {
@@ -73,10 +71,10 @@ export class CompositeIndexLayerService {
             alias: this.getIndexDisplayName(indexName)
           }
         ],
-        
+
         // Add the graphics as features
         source: graphics,
-        
+
         // Configure renderer based on index values
         renderer: this.createIndexRenderer(indexName, indexData.map(d => d[indexName]))
       });
@@ -124,36 +122,36 @@ export class CompositeIndexLayerService {
         loaded: this.baseGeometryLayer.loaded,
         type: this.baseGeometryLayer.type
       });
-      
+
       // Ensure the layer is loaded
       if (!this.baseGeometryLayer.loaded) {
         console.log('[CompositeIndexLayerService] Loading base layer...');
         await this.baseGeometryLayer.load();
       }
-      
+
       // Check available fields first
       const fields = this.baseGeometryLayer.fields?.map(f => f.name) || [];
       console.log('[CompositeIndexLayerService] Available fields:', fields);
-      
+
       // Try different possible ID field names (prioritize ID for FSA data)
       const possibleIDFields = ['ID', 'FSA_ID', 'GEO_ID', 'GEOID', 'POSTAL_CODE', 'CODE'];
       const idField = possibleIDFields.find(field => fields.includes(field));
-      
+
       if (!idField) {
         console.error('[CompositeIndexLayerService] No suitable ID field found in base layer. Available fields:', fields);
         throw new Error(`No suitable ID field found. Available fields: ${fields.join(', ')}`);
       }
-      
+
       console.log(`[CompositeIndexLayerService] Using ${idField} as ID field`);
-      
+
       const query = this.baseGeometryLayer.createQuery();
       query.where = "1=1";
       query.outFields = [idField];
       query.returnGeometry = true;
-      
+
       const results = await this.baseGeometryLayer.queryFeatures(query);
       console.log(`[CompositeIndexLayerService] Query returned ${results.features.length} features`);
-      
+
       const geometryMap = new Map<string, any>();
       results.features.forEach((feature, index) => {
         const id = feature.attributes[idField];
@@ -166,13 +164,13 @@ export class CompositeIndexLayerService {
           console.warn(`[CompositeIndexLayerService] Feature ${index} missing ${idField} attribute:`, feature.attributes);
         }
       });
-      
+
       console.log(`[CompositeIndexLayerService] Created geometry map with ${geometryMap.size} entries`);
-      
+
       if (geometryMap.size === 0) {
         throw new Error(`No features with valid ${idField} found in base layer`);
       }
-      
+
       return geometryMap;
     } catch (error) {
       console.error('[CompositeIndexLayerService] Error fetching base layer geometry:', error);
@@ -194,9 +192,9 @@ export class CompositeIndexLayerService {
     geometryMap: Map<string, any>,
     indexField: string
   ): Promise<__esri.Graphic[]> {
-    
+
     const graphics: __esri.Graphic[] = [];
-    
+
     indexData.forEach((data, index) => {
       const geometry = geometryMap.get(data.GEOID);
       if (geometry) {
@@ -208,11 +206,11 @@ export class CompositeIndexLayerService {
             [indexField]: data[indexField as keyof CompositeIndexData]
           }
         });
-        
+
         graphics.push(graphic);
       }
     });
-    
+
     return graphics;
   }
 
@@ -225,7 +223,7 @@ export class CompositeIndexLayerService {
     const q1 = sortedValues[Math.floor(sortedValues.length * 0.25)];
     const q2 = sortedValues[Math.floor(sortedValues.length * 0.5)];
     const q3 = sortedValues[Math.floor(sortedValues.length * 0.75)];
-    
+
     return new ClassBreaksRenderer({
       field: indexName,
       classBreakInfos: [
@@ -295,10 +293,10 @@ export class CompositeIndexLayerService {
   private getIndexDisplayName(indexName: string): string {
     const displayNames: Record<string, string> = {
       'HOT_GROWTH_INDEX': 'Hot Growth Score',
-      'NEW_HOMEOWNER_INDEX': 'New Homeowner Score', 
+      'NEW_HOMEOWNER_INDEX': 'New Homeowner Score',
       'HOUSING_AFFORDABILITY_INDEX': 'Housing Affordability Score'
     };
-    
+
     return displayNames[indexName] || indexName;
   }
 
@@ -311,7 +309,7 @@ export class CompositeIndexLayerService {
       this.createCompositeIndexLayer('NEW_HOMEOWNER_INDEX', 'New Homeowner Index'),
       this.createCompositeIndexLayer('HOUSING_AFFORDABILITY_INDEX', 'Affordability Index')
     ]);
-    
+
     return layers;
   }
 }

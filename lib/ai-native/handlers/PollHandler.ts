@@ -18,6 +18,7 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, appendSources } from './types';
 import { getPollIngestionPipeline } from '@/lib/poll-ingestion';
+import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
 import type { Poll, PollAggregate } from '@/lib/poll-ingestion';
 
 // ============================================================================
@@ -54,9 +55,13 @@ const POLL_PATTERNS: QueryPattern[] = [
     patterns: [
       /(?:most\s+)?competitive\s+races?/i,
       /close(?:st)?\s+races?/i,
-      /toss.?up(?:s)?/i,
+      // Do not match bare "toss-up" — that hits precinct targeting ("toss-up seats", QuickStarts)
+      /toss[- ]?up\s+races?/i,
+      /races?\s+(?:that\s+are\s+)?(?:toss|within|under)/i,
       /(?:tight|narrow)\s+races?/i,
       /races?\s+(?:within|under)\s+\d+\s+points?/i,
+      /poll(?:s|ing)?\s+.*\b(?:competitive|toss|close|tight)\b/i,
+      /\b(?:competitive|close|tight)\s+(?:senate|house|governor|presidential)?\s*races?\b/i,
     ],
     keywords: ['competitive', 'close', 'toss-up', 'tight', 'narrow'],
     priority: 10,
@@ -470,9 +475,10 @@ export class PollHandler implements NLPHandler {
   }
 
   private noDataResponse(): string {
+    const area = getPoliticalRegionEnv().summaryAreaName || getPoliticalRegionEnv().state;
     return `**No Polling Data Available**
 
-The poll ingestion pipeline hasn't been run yet, or no Michigan polls are available.
+The poll ingestion pipeline hasn't been run yet, or no polls are available for ${area}.
 
 To fetch the latest polling data, ask me to "refresh polls" or "update polling data".
 

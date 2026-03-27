@@ -17,7 +17,7 @@ import type {
   ExtractedEntities,
 } from './types';
 import { RESPONSE_TEMPLATES, appendSources, getEnrichmentForQuery, formatEnrichmentSections, createPrecinctsSection, createSourcesSection } from './types';
-import type { SegmentFilters, SegmentResults } from '@/lib/segmentation/types';
+import type { ExtendedSegmentFilters, SegmentFilters, SegmentResults } from '@/lib/segmentation/types';
 import { mapCommandBridge } from '../MapCommandBridge';
 import { SegmentEngine } from '@/lib/segmentation/SegmentEngine';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
@@ -96,6 +96,10 @@ const SEGMENT_PATTERNS: QueryPattern[] = [
     patterns: [
       /find\s+(?:all\s+)?precincts(?!\s+near)/i, // Exclude spatial queries like "find precincts near X"
       /show\s+(?:me\s+)?precincts(?!\s+near)/i, // Exclude spatial queries
+      // Words between "show" and "precincts" (e.g. "Show competitive precincts…")
+      /show\s+(?:me\s+)?(?:[\s\S]{1,400}?)\bprecincts?\b(?!\s+near)/i,
+      /\bcompetitive\s+precincts?\b/i,
+      /\bnot\s+safe\s+seats?\b.*\bprecincts?\b/i,
       /which\s+precincts/i,
       /what\s+precincts/i,
       /list\s+precincts/i,
@@ -107,8 +111,24 @@ const SEGMENT_PATTERNS: QueryPattern[] = [
       /(?:swing|gotv|persuasion)\s+(?:target|priority|opportunity)\s+precincts?/i,
       /(?:suburban|urban|rural)\s+(?:swing|gotv|persuasion)\s+(?:precincts?|voters?)/i,
     ],
-    keywords: ['find', 'show', 'which', 'what', 'list', 'precincts', 'where', 'swing', 'gotv', 'persuasion', 'turnout', 'targeting'],
-    priority: 9, // Increase priority to beat IssueHandler
+    keywords: [
+      'find',
+      'show',
+      'which',
+      'what',
+      'list',
+      'precincts',
+      'where',
+      'swing',
+      'gotv',
+      'persuasion',
+      'turnout',
+      'targeting',
+      'competitive',
+      'safe',
+      'toss-up',
+    ],
+  priority: 11, // Beat poll_competitive when both mention "competitive" / toss-up language
   },
   {
     intent: 'segment_save',
@@ -521,7 +541,13 @@ export class SegmentationHandler implements NLPHandler {
       (/\bwhere\b/i.test(query) &&
         /\bweakest\b/i.test(query) &&
         /\blean/i.test(query) &&
-        /\bway\b/i.test(query));
+        /\bway\b/i.test(query)) ||
+      (/\bprecincts?\b/i.test(query) &&
+        (/\bnot\s+safe\s+seats?\b/i.test(query) ||
+          /\bexclude\s+safe\s+(?:d|r)\b/i.test(query) ||
+          (/\bcompetitive\s+precincts?\b/i.test(query) &&
+            /\b(?:lean\s+)?democratic/i.test(query) &&
+            /\btoss[- ]?up\b/i.test(query))));
 
     if (softSupportQuery) {
       entities.competitiveness = ['lean_d', 'lean_r', 'toss_up'];
@@ -683,6 +709,20 @@ export class SegmentationHandler implements NLPHandler {
       entities.educationThreshold = { min: numValue };
     }
 
+    // "Highest concentration of college-educated" / QuickStart demographics — no % given; use floor + rank by college %
+    const collegeConcentrationQuery =
+      /\b(?:highest|top|most)\s+(?:concentration|share|level)s?\s+of\s+(?:college[- ]?educated|college\s+education)/i.test(
+        query,
+      ) ||
+      (/\bcollege[- ]?educated\b/i.test(query) &&
+        /\b(?:highest|concentration|top|most)\b/i.test(query)) ||
+      /\brank(?:ed)?\s+by\s+(?:college|education|college\s+education)/i.test(query);
+
+    if (collegeConcentrationQuery && !entities.educationThreshold?.min) {
+      entities.educationThreshold = { min: 30 };
+      entities.sortPrecinctsByCollegePctDesc = true;
+    }
+
     // Turnout threshold: "turnout under 65%"
     const turnoutBelowMatch = query.match(SCORE_PATTERNS.turnoutThreshold);
     if (turnoutBelowMatch) {
@@ -761,8 +801,14 @@ export class SegmentationHandler implements NLPHandler {
   convertToFilters(entities: ExtractedEntities): SegmentFilters {
     const filters: SegmentFilters = {};
 
-    // Demographics
-    if (entities.density || entities.ageRange || entities.incomeRange) {
+    // Demographics (include education-only — previously minCollegePct was dropped when no age/income/density)
+    const hasDemographics =
+      entities.density ||
+      entities.ageRange ||
+      entities.incomeRange ||
+      entities.educationThreshold?.min != null;
+
+    if (hasDemographics) {
       filters.demographics = {};
 
       if (entities.density) {
@@ -781,6 +827,10 @@ export class SegmentationHandler implements NLPHandler {
       if (entities.educationThreshold?.min) {
         filters.demographics.minCollegePct = entities.educationThreshold.min;
       }
+    }
+
+    if (entities.sortPrecinctsByCollegePctDesc) {
+      (filters as ExtendedSegmentFilters).sortByCollegePctDesc = true;
     }
 
     // Political

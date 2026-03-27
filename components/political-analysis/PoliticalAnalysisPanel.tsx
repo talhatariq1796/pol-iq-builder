@@ -164,6 +164,8 @@ interface SelectedPrecinctInfo {
 export interface IQAction {
   type: 'quickstart' | 'area-analysis' | 'report-generated';
   action: string;
+  /** Assigned in political-ai page per click — dedupes duplicate IQ handling in the AI host. */
+  invocationId?: number;
   data?: {
     precinctNames?: string[];
     areaName?: string;

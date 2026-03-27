@@ -139,6 +139,7 @@ const PENSYLVANIA_EXTENT = {
 export interface IQAction {
   type: 'quickstart' | 'area-analysis' | 'report-generated';
   action: string;
+  invocationId?: number;
   data?: {
     precinctNames?: string[];
     areaName?: string;
