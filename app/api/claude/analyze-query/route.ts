@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { hasOwnProperty } from '@/utils/lint-helpers';
-import { mapQueryToVisualizations, QueryIntent } from '@/utils/visualizations/query-mapper';
+// import { mapQueryToVisualizations, QueryIntent } from '@/utils/visualizations/query-mapper';
 import { resolveClaudeModel, resolveClaudeRetryModel } from '@/lib/ai/claudeModel';
 import { VisualizationType } from '@/config/dynamic-layers';
 
@@ -187,16 +187,16 @@ export async function POST(req: Request) {
       throw new Error('Failed to parse analysis response');
     }
 
-    // Create query intent from analysis
-    const queryIntent: QueryIntent = {
-      type: analysis.queryType,
-      fields: analysis.relevantFields,
-      geometryType: 'polygon', // Default to polygon, can be updated based on layer metadata
-      filters: {} // Can be populated based on query analysis
-    };
+    // // Create query intent from analysis
+    // const queryIntent: QueryIntent = {
+    //   type: analysis.queryType,
+    //   fields: analysis.relevantFields,
+    //   geometryType: 'polygon', // Default to polygon, can be updated based on layer metadata
+    //   filters: {} // Can be populated based on query analysis
+    // };
 
     // Get visualization suggestions
-    const suggestions = mapQueryToVisualizations(queryIntent);
+    // const suggestions = mapQueryToVisualizations(queryIntent);
     const bestSuggestion = suggestions[0];
     const alternatives = suggestions.slice(1);
 

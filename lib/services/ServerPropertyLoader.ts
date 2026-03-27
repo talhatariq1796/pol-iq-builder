@@ -6,7 +6,21 @@
  */
 
 import { PropertyTypeClassifier } from '@/lib/analysis/PropertyTypeClassifier';
-import { calculateTimeOnMarket, type CMAProperty } from '@/components/cma/types';
+function calculateTimeOnMarket(property: { date_bc?: string; date_pp_acpt_expiration?: string; st?: string; status?: string }): number | undefined {
+  if (!property.date_bc) return undefined;
+  const listingDate = new Date(property.date_bc);
+  if (isNaN(listingDate.getTime())) return undefined;
+  const status = (property.st || property.status || '').toLowerCase();
+  let endDate: Date;
+  if ((status === 'so' || status === 'sold') && property.date_pp_acpt_expiration) {
+    const accepted = new Date(property.date_pp_acpt_expiration);
+    endDate = isNaN(accepted.getTime()) ? new Date() : accepted;
+  } else {
+    endDate = new Date();
+  }
+  const days = Math.floor((endDate.getTime() - listingDate.getTime()) / (1000 * 60 * 60 * 24));
+  return days >= 0 ? days : undefined;
+}
 
 /**
  * Extract square footage from living_area_imperial string (e.g., "1,890 sqft")
@@ -267,7 +281,7 @@ export class ServerPropertyLoader {
         st: props.st || props.status,
         status: props.status || props.st,
       };
-      const timeOnMarket = calculateTimeOnMarket(propertyForCalc as CMAProperty) || 0;
+      const timeOnMarket = calculateTimeOnMarket(propertyForCalc) || 0;
 
       // Extract price with rental detection
       const { price: extractedPrice, isRental } = extractSalePrice(props);
