@@ -484,17 +484,18 @@ async function loadBlobUrlMappings(): Promise<Record<string, string>> {
     }
 
     // Node (e.g. Vercel serverless): bundled JSON is always in the bundle; disk file is optional override.
-    blobUrlMappings = { ...(blobUrlsBundled as Record<string, string>) };
+    let merged: Record<string, string> = { ...(blobUrlsBundled as Record<string, string>) };
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
       const filePath = path.join(process.cwd(), 'public/data/blob-urls.json');
       const fileContent = await fs.readFile(filePath, 'utf-8');
-      blobUrlMappings = { ...blobUrlMappings, ...JSON.parse(fileContent) };
+      merged = { ...merged, ...JSON.parse(fileContent) };
     } catch {
       // keep bundled-only (production Vercel has no public/ on disk)
     }
-    return blobUrlMappings;
+    blobUrlMappings = merged;
+    return merged;
   } catch (error) {
     console.warn('[PoliticalDataService] Failed to load blob URL mappings:', error);
     blobUrlMappings = { ...(blobUrlsBundled as Record<string, string>) };
