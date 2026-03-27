@@ -428,12 +428,31 @@ function isNodeRuntime(): boolean {
 }
 
 /**
+ * Origin for fetching `/data/...` assets when running on Vercel: `public/` is **not** on the
+ * serverless filesystem (`/var/task/public/...` is missing), but the same files are served from the deployment URL.
+ */
+function getServerDeploymentOrigin(): string | null {
+  const explicit =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_VERCEL_URL?.trim();
+  if (explicit) {
+    if (explicit.startsWith('http://') || explicit.startsWith('https://')) {
+      return explicit.replace(/\/$/, '');
+    }
+    return `https://${explicit.replace(/\/$/, '')}`;
+  }
+  const v = process.env.VERCEL_URL?.trim();
+  if (v) return `https://${v.replace(/\/$/, '')}`;
+  return null;
+}
+
+/**
  * Load blob URL mappings from the static JSON file
  *
  * Works in:
  * - Browser: fetch from /data/blob-urls.json
- * - Edge runtime: fetch from absolute URL (needs NEXT_PUBLIC_BASE_URL)
- * - Node.js server: read from file system
+ * - Edge / Node without disk: bundled import + optional fetch to deployment `/data/blob-urls.json`
+ * - Node local dev: optional merge from `public/data/blob-urls.json` over bundled defaults
  */
 async function loadBlobUrlMappings(): Promise<Record<string, string>> {
   if (blobUrlMappings !== null) {
@@ -441,47 +460,46 @@ async function loadBlobUrlMappings(): Promise<Record<string, string>> {
   }
 
   try {
-    // Browser context - fetch from public path
     if (typeof window !== 'undefined') {
       const response = await fetch('/data/blob-urls.json');
       if (response.ok) {
         blobUrlMappings = await response.json();
         return blobUrlMappings!;
       }
+      blobUrlMappings = { ...(blobUrlsBundled as Record<string, string>) };
+      return blobUrlMappings;
     }
-    // Edge runtime - use fetch with absolute URL
-    // Edge runtime has `fetch` but no Node.js modules
-    else if (!isNodeRuntime()) {
-      // In edge runtime, we need to use fetch
-      // Try the blob storage URL directly since we can't read local files
-      // Fallback: Return empty and let fetchFromBlobOrLocal handle it
-      console.log('[PoliticalDataService] Running in edge runtime, using hardcoded blob URL for mappings');
-      const response = await fetch('""');
-      if (response.ok) {
-        blobUrlMappings = await response.json();
-        return blobUrlMappings!;
+
+    if (!isNodeRuntime()) {
+      const origin = getServerDeploymentOrigin();
+      if (origin) {
+        const response = await fetch(`${origin}/data/blob-urls.json`);
+        if (response.ok) {
+          blobUrlMappings = await response.json();
+          return blobUrlMappings!;
+        }
       }
+      blobUrlMappings = { ...(blobUrlsBundled as Record<string, string>) };
+      return blobUrlMappings;
     }
-    // Node.js server context — prefer `public/` on disk (local dev); on Vercel, `public/`
-    // is not present inside the serverless bundle, so use the build-time JSON import.
-    else {
+
+    // Node (e.g. Vercel serverless): bundled JSON is always in the bundle; disk file is optional override.
+    blobUrlMappings = { ...(blobUrlsBundled as Record<string, string>) };
+    try {
       const fs = await import('fs/promises');
       const path = await import('path');
       const filePath = path.join(process.cwd(), 'public/data/blob-urls.json');
-      try {
-        const fileContent = await fs.readFile(filePath, 'utf-8');
-        blobUrlMappings = JSON.parse(fileContent);
-      } catch {
-        blobUrlMappings = blobUrlsBundled as Record<string, string>;
-      }
-      return blobUrlMappings!;
+      const fileContent = await fs.readFile(filePath, 'utf-8');
+      blobUrlMappings = { ...blobUrlMappings, ...JSON.parse(fileContent) };
+    } catch {
+      // keep bundled-only (production Vercel has no public/ on disk)
     }
+    return blobUrlMappings;
   } catch (error) {
     console.warn('[PoliticalDataService] Failed to load blob URL mappings:', error);
+    blobUrlMappings = { ...(blobUrlsBundled as Record<string, string>) };
+    return blobUrlMappings;
   }
-
-  blobUrlMappings = {};
-  return blobUrlMappings;
 }
 
 /**
@@ -492,8 +510,19 @@ async function readJsonFromPublicPath(localPath: string): Promise<unknown> {
   const fs = await import('fs/promises');
   const trimmed = localPath.startsWith('/') ? localPath.slice(1) : localPath;
   const filePath = path.join(process.cwd(), 'public', trimmed);
-  const raw = await fs.readFile(filePath, 'utf-8');
-  return JSON.parse(raw);
+  try {
+    const raw = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch (firstErr) {
+    const origin = getServerDeploymentOrigin();
+    if (!origin) throw firstErr;
+    const url = `${origin}/${trimmed}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`readJsonFromPublicPath: ${filePath} and ${url} failed (${response.status})`);
+    }
+    return await response.json();
+  }
 }
 
 /**
@@ -514,14 +543,24 @@ async function nodePublicFetch(input: RequestInfo | URL): Promise<Response> {
   } else {
     pathname = new URL((input as Request).url).pathname;
   }
-  const path = await import('path');
+  const pathMod = await import('path');
   const fs = await import('fs/promises');
-  const filePath = path.join(process.cwd(), 'public', pathname.replace(/^\//, ''));
-  const buf = await fs.readFile(filePath);
-  return new Response(new Uint8Array(buf), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const rel = pathname.replace(/^\//, '');
+  const filePath = pathMod.join(process.cwd(), 'public', rel);
+  try {
+    const buf = await fs.readFile(filePath);
+    return new Response(new Uint8Array(buf), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    const origin = getServerDeploymentOrigin();
+    if (!origin) {
+      throw new Error(`nodePublicFetch: missing file ${filePath} and no VERCEL_URL / NEXT_PUBLIC_SITE_URL`);
+    }
+    const url = `${origin}${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+    return fetch(url);
+  }
 }
 
 /**
