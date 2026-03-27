@@ -14,7 +14,7 @@ import type { SegmentFilters } from '@/lib/segmentation/types';
 /**
  * Available tool pages in the application
  */
-export type ToolType = 'political-ai' | 'segments' | 'compare' | 'settings';
+export type ToolType = 'political-ai' | 'segments' | 'compare' | 'settings' | 'donors' | 'canvass';
 
 // ============================================================================
 // Exploration History

@@ -105,12 +105,12 @@ function SliderImpl(
             disabled && "cursor-not-allowed"
           )}
           style={{ left: `${thumbPosition1}%` }}
-          onMouseDown={(e) => {
+          onMouseDown={(e: React.MouseEvent) => {
             e.preventDefault();
             handleMouseDown(0);
           }}
         />
-        
+
         {/* Thumb 2 */}
         <div
           className={cn(
@@ -119,7 +119,7 @@ function SliderImpl(
             disabled && "cursor-not-allowed"
           )}
           style={{ left: `${thumbPosition2}%` }}
-          onMouseDown={(e) => {
+          onMouseDown={(e: React.MouseEvent) => {
             e.preventDefault();
             handleMouseDown(1);
           }}

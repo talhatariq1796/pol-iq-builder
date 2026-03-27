@@ -1090,7 +1090,7 @@ export class SegmentationHandler implements NLPHandler {
     const turnoutT = entities.scoreThresholds?.turnout;
     /** User asked only for a turnout band — avoid unrelated persuasion/swing boilerplate. */
     const turnoutOnlyAsk =
-      hasTurnoutFilter &&
+      !!turnoutT &&
       entities.scoreThresholds?.persuasion?.min == null &&
       entities.scoreThresholds?.swing?.min == null &&
       entities.scoreThresholds?.gotv?.min == null &&

@@ -304,7 +304,7 @@ export function PoliticalAreaSelector({
         }
 
         const features: BoundaryFeature[] = featuresList
-          .map(({ name, geometry }) => {
+          .map(({ name, geometry }): BoundaryFeature | null => {
             const precinct = unifiedByKey.get(name);
             if (!precinct) return null;
             return {
@@ -379,13 +379,14 @@ export function PoliticalAreaSelector({
         const getAttrs = (r: { graphic?: __esri.Graphic }) =>
           r.graphic?.attributes as Record<string, unknown> | undefined;
 
-        const h3Hit = hitResponse.results.find((result: { graphic?: __esri.Graphic }) => {
-          const a = getAttrs(result);
+        const h3Hit = hitResponse.results.find((result) => {
+          if (!('graphic' in result)) return false;
+          const a = getAttrs(result as { graphic?: __esri.Graphic });
           return a?.h3_index != null && String(a.h3_index) !== '';
         });
 
         if (h3Hit) {
-          const attrs = getAttrs(h3Hit);
+          const attrs = getAttrs(h3Hit as { graphic?: __esri.Graphic });
           const h3Id = attrs ? String(attrs.h3_index) : '';
           if (h3Id) {
             setSelectedPrecinctNames([]);
@@ -400,13 +401,14 @@ export function PoliticalAreaSelector({
           return;
         }
 
-        const precinctResult = hitResponse.results.find((result: { graphic?: __esri.Graphic }) => {
-          const attrs = getAttrs(result);
+        const precinctResult = hitResponse.results.find((result) => {
+          if (!('graphic' in result)) return false;
+          const attrs = getAttrs(result as { graphic?: __esri.Graphic });
           return attrs?.UNIQUE_ID || attrs?.precinct_name || attrs?.NAME;
         });
 
         if (precinctResult) {
-          const attrs = getAttrs(precinctResult);
+          const attrs = getAttrs(precinctResult as { graphic?: __esri.Graphic });
           if (!attrs) return;
           const precinctId =
             attrs.UNIQUE_ID != null && attrs.UNIQUE_ID !== ''
@@ -1534,10 +1536,10 @@ async function geometryToGeoJSON(geometry: __esri.Geometry): Promise<GeoJSON.Geo
     await projection.load();
 
     const sr = geometry.spatialReference;
-    const wkid = sr?.wkid ?? sr?.latestWkid;
+    const wkid = sr?.wkid ?? (sr as unknown as { latestWkid?: number })?.latestWkid;
     let g: __esri.Geometry = geometry;
     if (wkid != null && wkid !== 4326) {
-      g = projection.project(geometry, new SpatialReference({ wkid: 4326 })) as __esri.Geometry;
+      g = projection.project(geometry as unknown as __esri.GeometryUnion, new SpatialReference({ wkid: 4326 })) as unknown as __esri.Geometry;
     }
 
     if (g.type === 'polygon') {
