@@ -157,6 +157,7 @@ interface TargetingScoresPrecinct {
   political_scores?: {
     partisan_lean: number;
     swing_potential: number;
+    turnout?: { average?: number };
   };
   // BA demographics
   total_population?: number;
@@ -1364,7 +1365,11 @@ export class PoliticalDataService {
             politicalData?.swing_potential ??
             targetingData?.political_scores?.swing_potential ??
             0,
-          avgTurnout: politicalData?.turnout?.average ?? 0,
+          avgTurnout: this.normalizeElectoralTurnoutToPct(
+            politicalData?.turnout?.average ??
+              targetingData?.political_scores?.turnout?.average ??
+              0,
+          ),
           competitiveness: isPA
             ? this.paCompetitivenessFromRawLean(rawLean)
             : politicalData?.classification?.competitiveness ?? 'Unknown',
@@ -1406,11 +1411,54 @@ export class PoliticalDataService {
       };
     }
 
+    if (isPA) {
+      await this.enrichUnifiedElectoralTurnoutFromPaElections(unified);
+    }
+
     console.log(
       `[PoliticalDataService] getUnifiedPrecinctData: Merged ${Object.keys(unified).length} precincts from targeting (${Object.keys(targeting).length}) and political (${Object.keys(political).length}) sources`
     );
 
     return unified;
+  }
+
+  /**
+   * Electoral avgTurnout is stored as 0–100 (percentage points) to match mergeElectionHistoryIntoPrecinctRecords.
+   */
+  private normalizeElectoralTurnoutToPct(raw: number): number {
+    if (raw == null || Number.isNaN(Number(raw))) return 0;
+    const n = Number(raw);
+    if (n > 0 && n <= 1) return n * 100;
+    return n;
+  }
+
+  /**
+   * PA: fill/overwrite unified electoral.avgTurnout from pa_precinct_election_history (same logic as mergeElectionHistoryIntoPrecinctRecords).
+   * Without this, getUnifiedPrecinct() stayed at 0 while getPrecinctDataFileFormat() had turnout after merge — AI saw "turnout not loaded".
+   */
+  private async enrichUnifiedElectoralTurnoutFromPaElections(
+    unified: Record<string, UnifiedPrecinct>,
+  ): Promise<void> {
+    const electionResults = await this.loadElectionResults();
+    const precincts = electionResults.precincts;
+    if (!precincts) return;
+
+    for (const [canonicalKey, u] of Object.entries(unified)) {
+      const paRow =
+        precincts[canonicalKey] ??
+        precincts[u.name] ??
+        (u.id ? precincts[u.id] : undefined);
+      if (!paRow?.elections) continue;
+
+      const converted = this.convertPaPrecinctElectionJsonToSegmentYears(paRow);
+      const turnouts = ['2020', '2022', '2024']
+        .map((y) => converted[y]?.turnout)
+        .filter((t): t is number => typeof t === 'number' && !Number.isNaN(t));
+      if (turnouts.length === 0) continue;
+
+      const avg = turnouts.reduce((a, b) => a + b, 0) / turnouts.length;
+      u.electoral.avgTurnout = avg;
+    }
   }
 
   /**
