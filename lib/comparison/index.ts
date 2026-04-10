@@ -18,27 +18,18 @@
  */
 
 // Core engines
-export { ComparisonEngine } from './ComparisonEngine';
-export { InsightGenerator } from './InsightGenerator';
+export { ComparisonEngine } from "./ComparisonEngine";
 
-// Wave 1 engines
-export { SimilarityEngine } from './SimilarityEngine';
-export { ResourceOptimizer } from './ResourceOptimizer';
-export { DonorLookup } from './DonorLookup';
+export { ResourceOptimizer } from "./ResourceOptimizer";
 
 // Wave 2 engines
-export { ClusterAnalyzer } from './ClusterAnalyzer';
-export { BudgetSimulator } from './BudgetSimulator';
-export { FieldBriefGenerator } from './FieldBriefGenerator';
-export { BatchComparisonEngine } from './BatchComparisonEngine';
-export { MatrixAnalyzer } from './MatrixAnalyzer';
 
 export {
   BOUNDARY_TYPES,
   getBoundaryTypeInfo,
   getAvailableBoundaryTypes,
   isBoundaryTypeAvailable,
-} from './boundaryTypes';
+} from "./boundaryTypes";
 
 // Core types
 export type {
@@ -60,7 +51,7 @@ export type {
   EntitySearchResult,
   CrossBoundaryComparisonOptions,
   SimilarEntityResult,
-} from './types';
+} from "./types";
 
 // Similarity types
 export type {
@@ -72,7 +63,7 @@ export type {
   EntityCluster,
   ClusterOptions,
   ClusterCharacteristics,
-} from './types-similarity';
+} from "./types-similarity";
 
 // Resource types
 export type {
@@ -86,7 +77,7 @@ export type {
   BudgetAllocation,
   ChannelSplit,
   EntitySimulationResult,
-} from './types-resource';
+} from "./types-resource";
 
 // Donor types
 export type {
@@ -97,7 +88,7 @@ export type {
   EntityZIPMapping,
   ZIPAggregateData,
   LapsedDonorData,
-} from './types-donor';
+} from "./types-donor";
 
 // Brief types
 export type {
@@ -107,7 +98,7 @@ export type {
   VoterProfiles,
   FieldOperations,
   BriefOptions,
-} from './types-brief';
+} from "./types-brief";
 
 // Batch types
 export type {
@@ -119,4 +110,4 @@ export type {
   PairwiseSimilarity,
   CorrelationMatrix,
   ParetoAnalysis,
-} from './types-batch';
+} from "./types-batch";

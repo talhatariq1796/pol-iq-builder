@@ -1,14 +1,17 @@
 /**
- * RelevanceScorer - Calculates relevance scores for context items
- *
  * Determines which RAG documents and Knowledge Graph entities
  * are relevant to a given query, filtering out noise.
  */
 
-import type { RAGDocument, CurrentIntelDocument } from '../rag';
-import type { Entity, CandidateEntity, OfficeEntity, IssueEntity } from '../knowledge-graph/types';
-import type { CandidateContext } from '../knowledge-graph/CandidateContextService';
-import type { RelevanceFactors, ScoredItem, EnrichmentOptions } from './types';
+import type { RAGDocument, CurrentIntelDocument } from "../rag";
+import type {
+  Entity,
+  CandidateEntity,
+  OfficeEntity,
+  IssueEntity,
+} from "../knowledge-graph/types";
+import type { CandidateContext } from "../knowledge-graph/CandidateContextService";
+import type { RelevanceFactors, ScoredItem, EnrichmentOptions } from "./types";
 
 /**
  * Calculate relevance score from factors
@@ -40,7 +43,7 @@ export function calculateRelevanceScore(factors: RelevanceFactors): number {
  */
 function queryMentions(query: string, terms: string[]): boolean {
   const queryLower = query.toLowerCase();
-  return terms.some(term => queryLower.includes(term.toLowerCase()));
+  return terms.some((term) => queryLower.includes(term.toLowerCase()));
 }
 
 /**
@@ -50,7 +53,10 @@ function calculateTopicMatch(query: string, keywords: string[]): number {
   if (!keywords || keywords.length === 0) return 0;
 
   const queryWords = new Set(
-    query.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+    query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2),
   );
 
   let matches = 0;
@@ -75,14 +81,19 @@ function calculateTopicMatch(query: string, keywords: string[]): number {
 /**
  * Calculate temporal relevance based on date
  */
-function calculateTemporalRelevance(dateStr: string | undefined, type: 'past' | 'future'): number {
+function calculateTemporalRelevance(
+  dateStr: string | undefined,
+  type: "past" | "future",
+): number {
   if (!dateStr) return 0.5; // Unknown date gets middle score
 
   const date = new Date(dateStr);
   const now = new Date();
-  const daysDiff = Math.abs((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.abs(
+    (date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
 
-  if (type === 'past') {
+  if (type === "past") {
     // Recent past is more relevant
     if (daysDiff < 7) return 1.0;
     if (daysDiff < 30) return 0.8;
@@ -105,21 +116,24 @@ function calculateTemporalRelevance(dateStr: string | undefined, type: 'past' | 
 export function scoreRAGDocument(
   doc: RAGDocument,
   query: string,
-  options: EnrichmentOptions
+  options: EnrichmentOptions,
 ): ScoredItem<RAGDocument> {
   const factors: RelevanceFactors = {
     directMention: queryMentions(query, [doc.title, ...doc.keywords]),
     jurisdictionMatch: options.jurisdiction
-      ? doc.keywords.some(k => k.toLowerCase().includes(options.jurisdiction!.toLowerCase()))
+      ? doc.keywords.some((k) =>
+          k.toLowerCase().includes(options.jurisdiction!.toLowerCase()),
+        )
       : false,
     districtMatch: options.districtNumber
-      ? doc.keywords.some(k => k.includes(options.districtNumber!))
+      ? doc.keywords.some((k) => k.includes(options.districtNumber!))
       : false,
     temporalRelevance: 0.5, // Static docs have neutral temporal relevance
     topicMatch: calculateTopicMatch(query, doc.keywords),
-    typeMatch: doc.category === 'methodology'
-      ? (options.includeMethodology || false)
-      : true,
+    typeMatch:
+      doc.category === "methodology"
+        ? options.includeMethodology || false
+        : true,
   };
 
   return {
@@ -135,20 +149,23 @@ export function scoreRAGDocument(
 export function scoreCurrentIntel(
   doc: CurrentIntelDocument,
   query: string,
-  options: EnrichmentOptions
+  options: EnrichmentOptions,
 ): ScoredItem<CurrentIntelDocument> {
   const factors: RelevanceFactors = {
     directMention: queryMentions(query, [doc.title, ...doc.keywords]),
     jurisdictionMatch: options.jurisdiction
-      ? doc.jurisdictions.some(j => j.toLowerCase().includes(options.jurisdiction!.toLowerCase()))
+      ? doc.jurisdictions.some((j) =>
+          j.toLowerCase().includes(options.jurisdiction!.toLowerCase()),
+        )
       : false,
     districtMatch: options.districtNumber
-      ? doc.keywords.some(k => k.includes(options.districtNumber!)) ||
-        doc.jurisdictions.some(j => j.includes(options.districtNumber!))
+      ? doc.keywords.some((k) => k.includes(options.districtNumber!)) ||
+        doc.jurisdictions.some((j) => j.includes(options.districtNumber!))
       : false,
-    temporalRelevance: doc.type === 'upcoming'
-      ? calculateTemporalRelevance(doc.published, 'future')
-      : calculateTemporalRelevance(doc.published, 'past'),
+    temporalRelevance:
+      doc.type === "upcoming"
+        ? calculateTemporalRelevance(doc.published, "future")
+        : calculateTemporalRelevance(doc.published, "past"),
     topicMatch: calculateTopicMatch(query, [...doc.keywords, ...doc.relevance]),
     typeMatch: true,
   };
@@ -166,23 +183,23 @@ export function scoreCurrentIntel(
 export function scoreCandidateContext(
   context: CandidateContext,
   query: string,
-  options: EnrichmentOptions
+  options: EnrichmentOptions,
 ): ScoredItem<CandidateContext> {
-  const candidateName = context.incumbent?.name || '';
-  const officeName = context.office?.name || '';
-  const district = context.office?.district || '';
+  const candidateName = context.incumbent?.name || "";
+  const officeName = context.office?.name || "";
+  const district = context.office?.district || "";
 
   const factors: RelevanceFactors = {
     directMention: queryMentions(query, [candidateName, officeName]),
     jurisdictionMatch: options.jurisdiction
-      ? officeName.toLowerCase().includes('michigan') ||
-        officeName.toLowerCase().includes('ingham')
+      ? officeName.toLowerCase().includes("michigan") ||
+        officeName.toLowerCase().includes("ingham")
       : false,
     districtMatch: options.districtNumber
       ? district === options.districtNumber
       : false,
     temporalRelevance: context.office?.nextElection
-      ? calculateTemporalRelevance(context.office.nextElection, 'future')
+      ? calculateTemporalRelevance(context.office.nextElection, "future")
       : 0.5,
     topicMatch: calculateTopicMatch(query, [candidateName, officeName]),
     typeMatch: options.includeCandidates !== false,
@@ -191,10 +208,13 @@ export function scoreCandidateContext(
   // Boost if district type matches
   if (options.districtType && context.office?.level) {
     const levelMatches =
-      (options.districtType === 'state_house' && context.office.level === 'state') ||
-      (options.districtType === 'state_senate' && context.office.level === 'state') ||
-      (options.districtType === 'congressional' && context.office.level === 'federal') ||
-      (options.districtType === 'county' && context.office.level === 'county');
+      (options.districtType === "state_house" &&
+        context.office.level === "state") ||
+      (options.districtType === "state_senate" &&
+        context.office.level === "state") ||
+      (options.districtType === "congressional" &&
+        context.office.level === "federal") ||
+      (options.districtType === "county" && context.office.level === "county");
     if (levelMatches) {
       factors.typeMatch = true;
     }
@@ -213,10 +233,13 @@ export function scoreCandidateContext(
 export function scoreIssue(
   issue: IssueEntity,
   query: string,
-  options: EnrichmentOptions
+  options: EnrichmentOptions,
 ): ScoredItem<IssueEntity> {
   const factors: RelevanceFactors = {
-    directMention: queryMentions(query, [issue.name, ...(issue.metadata.keywords || [])]),
+    directMention: queryMentions(query, [
+      issue.name,
+      ...(issue.metadata.keywords || []),
+    ]),
     jurisdictionMatch: true, // Issues are generally jurisdiction-agnostic
     districtMatch: false,
     temporalRelevance: 0.5,
@@ -237,10 +260,13 @@ export function scoreIssue(
 export function scoreEntity(
   entity: Entity,
   query: string,
-  options: EnrichmentOptions
+  options: EnrichmentOptions,
 ): ScoredItem<Entity> {
   const factors: RelevanceFactors = {
-    directMention: queryMentions(query, [entity.name, ...(entity.aliases || [])]),
+    directMention: queryMentions(query, [
+      entity.name,
+      ...(entity.aliases || []),
+    ]),
     jurisdictionMatch: true,
     districtMatch: false,
     temporalRelevance: 0.5,
@@ -261,13 +287,13 @@ export function scoreEntity(
 export function filterByRelevance<T>(
   scoredItems: ScoredItem<T>[],
   threshold: number,
-  maxItems: number
+  maxItems: number,
 ): T[] {
   return scoredItems
-    .filter(s => s.score >= threshold)
+    .filter((s) => s.score >= threshold)
     .sort((a, b) => b.score - a.score)
     .slice(0, maxItems)
-    .map(s => s.item);
+    .map((s) => s.item);
 }
 
 /**
@@ -275,13 +301,17 @@ export function filterByRelevance<T>(
  */
 export function getMaxRelevance<T>(scoredItems: ScoredItem<T>[]): number {
   if (scoredItems.length === 0) return 0;
-  return Math.max(...scoredItems.map(s => s.score));
+  return Math.max(...scoredItems.map((s) => s.score));
 }
 
 /**
  * Get reasons for inclusion/exclusion
  */
-export function getRelevanceReasons(factors: RelevanceFactors, score: number, threshold: number): string[] {
+export function getRelevanceReasons(
+  factors: RelevanceFactors,
+  score: number,
+  threshold: number,
+): string[] {
   const reasons: string[] = [];
 
   if (score < threshold) {
@@ -290,18 +320,18 @@ export function getRelevanceReasons(factors: RelevanceFactors, score: number, th
   }
 
   if (factors.directMention) {
-    reasons.push('Directly mentioned in query');
+    reasons.push("Directly mentioned in query");
   }
   if (factors.districtMatch) {
-    reasons.push('Matches queried district');
+    reasons.push("Matches queried district");
   } else if (factors.jurisdictionMatch) {
-    reasons.push('Matches queried jurisdiction');
+    reasons.push("Matches queried jurisdiction");
   }
   if (factors.temporalRelevance > 0.7) {
-    reasons.push('Temporally relevant (recent/upcoming)');
+    reasons.push("Temporally relevant (recent/upcoming)");
   }
   if (factors.topicMatch > 0.5) {
-    reasons.push('Topic keywords match');
+    reasons.push("Topic keywords match");
   }
 
   return reasons;

@@ -1,23 +1,15 @@
-/**
- * VAN Exporter
- *
- * Exports political data to VAN-compatible CSV formats.
- * Supports precinct-level targeting data for import into NGP VAN/EveryAction.
- *
- * Note: This exports precinct-level aggregate data, not individual voter records.
- * VAN import would match precincts to voters within VAN.
- */
-
 import {
-  ExportFormat,
   ExportResult,
   VANExportRow,
   VANExportOptions,
   DEFAULT_VAN_FIELD_MAPPING,
   VANFieldMapping,
-} from './types';
-import type { PrecinctMatch, SegmentResults } from '@/lib/segmentation/types';
-import type { CanvassingUniverse, CanvassingPrecinct } from '@/lib/canvassing/types';
+} from "./types";
+import type { PrecinctMatch, SegmentResults } from "@/lib/segmentation/types";
+import type {
+  CanvassingUniverse,
+  CanvassingPrecinct,
+} from "@/lib/canvassing/types";
 
 // ============================================================================
 // VAN Exporter Class
@@ -48,7 +40,7 @@ export class VANExporter {
   async exportSegment(
     results: SegmentResults,
     segmentName: string,
-    options: VANExportOptions
+    options: VANExportOptions,
   ): Promise<ExportResult> {
     const timestamp = new Date().toISOString();
     const filename =
@@ -61,19 +53,19 @@ export class VANExporter {
           segmentCode: segmentName,
           priorityRank: index + 1,
           timestamp,
-        })
+        }),
       );
 
       const content = this.toVANCSV(rows, options);
 
-      if (typeof window !== 'undefined') {
-        this.downloadFile(content, filename, 'text/csv');
+      if (typeof window !== "undefined") {
+        this.downloadFile(content, filename, "text/csv");
       }
 
       return {
         success: true,
         filename,
-        format: 'csv',
+        format: "csv",
         rowCount: rows.length,
         fileSize: new Blob([content]).size,
       };
@@ -81,9 +73,9 @@ export class VANExporter {
       return {
         success: false,
         filename,
-        format: 'csv',
+        format: "csv",
         rowCount: 0,
-        error: error instanceof Error ? error.message : 'VAN export failed',
+        error: error instanceof Error ? error.message : "VAN export failed",
       };
     }
   }
@@ -93,7 +85,7 @@ export class VANExporter {
    */
   async exportUniverse(
     universe: CanvassingUniverse,
-    options: VANExportOptions
+    options: VANExportOptions,
   ): Promise<ExportResult> {
     const timestamp = new Date().toISOString();
     const filename =
@@ -105,19 +97,19 @@ export class VANExporter {
         this.canvassingPrecinctToVANRow(precinct, {
           segmentCode: universe.name,
           timestamp,
-        })
+        }),
       );
 
       const content = this.toVANCSV(rows, options);
 
-      if (typeof window !== 'undefined') {
-        this.downloadFile(content, filename, 'text/csv');
+      if (typeof window !== "undefined") {
+        this.downloadFile(content, filename, "text/csv");
       }
 
       return {
         success: true,
         filename,
-        format: 'csv',
+        format: "csv",
         rowCount: rows.length,
         fileSize: new Blob([content]).size,
       };
@@ -125,9 +117,9 @@ export class VANExporter {
       return {
         success: false,
         filename,
-        format: 'csv',
+        format: "csv",
         rowCount: 0,
-        error: error instanceof Error ? error.message : 'VAN export failed',
+        error: error instanceof Error ? error.message : "VAN export failed",
       };
     }
   }
@@ -138,7 +130,7 @@ export class VANExporter {
   toCSVString(
     precincts: PrecinctMatch[],
     segmentName: string,
-    options?: Partial<VANExportOptions>
+    options?: Partial<VANExportOptions>,
   ): string {
     const timestamp = new Date().toISOString();
     const rows = precincts.map((precinct, index) =>
@@ -146,11 +138,11 @@ export class VANExporter {
         segmentCode: segmentName,
         priorityRank: index + 1,
         timestamp,
-      })
+      }),
     );
 
     return this.toVANCSV(rows, {
-      format: 'csv',
+      format: "csv",
       ...options,
     });
   }
@@ -176,19 +168,21 @@ export class VANExporter {
     const errors: string[] = [];
 
     if (rows.length === 0) {
-      errors.push('No rows to export');
+      errors.push("No rows to export");
       return { valid: false, errors };
     }
 
     // Check required fields
-    const requiredFields = this.fieldMapping.filter((f) => f.required).map((f) => f.target);
+    const requiredFields = this.fieldMapping
+      .filter((f) => f.required)
+      .map((f) => f.target);
 
     for (const field of requiredFields) {
-      const missing = rows.filter(
-        (row) => !row[field as keyof VANExportRow]
-      );
+      const missing = rows.filter((row) => !row[field as keyof VANExportRow]);
       if (missing.length > 0) {
-        errors.push(`Missing required field '${field}' in ${missing.length} rows`);
+        errors.push(
+          `Missing required field '${field}' in ${missing.length} rows`,
+        );
       }
     }
 
@@ -211,15 +205,15 @@ export class VANExporter {
 
   private precinctToVANRow(
     precinct: PrecinctMatch,
-    context: { segmentCode: string; priorityRank: number; timestamp: string }
+    context: { segmentCode: string; priorityRank: number; timestamp: string },
   ): VANExportRow {
     return {
       ExternalID: precinct.precinctId,
       PrecinctID: precinct.precinctId,
       PrecinctName: precinct.precinctName,
       Jurisdiction: precinct.jurisdiction,
-      County: 'Ingham', // MVP: Ingham County only
-      State: 'MI',
+      County: "Ingham", // MVP: Ingham County only
+      State: "MI",
       GOTVPriority: Math.round(precinct.gotvPriority),
       PersuasionScore: Math.round(precinct.persuasionOpportunity),
       SwingPotential: Math.round(precinct.swingPotential),
@@ -228,23 +222,23 @@ export class VANExporter {
       TargetingStrategy: precinct.targetingStrategy,
       SegmentCode: context.segmentCode,
       PriorityRank: context.priorityRank,
-      SourceSystem: 'PoliticalLandscapeAnalysis',
+      SourceSystem: "PoliticalLandscapeAnalysis",
       ExportDate: context.timestamp,
-      DataVersion: '1.0',
+      DataVersion: "1.0",
     };
   }
 
   private canvassingPrecinctToVANRow(
     precinct: CanvassingPrecinct,
-    context: { segmentCode: string; timestamp: string }
+    context: { segmentCode: string; timestamp: string },
   ): VANExportRow {
     return {
       ExternalID: precinct.precinctId,
       PrecinctID: precinct.precinctId,
       PrecinctName: precinct.precinctName,
       Jurisdiction: precinct.jurisdiction,
-      County: 'Ingham',
-      State: 'MI',
+      County: "Ingham",
+      State: "MI",
       GOTVPriority: Math.round(precinct.gotvPriority),
       PersuasionScore: Math.round(precinct.persuasionOpportunity),
       SwingPotential: Math.round(precinct.swingPotential),
@@ -252,11 +246,11 @@ export class VANExporter {
       TurnoutLikelihood: 70,
       TargetingStrategy: precinct.targetingStrategy,
       SegmentCode: context.segmentCode,
-      TurfID: `T${String(precinct.priorityRank).padStart(4, '0')}`,
+      TurfID: `T${String(precinct.priorityRank).padStart(4, "0")}`,
       PriorityRank: precinct.priorityRank,
-      SourceSystem: 'PoliticalLandscapeAnalysis',
+      SourceSystem: "PoliticalLandscapeAnalysis",
       ExportDate: context.timestamp,
-      DataVersion: '1.0',
+      DataVersion: "1.0",
     };
   }
 
@@ -271,30 +265,35 @@ export class VANExporter {
 
     // Build headers based on options
     const headers: (keyof VANExportRow)[] = [
-      'ExternalID',
-      'PrecinctID',
-      'PrecinctName',
-      'Jurisdiction',
-      'County',
-      'State',
+      "ExternalID",
+      "PrecinctID",
+      "PrecinctName",
+      "Jurisdiction",
+      "County",
+      "State",
     ];
 
     if (includeScores) {
       headers.push(
-        'GOTVPriority',
-        'PersuasionScore',
-        'SwingPotential',
-        'PartisanLean',
-        'TurnoutLikelihood'
+        "GOTVPriority",
+        "PersuasionScore",
+        "SwingPotential",
+        "PartisanLean",
+        "TurnoutLikelihood",
       );
     }
 
     if (includeTargeting) {
-      headers.push('TargetingStrategy', 'SegmentCode', 'TurfID', 'PriorityRank');
+      headers.push(
+        "TargetingStrategy",
+        "SegmentCode",
+        "TurfID",
+        "PriorityRank",
+      );
     }
 
     if (includeMetadata) {
-      headers.push('SourceSystem', 'ExportDate', 'DataVersion');
+      headers.push("SourceSystem", "ExportDate", "DataVersion");
     }
 
     // Apply custom field mapping if provided
@@ -302,21 +301,24 @@ export class VANExporter {
       ? headers.map((h) => options.vanFieldMapping?.[h] || h)
       : headers;
 
-    const lines = [mappedHeaders.join(',')];
+    const lines = [mappedHeaders.join(",")];
 
     for (const row of rows) {
       const values = headers.map((header) => {
         const value = row[header];
-        if (value === undefined || value === null) return '';
-        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+        if (value === undefined || value === null) return "";
+        if (
+          typeof value === "string" &&
+          (value.includes(",") || value.includes('"'))
+        ) {
           return `"${value.replace(/"/g, '""')}"`;
         }
         return String(value);
       });
-      lines.push(values.join(','));
+      lines.push(values.join(","));
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   // --------------------------------------------------------------------------
@@ -326,20 +328,24 @@ export class VANExporter {
   private sanitizeFilename(name: string): string {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '')
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
       .slice(0, 50);
   }
 
   private formatDate(isoString: string): string {
     const date = new Date(isoString);
-    return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+    return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
   }
 
-  private downloadFile(content: string, filename: string, mimeType: string): void {
+  private downloadFile(
+    content: string,
+    filename: string,
+    mimeType: string,
+  ): void {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
