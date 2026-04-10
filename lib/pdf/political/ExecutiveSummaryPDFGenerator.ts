@@ -12,9 +12,9 @@
  * - Recommendation: Single strategic recommendation
  */
 
-import jsPDF from 'jspdf';
-import { renderKPICard, renderKPICardGrid, BRAND_COLORS } from '../components/KPICard';
-import { BHHSComponentLibrary } from '../components/BHHSComponentLibrary';
+import jsPDF from "jspdf";
+import { renderKPICard, BRAND_COLORS } from "../components/KPICard";
+import { BHHSComponentLibrary } from "../components/BHHSComponentLibrary";
 
 // ============================================================================
 // Configuration Types
@@ -53,17 +53,17 @@ export interface ExecutiveSummaryConfig {
 // ============================================================================
 
 const POLITICAL_COLORS = {
-  democrat: '#2E5EAA', // Blue
-  republican: '#C93135', // Red
-  swing: '#8B5CF6', // Purple
-  gotv: '#059669', // Green
-  neutral: '#6B7280', // Gray
-  background: '#F8FAFC',
-  border: '#E2E8F0',
+  democrat: "#2E5EAA", // Blue
+  republican: "#C93135", // Red
+  swing: "#8B5CF6", // Purple
+  gotv: "#059669", // Green
+  neutral: "#6B7280", // Gray
+  background: "#F8FAFC",
+  border: "#E2E8F0",
   text: {
-    dark: '#1E293B',
-    medium: '#64748B',
-    light: '#94A3B8',
+    dark: "#1E293B",
+    medium: "#64748B",
+    light: "#94A3B8",
   },
 };
 
@@ -79,7 +79,7 @@ export class ExecutiveSummaryPDFGenerator {
   private margin: number = 15;
 
   constructor() {
-    this.pdf = new jsPDF('p', 'mm', 'letter'); // US Letter size
+    this.pdf = new jsPDF("p", "mm", "letter"); // US Letter size
     this.pageWidth = this.pdf.internal.pageSize.width;
     this.pageHeight = this.pdf.internal.pageSize.height;
     this.components = new BHHSComponentLibrary();
@@ -89,16 +89,19 @@ export class ExecutiveSummaryPDFGenerator {
    * Generate Executive Summary PDF
    */
   async generateReport(config: ExecutiveSummaryConfig): Promise<Blob> {
-    console.log('[ExecutiveSummaryPDFGenerator] Starting PDF generation for:', config.areaName);
+    console.log(
+      "[ExecutiveSummaryPDFGenerator] Starting PDF generation for:",
+      config.areaName,
+    );
 
     try {
       this.buildPage(config);
 
-      const pdfBlob = this.pdf.output('blob');
-      console.log('[ExecutiveSummaryPDFGenerator] PDF generation complete');
+      const pdfBlob = this.pdf.output("blob");
+      console.log("[ExecutiveSummaryPDFGenerator] PDF generation complete");
       return pdfBlob;
     } catch (error) {
-      console.error('[ExecutiveSummaryPDFGenerator] Error:', error);
+      console.error("[ExecutiveSummaryPDFGenerator] Error:", error);
       throw error;
     }
   }
@@ -139,27 +142,33 @@ export class ExecutiveSummaryPDFGenerator {
   /**
    * Render header with title and metadata
    */
-  private renderHeader(config: ExecutiveSummaryConfig, startY: number, width: number): number {
+  private renderHeader(
+    config: ExecutiveSummaryConfig,
+    startY: number,
+    width: number,
+  ): number {
     let y = startY;
 
     // Title bar background
     this.pdf.setFillColor(103, 3, 56); // Brand burgundy
-    this.pdf.rect(this.margin, y, width, 18, 'F');
+    this.pdf.rect(this.margin, y, width, 18, "F");
 
     // Title text
     this.pdf.setFontSize(16);
-    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setFont("helvetica", "bold");
     this.pdf.setTextColor(255, 255, 255);
-    this.pdf.text('EXECUTIVE SUMMARY', this.margin + 5, y + 12);
+    this.pdf.text("EXECUTIVE SUMMARY", this.margin + 5, y + 12);
 
     // Date on right
-    const reportDate = config.reportDate || new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    const reportDate =
+      config.reportDate ||
+      new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setFont("helvetica", "normal");
     const dateWidth = this.pdf.getTextWidth(reportDate);
     this.pdf.text(reportDate, this.margin + width - dateWidth - 5, y + 12);
 
@@ -168,13 +177,13 @@ export class ExecutiveSummaryPDFGenerator {
     // Area name and description
     this.pdf.setTextColor(30, 41, 59); // Dark text
     this.pdf.setFontSize(14);
-    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setFont("helvetica", "bold");
     this.pdf.text(config.areaName, this.margin, y);
     y += 5;
 
     if (config.areaDescription) {
       this.pdf.setFontSize(10);
-      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.setFont("helvetica", "normal");
       this.pdf.setTextColor(100, 116, 139);
       this.pdf.text(config.areaDescription, this.margin, y);
       y += 4;
@@ -197,14 +206,18 @@ export class ExecutiveSummaryPDFGenerator {
   /**
    * Render 4 KPI cards in a row
    */
-  private renderKeyMetrics(config: ExecutiveSummaryConfig, startY: number, width: number): number {
+  private renderKeyMetrics(
+    config: ExecutiveSummaryConfig,
+    startY: number,
+    width: number,
+  ): number {
     let y = startY;
 
     // Section label
     this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setFont("helvetica", "bold");
     this.pdf.setTextColor(100, 116, 139);
-    this.pdf.text('KEY METRICS', this.margin, y);
+    this.pdf.text("KEY METRICS", this.margin, y);
     y += 5;
 
     const cardWidth = (width - 15) / 4; // 4 cards with gaps
@@ -213,39 +226,70 @@ export class ExecutiveSummaryPDFGenerator {
 
     // Card 1: Partisan Lean
     const leanValue = config.metrics.partisanLean;
-    const leanLabel = leanValue > 0 ? `R+${leanValue.toFixed(0)}` : leanValue < 0 ? `D+${Math.abs(leanValue).toFixed(0)}` : 'Even';
-    const leanColor = leanValue > 5 ? POLITICAL_COLORS.republican : leanValue < -5 ? POLITICAL_COLORS.democrat : POLITICAL_COLORS.neutral;
+    const leanLabel =
+      leanValue > 0
+        ? `R+${leanValue.toFixed(0)}`
+        : leanValue < 0
+          ? `D+${Math.abs(leanValue).toFixed(0)}`
+          : "Even";
+    const leanColor =
+      leanValue > 5
+        ? POLITICAL_COLORS.republican
+        : leanValue < -5
+          ? POLITICAL_COLORS.democrat
+          : POLITICAL_COLORS.neutral;
 
     renderKPICard(this.pdf, this.margin, y, cardWidth, cardHeight, {
-      label: 'Partisan Lean',
+      label: "Partisan Lean",
       value: leanLabel,
       backgroundColor: leanColor,
-      textColor: '#FFFFFF',
+      textColor: "#FFFFFF",
     });
 
     // Card 2: Swing Potential
-    renderKPICard(this.pdf, this.margin + cardWidth + gap, y, cardWidth, cardHeight, {
-      label: 'Swing Potential',
-      value: `${config.metrics.swingPotential.toFixed(0)}/100`,
-      backgroundColor: POLITICAL_COLORS.swing,
-      textColor: '#FFFFFF',
-    });
+    renderKPICard(
+      this.pdf,
+      this.margin + cardWidth + gap,
+      y,
+      cardWidth,
+      cardHeight,
+      {
+        label: "Swing Potential",
+        value: `${config.metrics.swingPotential.toFixed(0)}/100`,
+        backgroundColor: POLITICAL_COLORS.swing,
+        textColor: "#FFFFFF",
+      },
+    );
 
     // Card 3: GOTV Priority
-    renderKPICard(this.pdf, this.margin + 2 * (cardWidth + gap), y, cardWidth, cardHeight, {
-      label: 'GOTV Priority',
-      value: `${config.metrics.gotvPriority.toFixed(0)}/100`,
-      backgroundColor: POLITICAL_COLORS.gotv,
-      textColor: '#FFFFFF',
-    });
+    renderKPICard(
+      this.pdf,
+      this.margin + 2 * (cardWidth + gap),
+      y,
+      cardWidth,
+      cardHeight,
+      {
+        label: "GOTV Priority",
+        value: `${config.metrics.gotvPriority.toFixed(0)}/100`,
+        backgroundColor: POLITICAL_COLORS.gotv,
+        textColor: "#FFFFFF",
+      },
+    );
 
     // Card 4: Registered Voters
-    renderKPICard(this.pdf, this.margin + 3 * (cardWidth + gap), y, cardWidth, cardHeight, {
-      label: 'Registered Voters',
-      value: config.metrics.registeredVoters.toLocaleString(),
-      backgroundColor: BRAND_COLORS.darkGray,
-      textColor: '#FFFFFF',
-    });
+    renderKPICard(
+      this.pdf,
+      this.margin + 3 * (cardWidth + gap),
+      y,
+      cardWidth,
+      cardHeight,
+      {
+        label: "Registered Voters",
+        value: config.metrics.registeredVoters.toLocaleString(),
+        backgroundColor: BRAND_COLORS.darkGray,
+        textColor: "#FFFFFF",
+      },
+    );
 
     return y + cardHeight + 8;
   }
@@ -253,10 +297,14 @@ export class ExecutiveSummaryPDFGenerator {
   /**
    * Render two-column layout with map and quick assessment
    */
-  private renderMapAndAssessment(config: ExecutiveSummaryConfig, startY: number, width: number): number {
+  private renderMapAndAssessment(
+    config: ExecutiveSummaryConfig,
+    startY: number,
+    width: number,
+  ): number {
     let y = startY;
     const leftColumnWidth = width * 0.35;
-    const rightColumnWidth = width * 0.60;
+    const rightColumnWidth = width * 0.6;
     const columnGap = width * 0.05;
 
     // Left column: Map thumbnail + additional stats
@@ -266,7 +314,14 @@ export class ExecutiveSummaryPDFGenerator {
     // Map placeholder or actual image
     if (config.mapThumbnail) {
       try {
-        this.pdf.addImage(config.mapThumbnail, 'PNG', leftX, y, leftColumnWidth, mapHeight);
+        this.pdf.addImage(
+          config.mapThumbnail,
+          "PNG",
+          leftX,
+          y,
+          leftColumnWidth,
+          mapHeight,
+        );
       } catch {
         this.renderMapPlaceholder(leftX, y, leftColumnWidth, mapHeight);
       }
@@ -277,12 +332,12 @@ export class ExecutiveSummaryPDFGenerator {
     // Additional stats below map
     const statsY = y + mapHeight + 5;
     this.pdf.setFillColor(248, 250, 252);
-    this.pdf.rect(leftX, statsY, leftColumnWidth, 30, 'F');
+    this.pdf.rect(leftX, statsY, leftColumnWidth, 30, "F");
     this.pdf.setDrawColor(226, 232, 240);
-    this.pdf.rect(leftX, statsY, leftColumnWidth, 30, 'S');
+    this.pdf.rect(leftX, statsY, leftColumnWidth, 30, "S");
 
     this.pdf.setFontSize(8);
-    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setFont("helvetica", "normal");
     this.pdf.setTextColor(100, 116, 139);
 
     const statLines = [
@@ -299,13 +354,13 @@ export class ExecutiveSummaryPDFGenerator {
     const rightX = this.margin + leftColumnWidth + columnGap;
 
     this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setFont("helvetica", "bold");
     this.pdf.setTextColor(100, 116, 139);
-    this.pdf.text('QUICK ASSESSMENT', rightX, y + 4);
+    this.pdf.text("QUICK ASSESSMENT", rightX, y + 4);
 
     // Assessment bullets
     this.pdf.setFontSize(9);
-    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setFont("helvetica", "normal");
     this.pdf.setTextColor(30, 41, 59);
 
     let bulletY = y + 12;
@@ -315,7 +370,7 @@ export class ExecutiveSummaryPDFGenerator {
     config.quickAssessment.slice(0, 4).forEach((bullet) => {
       // Bullet point
       this.pdf.setFillColor(103, 3, 56);
-      this.pdf.circle(rightX + 2, bulletY - 1.5, 1, 'F');
+      this.pdf.circle(rightX + 2, bulletY - 1.5, 1, "F");
 
       // Wrap text if needed
       const maxWidth = rightColumnWidth - bulletIndent - 4;
@@ -334,48 +389,61 @@ export class ExecutiveSummaryPDFGenerator {
   /**
    * Render map placeholder when no thumbnail provided
    */
-  private renderMapPlaceholder(x: number, y: number, width: number, height: number): void {
+  private renderMapPlaceholder(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
     // Light background
     this.pdf.setFillColor(241, 245, 249);
-    this.pdf.rect(x, y, width, height, 'F');
+    this.pdf.rect(x, y, width, height, "F");
 
     // Border
     this.pdf.setDrawColor(203, 213, 225);
     this.pdf.setLineWidth(0.5);
-    this.pdf.rect(x, y, width, height, 'S');
+    this.pdf.rect(x, y, width, height, "S");
 
     // Map icon/text
     this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setFont("helvetica", "normal");
     this.pdf.setTextColor(148, 163, 184);
-    this.pdf.text('Map Preview', x + width / 2, y + height / 2 - 3, { align: 'center' });
+    this.pdf.text("Map Preview", x + width / 2, y + height / 2 - 3, {
+      align: "center",
+    });
     this.pdf.setFontSize(8);
-    this.pdf.text('(Not Available)', x + width / 2, y + height / 2 + 3, { align: 'center' });
+    this.pdf.text("(Not Available)", x + width / 2, y + height / 2 + 3, {
+      align: "center",
+    });
   }
 
   /**
    * Render strategic recommendation section
    */
-  private renderRecommendation(config: ExecutiveSummaryConfig, startY: number, width: number): number {
+  private renderRecommendation(
+    config: ExecutiveSummaryConfig,
+    startY: number,
+    width: number,
+  ): number {
     let y = startY;
 
     // Section background
     this.pdf.setFillColor(254, 243, 199); // Light amber
-    this.pdf.rect(this.margin, y, width, 28, 'F');
+    this.pdf.rect(this.margin, y, width, 28, "F");
 
     // Left accent bar
     this.pdf.setFillColor(245, 158, 11); // Amber
-    this.pdf.rect(this.margin, y, 3, 28, 'F');
+    this.pdf.rect(this.margin, y, 3, 28, "F");
 
     // Label
     this.pdf.setFontSize(9);
-    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setFont("helvetica", "bold");
     this.pdf.setTextColor(146, 64, 14);
-    this.pdf.text('STRATEGIC RECOMMENDATION', this.margin + 8, y + 7);
+    this.pdf.text("STRATEGIC RECOMMENDATION", this.margin + 8, y + 7);
 
     // Recommendation text
     this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setFont("helvetica", "normal");
     this.pdf.setTextColor(30, 41, 59);
 
     const maxWidth = width - 12;
@@ -401,14 +469,18 @@ export class ExecutiveSummaryPDFGenerator {
 
     // Left: Generated by
     this.pdf.setFontSize(7);
-    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setFont("helvetica", "normal");
     this.pdf.setTextColor(148, 163, 184);
 
-    const generatedBy = config.generatedBy || 'Political Analysis Platform';
+    const generatedBy = config.generatedBy || "Political Analysis Platform";
     this.pdf.text(`Generated by ${generatedBy}`, this.margin, y);
 
     // Right: Page indicator
-    this.pdf.text('Executive Summary | Page 1 of 1', this.pageWidth - this.margin - 40, y);
+    this.pdf.text(
+      "Executive Summary | Page 1 of 1",
+      this.pageWidth - this.margin - 40,
+      y,
+    );
   }
 }
 

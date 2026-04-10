@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { RawAnalysisResult, ProcessedAnalysisData, GeographicDataPoint, AnalysisStatistics } from '../../types';
-import { getTopFieldDefinitions, getPrimaryScoreField } from './HardcodedFieldDefs';
+import { getPrimaryScoreField } from './HardcodedFieldDefs';
 import { GeoDataManager } from '../../../geo/GeoDataManager';
-import { resolveAreaName } from '../../../shared/AreaName';
 import { BaseProcessor } from './BaseProcessor';
 interface RegionalMetric {
   value: number;
@@ -12,15 +11,15 @@ interface RegionalMetric {
 
 /**
  * ComparativeAnalysisProcessor - Handles data processing for the /comparative-analysis endpoint
- * 
- * Processes comparative analysis results with focus on relative performance between different 
+ *
+ * Processes comparative analysis results with focus on relative performance between different
  * geographic regions and housing markets to identify investment opportunities and market positioning.
- * 
+ *
  * Now extends BaseProcessor for configuration-driven behavior with real estate focus.
  */
 export class ComparativeAnalysisProcessor extends BaseProcessor {
   private geoDataManager: any = null;
-  
+
   constructor() {
     super(); // Initialize BaseProcessor with configuration
     // Using configuration-driven approach for real estate comparisons
@@ -32,18 +31,18 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
   updateFieldAliases(): void {
     // Using configuration-driven field mappings for real estate analysis
   }
-  
+
   private getGeoDataManager() {
     if (!this.geoDataManager) {
       this.geoDataManager = GeoDataManager.getInstance();
     }
     return this.geoDataManager;
   }
-  
+
   private extractCityFromRecord(record: any): string {
     // First check if there's an explicit city field
     if ((record as any).city) return (record as any).city;
-    
+
     // Extract ZIP code and map to city using GeoDataManager
     const zipCode = (record as any).ID || (record as any).id || (record as any).area_id || (record as any).zipcode;
     if (zipCode) {
@@ -52,16 +51,16 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       const city = database.zipCodeToCity.get(zipStr);
       if (city) {
         // Capitalize first letter of each word
-        const formattedCity = city.split(' ').map((word: string) => 
+        const formattedCity = city.split(' ').map((word: string) =>
           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
         ).join(' ');
         return formattedCity;
       }
     }
-    
+
     return 'Unknown';
   }
-  
+
   validate(rawData: RawAnalysisResult): boolean {
     console.log(`🔍 [ComparativeAnalysisProcessor] Validating data:`, {
       hasRawData: !!rawData,
@@ -84,7 +83,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       console.log(`❌ [ComparativeAnalysisProcessor] Validation failed: results not array`);
       return false;
     }
-    
+
     // Empty results are valid
     if (rawData.results.length === 0) {
       console.log(`✅ [ComparativeAnalysisProcessor] Validation passed: Empty results`);
@@ -94,57 +93,57 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     // Check first few records for required fields - be more flexible with ID fields
   const sampleSize = Math.min(5, rawData.results.length);
   const sampleRecords = (rawData.results as any[]).slice(0, sampleSize);
-    
+
     for (let i = 0; i < sampleRecords.length; i++) {
   const record = sampleRecords[i] as any;
-      
+
       // Check for ID field (flexible naming)
       const hasIdField = record && (
-        (record as any).area_id !== undefined || 
-        (record as any).id !== undefined || 
+        (record as any).area_id !== undefined ||
+        (record as any).id !== undefined ||
         (record as any).ID !== undefined ||
         (record as any).GEOID !== undefined ||
         (record as any).zipcode !== undefined ||
         (record as any).area_name !== undefined
       );
-      
+
       // Check for at least one scoring/value field using hardcoded primary
     const primary = getPrimaryScoreField('comparative_analysis', (rawData as any)?.metadata) || 'comparison_score';
         const hasScoringField = record && (
           (record as any)[primary] !== undefined ||
-          (record as any).comparative_score !== undefined || 
+          (record as any).comparative_score !== undefined ||
           (record as any).comparison_score !== undefined ||
           (record as any).target_value !== undefined ||
-          (record as any).value !== undefined || 
+          (record as any).value !== undefined ||
           (record as any).score !== undefined ||
           (record as any).thematic_value !== undefined
         );
-      
+
       console.log(`🔍 [ComparativeAnalysisProcessor] Record ${i} validation:`, {
         hasIdField,
         hasScoringField,
   recordKeys: Object.keys(record as any).slice(0, 10)
       });
-      
+
       if (hasIdField && hasScoringField) {
         console.log(`✅ [ComparativeAnalysisProcessor] Validation passed: Found valid record structure`);
         return true;
       }
     }
-    
+
     console.log(`❌ [ComparativeAnalysisProcessor] Validation failed: No records with both ID and scoring fields found`);
     return false;
   }
 
   process(rawData: RawAnalysisResult): ProcessedAnalysisData {
     this.log(`Processing ${rawData.results?.length || 0} records`);
-    
+
     // DEBUG: Log ALL ZIP codes received by processor
     if (rawData.results && rawData.results.length > 0) {
       const resultsAny = rawData.results as any[];
       const allZips = resultsAny.map(r => r.ID || r.area_name || r.zipcode || 'unknown');
       console.log(`🔍 [COMPARATIVE PROCESSOR] DEBUGGING: ALL ${allZips.length} ZIP codes received:`, allZips);
-      
+
       // Check which cities are represented
       const cityCount = resultsAny.reduce((acc: Record<string, number>, r: any) => {
         const city = this.extractCityFromRecord(r);
@@ -153,7 +152,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       }, {} as Record<string, number>);
       console.log(`🔍 [COMPARATIVE PROCESSOR] DEBUGGING: City distribution:`, cityCount);
     }
-    
+
     if (!this.validate(rawData)) {
       throw new Error('Invalid data format for ComparativeAnalysisProcessor');
     }
@@ -162,16 +161,16 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     const primary = getPrimaryScoreField('comparative_analysis', (rawData as any)?.metadata) || 'comparison_score';
 
     // Find global min and max for unified scaling across all cities
-    const allScores = (rawData.results as any[]).map(record => 
+    const allScores = (rawData.results as any[]).map(record =>
       this.extractPrimaryMetric(record)
     ).filter(score => !isNaN(score));
-    
+
     const globalMin = Math.min(...allScores);
     const globalMax = Math.max(...allScores);
     const globalRange = globalMax - globalMin || 1; // Avoid division by zero
-    
+
     this.log(`Global scale: min=${globalMin.toFixed(2)}, max=${globalMax.toFixed(2)}, range=${globalRange.toFixed(2)}`);
-    
+
     // Group records by city for analysis (but use global scale)
     const recordsByCity = new Map<string, any[]>();
     (rawData.results as any[]).forEach((record: any) => {
@@ -181,11 +180,11 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       }
       recordsByCity.get(city)!.push(record);
     });
-    
-    this.log(`Grouped records by city`, 
+
+    this.log(`Grouped records by city`,
       Array.from(recordsByCity.entries()).map(([city, records]) => ({ city, count: records.length }))
     );
-    
+
     // Process records with globally-normalized scores (same scale for all cities)
     const processedRecords = (rawData.results as any[]).map((record: any, index: number) => {
       // Extract simple brand metrics used throughout comparative calculations
@@ -197,17 +196,17 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       // Get original score and normalize to 0-100 using GLOBAL scale
       const originalScore = this.extractPrimaryMetric(record);
       const normalizedScore = ((originalScore - globalMin) / globalRange) * 100;
-      
+
       // Use globally-normalized score
       const comparativeScore = normalizedScore;
-      
+
       // Get city for metadata
       const city = this.extractCityFromRecord(record);
       const recordId = (record as any).ID || (record as any).id || (record as any).area_id || `${city}_${index}`;
-      
+
       // Generate area name using configuration-driven method
       const areaName = super.generateAreaName(record);
-      
+
       // Debug logging for records with missing ID
       if (!recordId) {
         console.warn(`[ComparativeAnalysisProcessor] Record ${index} missing ID:`, {
@@ -217,7 +216,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
           recordKeys: Object.keys(record as any).slice(0, 10)
         });
       }
-      
+
       // Extract comparative-relevant metrics for properties (generic approach)
       const regionAMetric = this.extractRegionalMetric(record, 'region_a');
       const regionBMetric = this.extractRegionalMetric(record, 'region_b');
@@ -227,18 +226,18 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       const trendScore = Number((record as any).trend_strength_score) || 0;
       const totalPop = this.extractNumericValue(record, this.configManager.getFieldMapping('populationField'), 0);
       const medianIncome = this.extractNumericValue(record, this.configManager.getFieldMapping('incomeField'), 0);
-      
+
       // Calculate comparative indicators
       const regionalPerformanceGap = this.calculateRegionalPerformanceGap(record);
       const marketPositionStrength = this.calculateMarketPositionStrength(record);
       const competitiveDynamicsLevel = this.calculateCompetitiveDynamicsLevel(record);
       const growthDifferential = this.calculateGrowthDifferential(record);
-      
+
       // Calculate regional dominance and market metrics for real estate
     // regionalDominance computed later when needed
       const totalRegionalScore = regionAMetric.value + regionBMetric.value;
       const marketGap = Math.max(0, 100 - totalRegionalScore);
-      
+
       return {
         area_id: recordId || `area_${index + 1}`,
         area_name: areaName,
@@ -283,26 +282,26 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
         }
       };
     });
-    
+
     // Calculate comprehensive statistics
     const statistics = this.calculateStatistics(processedRecords.map(r => r.value));
-    
+
     // Rank records by comparative analysis score (highest advantage first)
     const rankedRecords = this.rankRecords(processedRecords);
-    
+
     // Filter out national parks for business analysis - COMMENTED OUT FOR DEBUGGING
     /*
     const nonParkRecords = rankedRecords.filter(record => {
       const props = (record.properties || {}) as Record<string, unknown>;
       const areaId = record.area_id || props.ID || props.id || '';
       const description = props.DESCRIPTION || props.description || '';
-      
+
       // Filter out national parks using same logic as analysisLens
       if (String(areaId).startsWith('000')) return false;
-      
+
       const nameStr = String(description).toLowerCase();
       const parkPatterns = [
-        /national\s+park/i, /ntl\s+park/i, /national\s+monument/i, /national\s+forest/i, 
+        /national\s+park/i, /ntl\s+park/i, /national\s+monument/i, /national\s+forest/i,
         /state\s+park/i, /\bpark\b.*national/i, /\bnational\b.*\bpark\b/i,
         /\bnp\b/i, /\bnm\b/i, /\bnf\b/i
       ];
@@ -310,12 +309,12 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     });
     */
     const nonParkRecords = rankedRecords; // Use all records for debugging
-    
+
     console.log(`🎯 [COMPARATIVE ANALYSIS] Filtered ${rankedRecords.length - nonParkRecords.length} parks from comparative analysis`);
-    
+
     // Extract feature importance with comparative focus
     const featureImportance = this.processComparativeFeatureImportance(rawData.feature_importance || []);
-    
+
     // Get brand names from first record (all records should have same brand names)
     const firstRecord = nonParkRecords[0] || rankedRecords[0];
     const brandAName = typeof (firstRecord?.properties as any)?.brand_a_name === 'string'
@@ -334,7 +333,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       dominantMarkets: nonParkRecords.filter(r => r.value >= 75).length,
       competitiveMarkets: nonParkRecords.filter(r => r.value >= 50 && r.value < 75).length
     };
-    
+
     const summary = this.buildSummaryFromTemplates(nonParkRecords, statistics, customSubstitutions);
 
     return this.createProcessedData(
@@ -360,15 +359,15 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
   private createComparativeRenderer(records: any[]): any {
     const values = records.map(r => r.value).filter(v => !isNaN(v)).sort((a, b) => a - b);
     const quartileBreaks = this.calculateQuartileBreaks(values);
-    
+
     // Comparative colors: Red (low competition) -> Orange -> Light Green -> Dark Green (high competitive advantage)
     const comparativeColors = [
       [215, 48, 39, 0.6],   // #d73027 - Red (lowest comparative advantage)
-      [253, 174, 97, 0.6],  // #fdae61 - Orange  
+      [253, 174, 97, 0.6],  // #fdae61 - Orange
       [166, 217, 106, 0.6], // #a6d96a - Light Green
       [26, 152, 80, 0.6]    // #1a9850 - Dark Green (highest comparative advantage)
     ];
-    
+
     return {
       type: 'class-breaks',
       field: 'comparison_score', // Use the actual field name that matches the data
@@ -396,15 +395,15 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
   private createComparativeLegend(records: any[]): any {
     const values = records.map(r => r.value).filter(v => !isNaN(v)).sort((a, b) => a - b);
     const quartileBreaks = this.calculateQuartileBreaks(values);
-    
+
     // Use RGBA format with correct opacity to match features
     const colors = [
       'rgba(215, 48, 39, 0.6)',   // Low competitive advantage
-      'rgba(253, 174, 97, 0.6)',  // Medium-low  
+      'rgba(253, 174, 97, 0.6)',  // Medium-low
       'rgba(166, 217, 106, 0.6)', // Medium-high
       'rgba(26, 152, 80, 0.6)'    // High competitive advantage
     ];
-    
+
     const legendItems = [];
     for (let i = 0; i < quartileBreaks.length; i++) {
       legendItems.push({
@@ -414,7 +413,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
         maxValue: quartileBreaks[i].max
       });
     }
-    
+
     return {
       title: 'Comparative Advantage Score',
       items: legendItems,
@@ -427,11 +426,11 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
    */
   private calculateQuartileBreaks(values: number[]): Array<{min: number, max: number}> {
     if (values.length === 0) return [];
-    
+
     const q1 = values[Math.floor(values.length * 0.25)];
     const q2 = values[Math.floor(values.length * 0.5)];
     const q3 = values[Math.floor(values.length * 0.75)];
-    
+
     return [
       { min: values[0], max: q1 },
       { min: q1, max: q2 },
@@ -448,7 +447,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       // First class: < maxValue
       return `< ${breaks[classIndex].max.toFixed(1)}`;
     } else if (classIndex === breaks.length - 1) {
-      // Last class: > minValue  
+      // Last class: > minValue
       return `> ${breaks[classIndex].min.toFixed(1)}`;
     } else {
       // Middle classes: minValue - maxValue
@@ -468,13 +467,13 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     let value = 0;
     let fieldName = '';
     let regionName = '';
-    
+
     // Use configuration-driven field extraction for Quebec regions
     const householdIncome = this.extractNumericValue(record, this.configManager.getFieldMapping('incomeField'), 0);
     const population = this.extractNumericValue(record, this.configManager.getFieldMapping('populationField'), 0);
     const housingGrowth = this.extractNumericValue(record, ['hot_growth_market_index', 'growth_index'], 0);
     const housingAffordability = this.extractNumericValue(record, ['home_affordability_index', 'affordability_index'], 0);
-    
+
     // Calculate regional performance based on real estate metrics
     if (regionType === 'region_a') {
       // Primary region - use higher performing metrics
@@ -487,13 +486,13 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       fieldName = 'comparison_region_performance';
       regionName = this.extractRegionName(record, 'comparison');
     }
-    
+
     // Fallback: Use explicit regional scores if available
     if (value === 0) {
-      const explicitFields = regionType === 'region_a' 
+      const explicitFields = regionType === 'region_a'
         ? ['region_a_score', 'primary_region_score', 'montreal_score']
         : ['region_b_score', 'comparison_region_score', 'quebec_city_score'];
-      
+
       for (const field of explicitFields) {
         if ((record as any)[field] !== undefined) {
           value = Number((record as any)[field]) || 0;
@@ -502,25 +501,25 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
         }
       }
     }
-    
+
     // Final fallback: Use default regional names and calculated values
     if (!regionName) {
       if (regionType === 'region_a') {
         regionName = 'Montreal Region';
         value = value || householdIncome / 1000 || 50;
       } else {
-        regionName = 'Quebec City Region';  
+        regionName = 'Quebec City Region';
         value = value || householdIncome / 1200 || 45;
       }
     }
-    
+
     console.log(`🔍 [extractRegionalMetric] ${regionType} result:`, {
       fieldName,
       value,
       regionName,
       recordId: (record as any).ID || 'unknown'
     });
-    
+
     return {
       value,
       fieldName: fieldName || '',
@@ -537,7 +536,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     if (cityName && cityName !== 'Unknown') {
       return `${cityName} Region`;
     }
-    
+
     // Fallback to geographic area description
     const description = (record as any).DESCRIPTION || (record as any).value_DESCRIPTION || '';
     if (description && typeof description === 'string') {
@@ -546,7 +545,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
         return `${nameMatch[1]} Region`;
       }
     }
-    
+
     // Final fallback based on region type
     if (regionType === 'primary') {
       return 'Montreal Region';
@@ -568,7 +567,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       value: (record as any).value,
       allNumericFields: Object.keys(record as any).filter((k: string) => typeof (record as any)[k] === 'number').slice(0, 10)
     });
-    
+
     // Use canonical primary score field when available (primary passed in)
     const fieldToUse = primary || getPrimaryScoreField('comparative_analysis', (null as any)) || 'comparison_score';
     if ((record as any)[fieldToUse] !== undefined && (record as any)[fieldToUse] !== null) {
@@ -601,7 +600,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       console.log(`⚖️ [ComparativeAnalysisProcessor] Using value: ${valueScore}`);
       return valueScore;
     }
-    
+
     // PRIORITY 5: Use competitive advantage score if available (scale from 1-10 to 0-100)
     if ((record as any).competitive_advantage_score !== undefined && (record as any).competitive_advantage_score !== null) {
       const competitiveScore = Number((record as any).competitive_advantage_score);
@@ -609,15 +608,15 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       console.log(`⚖️ [ComparativeAnalysisProcessor] Using competitive_advantage_score: ${competitiveScore} -> scaled to ${scaledScore}`);
       return scaledScore;
     }
-    
+
     // FALLBACK: Use any available numeric field as comparative score
     console.log('⚠️ [ComparativeAnalysisProcessor] No direct scores found, using first available numeric field');
-    
+
     // Find the first numeric field that's not an ID, date, or geometric field
     const numericFields = Object.keys(record as any).filter((key: string) => {
       const value = (record as any)[key];
       const keyLower = key.toLowerCase();
-      return typeof value === 'number' && 
+      return typeof value === 'number' &&
              !isNaN(value) &&
              !keyLower.includes('id') &&
              !keyLower.includes('date') &&
@@ -630,13 +629,13 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
              !keyLower.includes('edit') &&
              !keyLower.includes('point');
     });
-    
+
     if (numericFields.length > 0) {
       // Use the first suitable numeric field
       const fieldName = numericFields[0];
       const fieldValue = Number(record[fieldName]);
       console.log(`⚖️ [ComparativeAnalysisProcessor] Using fallback field '${fieldName}': ${fieldValue}`);
-      
+
       // Normalize to 0-100 range if needed
       if (fieldValue > 100) {
         return Math.min(100, fieldValue / 10); // Scale down large values
@@ -645,7 +644,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       }
       return fieldValue;
     }
-    
+
     // Ultimate fallback: return a default score
     console.log(`⚠️ [ComparativeAnalysisProcessor] Record ${recordId} has no suitable numeric fields, using default score`);
     return 50; // Neutral comparative score
@@ -657,19 +656,19 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
   private calculateRegionalPerformanceGap(record: any): number {
     const regionAMetric = this.extractRegionalMetric(record, 'region_a');
     const regionBMetric = this.extractRegionalMetric(record, 'region_b');
-    
+
     if (regionAMetric.value === 0 && regionBMetric.value === 0) {
       return 0; // No regional performance to compare
     }
-    
+
   const regionalDominance = regionAMetric.value - regionBMetric.value;
   // Safely extract brand metrics for gap calculations
   const brandAMetric = this.extractBrandMetric(record, 'brand_a');
   const brandBMetric = this.extractBrandMetric(record, 'brand_b');
   const totalBrandShare = (brandAMetric?.value || 0) + (brandBMetric?.value || 0);
-    
+
     let gapScore = 0;
-    
+
     // Brand dominance scoring
   const brandDominance = (brandAMetric?.value || 0) - (brandBMetric?.value || 0);
   if (brandDominance >= 15) {
@@ -683,7 +682,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else {
       gapScore += 5; // Brand A disadvantage
     }
-    
+
     // Market share magnitude bonus
     if (totalBrandShare >= 40) {
       gapScore += 25; // High competitive intensity
@@ -692,7 +691,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (totalBrandShare >= 15) {
       gapScore += 15; // Developing competitive market
     }
-    
+
     // Brand A absolute performance
     if ((brandAMetric?.value || 0) >= 35) {
       gapScore += 15; // Very high brand A performance
@@ -701,7 +700,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if ((brandAMetric?.value || 0) >= 15) {
       gapScore += 5; // Moderate brand A performance
     }
-    
+
     return Math.min(100, gapScore);
   }
 
@@ -753,9 +752,9 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     const competitiveScore = Number((record as any).competitive_advantage_score) || 0;
     const demographicScore = Number((record as any).demographic_opportunity_score) || 0;
     const totalPop = Number(this.extractFieldValue(record, ['total_population', 'value_TOTPOP_CY', 'TOTPOP_CY', 'population'])) || 0;
-    
+
     let positionStrength = 0;
-    
+
     // Strategic positioning strength
     if (strategicScore >= 70) {
       positionStrength += 30; // Exceptional strategic position
@@ -766,7 +765,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (strategicScore > 0) {
       positionStrength += 10; // Basic strategic position
     }
-    
+
     // Competitive advantage strength
     if (competitiveScore >= 8) {
       positionStrength += 25; // Very strong competitive position
@@ -777,7 +776,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (competitiveScore > 0) {
       positionStrength += 10; // Basic competitive position
     }
-    
+
     // Market size advantage
     if (totalPop >= 100000) {
       positionStrength += 20; // Large market advantage
@@ -786,7 +785,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (totalPop >= 20000) {
       positionStrength += 10; // Small market advantage
     }
-    
+
     // Demographic positioning advantage
     if (demographicScore >= 90) {
       positionStrength += 15; // Exceptional demographic position
@@ -795,7 +794,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (demographicScore >= 60) {
       positionStrength += 5; // Good demographic position
     }
-    
+
     return Math.min(100, positionStrength);
   }
 
@@ -805,12 +804,12 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
   private calculateCompetitiveDynamicsLevel(record: any): number {
     const brandAMetric = this.extractBrandMetric(record, 'brand_a');
     const brandBMetric = this.extractBrandMetric(record, 'brand_b');
-    
+
     const totalBrandShare = brandAMetric.value + brandBMetric.value;
     const marketGap = Math.max(0, 100 - totalBrandShare);
-    
+
     let dynamicsLevel = 0;
-    
+
     // Market competitive intensity
     if (totalBrandShare >= 50) {
       dynamicsLevel += 20; // Very high competitive intensity
@@ -823,7 +822,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (totalBrandShare > 0) {
       dynamicsLevel += 15; // Early stage market
     }
-    
+
     // Brand competitive position in market
     if (brandAMetric.value > 0 && brandBMetric.value > 0) {
       const brandARatio = brandAMetric.value / (brandAMetric.value + brandBMetric.value);
@@ -839,7 +838,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (brandAMetric.value > 0) {
       dynamicsLevel += 20; // Brand A presence without Brand B competition
     }
-    
+
     // Market gap opportunity
     if (marketGap >= 70) {
       dynamicsLevel += 15; // High untapped potential
@@ -848,7 +847,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (marketGap >= 30) {
       dynamicsLevel += 5; // Some untapped potential
     }
-    
+
     // Competitive pressure assessment
     if (brandBMetric.value >= 25) {
       dynamicsLevel += 5; // High competitive pressure (competitive advantage)
@@ -857,7 +856,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (brandBMetric.value >= 5) {
       dynamicsLevel += 10; // Low competitive pressure
     }
-    
+
     return Math.min(100, dynamicsLevel);
   }
 
@@ -869,9 +868,9 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     const demographicScore = Number((record as any).demographic_opportunity_score) || 0;
     const strategicScore = Number((record as any).strategic_value_score) || 0;
     const medianIncome = Number(this.extractFieldValue(record, ['median_income', 'value_AVGHINC_CY', 'AVGHINC_CY', 'household_income'])) || 0;
-    
+
     let growthDifferential = 0;
-    
+
     // Trend strength advantage
     if (trendScore >= 55) {
       growthDifferential += 25; // Strong trend advantage
@@ -882,7 +881,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (trendScore > 0) {
       growthDifferential += 5; // Minimal trend advantage
     }
-    
+
     // Demographic growth potential
     if (demographicScore >= 85) {
       growthDifferential += 25; // Exceptional demographic growth potential
@@ -893,7 +892,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (demographicScore > 0) {
       growthDifferential += 5; // Some demographic growth potential
     }
-    
+
     // Strategic value growth indicator
     if (strategicScore >= 65) {
       growthDifferential += 20; // High strategic growth potential
@@ -902,7 +901,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (strategicScore >= 45) {
       growthDifferential += 10; // Some strategic growth potential
     }
-    
+
     // Income growth indicator (economic strength)
     if (medianIncome >= 80000) {
       growthDifferential += 15; // High income growth market
@@ -911,7 +910,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     } else if (medianIncome >= 40000) {
       growthDifferential += 5; // Developing income market
     }
-    
+
     return Math.min(100, growthDifferential);
   }
 
@@ -920,7 +919,7 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
    */
   private getComparativeCategory(comparativeScore: number): string {
     if (comparativeScore >= 65) return 'Strong Comparative Advantage';
-    if (comparativeScore >= 50) return 'Good Comparative Position';  
+    if (comparativeScore >= 50) return 'Good Comparative Position';
     if (comparativeScore >= 35) return 'Moderate Comparative Standing';
     return 'Weak Comparative Position';
   }
@@ -932,9 +931,9 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     if (brandAShare === 0 && brandBShare === 0) {
       return 'No Brand Presence';
     }
-    
+
     const brandDominance = brandAShare - brandBShare;
-    
+
     if (brandDominance >= 15) return 'Brand A Strong Dominance';
     if (brandDominance >= 8) return 'Brand A Moderate Dominance';
     if (brandDominance >= 3) return 'Brand A Slight Lead';
@@ -952,15 +951,15 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
     const positionStrength = this.calculateMarketPositionStrength(record);
     const dynamics = this.calculateCompetitiveDynamicsLevel(record);
     const growth = this.calculateGrowthDifferential(record);
-    
+
     // Find the highest advantage component
     const maxAdvantage = Math.max(brandGap, positionStrength, dynamics, growth);
-    
+
     if (maxAdvantage === brandGap && brandGap >= 40) return 'Brand Performance Advantage';
     if (maxAdvantage === positionStrength && positionStrength >= 40) return 'Market Position Advantage';
     if (maxAdvantage === dynamics && dynamics >= 40) return 'Competitive Dynamics Advantage';
     if (maxAdvantage === growth && growth >= 40) return 'Growth Differential Advantage';
-    
+
     return 'Mixed Competitive Advantage';
   }
 
@@ -1013,18 +1012,18 @@ export class ComparativeAnalysisProcessor extends BaseProcessor {
       'demographic': 'Demographic comparative factors',
       'growth': 'Growth differential analysis'
     };
-    
+
     const lowerName = featureName.toLowerCase();
     for (const [key, desc] of Object.entries(comparativeDescriptions)) {
       if (lowerName.includes(key)) {
         return desc;
       }
     }
-    
+
     return `${featureName} comparative characteristics`;
   }
 
-  
+
 
 
 }

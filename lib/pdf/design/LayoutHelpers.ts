@@ -3,9 +3,9 @@
  * Common layout patterns for PDF element positioning
  */
 
-import { Element } from '../core/ElementRenderer';
-import { Spacing, SpacingToken } from './ModernTokens';
-import { resolveSpacing } from './StyleProps';
+import { Element } from "../core/ElementRenderer";
+import { SpacingToken } from "./ModernTokens";
+import { resolveSpacing } from "./StyleProps";
 
 export interface Bounds {
   x: number;
@@ -30,7 +30,7 @@ export interface Size {
 export function distributeHorizontal(
   elements: Element[],
   bounds: Bounds,
-  gap: number | SpacingToken = 0
+  gap: number | SpacingToken = 0,
 ): Element[] {
   const gapValue = resolveSpacing(gap);
   const totalGap = gapValue * (elements.length - 1);
@@ -50,7 +50,7 @@ export function distributeHorizontal(
 export function stack(
   elements: Element[],
   startY: number,
-  gap: number | SpacingToken = 0
+  gap: number | SpacingToken = 0,
 ): Element[] {
   const gapValue = resolveSpacing(gap);
   let currentY = startY;
@@ -77,13 +77,14 @@ export function grid(
     gap?: number | SpacingToken;
     gapX?: number | SpacingToken;
     gapY?: number | SpacingToken;
-  }
+  },
 ): Element[] {
   const gapX = resolveSpacing(config.gapX ?? config.gap ?? 0);
   const gapY = resolveSpacing(config.gapY ?? config.gap ?? 0);
 
   const rows = config.rows || Math.ceil(elements.length / config.columns);
-  const cellWidth = (bounds.width - gapX * (config.columns - 1)) / config.columns;
+  const cellWidth =
+    (bounds.width - gapX * (config.columns - 1)) / config.columns;
   const cellHeight = (bounds.height - gapY * (rows - 1)) / rows;
 
   return elements.map((el, i) => {
@@ -106,15 +107,15 @@ export function grid(
 export function center(
   element: Element,
   bounds: Bounds,
-  axis: 'both' | 'horizontal' | 'vertical' = 'both'
+  axis: "both" | "horizontal" | "vertical" = "both",
 ): Element {
   const result = { ...element };
 
-  if (axis === 'both' || axis === 'horizontal') {
+  if (axis === "both" || axis === "horizontal") {
     result.x = bounds.x + (bounds.width - (element.width || 0)) / 2;
   }
 
-  if (axis === 'both' || axis === 'vertical') {
+  if (axis === "both" || axis === "vertical") {
     result.y = bounds.y + (bounds.height - (element.height || 0)) / 2;
   }
 
@@ -126,21 +127,21 @@ export function center(
  */
 export function alignHorizontal(
   elements: Element[],
-  alignment: 'left' | 'center' | 'right',
+  alignment: "left" | "center" | "right",
   containerX: number,
-  containerWidth: number
+  containerWidth: number,
 ): Element[] {
   return elements.map((el) => {
     let x = el.x || 0;
 
     switch (alignment) {
-      case 'left':
+      case "left":
         x = containerX;
         break;
-      case 'center':
+      case "center":
         x = containerX + (containerWidth - (el.width || 0)) / 2;
         break;
-      case 'right':
+      case "right":
         x = containerX + containerWidth - (el.width || 0);
         break;
     }
@@ -154,21 +155,21 @@ export function alignHorizontal(
  */
 export function alignVertical(
   elements: Element[],
-  alignment: 'top' | 'middle' | 'bottom',
+  alignment: "top" | "middle" | "bottom",
   containerY: number,
-  containerHeight: number
+  containerHeight: number,
 ): Element[] {
   return elements.map((el) => {
     let y = el.y || 0;
 
     switch (alignment) {
-      case 'top':
+      case "top":
         y = containerY;
         break;
-      case 'middle':
+      case "middle":
         y = containerY + (containerHeight - (el.height || 0)) / 2;
         break;
-      case 'bottom':
+      case "bottom":
         y = containerY + containerHeight - (el.height || 0);
         break;
     }
@@ -182,14 +183,17 @@ export function alignVertical(
  */
 export function inset(
   bounds: Bounds,
-  padding: number | SpacingToken | {
-    top?: number | SpacingToken;
-    right?: number | SpacingToken;
-    bottom?: number | SpacingToken;
-    left?: number | SpacingToken;
-  }
+  padding:
+    | number
+    | SpacingToken
+    | {
+        top?: number | SpacingToken;
+        right?: number | SpacingToken;
+        bottom?: number | SpacingToken;
+        left?: number | SpacingToken;
+      },
 ): Bounds {
-  if (typeof padding === 'number' || typeof padding === 'string') {
+  if (typeof padding === "number" || typeof padding === "string") {
     const p = resolveSpacing(padding);
     return {
       x: bounds.x + p,
@@ -217,7 +221,7 @@ export function inset(
  */
 export function calculateStackHeight(
   elements: Element[],
-  gap: number | SpacingToken = 0
+  gap: number | SpacingToken = 0,
 ): number {
   const gapValue = resolveSpacing(gap);
   const totalGap = gapValue * Math.max(0, elements.length - 1);
@@ -230,7 +234,7 @@ export function calculateStackHeight(
  */
 export function calculateRowWidth(
   elements: Element[],
-  gap: number | SpacingToken = 0
+  gap: number | SpacingToken = 0,
 ): number {
   const gapValue = resolveSpacing(gap);
   const totalGap = gapValue * Math.max(0, elements.length - 1);
@@ -248,8 +252,8 @@ export function wrap(
     gap?: number | SpacingToken;
     gapX?: number | SpacingToken;
     gapY?: number | SpacingToken;
-    align?: 'left' | 'center' | 'right';
-  } = {}
+    align?: "left" | "center" | "right";
+  } = {},
 ): Element[] {
   const gapX = resolveSpacing(config.gapX ?? config.gap ?? 0);
   const gapY = resolveSpacing(config.gapY ?? config.gap ?? 0);
@@ -262,7 +266,10 @@ export function wrap(
   elements.forEach((el) => {
     const elWidth = el.width || 0;
 
-    if (currentRowWidth + elWidth + (currentRow.length > 0 ? gapX : 0) <= bounds.width) {
+    if (
+      currentRowWidth + elWidth + (currentRow.length > 0 ? gapX : 0) <=
+      bounds.width
+    ) {
       currentRow.push(el);
       currentRowWidth += elWidth + (currentRow.length > 1 ? gapX : 0);
     } else {
@@ -287,9 +294,9 @@ export function wrap(
     let currentX = bounds.x;
 
     // Apply horizontal alignment
-    if (config.align === 'center') {
+    if (config.align === "center") {
       currentX += (bounds.width - rowWidth) / 2;
-    } else if (config.align === 'right') {
+    } else if (config.align === "right") {
       currentX += bounds.width - rowWidth;
     }
 
@@ -304,7 +311,7 @@ export function wrap(
     });
 
     // Move to next row
-    const maxHeight = Math.max(...row.map(el => el.height || 0));
+    const maxHeight = Math.max(...row.map((el) => el.height || 0));
     currentY += maxHeight + gapY;
   });
 
@@ -318,18 +325,24 @@ export function flex(
   elements: Element[],
   bounds: Bounds,
   config: {
-    direction?: 'row' | 'column';
-    justify?: 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'space-evenly';
-    align?: 'start' | 'center' | 'end' | 'stretch';
+    direction?: "row" | "column";
+    justify?:
+      | "start"
+      | "center"
+      | "end"
+      | "space-between"
+      | "space-around"
+      | "space-evenly";
+    align?: "start" | "center" | "end" | "stretch";
     gap?: number | SpacingToken;
-  } = {}
+  } = {},
 ): Element[] {
-  const direction = config.direction || 'row';
-  const justify = config.justify || 'start';
-  const align = config.align || 'stretch';
+  const direction = config.direction || "row";
+  const justify = config.justify || "start";
+  const align = config.align || "stretch";
   const gapValue = resolveSpacing(config.gap ?? 0);
 
-  if (direction === 'row') {
+  if (direction === "row") {
     return flexRow(elements, bounds, justify, align, gapValue);
   } else {
     return flexColumn(elements, bounds, justify, align, gapValue);
@@ -341,43 +354,48 @@ function flexRow(
   bounds: Bounds,
   justify: string,
   align: string,
-  gap: number
+  gap: number,
 ): Element[] {
   const totalWidth = calculateRowWidth(elements, gap);
   let startX = bounds.x;
 
   // Calculate start position based on justify
   switch (justify) {
-    case 'center':
+    case "center":
       startX += (bounds.width - totalWidth) / 2;
       break;
-    case 'end':
+    case "end":
       startX += bounds.width - totalWidth;
       break;
-    case 'space-between':
-    case 'space-around':
-    case 'space-evenly':
+    case "space-between":
+    case "space-around":
+    case "space-evenly":
       // Will be handled per-element
       break;
   }
 
   let currentX = startX;
-  const spaceBetween = justify === 'space-between' && elements.length > 1
-    ? (bounds.width - elements.reduce((sum, el) => sum + (el.width || 0), 0)) / (elements.length - 1)
-    : 0;
+  const spaceBetween =
+    justify === "space-between" && elements.length > 1
+      ? (bounds.width -
+          elements.reduce((sum, el) => sum + (el.width || 0), 0)) /
+        (elements.length - 1)
+      : 0;
 
   return elements.map((el, i) => {
-    const y = align === 'center'
-      ? bounds.y + (bounds.height - (el.height || 0)) / 2
-      : align === 'end'
-      ? bounds.y + bounds.height - (el.height || 0)
-      : bounds.y;
+    const y =
+      align === "center"
+        ? bounds.y + (bounds.height - (el.height || 0)) / 2
+        : align === "end"
+          ? bounds.y + bounds.height - (el.height || 0)
+          : bounds.y;
 
-    const x = justify === 'space-between'
-      ? bounds.x + i * (bounds.width / (elements.length - 1 || 1))
-      : currentX;
+    const x =
+      justify === "space-between"
+        ? bounds.x + i * (bounds.width / (elements.length - 1 || 1))
+        : currentX;
 
-    currentX += (el.width || 0) + (justify === 'space-between' ? 0 : gap);
+    currentX += (el.width || 0) + (justify === "space-between" ? 0 : gap);
 
     return { ...el, x, y };
   });
@@ -388,17 +406,17 @@ function flexColumn(
   bounds: Bounds,
   justify: string,
   align: string,
-  gap: number
+  gap: number,
 ): Element[] {
   const totalHeight = calculateStackHeight(elements, gap);
   let startY = bounds.y;
 
   // Calculate start position based on justify
   switch (justify) {
-    case 'center':
+    case "center":
       startY += (bounds.height - totalHeight) / 2;
       break;
-    case 'end':
+    case "end":
       startY += bounds.height - totalHeight;
       break;
   }
@@ -406,11 +424,12 @@ function flexColumn(
   let currentY = startY;
 
   return elements.map((el) => {
-    const x = align === 'center'
-      ? bounds.x + (bounds.width - (el.width || 0)) / 2
-      : align === 'end'
-      ? bounds.x + bounds.width - (el.width || 0)
-      : bounds.x;
+    const x =
+      align === "center"
+        ? bounds.x + (bounds.width - (el.width || 0)) / 2
+        : align === "end"
+          ? bounds.x + bounds.width - (el.width || 0)
+          : bounds.x;
 
     const result = { ...el, x, y: currentY };
     currentY += (el.height || 0) + gap;
@@ -429,7 +448,7 @@ export function position(
     bottom?: number;
     left?: number;
   },
-  container: Bounds
+  container: Bounds,
 ): Element {
   const result = { ...element };
 
@@ -442,7 +461,8 @@ export function position(
   if (pos.top !== undefined) {
     result.y = container.y + pos.top;
   } else if (pos.bottom !== undefined) {
-    result.y = container.y + container.height - (element.height || 0) - pos.bottom;
+    result.y =
+      container.y + container.height - (element.height || 0) - pos.bottom;
   }
 
   return result;

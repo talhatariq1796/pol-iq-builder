@@ -16,7 +16,6 @@ import { analysisFeatures } from "./analysisLens";
 // Import specialized processors
 import { CoreAnalysisProcessor } from "./strategies/processors/CoreAnalysisProcessor";
 import { UnifiedCMAProcessor } from "./strategies/processors/UnifiedCMAProcessor";
-import { RealEstateCMAProcessor } from "./strategies/processors/RealEstateCMAProcessor";
 import { ClusterDataProcessor } from "./strategies/processors/ClusterDataProcessor";
 import { CompetitiveDataProcessor } from "./strategies/processors/CompetitiveDataProcessor";
 import { DemographicDataProcessor } from "./strategies/processors/DemographicDataProcessor";
@@ -78,284 +77,6 @@ export class DataProcessor {
     this.configManager = configManager;
     this.processors = new Map();
     this.initializeProcessors();
-  }
-
-  /**
-   * Process raw results with geographic analysis support
-   */
-  async processResultsWithGeographicAnalysis(
-    rawResults: RawAnalysisResult,
-    endpoint: string,
-    query: string = "",
-    spatialFilterIds?: string[], // NEW parameter
-    options?: AnalysisOptions,
-  ): Promise<ProcessedAnalysisData & { geoAnalysis?: any }> {
-    let filteredRawResults = rawResults;
-    let spatialFilterApplied = false;
-    let geoResult: any = null;
-
-    // Check if this is project-wide analysis - skip spatial filtering
-    const isProjectScope =
-      options?.analysisScope === "project" ||
-      options?.scope === "project" ||
-      options?.forceProjectScope === true;
-
-    if (isProjectScope) {
-      console.log(
-        "[DataProcessor] Project scope detected - skipping spatial filtering",
-      );
-    }
-
-    // Apply spatial filtering FIRST if feature IDs provided AND not project scope
-    if (spatialFilterIds && !isProjectScope) {
-      // If spatialFilterIds is an empty array, it means spatial filtering was attempted but found no features
-      if (spatialFilterIds.length === 0) {
-        console.log(
-          "[DataProcessor] Spatial filtering found no features - returning empty result",
-        );
-        const emptyRawResult = { success: true, results: [] };
-        const emptyProcessedData = await this.processResults(
-          emptyRawResult,
-          endpoint,
-          query,
-          options,
-        );
-        return {
-          ...emptyProcessedData,
-          metadata: {
-            ...emptyProcessedData.metadata,
-            spatialFilterApplied: true,
-            spatialFilterCount: 0,
-            noFeaturesInSelection: true,
-          },
-        };
-      }
-
-      // Apply spatial filtering with the provided feature IDs
-      console.log(
-        `[DataProcessor] Applying spatial filter: ${spatialFilterIds.length} allowed features`,
-      );
-      console.log(
-        "[DataProcessor] Spatial filter IDs sample:",
-        spatialFilterIds.slice(0, 5),
-      );
-
-      // Import IDFieldMapper
-      const { IDFieldMapper } = await import("@/lib/spatial/IDFieldMapper");
-
-      const idSet = new Set(spatialFilterIds.map((id) => String(id)));
-      const originalCount = rawResults.results?.length || 0;
-
-      // Debug: Check what IDs we have in the data
-      const sampleRecord = rawResults.results?.[0];
-      if (sampleRecord) {
-        const extractedId = IDFieldMapper.extractId(sampleRecord);
-        console.log("[DataProcessor] Sample data record IDs:", {
-          ID: (sampleRecord as any).ID,
-          OBJECTID: (sampleRecord as any).OBJECTID,
-          DESCRIPTION: (sampleRecord as any).DESCRIPTION,
-          extractedId: extractedId,
-          allKeys: Object.keys(sampleRecord as any).filter(
-            (k) => k.toLowerCase().includes("id") || k.includes("DESCRIPTION"),
-          ),
-        });
-      }
-
-      // Use IDFieldMapper for flexible ID extraction
-      filteredRawResults = {
-        ...rawResults,
-        results:
-          rawResults.results?.filter((record) => {
-            const recordId = IDFieldMapper.extractId(record);
-            if (!recordId) {
-              console.warn(
-                "[DataProcessor] Record has no identifiable ID:",
-                Object.keys(record as any).slice(0, 10),
-              );
-              return false;
-            }
-            const matches = idSet.has(recordId);
-            if (originalCount < 10) {
-              // Debug for small datasets
-              console.log(
-                `[DataProcessor] ID check: recordId=${recordId}, matches=${matches}`,
-              );
-            }
-            return matches;
-          }) || [],
-      };
-
-      const filteredCount = filteredRawResults.results?.length || 0;
-      spatialFilterApplied = true;
-
-      console.log(`[DataProcessor] Spatial filter applied:`, {
-        originalRecords: originalCount,
-        filteredRecords: filteredCount,
-        retainedPercentage:
-          originalCount > 0
-            ? `${((filteredCount / originalCount) * 100).toFixed(1)}%`
-            : "0%",
-        matchedIds: filteredCount,
-      });
-
-      // Warn if very few matches
-      if (filteredCount === 0) {
-        console.error("[DataProcessor] No records matched spatial filter!");
-      } else if (filteredCount < spatialFilterIds.length * 0.5) {
-        console.warn(
-          `[DataProcessor] Low match rate: ${filteredCount}/${spatialFilterIds.length} IDs matched`,
-        );
-      }
-    }
-
-    // Apply geographic filtering for queries with explicit geographic content
-    // This ensures queries like "show me high income areas in Montreal" work properly
-    if (query && query.trim().length > 2) {
-      try {
-        const geoEngine = GeoAwarenessEngine.getInstance();
-        const geoPreFilter = await geoEngine.processGeoQuery(
-          query,
-          rawResults.results || [],
-        );
-
-        if (
-          geoPreFilter.matchedEntities.length > 0 &&
-          geoPreFilter.filteredRecords.length > 0
-        ) {
-          console.log(
-            `🌍 [DataProcessor] Geographic pre-filtering detected for query: "${query}"`,
-          );
-          console.log(
-            `🌍 [DataProcessor] Geographic entities:`,
-            geoPreFilter.matchedEntities.map((e) => ({
-              name: e.name,
-              type: e.type,
-            })),
-          );
-          console.log(
-            `🌍 [DataProcessor] Records filtered: ${rawResults.results?.length || 0} -> ${geoPreFilter.filteredRecords.length}`,
-          );
-
-          // DEBUG: Log actual area codes in filtered data
-          const areaCodes = geoPreFilter.filteredRecords
-            .map((r: any) => r.ID || r.area_name || r.zipcode || r.id)
-            .filter(Boolean)
-            .slice(0, 20);
-          console.log(
-            `🔍 [DataProcessor] First 20 area codes in filtered data:`,
-            areaCodes,
-          );
-
-          // DEBUG: Check which cities these area codes belong to
-          const cityGroups = geoPreFilter.filteredRecords.reduce(
-            (acc: any, r: any) => {
-              const areaCode = r.area_name || r.zipcode || r.ID;
-              const city = r.city || "Unknown";
-              if (!acc[city]) acc[city] = [];
-              acc[city].push(areaCode);
-              return acc;
-            },
-            {} as Record<string, string[]>,
-          );
-
-          console.log(
-            `🔍 [DataProcessor] Area codes grouped by city:`,
-            Object.keys(cityGroups).map((city) => ({
-              city,
-              count: cityGroups[city].length,
-              sampleAreaCodes: cityGroups[city].slice(0, 5),
-            })),
-          );
-
-          filteredRawResults = {
-            ...rawResults,
-            results: geoPreFilter.filteredRecords,
-          };
-          geoResult = geoPreFilter; // Store for metadata
-        }
-      } catch (error) {
-        console.error(
-          "[DataProcessor] Geographic pre-filtering failed, using original data:",
-          error,
-        );
-      }
-    }
-
-    const processedData = await this.processResults(
-      filteredRawResults,
-      endpoint,
-      query,
-      options,
-    );
-
-    // If we already did geo-filtering, return with that metadata
-    if (geoResult) {
-      return {
-        ...processedData,
-        geoAnalysis: {
-          entities: geoResult.matchedEntities,
-          filterStats: geoResult.filterStats,
-          warnings: geoResult.warnings,
-          fallbackUsed: geoResult.fallbackUsed,
-        },
-      };
-    }
-
-    // No additional post-processing needed since geo-filtering was done pre-processing
-    if (false) {
-      try {
-        // This block is disabled - geo-filtering now happens before data processing
-      } catch (error) {
-        console.warn(
-          "[DataProcessor] Geographic analysis failed, falling back to legacy city analysis:",
-          error,
-        );
-
-        // Fallback to legacy city analysis
-        const cityAnalysis = CityAnalysisUtils.analyzeQuery(
-          query,
-          processedData.records,
-          processedData.targetVariable,
-        );
-
-        if (cityAnalysis.isCityQuery) {
-          console.log(`[DataProcessor] Legacy city analysis fallback:`, {
-            cities: cityAnalysis.detectedCities,
-            isComparison: cityAnalysis.isComparison,
-            filteredRecords: cityAnalysis.filteredData.length,
-          });
-
-          if (
-            cityAnalysis.filteredData.length > 0 &&
-            cityAnalysis.filteredData.length < processedData.records.length
-          ) {
-            processedData.records = cityAnalysis.filteredData;
-            console.log(
-              `[DataProcessor] 🔄 Fallback: Filtered data to ${cityAnalysis.filteredData.length} city-specific records`,
-            );
-          }
-
-          return {
-            ...processedData,
-            geoAnalysis: {
-              legacyFallback: true,
-              cityAnalysis,
-            },
-          };
-        }
-      }
-    }
-
-    // Add spatial filter metadata to result
-    if (spatialFilterApplied) {
-      processedData.metadata = {
-        ...processedData.metadata,
-        spatialFilterApplied: true,
-        spatialFilterCount: spatialFilterIds?.length || 0,
-      };
-    }
-
-    return processedData;
   }
 
   /**
@@ -568,17 +289,6 @@ export class DataProcessor {
           geometry: options.geometry,
           filters: options.filters,
         };
-        console.log(
-          `🔥 [DataProcessor] 🔍 DETAILED GEOMETRY TRACE - Passing to RealEstateCMAProcessor:`,
-          {
-            hasGeometry: !!cmaRawData.geometry,
-            geometryType: (cmaRawData.geometry as any)?.type,
-            hasFilters: !!cmaRawData.filters,
-            cmaRawDataKeys: Object.keys(cmaRawData),
-            willProcessorFilterSpatially:
-              "TBD - depends on RealEstateCMAProcessor implementation",
-          },
-        );
         processedData = await this.executeProcessorWithContext(
           processor,
           cmaRawData,
@@ -883,16 +593,6 @@ export class DataProcessor {
       new RealEstateAnalysisProcessor(),
     );
 
-    // Register CMA processor for both endpoint formats (production)
-    // FIXED: Use RealEstateCMAProcessor for spatial filtering support
-    this.processors.set(
-      "comparative_market_analysis",
-      new RealEstateCMAProcessor(),
-    );
-    this.processors.set(
-      "/comparative-market-analysis",
-      new RealEstateCMAProcessor(),
-    );
     // Keep other processors as backup
     this.processors.set(
       "comparative_market_analysis_unified",
@@ -983,37 +683,6 @@ export class DataProcessor {
     console.log(
       `[DataProcessor] Initialized ${this.processors.size} specialized processors`,
     );
-  }
-
-  /**
-   * Detect if this is a geographic comparative query
-   */
-  private isGeographicComparativeQuery(
-    query: string = "",
-    endpoint: string,
-  ): boolean {
-    if (endpoint !== "/comparative-analysis") return false;
-    if (!query || query.trim().length < 3) return false;
-
-    const lowerQuery = query.toLowerCase();
-
-    // Check for comparative + geographic patterns
-    const hasComparative =
-      lowerQuery.includes("compare") ||
-      lowerQuery.includes("between") ||
-      lowerQuery.includes("vs") ||
-      lowerQuery.includes("versus");
-
-    const hasGeographic =
-      /\b(brooklyn|philadelphia|manhattan|queens|bronx|newark|jersey city|pittsburgh)\b/i.test(
-        query,
-      ) ||
-      /\b(new york|pennsylvania|new jersey)\b/i.test(query) ||
-      /\bbetween\s+[A-Z][a-z]+(\s+[A-Z][a-z]+)*\s+and\s+[A-Z][a-z]+/i.test(
-        query,
-      );
-
-    return hasComparative && hasGeographic;
   }
 
   private getProcessorForEndpoint(endpoint: string): DataProcessorStrategy {
@@ -1124,48 +793,6 @@ export class DataProcessor {
       `[DataProcessor] Fallback processing successful: ${processedData.records.length} records using ${processor.constructor.name}`,
     );
     return processedData;
-  }
-
-  private async processFallbackData(
-    rawResults: RawAnalysisResult,
-    endpoint: string,
-  ): Promise<ProcessedAnalysisData> {
-    // Use default processor for fallback processing
-    const defaultProcessor = this.processors.get("default")!;
-
-    try {
-      const result = defaultProcessor.process(rawResults);
-      return result instanceof Promise ? await result : result;
-    } catch (error) {
-      console.error(
-        `[DataProcessor] Fallback processing also failed for ${endpoint}:`,
-        error,
-      );
-      return this.createFallbackData(rawResults, endpoint);
-    }
-  }
-
-  private createFallbackData(
-    rawResults: RawAnalysisResult,
-    endpoint: string,
-  ): ProcessedAnalysisData {
-    // Create minimal valid data structure when all processing fails
-    return {
-      type: endpoint.replace("/", ""),
-      records: [],
-      summary:
-        rawResults.summary || "Analysis completed with limited data processing",
-      featureImportance: rawResults.feature_importance || [],
-      statistics: {
-        total: 0,
-        mean: 0,
-        median: 0,
-        min: 0,
-        max: 0,
-        stdDev: 0,
-      },
-      targetVariable: rawResults.model_info?.target_variable || "unknown",
-    };
   }
 
   /**
