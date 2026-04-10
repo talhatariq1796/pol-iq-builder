@@ -149,13 +149,8 @@ export class FindTargetPrecincts {
           this.precinctData = data.precincts || [];
         }
       } else {
-        // In Node, read from file
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const dataPath = path.join(process.cwd(), 'public/data/political/ingham_precincts.json');
-        const raw = await fs.readFile(dataPath, 'utf-8');
-        const data = JSON.parse(raw);
-        this.precinctData = Object.values(data.precincts) as RawPrecinct[];
+        // Node context: no local precinct file; data comes from PoliticalDataService in browser
+        this.precinctData = [];
       }
     } catch (error) {
       console.error('Error loading precinct data:', error);

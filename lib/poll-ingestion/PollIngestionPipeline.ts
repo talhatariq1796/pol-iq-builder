@@ -10,17 +10,17 @@
  * 6. Generate RAG documents
  */
 
-import { FiveThirtyEightAdapter, getFiveThirtyEightAdapter } from './sources/FiveThirtyEightAdapter';
-import { VoteHubAdapter, getVoteHubAdapter } from './sources/VoteHubAdapter';
-import { PollNormalizer, getPollNormalizer } from './PollNormalizer';
-import { PollAggregator, getPollAggregator } from './PollAggregator';
-import { PollStore, getPollStore } from './PollStore';
-import { PollToGraphBridge, getPollToGraphBridge } from './PollToGraphBridge';
-import { PollToRAGBridge, getPollToRAGBridge } from './PollToRAGBridge';
-import { Poll, PollAggregate, FetchOptions, PollSourceAdapter } from './types';
+import { getFiveThirtyEightAdapter } from "./sources/FiveThirtyEightAdapter";
+import { getVoteHubAdapter } from "./sources/VoteHubAdapter";
+import { PollNormalizer, getPollNormalizer } from "./PollNormalizer";
+import { PollAggregator, getPollAggregator } from "./PollAggregator";
+import { PollStore, getPollStore } from "./PollStore";
+import { PollToGraphBridge, getPollToGraphBridge } from "./PollToGraphBridge";
+import { PollToRAGBridge, getPollToRAGBridge } from "./PollToRAGBridge";
+import { Poll, PollAggregate, FetchOptions, PollSourceAdapter } from "./types";
 
 export interface PipelineOptions {
-  sources?: ('fivethirtyeight' | 'votehub')[];
+  sources?: ("fivethirtyeight" | "votehub")[];
   fetchOptions?: FetchOptions;
   skipGraph?: boolean;
   skipRAG?: boolean;
@@ -49,8 +49,8 @@ export class PollIngestionPipeline {
 
   constructor() {
     // Initialize adapters
-    this.adapters.set('fivethirtyeight', getFiveThirtyEightAdapter());
-    this.adapters.set('votehub', getVoteHubAdapter());
+    this.adapters.set("fivethirtyeight", getFiveThirtyEightAdapter());
+    this.adapters.set("votehub", getVoteHubAdapter());
 
     // Initialize components
     this.normalizer = getPollNormalizer();
@@ -80,21 +80,23 @@ export class PollIngestionPipeline {
     };
 
     try {
-      console.log('[PollIngestionPipeline] Starting pipeline...');
+      console.log("[PollIngestionPipeline] Starting pipeline...");
 
       // Load existing store
       await this.store.load();
 
       // Default to all sources if none specified
-      const sources = options.sources || ['fivethirtyeight', 'votehub'];
+      const sources = options.sources || ["fivethirtyeight", "votehub"];
 
       const fetchOptions: FetchOptions = {
-        state: 'Pennsylvania',
+        state: "Pennsylvania",
         ...options.fetchOptions,
       };
 
       // 1. Fetch from sources
-      console.log(`[PollIngestionPipeline] Fetching from ${sources.length} sources...`);
+      console.log(
+        `[PollIngestionPipeline] Fetching from ${sources.length} sources...`,
+      );
       const rawPolls: Poll[] = [];
 
       for (const sourceName of sources) {
@@ -107,7 +109,9 @@ export class PollIngestionPipeline {
         try {
           const sourcePolls = await adapter.fetchPolls(fetchOptions);
           result.pollsFetched += sourcePolls.length;
-          console.log(`[PollIngestionPipeline] Fetched ${sourcePolls.length} polls from ${sourceName}`);
+          console.log(
+            `[PollIngestionPipeline] Fetched ${sourcePolls.length} polls from ${sourceName}`,
+          );
 
           // Normalize
           const normalized = this.normalizer.normalizeAll(sourcePolls);
@@ -132,7 +136,9 @@ export class PollIngestionPipeline {
       const aggregates = this.aggregator.aggregateAll(allPolls);
       this.store.setAggregates(aggregates);
       result.aggregatesCalculated = aggregates.size;
-      console.log(`[PollIngestionPipeline] Calculated ${aggregates.size} race aggregates`);
+      console.log(
+        `[PollIngestionPipeline] Calculated ${aggregates.size} race aggregates`,
+      );
 
       // 4. Save store
       await this.store.save();
@@ -148,7 +154,9 @@ export class PollIngestionPipeline {
             this.graphBridge.addAggregate(agg);
           }
 
-          console.log(`[PollIngestionPipeline] Synced ${graphAdded} polls to knowledge graph`);
+          console.log(
+            `[PollIngestionPipeline] Synced ${graphAdded} polls to knowledge graph`,
+          );
         } catch (error) {
           const errorMsg = `Graph sync failed: ${error}`;
           console.error(`[PollIngestionPipeline] ${errorMsg}`);
@@ -163,7 +171,9 @@ export class PollIngestionPipeline {
           await this.ragBridge.saveRecentPolls(allPolls, 20);
           await this.ragBridge.updateIntelIndex(aggregates);
           result.ragDocumentsGenerated = ragSaved;
-          console.log(`[PollIngestionPipeline] Generated ${ragSaved} RAG documents`);
+          console.log(
+            `[PollIngestionPipeline] Generated ${ragSaved} RAG documents`,
+          );
         } catch (error) {
           const errorMsg = `RAG generation failed: ${error}`;
           console.error(`[PollIngestionPipeline] ${errorMsg}`);
@@ -173,11 +183,10 @@ export class PollIngestionPipeline {
 
       result.success = errors.length === 0;
       result.errors = errors;
-
     } catch (error) {
       result.success = false;
       result.errors = [`Pipeline failed: ${error}`];
-      console.error('[PollIngestionPipeline] Pipeline failed:', error);
+      console.error("[PollIngestionPipeline] Pipeline failed:", error);
     }
 
     result.duration = Date.now() - startTime;
@@ -190,9 +199,9 @@ export class PollIngestionPipeline {
    * Fetch polls without full pipeline (for preview/testing)
    */
   async fetchOnly(options: PipelineOptions = {}): Promise<Poll[]> {
-    const sources = options.sources || ['fivethirtyeight', 'votehub'];
+    const sources = options.sources || ["fivethirtyeight", "votehub"];
     const fetchOptions: FetchOptions = {
-      state: 'Pennsylvania',
+      state: "Pennsylvania",
       ...options.fetchOptions,
     };
 
@@ -207,7 +216,10 @@ export class PollIngestionPipeline {
         const normalized = this.normalizer.normalizeAll(sourcePolls);
         allPolls.push(...normalized);
       } catch (error) {
-        console.error(`[PollIngestionPipeline] Failed to fetch from ${sourceName}:`, error);
+        console.error(
+          `[PollIngestionPipeline] Failed to fetch from ${sourceName}:`,
+          error,
+        );
       }
     }
 

@@ -52,7 +52,7 @@ export class GraphPopulator {
 
   constructor(graph?: KnowledgeGraph, seedDataUrl?: string) {
     this.graph = graph || getKnowledgeGraph();
-    this.seedDataUrl = seedDataUrl || '/data/political/knowledge-graph-seed.json';
+    this.seedDataUrl = seedDataUrl || '';
   }
 
   /**

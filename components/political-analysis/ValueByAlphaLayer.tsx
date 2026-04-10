@@ -464,21 +464,13 @@ export function ValueByAlphaLayer({
       try {
         await politicalDataService.initialize();
 
-        // Load boundaries with smart fallback chain:
-        //   1. boundariesUrl prop  — caller-supplied (user-uploaded blob URL or custom path)
-        //   2. politicalDataService.loadPrecinctBoundaries() — handles service-registered uploads
-        //   3. /data/political/ingham_precincts.geojson — local default, always high-res
-        // Load municipality boundaries directly from local high-res file + targeting scores
-        const [boundaryResponse, targetingScores] = await Promise.all([
-          fetch("/data/political/ingham_municipalities.geojson"),
+        // Load PA precinct boundaries + targeting scores
+        const [boundaries, targetingScores] = await Promise.all([
+          politicalDataService.loadPrecinctBoundaries(),
           politicalDataService.getAllTargetingScores(),
         ]);
-        if (!boundaryResponse.ok)
-          throw new Error(
-            `Failed to load boundaries: ${boundaryResponse.status}`,
-          );
-        const boundaries: GeoJSON.FeatureCollection =
-          await boundaryResponse.json();
+        if (!boundaries)
+          throw new Error('Failed to load precinct boundaries');
 
         if (!isMounted) return;
 

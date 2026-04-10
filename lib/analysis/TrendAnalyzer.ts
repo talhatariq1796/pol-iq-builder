@@ -26,16 +26,8 @@ interface TrendAnalysis {
 let electionHistory: any = null;
 
 export async function loadElectionHistory() {
-  if (electionHistory) return electionHistory;
-
-  try {
-    const response = await fetch('/data/political/election-history.json');
-    electionHistory = await response.json();
-    return electionHistory;
-  } catch (error) {
-    console.warn('Could not load election history:', error);
-    return null;
-  }
+  // Legacy Ingham County data removed. PA election history loads via PoliticalDataService.
+  return null;
 }
 
 export function analyzeTrends(precinctId: string): TrendAnalysis | null {
