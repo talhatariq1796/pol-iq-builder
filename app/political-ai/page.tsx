@@ -14,6 +14,7 @@ import { registerTourCallbacks, unregisterTourCallbacks } from '@/lib/tour/tourA
 import type { IQAction } from '@/components/political-analysis/PoliticalAnalysisPanel';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
 import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
+import { activeState } from '@/lib/config/activeState';
 
 // Dynamic import to avoid SSR issues with ArcGIS map
 const PoliticalMapContainer = dynamic(
@@ -204,7 +205,7 @@ function PoliticalAIContent() {
             setSelectedPrecinct({
               precinctId: precinctData.id,
               precinctName: precinctData.name,
-              county: 'Pennsylvania',
+              county: activeState.name,
               attributes: {
                 registered_voters: precinctData.demographics?.registeredVoters,
                 swing_potential: precinctData.electoral?.swingPotential,
@@ -230,7 +231,7 @@ function PoliticalAIContent() {
             setSelectedPrecinct({
               precinctId,
               precinctName: precinctId,
-              county: 'Pennsylvania',
+              county: activeState.name,
             });
           }
         } catch (error) {

@@ -2361,7 +2361,7 @@ function formatFilterResults(criteria: any, results: any): string {
     const t = criteria.threshold as number;
     response =
       `**Answer:** In **${areaName}**, these are precincts where **|Dem−Rep presidential margin| is under ${t} percentage points** ` +
-      `(**2024** president where reported, else **2020**) — **the same rule** as the assistant’s “Authoritative filter / export” count and downloadable CSV.\n\n` +
+      `(**2024** president where reported, else **2020**) — **the same rule** as the assistant's "Authoritative filter / export" count and downloadable CSV.\n\n` +
       `Found **${count} precincts** with approximately **${totalVoters.toLocaleString()}** registered voters.\n\n`;
   } else {
     response =

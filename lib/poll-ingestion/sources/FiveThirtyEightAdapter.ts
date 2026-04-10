@@ -6,6 +6,7 @@
  * historical data and pollster ratings only.
  */
 
+import { activeState } from '@/lib/config/activeState';
 import {
   PollSourceAdapter,
   RawPoll,
@@ -240,11 +241,13 @@ export class FiveThirtyEightAdapter implements PollSourceAdapter {
   private matchesState(state: string, target: string): boolean {
     const s = state?.toLowerCase().trim();
     const t = target?.toLowerCase().trim();
+    const stateName = activeState.name.toLowerCase();
+    const stateAbbr = activeState.abbreviation.toLowerCase();
 
     return (
       s === t ||
-      s === 'michigan' && t === 'mi' ||
-      s === 'mi' && t === 'michigan' ||
+      (s === stateName && t === stateAbbr) ||
+      (s === stateAbbr && t === stateName) ||
       s.includes(t) ||
       t.includes(s)
     );

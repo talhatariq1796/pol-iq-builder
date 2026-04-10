@@ -17,6 +17,7 @@ import {
   ExtractedRelationship,
   ExtractionResult,
 } from './types';
+import { activeState } from '@/lib/config/activeState';
 
 // ============================================================================
 // Known Entities (Seed Data)
@@ -77,24 +78,18 @@ const KNOWN_OFFICES: Record<string, { level: string; type: string }> = {
   'city council': { level: 'local', type: 'legislative' },
 };
 
-const KNOWN_JURISDICTIONS: Record<string, { level: string; parent?: string }> = {
-  'michigan': { level: 'state' },
-  'mi': { level: 'state' },
-  'ingham county': { level: 'county', parent: 'michigan' },
-  'ingham': { level: 'county', parent: 'michigan' },
-  'lansing': { level: 'city', parent: 'ingham county' },
-  'east lansing': { level: 'city', parent: 'ingham county' },
-  'mason': { level: 'city', parent: 'ingham county' },
-  'meridian township': { level: 'township', parent: 'ingham county' },
-  'meridian': { level: 'township', parent: 'ingham county' },
-  'delhi township': { level: 'township', parent: 'ingham county' },
-  'delhi': { level: 'township', parent: 'ingham county' },
-  'williamston': { level: 'city', parent: 'ingham county' },
-  'leslie': { level: 'city', parent: 'ingham county' },
-  'oakland county': { level: 'county', parent: 'michigan' },
-  'wayne county': { level: 'county', parent: 'michigan' },
-  'detroit': { level: 'city', parent: 'wayne county' },
-};
+// Build jurisdiction map dynamically from the active state config
+const KNOWN_JURISDICTIONS: Record<string, { level: string; parent?: string }> =
+  activeState.entities.reduce<Record<string, { level: string; parent?: string }>>(
+    (acc, entity) => {
+      acc[entity.name] = { level: entity.level, parent: entity.parent };
+      for (const alias of entity.aliases ?? []) {
+        acc[alias] = { level: entity.level, parent: entity.parent };
+      }
+      return acc;
+    },
+    {},
+  );
 
 const KNOWN_PARTIES: Record<string, { full: string; abbreviation: string }> = {
   'democrat': { full: 'Democratic Party', abbreviation: 'DEM' },

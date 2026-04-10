@@ -19,6 +19,7 @@ import {
   METHODOLOGY_MAPPING,
   POPULATION_MAPPING,
 } from './types';
+import { activeState } from '@/lib/config/activeState';
 
 export class PollNormalizer {
   /**
@@ -267,9 +268,7 @@ export class PollNormalizer {
     if (!geography) return 'Unknown';
 
     const mappings: Record<string, string> = {
-      mi: 'Michigan',
-      mich: 'Michigan',
-      'mich.': 'Michigan',
+      [activeState.abbreviation.toLowerCase()]: activeState.name,
       national: 'National',
       usa: 'National',
       us: 'National',
@@ -283,27 +282,34 @@ export class PollNormalizer {
   private getStateCode(geography: string): string {
     const geo = geography.toLowerCase().trim();
 
-    if (geo === 'michigan' || geo === 'mi') return 'MI';
+    if (geo === activeState.name.toLowerCase() || geo === activeState.abbreviation.toLowerCase()) {
+      return activeState.abbreviation;
+    }
     if (geo === 'national' || geo === 'usa' || geo === 'us') return 'US';
 
-    // Extract state code from district (e.g., "MI-07" -> "MI")
+    // Extract state code from district (e.g., "CA-13" -> "CA")
     const match = geo.match(/^([A-Za-z]{2})-?\d+$/);
     if (match) return match[1].toUpperCase();
 
-    return 'MI'; // Default to Michigan for this project
+    return activeState.abbreviation;
   }
 
   private lookupFIPS(geography: string): string | undefined {
-    // Michigan FIPS codes
-    const fipsCodes: Record<string, string> = {
-      michigan: '26',
-      mi: '26',
-      'ingham county': '26065',
-      ingham: '26065',
-    };
-
     const key = geography.toLowerCase().trim();
-    return fipsCodes[key];
+
+    // Active state FIPS
+    if (key === activeState.name.toLowerCase() || key === activeState.abbreviation.toLowerCase()) {
+      return activeState.fips;
+    }
+
+    // County FIPS lookup: match "<county name> county" or just "<county name>"
+    for (const [suffix, countyName] of Object.entries(activeState.countyFips)) {
+      if (key === countyName.toLowerCase() || key === `${countyName.toLowerCase()} county`) {
+        return `${activeState.fips}${suffix}`;
+      }
+    }
+
+    return undefined;
   }
 
   private normalizeDate(date?: string): string {

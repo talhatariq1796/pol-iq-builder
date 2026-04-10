@@ -10,6 +10,7 @@
  * - Real-time presidential approval and generic ballot
  */
 
+import { activeState } from '@/lib/config/activeState';
 import {
   PollSourceAdapter,
   RawPoll,
@@ -194,8 +195,8 @@ export class VoteHubAdapter implements PollSourceAdapter {
 
     return (
       s === t ||
-      (s === 'michigan' && t === 'mi') ||
-      (s === 'mi' && t === 'michigan') ||
+      (s === activeState.name.toLowerCase() && t === activeState.abbreviation.toLowerCase()) ||
+      (s === activeState.abbreviation.toLowerCase() && t === activeState.name.toLowerCase()) ||
       s.includes(t) ||
       t.includes(s)
     );

@@ -8,6 +8,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Poll, PollAggregate } from './types';
+import { activeState } from '@/lib/config/activeState';
 
 interface PollStoreData {
   polls: Poll[];
@@ -197,10 +198,15 @@ export class PollStore {
   }
 
   /**
-   * Get Michigan aggregates
+   * Get aggregates for the active state.
    */
+  getStateAggregates(): PollAggregate[] {
+    return this.getAggregatesByGeography(activeState.name.toLowerCase());
+  }
+
+  /** @deprecated Use getStateAggregates() */
   getMichiganAggregates(): PollAggregate[] {
-    return this.getAggregatesByGeography('michigan');
+    return this.getStateAggregates();
   }
 
   /**

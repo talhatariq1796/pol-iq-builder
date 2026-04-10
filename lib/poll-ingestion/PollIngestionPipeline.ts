@@ -245,13 +245,18 @@ export class PollIngestionPipeline {
   }
 
   /**
-   * Get aggregates for the configured state (legacy method name)
+   * Get aggregates for the active state.
    */
-  async getMichiganAggregates(): Promise<PollAggregate[]> {
+  async getStateAggregates(): Promise<PollAggregate[]> {
     if (!this.store.isLoaded()) {
       await this.store.load();
     }
-    return this.store.getMichiganAggregates();
+    return this.store.getStateAggregates();
+  }
+
+  /** @deprecated Use getStateAggregates() */
+  async getMichiganAggregates(): Promise<PollAggregate[]> {
+    return this.getStateAggregates();
   }
 
   /**

@@ -1,11 +1,12 @@
 /**
  * Political Geographic Data Manager
  *
- * Michigan (FIPS 26): Ingham County jurisdictions for legacy query routing.
- * Pennsylvania (FIPS 42): major cities only — statewide precinct naming uses crosswalk IDs elsewhere.
+ * Loads geographic entities for the active state from lib/config/activeState.
+ * Legacy Michigan/Ingham methods are retained but no longer called.
  */
 
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { activeState } from '@/lib/config/activeState';
 
 // Extended GeographicEntity with metadata for political context
 export interface PoliticalGeographicEntity {
@@ -71,98 +72,32 @@ export class PoliticalGeoDataManager {
   }
 
   private initializeDatabase(): void {
-    if (getPoliticalRegionEnv().stateFips === '42') {
-      console.log('[PoliticalGeoDataManager] Initializing Pennsylvania reference places...');
-      this.loadPennsylvaniaReferencePlaces();
-      console.log(
-        `[PoliticalGeoDataManager] Database initialized with ${this.database.entities.size} entities`
-      );
-      return;
-    }
-
-    console.log('[PoliticalGeoDataManager] Initializing Ingham County geographic database...');
-
-    this.loadCounty();
-    this.loadJurisdictions();
-    this.loadRegionalGroups();
-
+    console.log(`[PoliticalGeoDataManager] Initializing ${activeState.name} geographic database...`);
+    this.loadStateReferencePlaces();
     console.log(
       `[PoliticalGeoDataManager] Database initialized with ${this.database.entities.size} entities`
     );
   }
 
-  /** Minimal city list for NL query routing in PA-only deployments. */
-  private loadPennsylvaniaReferencePlaces(): void {
-    const { summaryAreaName } = getPoliticalRegionEnv();
-    const state: PoliticalGeographicEntity = {
-      name: 'Pennsylvania',
-      type: 'state',
-      aliases: ['PA', 'Penn', 'Commonwealth of Pennsylvania'],
-      confidence: 1.0,
-    };
-    this.addEntity(state);
-
-    const cities: Array<{
-      name: string;
-      aliases: string[];
-      urbanRural: 'urban' | 'suburban' | 'rural';
-      description: string;
-    }> = [
-      {
-        name: 'Philadelphia',
-        aliases: ['Philly'],
-        urbanRural: 'urban',
-        description: `Major city, ${summaryAreaName}`,
-      },
-      {
-        name: 'Pittsburgh',
-        aliases: ['Pitt'],
-        urbanRural: 'urban',
-        description: `Major city, ${summaryAreaName}`,
-      },
-      {
-        name: 'Harrisburg',
-        aliases: ['Harrisburg PA', 'Capital'],
-        urbanRural: 'urban',
-        description: `State capital, ${summaryAreaName}`,
-      },
-      {
-        name: 'Allentown',
-        aliases: [],
-        urbanRural: 'suburban',
-        description: `Lehigh Valley, ${summaryAreaName}`,
-      },
-      {
-        name: 'Erie',
-        aliases: [],
-        urbanRural: 'urban',
-        description: `Northwest PA, ${summaryAreaName}`,
-      },
-      {
-        name: 'Reading',
-        aliases: [],
-        urbanRural: 'urban',
-        description: `Southeast PA, ${summaryAreaName}`,
-      },
-    ];
-
-    for (const c of cities) {
+  /** Load geographic entities from the active state config. */
+  private loadStateReferencePlaces(): void {
+    for (const entity of activeState.entities) {
+      const levelMap: Record<string, PoliticalGeographicEntity['type']> = {
+        state: 'state',
+        county: 'county',
+        city: 'city',
+        township: 'township',
+        region: 'metro',
+      };
+      const type: PoliticalGeographicEntity['type'] = levelMap[entity.level] ?? 'city';
       this.addEntity({
-        name: c.name,
-        type: 'city',
-        aliases: c.aliases,
-        parentEntity: 'pennsylvania',
-        confidence: 0.95,
-        metadata: {
-          urbanRural: c.urbanRural,
-          description: c.description,
-        },
+        name: entity.name.charAt(0).toUpperCase() + entity.name.slice(1),
+        type,
+        aliases: entity.aliases ?? [],
+        parentEntity: entity.parent,
+        confidence: entity.level === 'state' ? 1.0 : 0.95,
       });
     }
-
-    this.database.regionalGroups.set('southeast pa', ['philadelphia', 'reading']);
-    this.database.regionalGroups.set('southwest pa', ['pittsburgh']);
-    this.database.regionalGroups.set('capital region', ['harrisburg']);
   }
 
   private loadCounty(): void {

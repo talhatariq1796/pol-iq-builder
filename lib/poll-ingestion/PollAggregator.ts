@@ -11,6 +11,7 @@
  * - Methodology: Live phone > Online > IVR
  */
 
+import { activeState } from '@/lib/config/activeState';
 import {
   Poll,
   PollAggregate,
@@ -351,7 +352,7 @@ export class PollAggregator {
     const [state, raceType, year] = parts;
 
     const stateNames: Record<string, string> = {
-      MI: 'Michigan',
+      [activeState.abbreviation]: activeState.name,
       US: 'National',
     };
 

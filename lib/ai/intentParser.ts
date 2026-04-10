@@ -1,4 +1,5 @@
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { activeState } from '@/lib/config/activeState';
 
 export interface ParsedIntent {
   type:
@@ -685,23 +686,25 @@ function slugifySchoolPhrase(s: string): string {
 }
 
 /**
- * Extract all district entities from query (Pennsylvania when POLITICAL_STATE_FIPS=42).
+ * Extract all district entities from query using the active state's abbreviation.
  */
 function extractDistrictEntities(query: string): ExtractedDistrictEntities {
-  if (getPoliticalRegionEnv().stateFips === '42') {
-    return extractDistrictEntitiesPA(query);
-  }
-  return extractDistrictEntitiesMI(query);
+  return extractDistrictEntitiesForState(query, activeState.abbreviation, activeState.name);
 }
 
-function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
+function extractDistrictEntitiesForState(
+  query: string,
+  abbr: string,
+  stateName: string,
+): ExtractedDistrictEntities {
   const result: ExtractedDistrictEntities = {};
-  const lower = query.toLowerCase();
+  const abbrLower = abbr.toLowerCase();
+  const stateNameLower = stateName.toLowerCase();
 
   const congressionalPatterns = [
-    /\bpa[-\s]?0?(\d{1,2})\b/i,
-    /\bpennsylvania\s+(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
-    /\bpennsylvania\s+(\d{1,2})(?:th|st|nd|rd)?\s+congressional\s+district\b/i,
+    new RegExp(`\\b${abbrLower}[-\\s]?0?(\\d{1,2})\\b`, 'i'),
+    new RegExp(`\\b${stateNameLower}\\s+(\\d{1,2})(?:th|st|nd|rd)?\\s+congressional\\b`, 'i'),
+    new RegExp(`\\b${stateNameLower}\\s+(\\d{1,2})(?:th|st|nd|rd)?\\s+congressional\\s+district\\b`, 'i'),
     /\b(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
     /\bcongressional\s+district\s+(\d{1,2})\b/i,
     /\bcd[-\s]?0?(\d{1,2})\b/i,
@@ -712,14 +715,14 @@ function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
     const match = query.match(pattern);
     if (match) {
       const num = match[1].padStart(2, '0');
-      result.congressional = `pa-congress-${num}`;
+      result.congressional = `${abbrLower}-congress-${num}`;
       result.districtLevel = 'congressional';
       break;
     }
   }
 
   const stateSenatePatterns = [
-    /\b(?:pa|pennsylvania)\s+senate\s+(\d{1,3})\b/i,
+    new RegExp(`\\b(?:${abbrLower}|${stateNameLower})\\s+senate\\s+(\\d{1,3})\\b`, 'i'),
     /\b(?:state\s+)?senate\s+district\s+(\d{1,3})\b/i,
     /\bsd[-\s]?(\d{1,3})\b/i,
     /\bstate\s+senate\s+(\d{1,3})\b/i,
@@ -730,25 +733,25 @@ function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
   for (const pattern of stateSenatePatterns) {
     const match = query.match(pattern);
     if (match) {
-      result.stateSenate = `pa-senate-${match[1]}`;
+      result.stateSenate = `${abbrLower}-senate-${match[1]}`;
       result.districtLevel = 'state_senate';
       break;
     }
   }
 
   const stateHousePatterns = [
-    /\b(?:pa|pennsylvania)\s+house\s+(\d{1,3})\b/i,
+    new RegExp(`\\b(?:${abbrLower}|${stateNameLower})\\s+(?:house|assembly)\\s+(\\d{1,3})\\b`, 'i'),
     /\b(?:state\s+)?house\s+district\s+(\d{1,3})\b/i,
     /\bhd[-\s]?(\d{1,3})\b/i,
-    /\bstate\s+house\s+(\d{1,3})\b/i,
-    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?house\b/i,
+    /\bstate\s+(?:house|assembly)\s+(\d{1,3})\b/i,
+    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?(?:house|assembly)\b/i,
     /\brep(?:resentative)?\.?\s+dist(?:rict)?\.?\s+(\d{1,3})\b/i,
   ];
 
   for (const pattern of stateHousePatterns) {
     const match = query.match(pattern);
     if (match) {
-      result.stateHouse = `pa-house-${match[1]}`;
+      result.stateHouse = `${abbrLower}-house-${match[1]}`;
       result.districtLevel = 'state_house';
       break;
     }

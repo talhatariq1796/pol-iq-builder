@@ -12,6 +12,7 @@
  */
 
 import type { MapCommand, MapStyle } from './types';
+import { activeState } from '@/lib/config/activeState';
 
 // ============================================================================
 // Types
@@ -73,33 +74,15 @@ export interface ArcGISMapView {
 // ============================================================================
 
 const DEFAULT_CONFIG: MapBridgeConfig = {
-  // Ingham County, Michigan center
-  defaultCenter: [-84.555, 42.732],
-  defaultZoom: 10,
+  defaultCenter: activeState.map.defaultCenter,
+  defaultZoom: activeState.map.defaultZoom,
   animationDuration: 1000,
   maxHighlightedFeatures: 100,
 };
 
-// Precinct boundaries for Ingham County (approximate)
-const INGHAM_COUNTY_BOUNDS: [number, number, number, number] = [
-  -84.85, // west
-  42.42,  // south
-  -84.15, // east
-  43.00,  // north
-];
-
-// Known jurisdiction centroids (for flyTo commands)
-const JURISDICTION_CENTROIDS: Record<string, [number, number]> = {
-  'lansing': [-84.5555, 42.7325],
-  'east_lansing': [-84.4839, 42.7369],
-  'meridian': [-84.4134, 42.7019],
-  'delhi': [-84.5864, 42.6339],
-  'williamston': [-84.2831, 42.6889],
-  'mason': [-84.4434, 42.5792],
-  'holt': [-84.5153, 42.6406],
-  'okemos': [-84.4275, 42.7219],
-  'haslett': [-84.4008, 42.7494],
-};
+// Known jurisdiction centroids (for flyTo commands) — from active state config
+const JURISDICTION_CENTROIDS: Record<string, [number, number]> =
+  activeState.map.jurisdictionCentroids;
 
 // ============================================================================
 // MapCommandBridge Implementation
@@ -595,10 +578,13 @@ export class MapCommandBridge {
   }
 
   /**
-   * Get bounds for Ingham County
+   * Get approximate bounding box for the active state.
+   * Derived from the default center with a reasonable padding.
    */
   static getInghamCountyBounds(): [number, number, number, number] {
-    return INGHAM_COUNTY_BOUNDS;
+    const [lng, lat] = activeState.map.defaultCenter;
+    const pad = activeState.map.defaultZoom < 7 ? 5 : 0.4;
+    return [lng - pad, lat - pad, lng + pad, lat + pad];
   }
 
   /**

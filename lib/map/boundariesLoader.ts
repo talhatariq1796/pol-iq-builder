@@ -11,9 +11,9 @@
 
 import { politicalDataService } from "@/lib/services/PoliticalDataService";
 import { loadGeoJSONMerged } from "@/lib/map/geojsonMergeLoader";
+import { activeState } from "@/lib/config/activeState";
 
-const DEFAULT_PRECINCT_GEOJSON =
-  "/data/political/pensylvania/precincts/pa_2020_presidential.geojson";
+const DEFAULT_PRECINCT_GEOJSON = activeState.paths.precinctBoundaries;
 
 /** Minimum number of features expected from a valid precinct boundary file */
 const MIN_EXPECTED_FEATURES = 10;

@@ -7,6 +7,7 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import { isPAPoliticalRegion } from '@/lib/political/formatPoliticalDistrictLabel';
+import { activeState } from '@/lib/config/activeState';
 
 const CANDIDATE_PATTERNS: QueryPattern[] = [
   {
@@ -197,37 +198,39 @@ export class CandidateHandler implements NLPHandler {
   }
 
   /**
-   * Pennsylvania deployment: skip legacy Michigan demo candidate tables; steer users to precinct analytics.
+   * Current deployment: steer users to precinct analytics (demo candidate bios not yet updated).
    */
   private paDeploymentCandidateResponse(): HandlerResult {
+    const s = activeState.name;
+    const abbr = activeState.abbreviation;
     return {
       success: true,
       response: [
-        '**Pennsylvania workspace**',
+        `**${s} workspace**`,
         '',
-        'Candidate bios and sample race tables in this module were written for a legacy Michigan demo. This app’s map and metrics use **Pennsylvania precinct data**.',
+        `Candidate bios in this module are demo placeholders. The app's map and metrics use **${s} precinct data**.`,
         '',
-        'Ask about **precincts, districts (PA House / Senate / Congress), swing potential, GOTV, persuasion, or demographics**.',
+        `Ask about **precincts, districts (${abbr} House / Senate / Congress), swing potential, GOTV, persuasion, or demographics**.`,
         '',
-        'For official filings and candidate lists, use the [Pennsylvania Department of State](https://www.dos.pa.gov) and [FEC](https://www.fec.gov).',
+        'For official filings and candidate lists, use the [FEC](https://www.fec.gov).',
       ].join('\n'),
       suggestedActions: [
         {
-          id: 'pa-swing',
+          id: 'state-swing',
           label: 'Top swing precincts',
-          action: 'Which Pennsylvania precincts have the highest swing potential?',
+          action: `Which ${s} precincts have the highest swing potential?`,
           priority: 1,
         },
         {
-          id: 'pa-competitive',
+          id: 'state-competitive',
           label: 'Competitive lean',
-          action: 'Show areas with partisan lean between -5 and +5 in Pennsylvania',
+          action: `Show areas with partisan lean between -5 and +5 in ${s}`,
           priority: 2,
         },
         {
-          id: 'pa-hd',
-          label: 'State House example',
-          action: 'Show State House 171 in Pennsylvania',
+          id: 'state-gotv',
+          label: 'High GOTV priority',
+          action: `Show high GOTV priority precincts in ${s}`,
           priority: 3,
         },
       ],

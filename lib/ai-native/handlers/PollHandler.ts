@@ -187,7 +187,7 @@ export class PollHandler implements NLPHandler {
     pipeline: ReturnType<typeof getPollIngestionPipeline>,
     startTime: number
   ): Promise<HandlerResult> {
-    const aggregates = await pipeline.getMichiganAggregates();
+    const aggregates = await pipeline.getStateAggregates();
 
     if (aggregates.length === 0) {
       return {
@@ -241,7 +241,7 @@ export class PollHandler implements NLPHandler {
     }
 
     // Filter by race type if specified
-    const aggregates = await pipeline.getMichiganAggregates();
+    const aggregates = await pipeline.getStateAggregates();
     let filtered = aggregates;
 
     if (entities.raceType) {
@@ -284,7 +284,7 @@ export class PollHandler implements NLPHandler {
     const competitive = await pipeline.getCompetitiveRaces();
 
     if (competitive.length === 0) {
-      const aggregates = await pipeline.getMichiganAggregates();
+      const aggregates = await pipeline.getStateAggregates();
       if (aggregates.length === 0) {
         return {
           success: true,
@@ -332,7 +332,7 @@ export class PollHandler implements NLPHandler {
     pipeline: ReturnType<typeof getPollIngestionPipeline>,
     startTime: number
   ): Promise<HandlerResult> {
-    const aggregates = await pipeline.getMichiganAggregates();
+    const aggregates = await pipeline.getStateAggregates();
 
     if (aggregates.length === 0) {
       return {
