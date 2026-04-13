@@ -21,7 +21,6 @@ import { BHHSComponentLibrary } from "../components/BHHSComponentLibrary";
 import { PerformanceMonitor } from "../monitoring/PerformanceMonitor";
 import { globalErrorTracker } from "../monitoring/ErrorTracker";
 import type {
-  PoliticalProfileReport,
   PoliticalAreaSelection,
   PrecinctPoliticalScores,
   ElectionData,
