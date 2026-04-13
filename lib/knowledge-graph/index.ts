@@ -8,7 +8,6 @@
  * - "Show connections between Haley Stevens and Oakland County"
  */
 
-export * from './types';
-export { KnowledgeGraph, getKnowledgeGraph } from './KnowledgeGraph';
-export { EntityExtractor, getEntityExtractor } from './EntityExtractor';
-export { GraphPopulator, getGraphPopulator } from './GraphPopulator';
+export * from "./types";
+export { KnowledgeGraph, getKnowledgeGraph } from "./KnowledgeGraph";
+export { GraphPopulator, getGraphPopulator } from "./GraphPopulator";

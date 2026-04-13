@@ -7,7 +7,6 @@ import type { RAGDocument, CurrentIntelDocument } from "../rag";
 import type {
   Entity,
   CandidateEntity,
-  OfficeEntity,
   IssueEntity,
 } from "../knowledge-graph/types";
 import type { CandidateContext } from "../knowledge-graph/CandidateContextService";

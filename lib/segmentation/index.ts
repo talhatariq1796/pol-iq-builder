@@ -14,23 +14,16 @@ export { SegmentEngine } from "./SegmentEngine";
 // Storage/persistence
 export { SegmentStore, segmentStore } from "./SegmentStore";
 
-// Phase 1: Electoral Filtering
-export { ElectoralFilter } from "./ElectoralFilter";
-
-// Phase 2: Election History Filtering
-export { ElectionHistoryFilter } from "./ElectionHistoryFilter";
-
 // Phase 3: Export Manager & Exporters
 export { ExportManager } from "./ExportManager";
-export {
-  CSVExporter,
-  VANExporter,
-  PhoneListExporter,
-  DigitalAdsExporter,
-} from "./exporters";
+export { CSVExporter } from "./exporters";
 
-// Phase 4: Tapestry Segmentation
-export { TapestryFilter } from "./TapestryFilter";
+export {
+  defaultSegments,
+  getPreset,
+  getAllPresets,
+  isPreset,
+} from "./presets/default-segments";
 
 // Types
 export type {

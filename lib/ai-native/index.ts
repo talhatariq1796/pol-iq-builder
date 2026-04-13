@@ -1,8 +1,11 @@
-export * from './types';
-export * from './types/unified-state';
+export * from "./types";
+export * from "./types/unified-state";
 
 // Application State Manager
-export { default as ApplicationStateManager, getStateManager } from './ApplicationStateManager';
+export {
+  default as ApplicationStateManager,
+  getStateManager,
+} from "./ApplicationStateManager";
 export type {
   ApplicationState,
   MapState as AppMapState,
@@ -17,23 +20,28 @@ export type {
   StateEventType,
   StateEvent,
   StateListener,
-} from './ApplicationStateManager';
+} from "./ApplicationStateManager";
 
 // Suggestion Engine
-export { default as SuggestionEngine, getSuggestionEngine } from './SuggestionEngine';
-
-export { MapCommandBridge, mapCommandBridge } from './MapCommandBridge';
+export {
+  default as SuggestionEngine,
+  getSuggestionEngine,
+} from "./SuggestionEngine";
 
 // UI Hooks
 
-export { useToolUrlParams, hasUrlParams, buildQueryString } from './hooks/useToolUrlParams';
+export {
+  useToolUrlParams,
+  hasUrlParams,
+  buildQueryString,
+} from "./hooks/useToolUrlParams";
 
 // Navigation
 export {
   CrossToolNavigator,
   navigateToSegments,
   navigateToComparison,
-} from './navigation/CrossToolNavigator';
+} from "./navigation/CrossToolNavigator";
 
 // Performance Utilities
 export {
@@ -49,7 +57,7 @@ export {
   MemoCache,
   PreloadManager,
   preloadManager,
-} from './performance';
+} from "./performance";
 
 // NLP Handlers
 export {
@@ -59,7 +67,7 @@ export {
   canHandleQuery,
   segmentationHandler,
   reportHandler,
-} from './handlers';
+} from "./handlers";
 
 // Re-export commonly used types
 export type {
@@ -71,20 +79,10 @@ export type {
   ToolResult,
   ParsedQuery,
   Citation,
-} from './types';
-
-export type {
-  MapState,
-  MapBridgeConfig,
-  MapEvent,
-} from './MapCommandBridge';
-
+} from "./types";
 
 // Performance Types
-export type {
-  VirtualScrollConfig,
-  VirtualScrollResult,
-} from './performance';
+export type { VirtualScrollConfig, VirtualScrollResult } from "./performance";
 
 // NLP Handler Types
 export type {
@@ -94,14 +92,12 @@ export type {
   ExtractedEntities,
   HandlerResult,
   QueryPattern,
-} from './handlers';
+} from "./handlers";
 
 // Navigation Types
-export type {
-  ToolUrlParams,
-} from './hooks/useToolUrlParams';
+export type { ToolUrlParams } from "./hooks/useToolUrlParams";
 
 export type {
   NavigableTool,
   NavigationContext,
-} from './navigation/CrossToolNavigator';
+} from "./navigation/CrossToolNavigator";

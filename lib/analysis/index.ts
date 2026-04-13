@@ -1,5 +1,4 @@
 // Main exports from the Analysis Engine system
-export { EndpointRouter } from "./EndpointRouter";
 export { StateManager } from "./StateManager";
 export { ConfigurationManager } from "./ConfigurationManager";
 

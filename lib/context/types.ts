@@ -5,9 +5,18 @@
  * RAG documents and Knowledge Graph entities to all AI interactions.
  */
 
-import type { RAGDocument, CurrentIntelDocument, DataFileCitation } from '../rag';
-import type { Entity, Relationship, CandidateEntity, OfficeEntity, IssueEntity } from '../knowledge-graph/types';
-import type { CandidateContext } from '../knowledge-graph/CandidateContextService';
+import type {
+  RAGDocument,
+  CurrentIntelDocument,
+  DataFileCitation,
+} from "../rag";
+import type {
+  Entity,
+  Relationship,
+  OfficeEntity,
+  IssueEntity,
+} from "../knowledge-graph/types";
+import type { CandidateContext } from "../knowledge-graph/CandidateContextService";
 
 /**
  * RAG content retrieved for a query
@@ -35,11 +44,11 @@ export interface GraphContent {
  * Relevance metadata for retrieved content
  */
 export interface RelevanceMetadata {
-  ragScore: number;       // 0-1, how relevant RAG content is
-  graphScore: number;     // 0-1, how relevant graph content is
-  overallScore: number;   // Combined relevance score
+  ragScore: number; // 0-1, how relevant RAG content is
+  graphScore: number; // 0-1, how relevant graph content is
+  overallScore: number; // Combined relevance score
   shouldInclude: boolean; // Whether to include in response
-  reasons: string[];      // Why content was included/excluded
+  reasons: string[]; // Why content was included/excluded
 }
 
 /**
@@ -49,7 +58,7 @@ export interface EnrichmentContext {
   rag: RAGContent;
   graph: GraphContent;
   relevance: RelevanceMetadata;
-  formattedContext: string;  // Combined formatted context for AI prompts
+  formattedContext: string; // Combined formatted context for AI prompts
   timestamp: string;
 }
 
@@ -60,7 +69,7 @@ export interface EnrichmentOptions {
   // Query context
   intent?: string;
   jurisdiction?: string;
-  districtType?: 'state_house' | 'state_senate' | 'congressional' | 'county';
+  districtType?: "state_house" | "state_senate" | "congressional" | "county";
   districtNumber?: string;
   precincts?: string[];
   candidates?: string[];
@@ -85,10 +94,10 @@ export interface EnrichmentOptions {
  * Default enrichment options
  */
 export const DEFAULT_ENRICHMENT_OPTIONS: Required<EnrichmentOptions> = {
-  intent: '',
-  jurisdiction: 'Pennsylvania',
-  districtType: 'county',
-  districtNumber: '',
+  intent: "",
+  jurisdiction: "Pennsylvania",
+  districtType: "county",
+  districtNumber: "",
   precincts: [],
   candidates: [],
   topics: [],
@@ -106,12 +115,12 @@ export const DEFAULT_ENRICHMENT_OPTIONS: Required<EnrichmentOptions> = {
  * Relevance factors used for scoring
  */
 export interface RelevanceFactors {
-  directMention: boolean;      // Query mentions entity directly
-  jurisdictionMatch: boolean;  // Entity is in queried jurisdiction
-  districtMatch: boolean;      // Entity is for queried district
-  temporalRelevance: number;   // 0-1 based on recency
-  topicMatch: number;          // 0-1 based on keyword overlap
-  typeMatch: boolean;          // Entity type matches query intent
+  directMention: boolean; // Query mentions entity directly
+  jurisdictionMatch: boolean; // Entity is in queried jurisdiction
+  districtMatch: boolean; // Entity is for queried district
+  temporalRelevance: number; // 0-1 based on recency
+  topicMatch: number; // 0-1 based on keyword overlap
+  typeMatch: boolean; // Entity type matches query intent
 }
 
 /**

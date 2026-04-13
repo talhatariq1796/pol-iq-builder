@@ -86,12 +86,6 @@ const STRATEGIC_INSIGHTS: Record<string, (data: Record<string, unknown>) => stri
     return `**Strategic Assessment:** District competitiveness requires balanced turnout and persuasion investment.`;
   },
 
-  scenario_turnout: (data) => {
-    const change = Number(data.turnoutChange) || 0;
-    const impact = String(data.voteImpact || 'unknown');
-    return `**Scenario Impact:** A ${change > 0 ? '+' : ''}${change}% turnout shift would ${impact}. Plan accordingly.`;
-  },
-
   election_trends: (data) => {
     const trend = data.trend || 'stable';
     return `**Trend Insight:** The ${trend} trend suggests focusing on ${trend === 'shifting' ? 'persuadable voters' : 'base mobilization'}.`;

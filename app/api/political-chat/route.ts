@@ -11,40 +11,51 @@
  * and data source documentation, with citation support.
  */
 
-import { NextResponse } from 'next/server';
-import { NextRequest } from 'next/server';
-import { Anthropic } from '@anthropic-ai/sdk';
-import { politicalQueryRouter, ParsedPoliticalQuery } from '@/lib/analysis/PoliticalQueryRouter';
+import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { Anthropic } from "@anthropic-ai/sdk";
+import {
+  politicalQueryRouter,
+  ParsedPoliticalQuery,
+} from "@/lib/analysis/PoliticalQueryRouter";
 import {
   politicalDataService,
   type PrecinctRankingMetric,
-} from '@/lib/services/PoliticalDataService';
-import { getDocumentRetriever } from '@/lib/rag';
-import { getKnowledgeGraph, getGraphPopulator, Entity, Relationship } from '@/lib/knowledge-graph';
-import { enrich, formatForSystemPrompt as formatEnrichmentForSystemPrompt, type EnrichmentContext } from '@/lib/context';
-import type { MapCommand } from '@/lib/ai-native/types';
-import { resolveClaudeModel } from '@/lib/ai/claudeModel';
-import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+} from "@/lib/services/PoliticalDataService";
+import { getDocumentRetriever } from "@/lib/rag";
+import {
+  getKnowledgeGraph,
+  getGraphPopulator,
+  Entity,
+} from "@/lib/knowledge-graph";
+import {
+  enrich,
+  formatForSystemPrompt as formatEnrichmentForSystemPrompt,
+  type EnrichmentContext,
+} from "@/lib/context";
+import type { MapCommand } from "@/lib/ai-native/types";
+import { resolveClaudeModel } from "@/lib/ai/claudeModel";
+import { getPoliticalRegionEnv } from "@/lib/political/politicalRegionConfig";
 import {
   extractActionDirectives,
   stripActionDirectives,
-} from '@/lib/ai/stripActionDirectives';
+} from "@/lib/ai/stripActionDirectives";
 import type {
   IncomeBucketsPartisanLean,
   PrecinctCanvassingEfficiencyRank,
   PrecinctElectionShiftRank,
   PrecinctTurnoutTrendRank,
   TurnoutTrendExtremesResult,
-} from '@/types/political';
-import { collectDataPrecinctIdsForQuery } from '@/lib/political/politicalChatExportIds';
+} from "@/types/political";
+import { collectDataPrecinctIdsForQuery } from "@/lib/political/politicalChatExportIds";
 import {
   wantsCanvassingEfficiencyQuery,
   wantsElectionShiftQuery,
   wantsTurnoutTrendQuery,
-} from '@/lib/political/politicalChatQueryFlags';
+} from "@/lib/political/politicalChatQueryFlags";
 
 export const maxDuration = 120;
-export const fetchCache = 'force-no-store';
+export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 /** Client-supplied geographic scope for NL chat (political-ai escalation). */
@@ -59,11 +70,11 @@ export interface ChatMapSelection {
 }
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
 });
 
 interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 
@@ -74,7 +85,7 @@ interface ChatMessage {
 async function formatSelectedPrecinctSnapshot(
   selectedLabel: string,
   jurisdictionHint?: string,
-  mapKey?: string
+  mapKey?: string,
 ): Promise<string | null> {
   try {
     await politicalDataService.initialize();
@@ -87,14 +98,16 @@ async function formatSelectedPrecinctSnapshot(
       u = await politicalDataService.getUnifiedPrecinct(selectedLabel.trim());
     }
     if (!u) return null;
-    const isPA = getPoliticalRegionEnv().stateFips === '42';
-    const modeledLeanDisplay = isPA ? -u.electoral.partisanLean : u.electoral.partisanLean;
+    const isPA = getPoliticalRegionEnv().stateFips === "42";
+    const modeledLeanDisplay = isPA
+      ? -u.electoral.partisanLean
+      : u.electoral.partisanLean;
     const leanStr =
       modeledLeanDisplay >= 0
         ? `D+${modeledLeanDisplay.toFixed(1)}`
         : `R+${Math.abs(modeledLeanDisplay).toFixed(1)}`;
 
-    let electionBlock = '';
+    let electionBlock = "";
     const data = await politicalDataService.getPrecinctDataFileFormat();
     const keys = Object.keys(data.precincts);
     const resolvedFromKey =
@@ -103,7 +116,8 @@ async function formatSelectedPrecinctSnapshot(
         : trimmedKey
           ? await politicalDataService.resolvePrecinctMapKey(trimmedKey)
           : null;
-    const resolvedFromLabel = await politicalDataService.resolvePrecinctMapKey(selectedLabel);
+    const resolvedFromLabel =
+      await politicalDataService.resolvePrecinctMapKey(selectedLabel);
     const canon =
       resolvedFromKey ||
       resolvedFromLabel ||
@@ -113,13 +127,13 @@ async function formatSelectedPrecinctSnapshot(
       }) ||
       keys.find((k) => {
         const pr = data.precincts[k];
-        const nm = (pr.name || '').toLowerCase();
+        const nm = (pr.name || "").toLowerCase();
         return nm && selectedLabel.toLowerCase().includes(nm);
       });
     const pRow = canon ? data.precincts[canon] : undefined;
-    const e24 = pRow?.elections?.['2024'];
+    const e24 = pRow?.elections?.["2024"];
     if (e24) {
-      electionBlock = `\n- **2024 presidential (reported):** Dem ${e24.demPct.toFixed(1)}%, Rep ${e24.repPct.toFixed(1)}%, margin (Dem−Rep) **${e24.margin >= 0 ? '+' : ''}${e24.margin.toFixed(1)}** pp.`;
+      electionBlock = `\n- **2024 presidential (reported):** Dem ${e24.demPct.toFixed(1)}%, Rep ${e24.repPct.toFixed(1)}%, margin (Dem−Rep) **${e24.margin >= 0 ? "+" : ""}${e24.margin.toFixed(1)}** pp.`;
     }
 
     const rawTurnout = u.electoral.avgTurnout ?? 0;
@@ -127,10 +141,10 @@ async function formatSelectedPrecinctSnapshot(
     const turnoutLine =
       turnoutPct > 0.05 && turnoutPct <= 100.5
         ? `\n- **Historical avg turnout** (2020–2024 presidential, reported): **${turnoutPct.toFixed(1)}%**`
-        : '';
+        : "";
 
     return `## Selected precinct — authoritative metrics (use these; do not contradict)
-**${u.name}** (${u.jurisdiction || jurisdictionHint || 'jurisdiction unknown'})
+**${u.name}** (${u.jurisdiction || jurisdictionHint || "jurisdiction unknown"})
 - **Modeled partisan lean** (IQbuilder / targeting scores; positive = Democratic): **${leanStr}**
 - Swing: ${u.electoral.swingPotential}/100; GOTV: ${u.targeting.gotvPriority}/100; Persuasion: ${u.targeting.persuasionOpportunity}/100${turnoutLine}${electionBlock}
 
@@ -141,24 +155,28 @@ When the user asks for a "profile" or "lean", use **modeled lean** above for con
 }
 
 export async function POST(req: NextRequest) {
-  console.log('[Political Chat API] Endpoint called');
+  console.log("[Political Chat API] Endpoint called");
 
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const messages = body.messages;
     const includeData = body.includeData !== false;
-    const context = typeof body.context === 'string' ? body.context : undefined;
-    const currentQuery = typeof body.currentQuery === 'string' ? body.currentQuery : undefined;
+    const context = typeof body.context === "string" ? body.context : undefined;
+    const currentQuery =
+      typeof body.currentQuery === "string" ? body.currentQuery : undefined;
     const userContext = body.userContext;
     const mapSelection = body.mapSelection as ChatMapSelection | undefined;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Messages array is required" },
+        { status: 400 },
+      );
     }
 
     // Log context if provided (Phase 3 - Claude Integration)
     if (context) {
-      console.log('[Political Chat API] Session context provided:', {
+      console.log("[Political Chat API] Session context provided:", {
         hasContext: !!context,
         contextLength: context?.length || 0,
       });
@@ -166,16 +184,19 @@ export async function POST(req: NextRequest) {
 
     // Get the latest user message
     const latestMessage = messages[messages.length - 1];
-    if (latestMessage.role !== 'user') {
-      return NextResponse.json({ error: 'Last message must be from user' }, { status: 400 });
+    if (latestMessage.role !== "user") {
+      return NextResponse.json(
+        { error: "Last message must be from user" },
+        { status: 400 },
+      );
     }
 
     const userQuery = latestMessage.content;
-    console.log('[Political Chat API] User query:', userQuery);
+    console.log("[Political Chat API] User query:", userQuery);
 
     // Parse the query using PoliticalQueryRouter
     const routeResult = politicalQueryRouter.parseQuery(userQuery);
-    console.log('[Political Chat API] Query parsed:', {
+    console.log("[Political Chat API] Query parsed:", {
       type: routeResult.parsed.type,
       handler: routeResult.handler,
       locations: routeResult.parsed.locationNames,
@@ -184,15 +205,18 @@ export async function POST(req: NextRequest) {
 
     // Fetch relevant data based on parsed query (always attach college+precinct rankings when asked — low router confidence used to yield empty context and Claude denied we had data)
     const wantsCollegePrecinctContext =
-      /\b(college|bachelor|educated|education\s+attainment)\b/i.test(userQuery) &&
-      /\bprecincts?\b/i.test(userQuery);
+      /\b(college|bachelor|educated|education\s+attainment)\b/i.test(
+        userQuery,
+      ) && /\bprecincts?\b/i.test(userQuery);
     const wantsIncomeLeanBuckets =
-      /\b(income|affluence|median\s+household|household\s+income)\b/i.test(userQuery) &&
-      /\b(partisan|political\s+)?lean\b/i.test(userQuery);
+      /\b(income|affluence|median\s+household|household\s+income)\b/i.test(
+        userQuery,
+      ) && /\b(partisan|political\s+)?lean\b/i.test(userQuery);
     const wantsElectionShiftContext = wantsElectionShiftQuery(userQuery);
     const wantsTurnoutTrendContext = wantsTurnoutTrendQuery(userQuery);
-    const wantsCanvassingEfficiencyContext = wantsCanvassingEfficiencyQuery(userQuery);
-    let contextData = '';
+    const wantsCanvassingEfficiencyContext =
+      wantsCanvassingEfficiencyQuery(userQuery);
+    let contextData = "";
     let dataPrecinctIds: string[] | undefined;
 
     const needsDataContext =
@@ -202,13 +226,16 @@ export async function POST(req: NextRequest) {
       wantsElectionShiftContext ||
       wantsTurnoutTrendContext ||
       wantsCanvassingEfficiencyContext ||
-      Boolean(mapSelection?.selectedPrecinctName || mapSelection?.selectedPrecinctMapKey);
+      Boolean(
+        mapSelection?.selectedPrecinctName ||
+        mapSelection?.selectedPrecinctMapKey,
+      );
 
     if (includeData) {
       const [ctx, exportIds] = await Promise.all([
         needsDataContext
           ? fetchDataForQuery(routeResult.parsed, mapSelection, userQuery)
-          : Promise.resolve(''),
+          : Promise.resolve(""),
         collectDataPrecinctIdsForQuery(routeResult.parsed, userQuery),
       ]);
       contextData = ctx;
@@ -230,24 +257,28 @@ export async function POST(req: NextRequest) {
 
     // Unified Context Enrichment: RAG + Knowledge Graph in one call
     let enrichmentContext: EnrichmentContext | null = null;
-    let enrichmentPromptContext = '';
+    let enrichmentPromptContext = "";
     try {
       // Determine enrichment options from parsed query
-      const jurisdiction = routeResult.parsed.locationNames.length > 0
-        ? routeResult.parsed.locationNames[0]
-        : getPoliticalRegionEnv().summaryAreaName;
+      const jurisdiction =
+        routeResult.parsed.locationNames.length > 0
+          ? routeResult.parsed.locationNames[0]
+          : getPoliticalRegionEnv().summaryAreaName;
 
       enrichmentContext = await enrich(userQuery, {
         jurisdiction,
-        includeMethodology: userQuery.toLowerCase().includes('how') || userQuery.toLowerCase().includes('why'),
+        includeMethodology:
+          userQuery.toLowerCase().includes("how") ||
+          userQuery.toLowerCase().includes("why"),
         includeCurrentIntel: true,
         includeCandidates: true,
         includeIssues: true,
       });
 
       if (enrichmentContext.relevance.shouldInclude) {
-        enrichmentPromptContext = formatEnrichmentForSystemPrompt(enrichmentContext);
-        console.log('[Political Chat API] Unified enrichment:', {
+        enrichmentPromptContext =
+          formatEnrichmentForSystemPrompt(enrichmentContext);
+        console.log("[Political Chat API] Unified enrichment:", {
           ragDocs: enrichmentContext.rag.documents.length,
           intel: enrichmentContext.rag.currentIntel.length,
           candidates: enrichmentContext.graph.candidates.length,
@@ -255,20 +286,24 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (enrichmentError) {
-      console.warn('[Political Chat API] Unified enrichment failed:', enrichmentError);
+      console.warn(
+        "[Political Chat API] Unified enrichment failed:",
+        enrichmentError,
+      );
       // Continue without enrichment context
     }
 
     // Legacy: Keep separate calls as fallback (can be removed once unified service is proven)
-    let ragContext = '';
-    let graphContext = '';
+    let ragContext = "";
+    let graphContext = "";
     if (!enrichmentPromptContext) {
       // Fallback to legacy RAG retrieval
       try {
         const retriever = getDocumentRetriever();
-        const jurisdiction = routeResult.parsed.locationNames.length > 0
-          ? routeResult.parsed.locationNames[0]
-          : undefined;
+        const jurisdiction =
+          routeResult.parsed.locationNames.length > 0
+            ? routeResult.parsed.locationNames[0]
+            : undefined;
 
         const retrievalResult = await retriever.retrieve(userQuery, {
           maxDocs: 2,
@@ -276,30 +311,48 @@ export async function POST(req: NextRequest) {
           jurisdiction,
         });
 
-        if (retrievalResult.documents.length > 0 || retrievalResult.currentIntel.length > 0) {
+        if (
+          retrievalResult.documents.length > 0 ||
+          retrievalResult.currentIntel.length > 0
+        ) {
           ragContext = retriever.formatForSystemPrompt(retrievalResult);
         }
       } catch (ragError) {
-        console.warn('[Political Chat API] Legacy RAG retrieval failed:', ragError);
+        console.warn(
+          "[Political Chat API] Legacy RAG retrieval failed:",
+          ragError,
+        );
       }
 
       // Fallback to legacy Knowledge Graph
       try {
-        const graphResult = await getKnowledgeGraphContext(userQuery, routeResult.parsed);
+        const graphResult = await getKnowledgeGraphContext(
+          userQuery,
+          routeResult.parsed,
+        );
         if (graphResult.context) {
           graphContext = graphResult.context;
         }
       } catch (graphError) {
-        console.warn('[Political Chat API] Legacy Knowledge Graph failed:', graphError);
+        console.warn(
+          "[Political Chat API] Legacy Knowledge Graph failed:",
+          graphError,
+        );
       }
     }
 
-    const expertiseLevel = 'intermediate';
+    const expertiseLevel = "intermediate";
 
     // Build system prompt with political domain knowledge + enrichment context + Session context + Expertise context
     // Prefer unified enrichment, fall back to legacy if needed
-    const contextToUse = enrichmentPromptContext || (ragContext + graphContext);
-    const systemPrompt = buildPoliticalSystemPrompt(contextData, contextToUse, '', context, expertiseLevel);
+    const contextToUse = enrichmentPromptContext || ragContext + graphContext;
+    const systemPrompt = buildPoliticalSystemPrompt(
+      contextData,
+      contextToUse,
+      "",
+      context,
+      expertiseLevel,
+    );
 
     // Call Claude with political context
     const claudeMessages = messages.map((msg: ChatMessage) => ({
@@ -307,7 +360,7 @@ export async function POST(req: NextRequest) {
       content: msg.content,
     }));
 
-    console.log('[Political Chat API] Calling Claude...');
+    console.log("[Political Chat API] Calling Claude...");
     const response = await anthropic.messages.create({
       model: resolveClaudeModel(),
       max_tokens: 2000,
@@ -316,13 +369,18 @@ export async function POST(req: NextRequest) {
     });
 
     const content =
-      response.content[0]?.type === 'text' ? response.content[0].text : 'No response generated';
+      response.content[0]?.type === "text"
+        ? response.content[0].text
+        : "No response generated";
 
     // Parse action directives from Claude response and convert to mapCommands
-    const mapCommands = parseActionDirectivesToMapCommands(content, routeResult.parsed);
+    const mapCommands = parseActionDirectivesToMapCommands(
+      content,
+      routeResult.parsed,
+    );
     const contentForClient = stripActionDirectives(content);
 
-    console.log('[Political Chat API] Response generated successfully');
+    console.log("[Political Chat API] Response generated successfully");
     return NextResponse.json({
       content: contentForClient,
       dataPrecinctIds,
@@ -336,16 +394,21 @@ export async function POST(req: NextRequest) {
       },
       mapCommands,
       rag: {
-        documents: enrichmentContext?.rag.documents.map(d => d.id) || [],
-        currentIntel: enrichmentContext?.rag.currentIntel.map(d => d.id) || [],
-        citations: enrichmentContext?.rag.citations.map(c => ({
-          key: c.citation_key,
-          description: c.description,
-          source: c.source,
-        })) || [],
+        documents: enrichmentContext?.rag.documents.map((d) => d.id) || [],
+        currentIntel:
+          enrichmentContext?.rag.currentIntel.map((d) => d.id) || [],
+        citations:
+          enrichmentContext?.rag.citations.map((c) => ({
+            key: c.citation_key,
+            description: c.description,
+            source: c.source,
+          })) || [],
       },
       graph: {
-        entities: enrichmentContext?.graph.candidates.map(c => c.incumbent?.name || '').filter(Boolean) || [],
+        entities:
+          enrichmentContext?.graph.candidates
+            .map((c) => c.incumbent?.name || "")
+            .filter(Boolean) || [],
       },
       enrichment: {
         relevance: enrichmentContext?.relevance.overallScore || 0,
@@ -353,13 +416,13 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[Political Chat API] Error:', error);
+    console.error("[Political Chat API] Error:", error);
     return NextResponse.json(
       {
-        error: 'Chat API error',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: "Chat API error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -371,17 +434,17 @@ export async function POST(req: NextRequest) {
 async function fetchDataForQuery(
   parsed: ParsedPoliticalQuery,
   mapSelection?: ChatMapSelection,
-  userQuery?: string
+  userQuery?: string,
 ): Promise<string> {
   const dataParts: string[] = [];
 
   try {
     switch (parsed.type) {
-      case 'comparison': {
+      case "comparison": {
         if (parsed.locationNames.length >= 2) {
           const comparison = await politicalDataService.compareJurisdictions(
             parsed.locationNames[0],
-            parsed.locationNames[1]
+            parsed.locationNames[1],
           );
           if (comparison) {
             dataParts.push(formatComparison(comparison));
@@ -390,75 +453,91 @@ async function fetchDataForQuery(
         break;
       }
 
-      case 'ranking': {
+      case "ranking": {
         const precinctRankMetrics: PrecinctRankingMetric[] = [
-          'partisan_lean',
-          'swing_potential',
-          'gotv_priority',
-          'persuasion_opportunity',
-          'turnout',
-          'combined_score',
-          'college_pct',
+          "partisan_lean",
+          "swing_potential",
+          "gotv_priority",
+          "persuasion_opportunity",
+          "turnout",
+          "combined_score",
+          "college_pct",
         ];
         let rankablePrecinctMetric: PrecinctRankingMetric =
-          parsed.metric && precinctRankMetrics.includes(parsed.metric as PrecinctRankingMetric)
+          parsed.metric &&
+          precinctRankMetrics.includes(parsed.metric as PrecinctRankingMetric)
             ? (parsed.metric as PrecinctRankingMetric)
-            : 'swing_potential';
+            : "swing_potential";
         if (
-          rankablePrecinctMetric === 'swing_potential' &&
-          /\b(college|bachelor|educated|education\s+attainment)\b/i.test(parsed.originalQuery) &&
+          rankablePrecinctMetric === "swing_potential" &&
+          /\b(college|bachelor|educated|education\s+attainment)\b/i.test(
+            parsed.originalQuery,
+          ) &&
           /\bprecinct/i.test(parsed.originalQuery)
         ) {
-          rankablePrecinctMetric = 'college_pct';
+          rankablePrecinctMetric = "college_pct";
         }
 
         const jurisdictionRankMetrics = [
-          'partisan_lean',
-          'swing_potential',
-          'gotv_priority',
-          'persuasion_opportunity',
-          'turnout',
+          "partisan_lean",
+          "swing_potential",
+          "gotv_priority",
+          "persuasion_opportunity",
+          "turnout",
         ] as const;
         const rankableJurisdictionMetric =
-          parsed.metric && jurisdictionRankMetrics.includes(parsed.metric as (typeof jurisdictionRankMetrics)[number])
+          parsed.metric &&
+          jurisdictionRankMetrics.includes(
+            parsed.metric as (typeof jurisdictionRankMetrics)[number],
+          )
             ? (parsed.metric as (typeof jurisdictionRankMetrics)[number])
-            : 'swing_potential';
+            : "swing_potential";
 
         // "Areas" in a statewide ranking query means precinct-level rows (same as explicit "precincts")
         const wantsStatewidePrecincts =
           parsed.locationNames.length === 0 &&
-          (/\bprecincts?\b/i.test(parsed.originalQuery) || /\bareas?\b/i.test(parsed.originalQuery));
+          (/\bprecincts?\b/i.test(parsed.originalQuery) ||
+            /\bareas?\b/i.test(parsed.originalQuery));
 
         if (parsed.locationNames.length > 0) {
-          const rankings = await politicalDataService.rankPrecinctsInJurisdiction(
-            parsed.locationNames[0],
-            rankablePrecinctMetric,
-            parsed.ranking || 'highest',
-            parsed.limit || 10
+          const rankings =
+            await politicalDataService.rankPrecinctsInJurisdiction(
+              parsed.locationNames[0],
+              rankablePrecinctMetric,
+              parsed.ranking || "highest",
+              parsed.limit || 10,
+            );
+          dataParts.push(
+            formatPrecinctRankings(
+              parsed.locationNames[0],
+              rankings,
+              parsed.metric,
+            ),
           );
-          dataParts.push(formatPrecinctRankings(parsed.locationNames[0], rankings, parsed.metric));
         } else if (wantsStatewidePrecincts) {
           const rankings = await politicalDataService.rankPrecinctsStatewide(
             rankablePrecinctMetric,
-            parsed.ranking || 'highest',
-            parsed.limit || 15
+            parsed.ranking || "highest",
+            parsed.limit || 15,
           );
-          dataParts.push(formatStatewidePrecinctRankings(rankings, parsed.metric));
+          dataParts.push(
+            formatStatewidePrecinctRankings(rankings, parsed.metric),
+          );
         } else {
           const rankings = await politicalDataService.rankJurisdictionsByMetric(
             rankableJurisdictionMetric,
-            parsed.ranking || 'highest',
-            parsed.limit || 10
+            parsed.ranking || "highest",
+            parsed.limit || 10,
           );
           dataParts.push(formatJurisdictionRankings(rankings, parsed.metric));
         }
         break;
       }
 
-      case 'profile': {
+      case "profile": {
         if (parsed.locationNames.length > 0) {
           const profile = await politicalDataService.getJurisdictionAggregate(
-            parsed.locationNames[0]
+            parsed.locationNames[0],
           );
           if (profile) {
             dataParts.push(formatJurisdictionProfile(profile));
@@ -467,12 +546,13 @@ async function fetchDataForQuery(
         break;
       }
 
-      case 'aggregation':
-      case 'general': {
+      case "aggregation":
+      case "general": {
         // Provide general context
         if (parsed.locationNames.length > 0) {
           for (const location of parsed.locationNames.slice(0, 3)) {
-            const profile = await politicalDataService.getJurisdictionAggregate(location);
+            const profile =
+              await politicalDataService.getJurisdictionAggregate(location);
             if (profile) {
               dataParts.push(formatJurisdictionProfile(profile));
             }
@@ -488,68 +568,91 @@ async function fetchDataForQuery(
 
     if (
       dataParts.length === 0 &&
-      /\b(college|bachelor|educated|education\s+attainment)\b/i.test(parsed.originalQuery) &&
+      /\b(college|bachelor|educated|education\s+attainment)\b/i.test(
+        parsed.originalQuery,
+      ) &&
       /\bprecincts?\b/i.test(parsed.originalQuery)
     ) {
       const rankings = await politicalDataService.rankPrecinctsStatewide(
-        'college_pct',
-        'highest',
-        15
+        "college_pct",
+        "highest",
+        15,
       );
-      dataParts.push(formatStatewidePrecinctRankings(rankings, 'college_pct'));
+      dataParts.push(formatStatewidePrecinctRankings(rankings, "college_pct"));
     }
 
     if (
       userQuery &&
-      /\b(income|affluence|median\s+household|household\s+income)\b/i.test(userQuery) &&
+      /\b(income|affluence|median\s+household|household\s+income)\b/i.test(
+        userQuery,
+      ) &&
       /\b(partisan|political\s+)?lean\b/i.test(userQuery) &&
       mapSelection
     ) {
       // Prefer current map selection over stale IQ last-analysis precinct lists
-      if (mapSelection.selectedPrecinctName || mapSelection.selectedPrecinctMapKey) {
+      if (
+        mapSelection.selectedPrecinctName ||
+        mapSelection.selectedPrecinctMapKey
+      ) {
         const precinctLabel =
-          mapSelection.selectedPrecinctMapKey || mapSelection.selectedPrecinctName || '';
+          mapSelection.selectedPrecinctMapKey ||
+          mapSelection.selectedPrecinctName ||
+          "";
         const jurisdictionHint =
           mapSelection.selectedPrecinctJurisdiction ||
-          (await politicalDataService.getJurisdictionLabelForPrecinctKey(precinctLabel));
+          (await politicalDataService.getJurisdictionLabelForPrecinctKey(
+            precinctLabel,
+          ));
         if (jurisdictionHint) {
           const r =
-            await politicalDataService.getPartisanLeanByIncomeBucketsForJurisdiction(jurisdictionHint);
+            await politicalDataService.getPartisanLeanByIncomeBucketsForJurisdiction(
+              jurisdictionHint,
+            );
           if (r) {
             dataParts.push(
               formatIncomeBucketsPartisanLean(r, {
                 userFocusedPrecinct:
-                  mapSelection.selectedPrecinctName || mapSelection.selectedPrecinctMapKey,
-              })
+                  mapSelection.selectedPrecinctName ||
+                  mapSelection.selectedPrecinctMapKey,
+              }),
             );
           }
         } else {
-          const r = await politicalDataService.getPartisanLeanByIncomeBucketsForPrecinctNames(
-            [precinctLabel],
-            mapSelection.selectedPrecinctName || mapSelection.selectedPrecinctMapKey || precinctLabel
-          );
+          const r =
+            await politicalDataService.getPartisanLeanByIncomeBucketsForPrecinctNames(
+              [precinctLabel],
+              mapSelection.selectedPrecinctName ||
+                mapSelection.selectedPrecinctMapKey ||
+                precinctLabel,
+            );
           if (r) {
             dataParts.push(
-              formatIncomeBucketsPartisanLean(r, { singlePrecinctOnly: true })
+              formatIncomeBucketsPartisanLean(r, { singlePrecinctOnly: true }),
             );
           }
         }
       } else if (mapSelection.selectedPrecinctJurisdiction) {
-        const r = await politicalDataService.getPartisanLeanByIncomeBucketsForJurisdiction(
-          mapSelection.selectedPrecinctJurisdiction
-        );
+        const r =
+          await politicalDataService.getPartisanLeanByIncomeBucketsForJurisdiction(
+            mapSelection.selectedPrecinctJurisdiction,
+          );
         if (r) dataParts.push(formatIncomeBucketsPartisanLean(r));
-      } else if (mapSelection.lastAnalysisPrecinctNames && mapSelection.lastAnalysisPrecinctNames.length > 0) {
-        const r = await politicalDataService.getPartisanLeanByIncomeBucketsForPrecinctNames(
-          mapSelection.lastAnalysisPrecinctNames,
-          mapSelection.lastAnalysisAreaName || 'Selected area'
-        );
+      } else if (
+        mapSelection.lastAnalysisPrecinctNames &&
+        mapSelection.lastAnalysisPrecinctNames.length > 0
+      ) {
+        const r =
+          await politicalDataService.getPartisanLeanByIncomeBucketsForPrecinctNames(
+            mapSelection.lastAnalysisPrecinctNames,
+            mapSelection.lastAnalysisAreaName || "Selected area",
+          );
         if (r) dataParts.push(formatIncomeBucketsPartisanLean(r));
       }
     }
 
     if (userQuery && wantsElectionShiftQuery(userQuery)) {
-      const top = await politicalDataService.getTopPrecinctsByMultiYearMarginSwing(15);
+      const top =
+        await politicalDataService.getTopPrecinctsByMultiYearMarginSwing(15);
       if (top.length > 0) {
         dataParts.push(formatTopPrecinctsByMultiYearMarginSwing(top));
       }
@@ -563,51 +666,61 @@ async function fetchDataForQuery(
     }
 
     if (userQuery && wantsCanvassingEfficiencyQuery(userQuery)) {
-      const eff = await politicalDataService.getTopPrecinctsByCanvassingEfficiencyProxy(15);
+      const eff =
+        await politicalDataService.getTopPrecinctsByCanvassingEfficiencyProxy(
+          15,
+        );
       if (eff.length > 0) {
         dataParts.push(formatCanvassingEfficiencyPrecincts(eff));
       }
     }
   } catch (error) {
-    console.error('[Political Chat API] Error fetching data:', error);
-    dataParts.push('(Note: Some data could not be loaded)');
+    console.error("[Political Chat API] Error fetching data:", error);
+    dataParts.push("(Note: Some data could not be loaded)");
   }
 
-  if (mapSelection?.selectedPrecinctName || mapSelection?.selectedPrecinctMapKey) {
+  if (
+    mapSelection?.selectedPrecinctName ||
+    mapSelection?.selectedPrecinctMapKey
+  ) {
     const snap = await formatSelectedPrecinctSnapshot(
-      mapSelection.selectedPrecinctName || mapSelection.selectedPrecinctMapKey || '',
+      mapSelection.selectedPrecinctName ||
+        mapSelection.selectedPrecinctMapKey ||
+        "",
       mapSelection.selectedPrecinctJurisdiction,
-      mapSelection.selectedPrecinctMapKey
+      mapSelection.selectedPrecinctMapKey,
     );
     if (snap) dataParts.push(snap);
   }
 
-  return dataParts.join('\n\n');
+  return dataParts.join("\n\n");
 }
 
-function formatTopPrecinctsByMultiYearMarginSwing(rows: PrecinctElectionShiftRank[]): string {
+function formatTopPrecinctsByMultiYearMarginSwing(
+  rows: PrecinctElectionShiftRank[],
+): string {
   const area = getPoliticalRegionEnv().summaryAreaName;
   const lines = rows.map((r, i) => {
     const net = r.netMarginChange2020to2024;
     const netLabel =
-      net > 0.5 ? 'toward Dem' : net < -0.5 ? 'toward Rep' : 'roughly even';
-    return `${i + 1}. **${r.precinctName}** — cumulative |Δmargin| **${r.cumulativeAbsMarginSwing.toFixed(1)}** pp (margins 2020/2022/2024: ${r.margin2020}, ${r.margin2022}, ${r.margin2024}; net 2020→2024 ${net > 0 ? '+' : ''}${net.toFixed(1)} pp, ${netLabel})`;
+      net > 0.5 ? "toward Dem" : net < -0.5 ? "toward Rep" : "roughly even";
+    return `${i + 1}. **${r.precinctName}** — cumulative |Δmargin| **${r.cumulativeAbsMarginSwing.toFixed(1)}** pp (margins 2020/2022/2024: ${r.margin2020}, ${r.margin2022}, ${r.margin2024}; net 2020→2024 ${net > 0 ? "+" : ""}${net.toFixed(1)} pp, ${netLabel})`;
   });
   return `## Precincts with largest partisan margin movement (2020 → 2022 → 2024) — ${area}
 
 **Method:** President race Dem−Rep margin (percentage points). "Dramatic shift" here = **|margin₂₀₂₂−margin₂₀₂₀| + |margin₂₀₂₄−margin₂₀₂₂|**. Net column is margin₂₀₂₄ − margin₂₀₂₀ (positive = overall shift toward Democrats).
 
-${lines.join('\n')}`;
+${lines.join("\n")}`;
 }
 
 function formatTurnoutTrendRow(r: PrecinctTurnoutTrendRank, i: number): string {
   const dir =
     r.netChange2020to2024 > 0.2
-      ? 'higher turnout vs 2020'
+      ? "higher turnout vs 2020"
       : r.netChange2020to2024 < -0.2
-        ? 'lower turnout vs 2020'
-        : 'roughly flat';
-  return `${i + 1}. **${r.precinctName}** — 2020/2022/2024: ${r.turnout2020}% / ${r.turnout2022}% / ${r.turnout2024}% (net ${r.netChange2020to2024 > 0 ? '+' : ''}${r.netChange2020to2024.toFixed(1)} pp, ${dir})`;
+        ? "lower turnout vs 2020"
+        : "roughly flat";
+  return `${i + 1}. **${r.precinctName}** — 2020/2022/2024: ${r.turnout2020}% / ${r.turnout2022}% / ${r.turnout2024}% (net ${r.netChange2020to2024 > 0 ? "+" : ""}${r.netChange2020to2024.toFixed(1)} pp, ${dir})`;
 }
 
 function formatTurnoutTrendExtremes(t: TurnoutTrendExtremesResult): string {
@@ -615,12 +728,12 @@ function formatTurnoutTrendExtremes(t: TurnoutTrendExtremesResult): string {
   const { statewideMeanTurnout: m } = t;
   const incLines =
     t.largestIncreases.length > 0
-      ? t.largestIncreases.map((r, i) => formatTurnoutTrendRow(r, i)).join('\n')
-      : '_(No precincts with net increase 2020→2024 in this sample.)_';
+      ? t.largestIncreases.map((r, i) => formatTurnoutTrendRow(r, i)).join("\n")
+      : "_(No precincts with net increase 2020→2024 in this sample.)_";
   const decLines =
     t.largestDecreases.length > 0
-      ? t.largestDecreases.map((r, i) => formatTurnoutTrendRow(r, i)).join('\n')
-      : '_(No precincts with net decrease 2020→2024 in this sample.)_';
+      ? t.largestDecreases.map((r, i) => formatTurnoutTrendRow(r, i)).join("\n")
+      : "_(No precincts with net decrease 2020→2024 in this sample.)_";
   return `## Turnout trends (2020 → 2022 → 2024) — ${area}
 
 **Statewide mean turnout** (precincts with all three years): 2020 **${m.y2020}%**, 2022 **${m.y2022}%**, 2024 **${m.y2024}%**.
@@ -634,7 +747,9 @@ ${incLines}
 ${decLines}`;
 }
 
-function formatCanvassingEfficiencyPrecincts(rows: PrecinctCanvassingEfficiencyRank[]): string {
+function formatCanvassingEfficiencyPrecincts(
+  rows: PrecinctCanvassingEfficiencyRank[],
+): string {
   const area = getPoliticalRegionEnv().summaryAreaName;
   const lines = rows.map((r, i) => {
     return `${i + 1}. **${r.precinctName}** — est. **${r.estimatedDoors.toLocaleString()}** doors / **${r.estimatedPersuadableVoters.toLocaleString()}** persuadable → **${r.doorsPerPersuadableVoter.toFixed(3)}** doors per persuadable voter | registered **${r.registeredVoters.toLocaleString()}**, persuasion score **${r.persuasionOpportunity}**/100`;
@@ -643,7 +758,7 @@ function formatCanvassingEfficiencyPrecincts(rows: PrecinctCanvassingEfficiencyR
 
 **Data:** Registered voters and **persuasion_opportunity** from targeting scores. **Estimated doors** = registered ÷ 1.5 (same rule as canvassing reports). **Persuadable voters** = registered × (persuasion ÷ 100). This is **not** a household-level voter file — it is a **modeled** yield metric.
 
-${lines.join('\n')}`;
+${lines.join("\n")}`;
 }
 
 /**
@@ -659,7 +774,7 @@ function formatComparison(comparison: any): string {
 ### ${j1.jurisdictionName}
 - Precincts: ${j1.precinctCount}
 - Population: ${j1.totalPopulation.toLocaleString()}
-- Partisan Lean: ${j1.scores.partisanLean > 0 ? 'D+' : 'R+'}${Math.abs(j1.scores.partisanLean).toFixed(1)}
+- Partisan Lean: ${j1.scores.partisanLean > 0 ? "D+" : "R+"}${Math.abs(j1.scores.partisanLean).toFixed(1)}
 - Swing Potential: ${j1.scores.swingPotential.toFixed(1)}
 - GOTV Priority: ${j1.scores.gotvPriority.toFixed(1)}
 - Avg Turnout: ${j1.scores.averageTurnout.toFixed(1)}%
@@ -668,16 +783,16 @@ function formatComparison(comparison: any): string {
 ### ${j2.jurisdictionName}
 - Precincts: ${j2.precinctCount}
 - Population: ${j2.totalPopulation.toLocaleString()}
-- Partisan Lean: ${j2.scores.partisanLean > 0 ? 'D+' : 'R+'}${Math.abs(j2.scores.partisanLean).toFixed(1)}
+- Partisan Lean: ${j2.scores.partisanLean > 0 ? "D+" : "R+"}${Math.abs(j2.scores.partisanLean).toFixed(1)}
 - Swing Potential: ${j2.scores.swingPotential.toFixed(1)}
 - GOTV Priority: ${j2.scores.gotvPriority.toFixed(1)}
 - Avg Turnout: ${j2.scores.averageTurnout.toFixed(1)}%
 - Dominant Strategy: ${j2.dominantStrategy}
 
 ### Differences
-- Partisan Lean: ${diff.partisanLean > 0 ? '+' : ''}${diff.partisanLean.toFixed(1)} points
-- Swing Potential: ${diff.swingPotential > 0 ? '+' : ''}${diff.swingPotential.toFixed(1)}
-- Turnout: ${diff.turnout > 0 ? '+' : ''}${diff.turnout.toFixed(1)}%
+- Partisan Lean: ${diff.partisanLean > 0 ? "+" : ""}${diff.partisanLean.toFixed(1)} points
+- Swing Potential: ${diff.swingPotential > 0 ? "+" : ""}${diff.swingPotential.toFixed(1)}
+- Turnout: ${diff.turnout > 0 ? "+" : ""}${diff.turnout.toFixed(1)}%
 
 ### Summary
 ${comparison.summary}`;
@@ -686,26 +801,33 @@ ${comparison.summary}`;
 /**
  * Format precinct rankings for context
  */
-function formatPrecinctRankings(jurisdiction: string, rankings: any[], metric?: string): string {
+function formatPrecinctRankings(
+  jurisdiction: string,
+  rankings: any[],
+  metric?: string,
+): string {
   const metricLabel =
-    metric === 'college_pct'
-      ? '% with bachelor\'s degree or higher (modeled precinct estimate)'
-      : metric?.replace('_', ' ') || 'swing potential';
+    metric === "college_pct"
+      ? "% with bachelor's degree or higher (modeled precinct estimate)"
+      : metric?.replace("_", " ") || "swing potential";
   const lines = rankings.map(
     (r, i) =>
-      `${i + 1}. ${r.precinctName}: ${r.value.toFixed(1)} (${r.competitiveness}, ${r.strategy})`
+      `${i + 1}. ${r.precinctName}: ${r.value.toFixed(1)} (${r.competitiveness}, ${r.strategy})`,
   );
 
   return `## Top Precincts in ${jurisdiction} by ${metricLabel}
 
-${lines.join('\n')}`;
+${lines.join("\n")}`;
 }
 
-function formatStatewidePrecinctRankings(rankings: any[], metric?: string): string {
+function formatStatewidePrecinctRankings(
+  rankings: any[],
+  metric?: string,
+): string {
   const metricLabel =
-    metric === 'college_pct'
-      ? '% with bachelor\'s degree or higher (modeled precinct estimate)'
-      : metric?.replace(/_/g, ' ') || 'swing potential';
+    metric === "college_pct"
+      ? "% with bachelor's degree or higher (modeled precinct estimate)"
+      : metric?.replace(/_/g, " ") || "swing potential";
   const area = getPoliticalRegionEnv().summaryAreaName;
   if (rankings.length === 0) {
     return `## Precinct rankings (${area})
@@ -714,28 +836,27 @@ No precinct scores matched this metric. Targeting or political score data may st
   }
   const lines = rankings.map(
     (r, i) =>
-      `${i + 1}. ${r.precinctName}: ${r.value.toFixed(1)} (${r.competitiveness}, ${r.strategy})`
+      `${i + 1}. ${r.precinctName}: ${r.value.toFixed(1)} (${r.competitiveness}, ${r.strategy})`,
   );
   return `## Top Precincts (${area}) by ${metricLabel}
 
-${lines.join('\n')}`;
+${lines.join("\n")}`;
 }
 
 /**
  * Format jurisdiction rankings for context
  */
 function formatJurisdictionRankings(rankings: any[], metric?: string): string {
-  const metricLabel =
-    metric?.replace('_', ' ') || 'swing potential';
+  const metricLabel = metric?.replace("_", " ") || "swing potential";
   const lines = rankings.map(
     (r, i) =>
-      `${i + 1}. ${r.jurisdictionName}: ${r.value.toFixed(1)} (${r.precinctCount} precincts, ${r.dominantStrategy})`
+      `${i + 1}. ${r.jurisdictionName}: ${r.value.toFixed(1)} (${r.precinctCount} precincts, ${r.dominantStrategy})`,
   );
 
   const area = getPoliticalRegionEnv().summaryAreaName;
   return `## ${area} Jurisdictions Ranked by ${metricLabel}
 
-${lines.join('\n')}`;
+${lines.join("\n")}`;
 }
 
 /**
@@ -743,12 +864,13 @@ ${lines.join('\n')}`;
  */
 function formatJurisdictionProfile(profile: any): string {
   const lean = profile.scores.partisanLean;
-  const leanStr = lean > 0 ? `D+${lean.toFixed(1)}` : `R+${Math.abs(lean).toFixed(1)}`;
+  const leanStr =
+    lean > 0 ? `D+${lean.toFixed(1)}` : `R+${Math.abs(lean).toFixed(1)}`;
 
   return `## ${profile.jurisdictionName} Political Profile
 
 ### Overview
-- Type: ${profile.precinctCount > 10 ? 'Major' : profile.precinctCount > 5 ? 'Medium' : 'Small'} jurisdiction
+- Type: ${profile.precinctCount > 10 ? "Major" : profile.precinctCount > 5 ? "Medium" : "Small"} jurisdiction
 - Precincts: ${profile.precinctCount}
 - Est. Population: ${profile.totalPopulation.toLocaleString()}
 
@@ -777,7 +899,7 @@ function formatCountySummary(summary: any): string {
   return `## ${area} Political Summary
 
 - Total Precincts: ${summary.totalPrecincts}
-- Overall Lean: ${summary.overallLean > 0 ? 'D+' : 'R+'}${Math.abs(summary.overallLean).toFixed(1)}
+- Overall Lean: ${summary.overallLean > 0 ? "D+" : "R+"}${Math.abs(summary.overallLean).toFixed(1)}
 - Overall Turnout: ${summary.overallTurnout.toFixed(1)}%
 
 ### Score Ranges
@@ -791,29 +913,29 @@ Use map and filter tools to explore municipalities and counties across Pennsylva
 
 function formatIncomeBucketsPartisanLean(
   data: IncomeBucketsPartisanLean,
-  opts?: { userFocusedPrecinct?: string; singlePrecinctOnly?: boolean }
+  opts?: { userFocusedPrecinct?: string; singlePrecinctOnly?: boolean },
 ): string {
   const lines = data.buckets.map(
     (b) =>
-      `- ${b.incomeBand}: ${b.leanDisplay} average partisan lean (${b.precinctCount} precincts; population-weight ≈ ${b.populationWeight.toLocaleString()})`
+      `- ${b.incomeBand}: ${b.leanDisplay} average partisan lean (${b.precinctCount} precincts; population-weight ≈ ${b.populationWeight.toLocaleString()})`,
   );
   const methodNote =
-    '**Method:** Each precinct has one modeled median household income. Income *bands* group **precincts** by that value (richer vs. poorer **precincts**), not individual households within a precinct.';
-  let focusNote = '';
+    "**Method:** Each precinct has one modeled median household income. Income *bands* group **precincts** by that value (richer vs. poorer **precincts**), not individual households within a precinct.";
+  let focusNote = "";
   if (opts?.userFocusedPrecinct) {
     focusNote = `The user selected precinct **${opts.userFocusedPrecinct}**; the table below covers **${data.areaLabel}** (all precincts in that jurisdiction), which is the correct scope for comparing partisan lean across income levels.`;
   }
   if (opts?.singlePrecinctOnly) {
     focusNote =
-      'Only one precinct is in scope, so it appears in a single income band. Use an area analysis with multiple precincts or ask about a municipality for a multi-band comparison.';
+      "Only one precinct is in scope, so it appears in a single income band. Use an area analysis with multiple precincts or ask about a municipality for a multi-band comparison.";
   }
   return `## Partisan lean by modeled income band — ${data.areaLabel}
 
 ${methodNote}
-${focusNote ? `\n${focusNote}\n` : ''}
+${focusNote ? `\n${focusNote}\n` : ""}
 Precincts with modeled partisan lean in this sample: ${data.totalPrecinctsInSample}
 
-${lines.join('\n')}
+${lines.join("\n")}
 
 Lean uses the same convention as jurisdiction profiles (positive = Democratic lean, D+).`;
 }
@@ -823,7 +945,7 @@ Lean uses the same convention as jurisdiction profiles (positive = Democratic le
  */
 async function getKnowledgeGraphContext(
   query: string,
-  parsed: ParsedPoliticalQuery
+  parsed: ParsedPoliticalQuery,
 ): Promise<{ context: string; entityIds: string[] }> {
   // Ensure graph is populated
   const graph = getKnowledgeGraph();
@@ -840,48 +962,72 @@ async function getKnowledgeGraphContext(
 
   // Check for candidate-related queries
   if (
-    queryLower.includes('candidate') ||
-    queryLower.includes('running') ||
-    queryLower.includes('2026') ||
-    queryLower.includes('senate') ||
-    queryLower.includes('governor')
+    queryLower.includes("candidate") ||
+    queryLower.includes("running") ||
+    queryLower.includes("2026") ||
+    queryLower.includes("senate") ||
+    queryLower.includes("governor")
   ) {
     // Get candidates for 2026 races
-    const senateCandidates = graph.getCandidatesForOffice('office:mi-us-senate-class-1');
+    const senateCandidates = graph.getCandidatesForOffice(
+      "office:mi-us-senate-class-1",
+    );
     if (senateCandidates.length > 0) {
-      contextParts.push('## 2026 U.S. Senate Race Candidates');
-      senateCandidates.forEach(c => {
+      contextParts.push("## 2026 U.S. Senate Race Candidates");
+      senateCandidates.forEach((c) => {
         entityIds.push(c.id);
-        const party = c.metadata.party === 'DEM' ? 'Democratic' : 'Republican';
-        const status = c.metadata.status === 'declared' ? 'Declared' : c.metadata.status;
+        const party = c.metadata.party === "DEM" ? "Democratic" : "Republican";
+        const status =
+          c.metadata.status === "declared" ? "Declared" : c.metadata.status;
         contextParts.push(`- **${c.name}** (${party}) - ${status}`);
       });
     }
 
     // Check for specific candidate names
     const candidateNames = [
-      'haley stevens', 'mallory mcmorrow', 'mike rogers', 'abdul el-sayed',
-      'garlin gilchrist', 'dana nessel', 'jocelyn benson'
+      "haley stevens",
+      "mallory mcmorrow",
+      "mike rogers",
+      "abdul el-sayed",
+      "garlin gilchrist",
+      "dana nessel",
+      "jocelyn benson",
     ];
     for (const name of candidateNames) {
-      if (queryLower.includes(name.split(' ')[0].toLowerCase()) ||
-          queryLower.includes(name.split(' ').pop()?.toLowerCase() || '')) {
-        const result = graph.query({ namePattern: name, entityTypes: ['candidate'], limit: 1 });
+      if (
+        queryLower.includes(name.split(" ")[0].toLowerCase()) ||
+        queryLower.includes(name.split(" ").pop()?.toLowerCase() || "")
+      ) {
+        const result = graph.query({
+          namePattern: name,
+          entityTypes: ["candidate"],
+          limit: 1,
+        });
         if (result.entities.length > 0) {
-          const candidate = result.entities[0] as Entity & { metadata: { party: string; status: string } };
+          const candidate = result.entities[0] as Entity & {
+            metadata: { party: string; status: string };
+          };
           entityIds.push(candidate.id);
 
           // Get connections
           const connections = graph.getConnections(candidate.id);
-          const offices = connections.filter(c => c.relationship.type === 'RUNNING_FOR');
-          const party = connections.find(c => c.relationship.type === 'MEMBER_OF');
+          const offices = connections.filter(
+            (c) => c.relationship.type === "RUNNING_FOR",
+          );
+          const party = connections.find(
+            (c) => c.relationship.type === "MEMBER_OF",
+          );
 
           contextParts.push(`\n## ${candidate.name}`);
           if (party) contextParts.push(`- Party: ${party.entity.name}`);
           if (offices.length > 0) {
-            contextParts.push(`- Running for: ${offices.map(o => o.entity.name).join(', ')}`);
+            contextParts.push(
+              `- Running for: ${offices.map((o) => o.entity.name).join(", ")}`,
+            );
           }
-          contextParts.push(`- Status: ${candidate.metadata?.status || 'Unknown'}`);
+          contextParts.push(
+            `- Status: ${candidate.metadata?.status || "Unknown"}`,
+          );
         }
       }
     }
@@ -890,49 +1036,69 @@ async function getKnowledgeGraphContext(
   // Check for jurisdiction-related queries
   if (parsed.locationNames.length > 0) {
     for (const location of parsed.locationNames.slice(0, 2)) {
-      const jurisdictionId = `jurisdiction:${location.toLowerCase().replace(/\s+/g, '-')}`;
+      const jurisdictionId = `jurisdiction:${location.toLowerCase().replace(/\s+/g, "-")}`;
       const jurisdiction = graph.getEntity(jurisdictionId);
 
-      if (jurisdiction && jurisdiction.type === 'jurisdiction') {
+      if (jurisdiction && jurisdiction.type === "jurisdiction") {
         entityIds.push(jurisdiction.id);
         const meta = (jurisdiction as any).metadata || {};
 
         // Get precincts in jurisdiction
         const precinctConnections = graph.query({
-          relationshipTypes: ['PART_OF'],
-          entityTypes: ['precinct'],
-          filters: [{ field: 'metadata.jurisdiction', operator: 'eq', value: jurisdictionId }],
+          relationshipTypes: ["PART_OF"],
+          entityTypes: ["precinct"],
+          filters: [
+            {
+              field: "metadata.jurisdiction",
+              operator: "eq",
+              value: jurisdictionId,
+            },
+          ],
           limit: 5,
         });
 
         contextParts.push(`\n## ${jurisdiction.name} (Knowledge Graph)`);
         if (meta.partisanLean !== undefined) {
-          const leanStr = meta.partisanLean > 0 ? `D+${meta.partisanLean}` : `R+${Math.abs(meta.partisanLean)}`;
+          const leanStr =
+            meta.partisanLean > 0
+              ? `D+${meta.partisanLean}`
+              : `R+${Math.abs(meta.partisanLean)}`;
           contextParts.push(`- Partisan Lean: ${leanStr}`);
         }
         if (meta.density) contextParts.push(`- Density: ${meta.density}`);
         if (precinctConnections.entities.length > 0) {
-          contextParts.push(`- Sample precincts: ${precinctConnections.entities.slice(0, 3).map(e => e.name).join(', ')}`);
+          contextParts.push(
+            `- Sample precincts: ${precinctConnections.entities
+              .slice(0, 3)
+              .map((e) => e.name)
+              .join(", ")}`,
+          );
         }
       }
     }
   }
 
   // Check for election-related queries
-  if (queryLower.includes('election') || queryLower.includes('primary') || queryLower.includes('november')) {
-    const elections = graph.query({ entityTypes: ['election'], limit: 5 });
+  if (
+    queryLower.includes("election") ||
+    queryLower.includes("primary") ||
+    queryLower.includes("november")
+  ) {
+    const elections = graph.query({ entityTypes: ["election"], limit: 5 });
     if (elections.entities.length > 0) {
-      contextParts.push('\n## Upcoming Elections');
-      elections.entities.forEach(e => {
+      contextParts.push("\n## Upcoming Elections");
+      elections.entities.forEach((e) => {
         entityIds.push(e.id);
         const meta = (e as any).metadata || {};
-        contextParts.push(`- **${e.name}**: ${meta.date || 'Date TBD'} (${meta.electionType || 'general'})`);
+        contextParts.push(
+          `- **${e.name}**: ${meta.date || "Date TBD"} (${meta.electionType || "general"})`,
+        );
       });
     }
   }
 
   return {
-    context: contextParts.length > 0 ? contextParts.join('\n') : '',
+    context: contextParts.length > 0 ? contextParts.join("\n") : "",
     entityIds,
   };
 }
@@ -942,7 +1108,7 @@ async function getKnowledgeGraphContext(
  */
 function parseActionDirectivesToMapCommands(
   content: string,
-  parsed: ParsedPoliticalQuery
+  parsed: ParsedPoliticalQuery,
 ): MapCommand[] {
   const mapCommands: MapCommand[] = [];
 
@@ -950,30 +1116,30 @@ function parseActionDirectivesToMapCommands(
   for (const { actionType, data: actionData } of directives) {
     // Convert ACTION directives to MapCommand format
     switch (actionType) {
-      case 'showOnMap':
+      case "showOnMap":
         if (actionData.precinctIds && Array.isArray(actionData.precinctIds)) {
           mapCommands.push({
-            type: 'highlight',
-            target: actionData.precinctIds as string[]
+            type: "highlight",
+            target: actionData.precinctIds as string[],
           });
         }
         break;
 
-      case 'highlightEntity':
+      case "highlightEntity":
         if (actionData.entityId) {
           mapCommands.push({
-            type: 'highlight',
-            target: actionData.entityId as string
+            type: "highlight",
+            target: actionData.entityId as string,
           });
         }
         break;
 
-      case 'setComparison':
+      case "setComparison":
         if (actionData.left && actionData.right) {
           mapCommands.push({
-            type: 'highlightComparison',
+            type: "highlightComparison",
             leftEntityId: actionData.left as string,
-            rightEntityId: actionData.right as string
+            rightEntityId: actionData.right as string,
           });
         }
         break;
@@ -985,88 +1151,137 @@ function parseActionDirectivesToMapCommands(
     const queryLower = content.toLowerCase();
 
     // P2 Enhancement: Expanded visualization keyword detection
-    const visualizationKeywords = ['show', 'display', 'visualize', 'map', 'highlight', 'where are', 'find', 'which precincts', 'which areas', 'target', 'identify'];
-    const hasVisualizationIntent = visualizationKeywords.some(kw => queryLower.includes(kw));
+    const visualizationKeywords = [
+      "show",
+      "display",
+      "visualize",
+      "map",
+      "highlight",
+      "where are",
+      "find",
+      "which precincts",
+      "which areas",
+      "target",
+      "identify",
+    ];
+    const hasVisualizationIntent = visualizationKeywords.some((kw) =>
+      queryLower.includes(kw),
+    );
 
     if (hasVisualizationIntent) {
       // P2 Enhancement: Check for combined metric queries (e.g., "high GOTV and persuasion")
-      const hasSwing = queryLower.includes('swing') || parsed.metric === 'swing_potential' || queryLower.includes('competitive') || queryLower.includes('battleground');
-      const hasGotv = queryLower.includes('gotv') || queryLower.includes('turnout') || queryLower.includes('mobiliz') || parsed.metric === 'gotv_priority';
-      const hasPersuasion = queryLower.includes('persuasion') || queryLower.includes('persuadable') || parsed.metric === 'persuasion_opportunity';
-      const hasPartisan = queryLower.includes('partisan') || queryLower.includes('lean') || queryLower.includes('democrat') || queryLower.includes('republican') || parsed.metric === 'partisan_lean';
-      const hasCombined = queryLower.includes('combined') || queryLower.includes('overall') || queryLower.includes('targeting score');
+      const hasSwing =
+        queryLower.includes("swing") ||
+        parsed.metric === "swing_potential" ||
+        queryLower.includes("competitive") ||
+        queryLower.includes("battleground");
+      const hasGotv =
+        queryLower.includes("gotv") ||
+        queryLower.includes("turnout") ||
+        queryLower.includes("mobiliz") ||
+        parsed.metric === "gotv_priority";
+      const hasPersuasion =
+        queryLower.includes("persuasion") ||
+        queryLower.includes("persuadable") ||
+        parsed.metric === "persuasion_opportunity";
+      const hasPartisan =
+        queryLower.includes("partisan") ||
+        queryLower.includes("lean") ||
+        queryLower.includes("democrat") ||
+        queryLower.includes("republican") ||
+        parsed.metric === "partisan_lean";
+      const hasCombined =
+        queryLower.includes("combined") ||
+        queryLower.includes("overall") ||
+        queryLower.includes("targeting score");
 
       // Priority order: combined > specific metrics
       if (hasCombined) {
-        mapCommands.push({ type: 'showHeatmap', metric: 'combined_score' });
+        mapCommands.push({ type: "showHeatmap", metric: "combined_score" });
       } else if (hasSwing && hasGotv) {
         // Both swing and GOTV mentioned - use bivariate
-        mapCommands.push({ type: 'showBivariate', xMetric: 'swing_potential', yMetric: 'gotv_priority' });
+        mapCommands.push({
+          type: "showBivariate",
+          xMetric: "swing_potential",
+          yMetric: "gotv_priority",
+        });
       } else if (hasSwing && hasPersuasion) {
-        mapCommands.push({ type: 'showBivariate', xMetric: 'swing_potential', yMetric: 'persuasion_opportunity' });
+        mapCommands.push({
+          type: "showBivariate",
+          xMetric: "swing_potential",
+          yMetric: "persuasion_opportunity",
+        });
       } else if (hasGotv && hasPersuasion) {
-        mapCommands.push({ type: 'showBivariate', xMetric: 'gotv_priority', yMetric: 'persuasion_opportunity' });
+        mapCommands.push({
+          type: "showBivariate",
+          xMetric: "gotv_priority",
+          yMetric: "persuasion_opportunity",
+        });
       } else if (hasSwing) {
-        mapCommands.push({ type: 'showHeatmap', metric: 'swing_potential' });
+        mapCommands.push({ type: "showHeatmap", metric: "swing_potential" });
       } else if (hasGotv) {
-        mapCommands.push({ type: 'showHeatmap', metric: 'gotv_priority' });
+        mapCommands.push({ type: "showHeatmap", metric: "gotv_priority" });
       } else if (hasPersuasion) {
-        mapCommands.push({ type: 'showHeatmap', metric: 'persuasion_opportunity' });
+        mapCommands.push({
+          type: "showHeatmap",
+          metric: "persuasion_opportunity",
+        });
       } else if (hasPartisan) {
-        mapCommands.push({ type: 'showChoropleth' });
+        mapCommands.push({ type: "showChoropleth" });
       }
     }
 
     // P2 Enhancement: Navigation commands detection
     const navigationPatterns = [
-      { pattern: /zoom\s+(?:to|in\s+on)\s+(.+?)(?:\.|$)/i, action: 'flyTo' },
-      { pattern: /focus\s+on\s+(.+?)(?:\.|$)/i, action: 'flyTo' },
-      { pattern: /center\s+(?:on|at)\s+(.+?)(?:\.|$)/i, action: 'flyTo' },
-      { pattern: /fly\s+to\s+(.+?)(?:\.|$)/i, action: 'flyTo' },
+      { pattern: /zoom\s+(?:to|in\s+on)\s+(.+?)(?:\.|$)/i, action: "flyTo" },
+      { pattern: /focus\s+on\s+(.+?)(?:\.|$)/i, action: "flyTo" },
+      { pattern: /center\s+(?:on|at)\s+(.+?)(?:\.|$)/i, action: "flyTo" },
+      { pattern: /fly\s+to\s+(.+?)(?:\.|$)/i, action: "flyTo" },
     ];
 
     for (const { pattern, action } of navigationPatterns) {
       const match = content.match(pattern);
       if (match) {
-        mapCommands.push({ type: action as 'flyTo', target: match[1].trim() });
+        mapCommands.push({ type: action as "flyTo", target: match[1].trim() });
         break;
       }
     }
 
     // Ranking queries should highlight top results
-    if (parsed.type === 'ranking' && parsed.locationNames.length > 0) {
-      mapCommands.push({ type: 'highlight', target: parsed.locationNames });
+    if (parsed.type === "ranking" && parsed.locationNames.length > 0) {
+      mapCommands.push({ type: "highlight", target: parsed.locationNames });
     }
 
     // Comparison queries should highlight both entities
-    if (parsed.type === 'comparison' && parsed.locationNames.length >= 2) {
+    if (parsed.type === "comparison" && parsed.locationNames.length >= 2) {
       mapCommands.push({
-        type: 'highlightComparison',
+        type: "highlightComparison",
         leftEntityId: parsed.locationNames[0],
-        rightEntityId: parsed.locationNames[1]
+        rightEntityId: parsed.locationNames[1],
       });
     }
 
     // P2 Enhancement: Also detect comparison language in general queries
     if (mapCommands.length === 0 && parsed.locationNames.length >= 2) {
-      const comparisonPatterns = /\b(versus|vs\.?|compared to|difference between|how does.*compare)\b/i;
+      const comparisonPatterns =
+        /\b(versus|vs\.?|compared to|difference between|how does.*compare)\b/i;
       if (comparisonPatterns.test(content)) {
         mapCommands.push({
-          type: 'highlightComparison',
+          type: "highlightComparison",
           leftEntityId: parsed.locationNames[0],
-          rightEntityId: parsed.locationNames[1]
+          rightEntityId: parsed.locationNames[1],
         });
       }
     }
 
     // Profile queries should highlight the location
-    if (parsed.type === 'profile' && parsed.locationNames.length > 0) {
-      mapCommands.push({ type: 'highlight', target: parsed.locationNames[0] });
+    if (parsed.type === "profile" && parsed.locationNames.length > 0) {
+      mapCommands.push({ type: "highlight", target: parsed.locationNames[0] });
     }
 
     // P2 Enhancement: Highlight any mentioned locations if no other command generated
     if (mapCommands.length === 0 && parsed.locationNames.length > 0) {
-      mapCommands.push({ type: 'highlight', target: parsed.locationNames });
+      mapCommands.push({ type: "highlight", target: parsed.locationNames });
     }
   }
 
@@ -1080,10 +1295,10 @@ function parseActionDirectivesToMapCommands(
  */
 function buildPoliticalSystemPrompt(
   contextData: string,
-  ragContext: string = '',
-  graphContext: string = '',
-  sessionContext: string = '',
-  expertiseLevel: 'novice' | 'intermediate' | 'power_user' = 'intermediate'
+  ragContext: string = "",
+  graphContext: string = "",
+  sessionContext: string = "",
+  expertiseLevel: "novice" | "intermediate" | "power_user" = "intermediate",
 ): string {
   const study = getPoliticalRegionEnv().summaryAreaName;
   const basePrompt = `You are a political analyst assistant for ${study} using Pennsylvania precinct-level data in this deployment. You help campaign strategists, political consultants, and canvassing coordinators understand the political landscape.
@@ -1228,17 +1443,20 @@ Use this context to:
   // Add user expertise context (Phase 12 - Expertise-Aware Responses)
   const expertiseGuidance = {
     novice: {
-      level: 'novice',
-      guidance: 'Explain terminology, provide context, suggest next steps. Avoid jargon. Use analogies and examples. Break down complex concepts into simple explanations.'
+      level: "novice",
+      guidance:
+        "Explain terminology, provide context, suggest next steps. Avoid jargon. Use analogies and examples. Break down complex concepts into simple explanations.",
     },
     intermediate: {
-      level: 'intermediate',
-      guidance: 'Balance detail with efficiency. Assume familiarity with basic political concepts. Use standard terminology. Provide explanations for advanced concepts.'
+      level: "intermediate",
+      guidance:
+        "Balance detail with efficiency. Assume familiarity with basic political concepts. Use standard terminology. Provide explanations for advanced concepts.",
     },
     power_user: {
-      level: 'power_user',
-      guidance: 'Be concise, use data shorthand, skip basic explanations. Assume deep expertise in political analysis. Use technical terminology freely. Focus on insights and actionable recommendations.'
-    }
+      level: "power_user",
+      guidance:
+        "Be concise, use data shorthand, skip basic explanations. Assume deep expertise in political analysis. Use technical terminology freely. Focus on insights and actionable recommendations.",
+    },
   };
 
   const expertise = expertiseGuidance[expertiseLevel];

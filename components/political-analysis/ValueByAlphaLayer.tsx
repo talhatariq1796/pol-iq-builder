@@ -19,7 +19,6 @@ import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
 import PopupTemplate from "@arcgis/core/PopupTemplate";
 import { politicalDataService } from "@/lib/services/PoliticalDataService";
-import { loadBoundariesWithFallback } from "@/lib/map/boundariesLoader";
 
 // ============================================================================
 // Name Normalization Helpers (shared logic with PrecinctChoroplethLayer)
@@ -264,7 +263,7 @@ function getBaseColorForValue(
 }
 
 /**
- * Calculate alpha based on alpha metric 
+ * Calculate alpha based on alpha metric
  */
 function calculateAlpha(
   value: number | null,
@@ -469,8 +468,7 @@ export function ValueByAlphaLayer({
           politicalDataService.loadPrecinctBoundaries(),
           politicalDataService.getAllTargetingScores(),
         ]);
-        if (!boundaries)
-          throw new Error('Failed to load precinct boundaries');
+        if (!boundaries) throw new Error("Failed to load precinct boundaries");
 
         if (!isMounted) return;
 

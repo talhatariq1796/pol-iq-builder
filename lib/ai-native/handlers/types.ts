@@ -141,9 +141,6 @@ export type QueryIntent =
   | 'map_highlight'             // Highlight specific precincts
   | 'map_layer_change'          // Change visualization layer
   | 'spatial_query'             // Spatial/proximity queries ("precincts near X")
-  // Knowledge graph intents (P1-17)
-  | 'graph_query'               // Query knowledge graph relationships
-  | 'graph_explore'             // Explore node connections
   // Lookup intents (new)
   | 'precinct_lookup'           // "Tell me about Lansing Ward 1"
   | 'jurisdiction_lookup'       // "Show me precincts in East Lansing"
@@ -166,40 +163,6 @@ export type QueryIntent =
   // Error recovery intents
   | 'retry_operation'           // Retry failed operation
   | 'error_explain'             // Explain what went wrong
-  // Candidate & race intents
-  | 'candidate_profile'         // "Tell me about Elissa Slotkin"
-  | 'candidate_race'            // "Who's running for Senate?"
-  | 'candidate_competitive'     // "Most competitive races"
-  | 'candidate_fundraising'     // "How much has Slotkin raised?"
-  | 'candidate_endorsements'    // "Who endorsed Slotkin?"
-  // Issue-based intents
-  | 'issue_by_area'             // "What issues matter in East Lansing?"
-  | 'issue_precincts'           // "Which precincts care about healthcare?"
-  | 'issue_analysis'            // "Healthcare as a campaign issue"
-  // Election results intents
-  | 'election_results'          // "What were the 2020 results?"
-  | 'election_candidate_results' // "How did Biden do in Meridian?"
-  | 'election_turnout'          // "Show me the 2022 turnout"
-  | 'election_history'          // "Voting history for Lansing"
-  // Data export intents
-  | 'export_segments'           // "Export all my segments"
-  | 'export_voter_file'         // "Download the voter file"
-  | 'export_van'                // "Sync with VAN"
-  | 'export_general'            // "Export data to CSV"
-  | 'export_precincts'          // "Export precincts"
-  | 'export_donors'             // "Export donor data"
-  // Polling intents
-  | 'poll_current'              // "What's the current polling?" / "Latest polls"
-  | 'poll_race'                 // "Polling for the Senate race" / "MI-07 polls"
-  | 'poll_competitive'          // "Most competitive races by polling"
-  | 'poll_trend'                // "Polling trends" / "How has polling changed?"
-  | 'poll_refresh'              // "Update polling data" / "Refresh polls"
-  // Scenario modeling intents (GAP 4 fix - P17/P18)
-  | 'scenario_turnout'          // "What if turnout increases 10%?"
-  | 'scenario_partisan_shift'   // "What if there's a D+5 shift?"
-  | 'scenario_demographic'      // "What if student turnout reaches 70%?"
-  | 'scenario_canvass'          // "What if we double canvassing?"
-  | 'scenario_general'          // Generic "what if" / scenario modeling
   | 'unknown';
 
 export interface ExtractedEntities {
