@@ -162,9 +162,7 @@ export async function POST(req: NextRequest) {
     const messages = body.messages;
     const includeData = body.includeData !== false;
     const context = typeof body.context === "string" ? body.context : undefined;
-    const currentQuery =
-      typeof body.currentQuery === "string" ? body.currentQuery : undefined;
-    const userContext = body.userContext;
+    typeof body.currentQuery === "string" ? body.currentQuery : undefined;
     const mapSelection = body.mapSelection as ChatMapSelection | undefined;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
