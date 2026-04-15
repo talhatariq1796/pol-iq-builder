@@ -988,7 +988,7 @@ Available actions:
         switch (iqAction.action) {
           case "swing-analysis":
             aiMessage =
-              "I'll analyze the top swing areas in Ingham County. These are areas where elections have been competitive and voter behavior is most likely to shift between parties.\n\n**Analyzing swing potential across all areas...**";
+              `I'll analyze the top swing areas in ${getPoliticalRegionEnv().summaryAreaName}. These are areas where elections have been competitive and voter behavior is most likely to shift between parties.\n\n**Analyzing swing potential across all areas...**`;
             mapCommand = { type: "showHeatmap", metric: "swing_potential" };
             break;
           case "gotv-analysis":
@@ -2453,7 +2453,7 @@ Available actions:
           const targetArea =
             (metadata?.areaName as string) ||
             state.featureSelection.currentFeature?.name ||
-            "Ingham County";
+            getPoliticalRegionEnv().summaryAreaName;
           await handleUserInput(
             `What if turnout increases by 5% in ${targetArea}?`,
           );
@@ -2467,7 +2467,7 @@ Available actions:
           if (precinctName) {
             await handleUserInput(`Show election history for ${precinctName}`);
           } else {
-            await handleUserInput("Show election trends across Ingham County");
+            await handleUserInput(`Show election trends across ${getPoliticalRegionEnv().summaryAreaName}`);
           }
           break;
         }
@@ -2489,7 +2489,7 @@ Available actions:
             await handleUserInput(`Show demographics for ${areaName}`);
           } else {
             await handleUserInput(
-              "Show demographic breakdown of Ingham County",
+              `Show demographic breakdown of ${getPoliticalRegionEnv().summaryAreaName}`,
             );
           }
           break;
@@ -3347,7 +3347,7 @@ Available actions:
         case "donor":
           endpoint = "/api/political-pdf/donor";
           requestBody = {
-            areaName: (metadata?.areaName as string) || "Ingham County",
+            areaName: (metadata?.areaName as string) || getPoliticalRegionEnv().summaryAreaName,
           };
           break;
 

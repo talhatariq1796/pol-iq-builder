@@ -3,10 +3,11 @@
  * Identifies precincts, municipalities, and ZIP codes for interactive clicking
  */
 
-import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { activeState } from '@/lib/config/activeState';
 
+/** True for all non-Michigan deployments — use UNIQUE_ID-based precinct key matching. */
 function isPAPoliticalDeployment(): boolean {
-  return getPoliticalRegionEnv().stateFips === '42';
+  return activeState.fips !== '26';
 }
 
 // Known entity patterns

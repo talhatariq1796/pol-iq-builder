@@ -239,7 +239,7 @@ function PoliticalAIContent() {
           setSelectedPrecinct({
             precinctId,
             precinctName: precinctId,
-            county: 'Pennsylvania',
+            county: activeState.name,
           });
         }
       },

@@ -249,7 +249,8 @@ export async function getUSSenateContext(): Promise<CandidateContext[]> {
  * Get all representatives covering Ingham County
  */
 export async function getInghamCountyRepresentatives(): Promise<DistrictRepresentatives> {
-  if (getPoliticalRegionEnv().stateFips === '42') {
+  // This function returns Ingham County (Michigan) data only — return empty for non-MI deployments.
+  if (getPoliticalRegionEnv().stateFips !== '26') {
     return {
       federal: { senators: [], representative: undefined },
       state: { senator: undefined, representative: undefined },
@@ -343,10 +344,10 @@ export async function getDistrictAnalysisEnrichment(
       break;
     case 'county':
     default:
-      if (getPoliticalRegionEnv().stateFips === '42') {
+      if (getPoliticalRegionEnv().stateFips !== '26') {
         return (
           '### Current elected officials\n' +
-          'Statewide incumbent lists are not loaded in this Pennsylvania deployment. Use district-level analysis (State House / Senate / Congressional) for legislator context.'
+          `Statewide incumbent lists are not loaded for this ${getPoliticalRegionEnv().state} deployment. Use district-level analysis (State House / Senate / Congressional) for legislator context.`
         );
       }
       const reps = await getInghamCountyRepresentatives();

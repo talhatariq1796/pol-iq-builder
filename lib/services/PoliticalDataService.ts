@@ -877,26 +877,20 @@ export class PoliticalDataService {
   private async loadPoliticalScores(): Promise<PoliticalScoresData> {
     if (cache.politicalScores) return cache.politicalScores;
 
-    if (getPoliticalRegionEnv().stateFips === "42") {
-      cache.politicalScores = {
-        generated: new Date().toISOString(),
-        methodology: {
-          note: "PA deployment uses precinct_targeting_scores.json for lean/swing; legacy precinct_political_scores is not keyed to PA precincts.",
-        },
-        summary: {
-          total_precincts: 0,
-          lean_distribution: {},
-          swing_distribution: {},
-        },
-        precincts: {},
-      };
-      return cache.politicalScores;
-    }
-
-    cache.politicalScores = await fetchFromBlobOrLocal<PoliticalScoresData>(
-      BLOB_KEYS.politicalScores,
-      LOCAL_PATHS.politicalScores,
-    );
+    // All current state deployments use precinct_targeting_scores for lean/swing;
+    // the legacy precinct_political_scores file is not keyed to state precincts.
+    cache.politicalScores = {
+      generated: new Date().toISOString(),
+      methodology: {
+        note: "State deployment uses precinct_targeting_scores.json for lean/swing.",
+      },
+      summary: {
+        total_precincts: 0,
+        lean_distribution: {},
+        swing_distribution: {},
+      },
+      precincts: {},
+    };
     return cache.politicalScores!;
   }
 
@@ -906,58 +900,29 @@ export class PoliticalDataService {
   private async loadDemographics(): Promise<DemographicsData> {
     if (cache.demographics) return cache.demographics;
 
-    if (getPoliticalRegionEnv().stateFips === "42") {
-      // Always use PA bundle from public/ — do not use MI BA blob key `political/demographics/precinct_ba`.
-      if (isNodeRuntime()) {
-        cache.demographics = (await readJsonFromPublicPath(
-          LOCAL_PATHS.paPrecinctDemographics,
-        )) as DemographicsData;
-      } else {
-        const response = await fetch(LOCAL_PATHS.paPrecinctDemographics);
-        if (!response.ok) {
-          throw new Error(`Failed to load PA demographics: ${response.status}`);
-        }
-        cache.demographics = (await response.json()) as DemographicsData;
+    // Always use the state-specific precinct demographics bundle from public/
+    if (isNodeRuntime()) {
+      cache.demographics = (await readJsonFromPublicPath(
+        LOCAL_PATHS.paPrecinctDemographics,
+      )) as DemographicsData;
+    } else {
+      const response = await fetch(LOCAL_PATHS.paPrecinctDemographics);
+      if (!response.ok) {
+        throw new Error(`Failed to load state demographics: ${response.status}`);
       }
-      return cache.demographics!;
+      cache.demographics = (await response.json()) as DemographicsData;
     }
-
-    cache.demographics = await fetchFromBlobOrLocal<DemographicsData>(
-      BLOB_KEYS.demographics,
-      LOCAL_PATHS.demographics,
-    );
     return cache.demographics!;
   }
 
   /**
-   * Load precinct-to-block-group crosswalk from blob storage
+   * Load precinct-to-block-group crosswalk from blob storage.
+   * State deployments use targeting-based data; block-group crosswalk not required.
    */
   private async loadCrosswalk(): Promise<CrosswalkEntry[]> {
     if (cache.crosswalk) return cache.crosswalk;
-
-    if (getPoliticalRegionEnv().stateFips === "42") {
-      cache.crosswalk = [];
-      return cache.crosswalk;
-    }
-
-    const data = await fetchFromBlobOrLocal<{ crosswalk?: unknown[] }>(
-      BLOB_KEYS.crosswalk,
-      LOCAL_PATHS.crosswalk,
-    );
-    const raw = data.crosswalk || (data as unknown as unknown[]);
-    cache.crosswalk = (Array.isArray(raw) ? raw : []).map((e: unknown) => {
-      const o = e as Record<string, unknown>;
-      return {
-        precinctId: String(o.precinctId ?? o.precinct_id ?? ""),
-        precinctName: String(o.precinctName ?? o.precinct_name ?? ""),
-        blockGroupGeoid: String(o.blockGroupGeoid ?? o.block_group_geoid ?? ""),
-        overlapRatio: Number(o.overlapRatio ?? o.overlap_ratio ?? 0),
-        precinctArea:
-          o.precinctArea != null ? Number(o.precinctArea) : undefined,
-        overlapArea: o.overlapArea != null ? Number(o.overlapArea) : undefined,
-      } as CrosswalkEntry;
-    });
-    return cache.crosswalk!;
+    cache.crosswalk = [];
+    return cache.crosswalk;
   }
 
   /**
@@ -979,17 +944,9 @@ export class PoliticalDataService {
   private async loadH3Aggregates(): Promise<H3AggregatesData> {
     if (cache.h3Aggregates) return cache.h3Aggregates;
 
-    if (getPoliticalRegionEnv().stateFips === "42") {
-      cache.h3Aggregates = await fetchFromBlobOrLocal<H3AggregatesData>(
-        BLOB_KEYS.paH3Aggregates,
-        LOCAL_PATHS.paH3Aggregates,
-      );
-      return cache.h3Aggregates;
-    }
-
     cache.h3Aggregates = await fetchFromBlobOrLocal<H3AggregatesData>(
-      BLOB_KEYS.h3Aggregates,
-      LOCAL_PATHS.h3Aggregates,
+      BLOB_KEYS.paH3Aggregates,
+      LOCAL_PATHS.paH3Aggregates,
     );
     return cache.h3Aggregates!;
   }
@@ -1000,17 +957,9 @@ export class PoliticalDataService {
   async loadH3GeoJSON(): Promise<GeoJSON.FeatureCollection> {
     if (cache.h3GeoJSON) return cache.h3GeoJSON;
 
-    if (getPoliticalRegionEnv().stateFips === "42") {
-      cache.h3GeoJSON = await fetchFromBlobOrLocal<GeoJSON.FeatureCollection>(
-        BLOB_KEYS.paH3GeoJSON,
-        LOCAL_PATHS.paH3GeoJSON,
-      );
-      return cache.h3GeoJSON;
-    }
-
     cache.h3GeoJSON = await fetchFromBlobOrLocal<GeoJSON.FeatureCollection>(
-      BLOB_KEYS.h3GeoJSON,
-      LOCAL_PATHS.h3GeoJSON,
+      BLOB_KEYS.paH3GeoJSON,
+      LOCAL_PATHS.paH3GeoJSON,
     );
     return cache.h3GeoJSON!;
   }
@@ -1393,8 +1342,7 @@ export class PoliticalDataService {
     ]);
 
     const unified: Record<string, UnifiedPrecinct> = {};
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-    const paDemoRows = isPA ? cache.demographics?.precincts || {} : {};
+    const demoRows = cache.demographics?.precincts || {};
 
     for (const name of allPrecinctNames) {
       const targetingData = targeting[name];
@@ -1403,7 +1351,7 @@ export class PoliticalDataService {
       // Skip if no data from either source
       if (!targetingData && !politicalData) continue;
 
-      const paRow = paDemoRows[name] as
+      const paRow = demoRows[name] as
         | {
             median_age?: number;
             median_household_income?: number;
@@ -1425,7 +1373,7 @@ export class PoliticalDataService {
         (totalPop > 0 ? Math.round(totalPop * 0.78) : 0);
 
       const paOutlook =
-        isPA && !(targetingData?.moderate_pct || targetingData?.liberal_pct)
+        !(targetingData?.moderate_pct || targetingData?.liberal_pct)
           ? this.paDerivedPoliticalOutlook(rawLean)
           : null;
 
@@ -1481,15 +1429,11 @@ export class PoliticalDataService {
 
         // Electoral scores - prefer political_scores, fallback to targeting embedded scores
         electoral: {
-          partisanLean: isPA
-            ? this.paPartisanLeanForSegment(
-                politicalData?.partisan_lean ??
-                  targetingData?.political_scores?.partisan_lean ??
-                  0,
-              )
-            : (politicalData?.partisan_lean ??
+          partisanLean: this.paPartisanLeanForSegment(
+            politicalData?.partisan_lean ??
               targetingData?.political_scores?.partisan_lean ??
-              0),
+              0,
+          ),
           swingPotential:
             politicalData?.swing_potential ??
             targetingData?.political_scores?.swing_potential ??
@@ -1499,9 +1443,7 @@ export class PoliticalDataService {
               targetingData?.political_scores?.turnout?.average ??
               0,
           ),
-          competitiveness: isPA
-            ? this.paCompetitivenessFromRawLean(rawLean)
-            : (politicalData?.classification?.competitiveness ?? "Unknown"),
+          competitiveness: this.paCompetitivenessFromRawLean(rawLean),
           volatility: politicalData?.classification?.volatility ?? "Unknown",
         },
 
@@ -1544,9 +1486,7 @@ export class PoliticalDataService {
       };
     }
 
-    if (isPA) {
-      await this.enrichUnifiedElectoralTurnoutFromPaElections(unified);
-    }
+    await this.enrichUnifiedElectoralTurnoutFromPaElections(unified);
 
     console.log(
       `[PoliticalDataService] getUnifiedPrecinctData: Merged ${Object.keys(unified).length} precincts from targeting (${Object.keys(targeting).length}) and political (${Object.keys(political).length}) sources`,
@@ -2283,7 +2223,7 @@ export class PoliticalDataService {
         competitiveness: competitivenessMode(list),
         lastElectionMargin,
         lastElectionYear: rowElectionYear,
-        coverage: "Pennsylvania",
+        coverage: activeState.name,
         dominantStrategy,
         keyDemographics: {
           medianAge: Math.round(
@@ -2672,24 +2612,21 @@ export class PoliticalDataService {
     if (!precincts || Object.keys(precincts).length === 0) return;
 
     const electionResults = await this.loadElectionResults();
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
 
     for (const [canonicalPrecinctKey, p] of Object.entries(precincts)) {
-      if (isPA) {
-        const paRow =
-          electionResults.precincts?.[canonicalPrecinctKey] ??
-          electionResults.precincts?.[p.name] ??
-          (p.id ? electionResults.precincts?.[p.id] : undefined);
-        if (paRow?.elections) {
-          const converted =
-            this.convertPaPrecinctElectionJsonToSegmentYears(paRow);
-          if (Object.keys(converted).length > 0) {
-            p.elections = converted;
-          }
+      const elRow =
+        electionResults.precincts?.[canonicalPrecinctKey] ??
+        electionResults.precincts?.[p.name] ??
+        (p.id ? electionResults.precincts?.[p.id] : undefined);
+      if (elRow?.elections) {
+        const converted =
+          this.convertPaPrecinctElectionJsonToSegmentYears(elRow);
+        if (Object.keys(converted).length > 0) {
+          p.elections = converted;
         }
       }
 
-      if (isPA && p.elections && Object.keys(p.elections).length > 0) {
+      if (p.elections && Object.keys(p.elections).length > 0) {
         const ev = p.elections as Record<string, { turnout?: number }>;
         const turnouts = ["2020", "2022", "2024"]
           .map((y) => ev[y]?.turnout)
@@ -2726,8 +2663,6 @@ export class PoliticalDataService {
     const data = await this.getPrecinctDataFileFormat();
     const crosswalk = await this.loadDistrictCrosswalk();
     const tapestrySegmentsMap = await this.loadTapestrySegmentsMap();
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-
     // Use canonical record keys (e.g. PA "037-:-BEAVER") — `p.name` is often a short label ("BEAVER") and
     // does not match crosswalk / election JSON keys, which breaks electoral district filters.
     const precincts = Object.entries(data.precincts).map(
@@ -2793,9 +2728,8 @@ export class PoliticalDataService {
           }
         }
 
-        // PA: assign a representative Tapestry code + life mode from inferred traits (no Esri per-precinct Tapestry)
+        // Assign a representative Tapestry code + life mode from inferred traits when no Esri per-precinct Tapestry
         if (
-          isPA &&
           !result.tapestryCode &&
           tapestrySegmentsMap.size > 0 &&
           result.tapestryUrbanization &&
@@ -2814,7 +2748,6 @@ export class PoliticalDataService {
           }
         }
         if (
-          isPA &&
           result.tapestryExpectedPartisanLean === undefined &&
           typeof result.electoral?.partisanLean === "number"
         ) {
@@ -2824,7 +2757,7 @@ export class PoliticalDataService {
           );
         }
 
-        // Check if engagement has all required fields
+        // Build synthetic engagement when precinct data lacks engagement fields
         const hasCompleteEngagement =
           p.engagement &&
           "activistPct" in p.engagement &&
@@ -2832,11 +2765,7 @@ export class PoliticalDataService {
           "youtubePct" in p.engagement;
 
         if (!hasCompleteEngagement) {
-          if (isPA) {
-            result.engagement = this.buildSyntheticPaEngagement(result);
-          } else {
-            delete result.engagement;
-          }
+          result.engagement = this.buildSyntheticPaEngagement(result);
         }
 
         return result;
@@ -3626,8 +3555,8 @@ export class PoliticalDataService {
       }
     }
 
-    // PA: political_scores often omit turnout — backfill from precinct election history (2024 turnout %)
-    if (turnouts.length === 0 && getPoliticalRegionEnv().stateFips === "42") {
+    // political_scores often omit turnout — backfill from precinct election history (2024 turnout %)
+    if (turnouts.length === 0) {
       const er = await this.loadElectionResults();
       if (er?.precincts) {
         for (const row of Object.values(er.precincts)) {
@@ -4130,8 +4059,6 @@ export class PoliticalDataService {
     const boundaries = await this.loadPrecinctBoundaries();
     const precincts: string[] = [];
 
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-
     for (const feature of boundaries.features) {
       const props = feature.properties as Record<string, any>;
       const featureJurisdiction = (props.Jurisdiction_Name || "")
@@ -4144,9 +4071,9 @@ export class PoliticalDataService {
         featureJurisdiction.includes(normalized) ||
         normalized.includes(featureJurisdiction)
       ) {
-        // PA targeting / scores use UNIQUE_ID as the precinct key — keep list aligned with that.
+        // Targeting / scores use UNIQUE_ID as the precinct key when available.
         const precinctKey =
-          isPA && props.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ""
+          props.UNIQUE_ID != null && String(props.UNIQUE_ID) !== ""
             ? String(props.UNIQUE_ID)
             : props.Precinct_Long_Name ||
               props.Precinct_Short_Name ||
@@ -4429,8 +4356,7 @@ export class PoliticalDataService {
     const data = await this.loadElectionResults();
     const rows: PrecinctElectionShiftRank[] = [];
 
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-    if (isPA && data?.precincts) {
+    if (data?.precincts) {
       for (const [precinctKey, row] of Object.entries(data.precincts)) {
         const converted = this.convertPaPrecinctElectionJsonToSegmentYears(row);
         const m20 = converted["2020"]?.margin;
@@ -4509,8 +4435,7 @@ export class PoliticalDataService {
     let sum24 = 0;
     let nState = 0;
 
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-    if (isPA && data?.precincts) {
+    if (data?.precincts) {
       for (const [precinctKey, row] of Object.entries(data.precincts)) {
         const converted = this.convertPaPrecinctElectionJsonToSegmentYears(row);
         const t20 = converted["2020"]?.turnout;
@@ -4749,12 +4674,10 @@ export class PoliticalDataService {
     const crosswalk = await this.loadDistrictCrosswalk();
     const unified = await this.getUnifiedPrecinctData();
 
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-    const prefix = isPA ? "pa-house-" : "mi-house-";
-    const normalizedId =
-      districtId.startsWith("pa-house-") || districtId.startsWith("mi-house-")
-        ? districtId
-        : `${prefix}${districtId}`;
+    const prefix = `${activeState.abbreviation.toLowerCase()}-house-`;
+    const normalizedId = districtId.includes("-house-")
+      ? districtId
+      : `${prefix}${districtId}`;
 
     const matchingPrecincts: UnifiedPrecinct[] = [];
 
@@ -4784,12 +4707,10 @@ export class PoliticalDataService {
     const crosswalk = await this.loadDistrictCrosswalk();
     const unified = await this.getUnifiedPrecinctData();
 
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-    const prefix = isPA ? "pa-senate-" : "mi-senate-";
-    const normalizedId =
-      districtId.startsWith("pa-senate-") || districtId.startsWith("mi-senate-")
-        ? districtId
-        : `${prefix}${districtId}`;
+    const prefix = `${activeState.abbreviation.toLowerCase()}-senate-`;
+    const normalizedId = districtId.includes("-senate-")
+      ? districtId
+      : `${prefix}${districtId}`;
 
     const matchingPrecincts: UnifiedPrecinct[] = [];
 
@@ -4819,22 +4740,16 @@ export class PoliticalDataService {
     const crosswalk = await this.loadDistrictCrosswalk();
     const unified = await this.getUnifiedPrecinctData();
 
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
+    const abbr = activeState.abbreviation.toLowerCase();
+    const congressPrefix = `${abbr}-congress-`;
     let normalizedId: string;
-    if (isPA) {
-      if (districtId.startsWith("pa-congress-")) {
-        normalizedId = districtId;
-      } else {
-        const num = parseInt(districtId, 10);
-        normalizedId = Number.isFinite(num)
-          ? `pa-congress-${num.toString().padStart(2, "0")}`
-          : districtId;
-      }
-    } else if (districtId.startsWith("mi-")) {
+    if (districtId.startsWith(congressPrefix)) {
       normalizedId = districtId;
     } else {
       const num = parseInt(districtId, 10);
-      normalizedId = `mi-${num.toString().padStart(2, "0")}`;
+      normalizedId = Number.isFinite(num)
+        ? `${congressPrefix}${num.toString().padStart(2, "0")}`
+        : districtId;
     }
 
     const matchingPrecincts: UnifiedPrecinct[] = [];

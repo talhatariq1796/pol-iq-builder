@@ -36,6 +36,7 @@ import {
 import type { MapCommand } from "@/lib/ai-native/types";
 import { resolveClaudeModel } from "@/lib/ai/claudeModel";
 import { getPoliticalRegionEnv } from "@/lib/political/politicalRegionConfig";
+import { activeState } from "@/lib/config/activeState";
 import {
   extractActionDirectives,
   stripActionDirectives,
@@ -98,10 +99,8 @@ async function formatSelectedPrecinctSnapshot(
       u = await politicalDataService.getUnifiedPrecinct(selectedLabel.trim());
     }
     if (!u) return null;
-    const isPA = getPoliticalRegionEnv().stateFips === "42";
-    const modeledLeanDisplay = isPA
-      ? -u.electoral.partisanLean
-      : u.electoral.partisanLean;
+    // partisanLean is stored in segment convention (negative=D, positive=R); negate for display (positive=D).
+    const modeledLeanDisplay = -u.electoral.partisanLean;
     const leanStr =
       modeledLeanDisplay >= 0
         ? `D+${modeledLeanDisplay.toFixed(1)}`
@@ -906,7 +905,7 @@ function formatCountySummary(summary: any): string {
 - Turnout: ${summary.scoreRanges.turnout_avg.min.toFixed(1)}% to ${summary.scoreRanges.turnout_avg.max.toFixed(1)}% (mean: ${summary.scoreRanges.turnout_avg.mean.toFixed(1)}%)
 
 ### Jurisdictions
-Use map and filter tools to explore municipalities and counties across Pennsylvania in this dataset.`;
+Use map and filter tools to explore municipalities and counties across ${area} in this dataset.`;
 }
 
 function formatIncomeBucketsPartisanLean(
@@ -968,7 +967,7 @@ async function getKnowledgeGraphContext(
   ) {
     // Get candidates for 2026 races
     const senateCandidates = graph.getCandidatesForOffice(
-      "office:mi-us-senate-class-1",
+      `office:${activeState.abbreviation.toLowerCase()}-us-senate-class-1`,
     );
     if (senateCandidates.length > 0) {
       contextParts.push("## 2026 U.S. Senate Race Candidates");
@@ -1299,7 +1298,13 @@ function buildPoliticalSystemPrompt(
   expertiseLevel: "novice" | "intermediate" | "power_user" = "intermediate",
 ): string {
   const study = getPoliticalRegionEnv().summaryAreaName;
-  const basePrompt = `You are a political analyst assistant for ${study} using Pennsylvania precinct-level data in this deployment. You help campaign strategists, political consultants, and canvassing coordinators understand the political landscape.
+  const stateAbbr = activeState.abbreviation.toLowerCase();
+  const majorCities = activeState.entities
+    .filter((e) => e.level === 'city')
+    .slice(0, 8)
+    .map((e) => e.name.replace(/\b\w/g, (c) => c.toUpperCase()))
+    .join(', ');
+  const basePrompt = `You are a political analyst assistant for ${study} using ${study} precinct-level data in this deployment. You help campaign strategists, political consultants, and canvassing coordinators understand the political landscape.
 
 ## Your Expertise
 - Precinct-level political analysis
@@ -1322,9 +1327,9 @@ function buildPoliticalSystemPrompt(
 - **Persuasion Target**: Areas with many persuadable voters
 - **Maintenance**: Safe areas requiring minimal resources
 
-## Pennsylvania Context
-- Statewide precinct coverage with legislative and congressional districts from the app crosswalk (pa-house-*, pa-senate-*, pa-congress-NN)
-- Major population centers include Philadelphia, Pittsburgh, Allentown, Erie, Reading, Scranton, Harrisburg, and others in loaded boundary data
+## ${study} Context
+- Statewide precinct coverage with legislative and congressional districts from the app crosswalk (${stateAbbr}-house-*, ${stateAbbr}-senate-*, ${stateAbbr}-congress-NN)
+- Major population centers include ${majorCities}, and others in loaded boundary data
 - Urban, suburban, and rural variation is substantial; cite data for the specific geography the user asks about
 
 ## Response Guidelines

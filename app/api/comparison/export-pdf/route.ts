@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Load boundary data — municipalities and legislative districts are PA-only (state FIPS 42). */
+/** Load boundary data for the active state. */
 async function loadBoundaryData(
   boundaryType:
     | 'precincts'
@@ -251,58 +251,40 @@ async function loadBoundaryData(
     boundaryExportCache[cacheKey] = data;
     return data;
   }
-
-  if (boundaryType === 'municipalities' && getPoliticalRegionEnv().stateFips === '42') {
+  if (boundaryType === 'municipalities') {
     const data = await politicalDataService.getMunicipalityDataFileFormat();
     boundaryExportCache[cacheKey] = data;
     return data;
   }
-
-  if (getPoliticalRegionEnv().stateFips === '42') {
-    if (boundaryType === 'state_house') {
-      const data = await politicalDataService.getPaDistrictChamberDataFile('state_house');
-      boundaryExportCache[cacheKey] = data;
-      return data;
-    }
-    if (boundaryType === 'state_senate') {
-      const data = await politicalDataService.getPaDistrictChamberDataFile('state_senate');
-      boundaryExportCache[cacheKey] = data;
-      return data;
-    }
-    if (boundaryType === 'congressional') {
-      const data = await politicalDataService.getPaDistrictChamberDataFile('congressional');
-      boundaryExportCache[cacheKey] = data;
-      return data;
-    }
-    if (boundaryType === 'county') {
-      const data = await politicalDataService.getPaCountyDataFileFormat();
-      boundaryExportCache[cacheKey] = data;
-      return data;
-    }
-    if (boundaryType === 'school_districts') {
-      const data = await politicalDataService.getPaSchoolDistrictDataFileFormat();
-      boundaryExportCache[cacheKey] = data;
-      return data;
-    }
-    if (boundaryType === 'zip_codes') {
-      const data = await politicalDataService.getPaZipCodeDataFileFormat();
-      boundaryExportCache[cacheKey] = data;
-      return data;
-    }
+  if (boundaryType === 'state_house') {
+    const data = await politicalDataService.getPaDistrictChamberDataFile('state_house');
+    boundaryExportCache[cacheKey] = data;
+    return data;
   }
-
-  if (
-    boundaryType === 'municipalities' ||
-    boundaryType === 'state_house' ||
-    boundaryType === 'state_senate' ||
-    boundaryType === 'congressional' ||
-    boundaryType === 'county' ||
-    boundaryType === 'school_districts' ||
-    boundaryType === 'zip_codes'
-  ) {
-    throw new Error(
-      `Comparison boundary "${boundaryType}" requires Pennsylvania data (POLITICAL_STATE_FIPS=42).`
-    );
+  if (boundaryType === 'state_senate') {
+    const data = await politicalDataService.getPaDistrictChamberDataFile('state_senate');
+    boundaryExportCache[cacheKey] = data;
+    return data;
+  }
+  if (boundaryType === 'congressional') {
+    const data = await politicalDataService.getPaDistrictChamberDataFile('congressional');
+    boundaryExportCache[cacheKey] = data;
+    return data;
+  }
+  if (boundaryType === 'county') {
+    const data = await politicalDataService.getPaCountyDataFileFormat();
+    boundaryExportCache[cacheKey] = data;
+    return data;
+  }
+  if (boundaryType === 'school_districts') {
+    const data = await politicalDataService.getPaSchoolDistrictDataFileFormat();
+    boundaryExportCache[cacheKey] = data;
+    return data;
+  }
+  if (boundaryType === 'zip_codes') {
+    const data = await politicalDataService.getPaZipCodeDataFileFormat();
+    boundaryExportCache[cacheKey] = data;
+    return data;
   }
 
   throw new Error(`Unsupported boundary type: ${boundaryType}`);

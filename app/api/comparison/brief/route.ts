@@ -17,7 +17,7 @@ function briefDataCacheKey(boundaryType: BoundaryType): string {
   return `${getPoliticalRegionEnv().stateFips}:${boundaryType}`;
 }
 
-/** Load boundary data — municipalities and legislative districts are PA-only (state FIPS 42). */
+/** Load boundary data for the active state. */
 async function loadBoundaryData(
   boundaryType: BoundaryType
 ): Promise<PrecinctDataFile | MunicipalityDataFile | StateHouseDataFile> {
@@ -26,64 +26,45 @@ async function loadBoundaryData(
     return dataCache[key];
   }
 
-  // For precincts, use PoliticalDataService (single source of truth)
   if (boundaryType === 'precincts') {
     const data = await politicalDataService.getPrecinctDataFileFormat();
     dataCache[key] = data as PrecinctDataFile;
     return data as PrecinctDataFile;
   }
-
-  if (boundaryType === 'municipalities' && getPoliticalRegionEnv().stateFips === '42') {
+  if (boundaryType === 'municipalities') {
     const data = await politicalDataService.getMunicipalityDataFileFormat();
     dataCache[key] = data as MunicipalityDataFile;
     return data as MunicipalityDataFile;
   }
-
-  if (getPoliticalRegionEnv().stateFips === '42') {
-    if (boundaryType === 'state_house') {
-      const data = await politicalDataService.getPaDistrictChamberDataFile('state_house');
-      dataCache[key] = data as StateHouseDataFile;
-      return data as StateHouseDataFile;
-    }
-    if (boundaryType === 'state_senate') {
-      const data = await politicalDataService.getPaDistrictChamberDataFile('state_senate');
-      dataCache[key] = data as StateHouseDataFile;
-      return data as StateHouseDataFile;
-    }
-    if (boundaryType === 'congressional') {
-      const data = await politicalDataService.getPaDistrictChamberDataFile('congressional');
-      dataCache[key] = data as StateHouseDataFile;
-      return data as StateHouseDataFile;
-    }
-    if (boundaryType === 'county') {
-      const data = await politicalDataService.getPaCountyDataFileFormat();
-      dataCache[key] = data as StateHouseDataFile;
-      return data as StateHouseDataFile;
-    }
-    if (boundaryType === 'school_districts') {
-      const data = await politicalDataService.getPaSchoolDistrictDataFileFormat();
-      dataCache[key] = data as StateHouseDataFile;
-      return data as StateHouseDataFile;
-    }
-    if (boundaryType === 'zip_codes') {
-      const data = await politicalDataService.getPaZipCodeDataFileFormat();
-      dataCache[key] = data as StateHouseDataFile;
-      return data as StateHouseDataFile;
-    }
+  if (boundaryType === 'state_house') {
+    const data = await politicalDataService.getPaDistrictChamberDataFile('state_house');
+    dataCache[key] = data as StateHouseDataFile;
+    return data as StateHouseDataFile;
   }
-
-  if (
-    boundaryType === 'municipalities' ||
-    boundaryType === 'state_house' ||
-    boundaryType === 'state_senate' ||
-    boundaryType === 'congressional' ||
-    boundaryType === 'county' ||
-    boundaryType === 'school_districts' ||
-    boundaryType === 'zip_codes'
-  ) {
-    throw new Error(
-      `Comparison boundary "${boundaryType}" requires Pennsylvania data (POLITICAL_STATE_FIPS=42).`
-    );
+  if (boundaryType === 'state_senate') {
+    const data = await politicalDataService.getPaDistrictChamberDataFile('state_senate');
+    dataCache[key] = data as StateHouseDataFile;
+    return data as StateHouseDataFile;
+  }
+  if (boundaryType === 'congressional') {
+    const data = await politicalDataService.getPaDistrictChamberDataFile('congressional');
+    dataCache[key] = data as StateHouseDataFile;
+    return data as StateHouseDataFile;
+  }
+  if (boundaryType === 'county') {
+    const data = await politicalDataService.getPaCountyDataFileFormat();
+    dataCache[key] = data as StateHouseDataFile;
+    return data as StateHouseDataFile;
+  }
+  if (boundaryType === 'school_districts') {
+    const data = await politicalDataService.getPaSchoolDistrictDataFileFormat();
+    dataCache[key] = data as StateHouseDataFile;
+    return data as StateHouseDataFile;
+  }
+  if (boundaryType === 'zip_codes') {
+    const data = await politicalDataService.getPaZipCodeDataFileFormat();
+    dataCache[key] = data as StateHouseDataFile;
+    return data as StateHouseDataFile;
   }
 
   throw new Error(`Unsupported boundary type for brief: ${boundaryType}`);

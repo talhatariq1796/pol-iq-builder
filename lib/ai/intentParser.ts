@@ -914,40 +914,13 @@ function extractDistrictEntitiesMI(query: string): ExtractedDistrictEntities {
 function extractPrecinctNames(query: string): string[] {
   const entities: string[] = [];
 
-  const jurisdictions =
-    getPoliticalRegionEnv().stateFips === '42'
-      ? [
-          'Philadelphia',
-          'Pittsburgh',
-          'Harrisburg',
-          'Allentown',
-          'Erie',
-          'Reading',
-          'Scranton',
-          'Bethlehem',
-          'Lancaster',
-          'York',
-          'Chester',
-          'Allegheny County',
-          'Montgomery County',
-          'Bucks County',
-          'Delaware County',
-        ]
-      : [
-          'East Lansing',
-          'Lansing',
-          'Meridian Township',
-          'Delhi Township',
-          'Williamston',
-          'Mason',
-          'Leslie',
-          'Haslett',
-          'Okemos',
-          'Holt',
-          'Webberville',
-          'Stockbridge',
-          'Dansville',
-        ];
+  // Build jurisdiction list from active state entities (cities, counties, townships)
+  const jurisdictions = activeState.entities
+    .filter((e) => ['city', 'county', 'township', 'region'].includes(e.level))
+    .flatMap((e) => [
+      e.name.replace(/\b\w/g, (c) => c.toUpperCase()),
+      ...(e.aliases?.map((a) => a.replace(/\b\w/g, (c) => c.toUpperCase())) ?? []),
+    ]);
 
   jurisdictions.forEach(jurisdiction => {
     if (query.toLowerCase().includes(jurisdiction.toLowerCase())) {

@@ -95,7 +95,7 @@ export interface EnrichmentOptions {
  */
 export const DEFAULT_ENRICHMENT_OPTIONS: Required<EnrichmentOptions> = {
   intent: "",
-  jurisdiction: "Pennsylvania",
+  jurisdiction: "",
   districtType: "county",
   districtNumber: "",
   precincts: [],

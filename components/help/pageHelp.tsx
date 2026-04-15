@@ -5,6 +5,9 @@
  */
 
 import { HelpSection, HelpIcons, HelpContent, WorkflowTutorial } from './HelpDialog';
+import { activeState } from '@/lib/config/activeState';
+
+const STATE_LABEL = `${activeState.summaryAreaName}`;
 
 // =============================================================================
 // Political AI Page Help
@@ -17,7 +20,7 @@ export const politicalAIHelp: HelpSection[] = [
     content: (
       <HelpContent.Paragraph>
         The Political Analysis Assistant is your AI-powered partner for exploring electoral data
-        in Ingham County, Michigan. Ask questions in natural language about precincts, demographics,
+        in {STATE_LABEL}. Ask questions in natural language about precincts, demographics,
         voting patterns, and campaign strategy. The AI understands political context and can help
         you identify opportunities, analyze trends, and make data-driven decisions.
       </HelpContent.Paragraph>
@@ -185,7 +188,7 @@ export const donorsHelp: HelpSection[] = [
     icon: HelpIcons.Question,
     content: (
       <HelpContent.Paragraph>
-        The Donor Analysis tool helps you understand political giving patterns in Ingham County
+        The Donor Analysis tool helps you understand political giving patterns in {STATE_LABEL}
         using FEC data. Identify donor concentrations, analyze giving trends over time, and find
         high-potential areas for fundraising. The tool aggregates individual contributions by
         ZIP code to reveal geographic patterns while protecting donor privacy.
@@ -430,7 +433,7 @@ export const knowledgeGraphHelp: HelpSection[] = [
     content: (
       <HelpContent.Paragraph>
         The Knowledge Graph is an interactive visualization of political entities and their relationships
-        in Ingham County, Michigan. It shows how candidates, offices, parties, jurisdictions, and elections
+        in {STATE_LABEL}. It shows how candidates, offices, parties, jurisdictions, and elections
         are connected, helping you understand the political landscape at a glance.
       </HelpContent.Paragraph>
     ),
@@ -509,7 +512,7 @@ export const knowledgeGraphHelp: HelpSection[] = [
       <HelpContent.AIExamples
         examples={[
           'Who are the candidates for US Senate?',
-          'What jurisdictions are in Ingham County?',
+          `What jurisdictions are in ${STATE_LABEL}?`,
           'Tell me about Gretchen Whitmer',
           'What elections are coming up in 2026?',
           'How is East Lansing connected to state government?',

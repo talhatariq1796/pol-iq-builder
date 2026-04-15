@@ -73,9 +73,10 @@ async function getCandidateContexts(
   const contexts: CandidateContext[] = [];
 
   try {
-    // Knowledge-graph candidate rows are Michigan/Ingham-seeded; skip for Pennsylvania deployment.
+    // Knowledge-graph candidate rows are Michigan/Ingham-seeded; only load for MI deployments.
+    const isMichigan = getPoliticalRegionEnv().stateFips === "26";
     if (
-      getPoliticalRegionEnv().stateFips !== "42" &&
+      isMichigan &&
       options.districtType &&
       options.districtNumber
     ) {
@@ -92,9 +93,9 @@ async function getCandidateContexts(
       }
     }
 
-    // For county-level or general queries, inject MI knowledge-graph reps only (seed is Ingham-specific).
+    // Inject MI knowledge-graph reps for county/general queries — Ingham-specific seed.
     if (
-      getPoliticalRegionEnv().stateFips !== "42" &&
+      isMichigan &&
       (options.districtType === "county" || !options.districtType)
     ) {
       const reps = await getInghamCountyRepresentatives();
