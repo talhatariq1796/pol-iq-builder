@@ -15,6 +15,7 @@ const PRECINCTS = `${CA}/precincts`;
 const DISTRICTS = `${CA}/districts`;
 const BLOCK_GROUPS = `${CA}/block-groups`;
 const CENSUS_TRACTS = `${CA}/census-tracts`;
+const DEMOGRAPHICS = `${CA}/demographics/CA_Demographics_2025`;
 
 export const californiaConfig: StateConfig = {
   name: 'California',
@@ -41,18 +42,19 @@ export const californiaConfig: StateConfig = {
   },
 
   paths: {
-    precinctBoundaries: `${PRECINCTS}/ca_precincts.geojson`,
+    precinctBoundaries: `${PRECINCTS}/ca_precincts.manifest.json`,
     electionResults: `${PRECINCTS}/ca_precinct_election_history.json`,
     targetingScores: `${PRECINCTS}/precinct_targeting_scores.json`,
     districtCrosswalk: `${PRECINCTS}/ca_precinct_district_crosswalk.json`,
-    politicalScores: '/data/processed/precinct_political_scores.json',
-    demographics: '/data/processed/precinct_ba_demographics.json',
+    politicalScores: `${PRECINCTS}/precinct_targeting_scores.json`,
+    demographics: `${PRECINCTS}/ca_precinct_demographics.json`,
     precinctDemographics: `${PRECINCTS}/ca_precinct_demographics.json`,
-    crosswalk: '/data/processed/precinct_blockgroup_crosswalk.json',
-    h3Aggregates: '/data/processed/h3_aggregates.json',
-    h3GeoJSON: '/data/processed/h3_aggregates.geojson',
+    crosswalk: `${PRECINCTS}/ca_precinct_district_crosswalk.json`,
+    h3Aggregates: `${PRECINCTS}/ca_h3_aggregates.json`,
+    h3GeoJSON: `${PRECINCTS}/ca_h3_aggregates.geojson`,
     stateH3Aggregates: `${PRECINCTS}/ca_h3_aggregates.json`,
     stateH3GeoJSON: `${PRECINCTS}/ca_h3_aggregates.geojson`,
+    demographicLayersDir: DEMOGRAPHICS,
   },
 
   blobKeys: {
@@ -139,7 +141,7 @@ export const californiaConfig: StateConfig = {
       source: 'California election results',
       idField: 'UNIQUE_ID',
       nameField: 'NAME',
-      dataPath: `${PRECINCTS}/ca_precincts.geojson`,
+      dataPath: `${PRECINCTS}/ca_precincts.manifest.json`,
       color: '#6366f1',
       hasData: true,
     },
@@ -304,5 +306,7 @@ export const californiaConfig: StateConfig = {
 
   display: {
     pageTitle: 'MPIQ - CA',
+    compareExample: 'Compare Los Angeles to San Diego',
+    stateLowerChamberLabel: 'State Assembly Districts',
   },
 };

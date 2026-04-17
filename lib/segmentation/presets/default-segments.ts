@@ -45,8 +45,7 @@ export const defaultSegments: SegmentDefinition[] = [
       },
       targeting: {
         min_gotv_priority: 35,
-        max_turnout: 95,
-        // PA build uses Maintenance / Persuasion Target / Battleground — not the label "Base Mobilization"
+        targeting_strategy: ["Base Mobilization"],
       },
     },
   },
@@ -138,7 +137,6 @@ export const defaultSegments: SegmentDefinition[] = [
         },
       },
       targeting: {
-        min_swing_potential: 70,
         targeting_strategy: ["Battleground"],
       },
     },

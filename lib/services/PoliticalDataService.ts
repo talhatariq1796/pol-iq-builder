@@ -3059,7 +3059,11 @@ export class PoliticalDataService {
   /** Approximate BA-style engagement for PA so engagement filters do not exclude all precincts. */
   private buildSyntheticPaEngagement(p: {
     electoral?: { partisanLean?: number };
-    demographics?: { collegePct?: number; populationDensity?: number };
+    demographics?: {
+      collegePct?: number;
+      homeownerPct?: number;
+      populationDensity?: number;
+    };
   }): {
     politicalDonorPct: number;
     activistPct: number;
@@ -3076,11 +3080,18 @@ export class PoliticalDataService {
         : 0;
     const college = p.demographics?.collegePct ?? 30;
     const density = p.demographics?.populationDensity ?? 500;
+    const homeowner = p.demographics?.homeownerPct ?? 60;
     const cnn = Math.min(62, Math.max(18, 32 + lean * 0.35));
     const fox = Math.min(62, Math.max(18, 32 - lean * 0.35));
     const npr = Math.min(35, Math.max(8, 12 + college * 0.15 + lean * 0.1));
-    // Spread below/above 50 so "social first" (>=50 in engine) is not true for every precinct; density lifts urban social use
-    const social = Math.min(88, Math.max(22, 38 + Math.min(density / 55, 42)));
+    // Spread below/above 50 so "social first" is not true for every precinct.
+    // Some CA precinct rows currently lack density/media counts, so use education
+    // and renter share as a conservative fallback instead of pinning all social reach to 38.
+    const socialLift =
+      density > 0
+        ? Math.min(density / 55, 42)
+        : Math.min(Math.max(100 - homeowner, 0) * 0.25 + college * 0.45, 42);
+    const social = Math.min(88, Math.max(22, 38 + socialLift));
     const fb = Math.min(85, Math.max(40, 55 + college * 0.1));
     const yt = Math.min(
       78,

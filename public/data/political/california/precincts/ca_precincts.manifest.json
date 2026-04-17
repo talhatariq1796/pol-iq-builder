@@ -1,0 +1,8 @@
+{
+  "geojsonManifest": "1",
+  "merge": [
+    "/data/political/california/precincts/ca_precincts.part000.geojson",
+    "/data/political/california/precincts/ca_precincts.part001.geojson",
+    "/data/political/california/precincts/ca_precincts.part002.geojson"
+  ]
+}

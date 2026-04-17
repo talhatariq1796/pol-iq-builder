@@ -41,6 +41,7 @@ export interface StateDataPaths {
   h3GeoJSON: string;
   stateH3Aggregates: string;
   stateH3GeoJSON: string;
+  demographicLayersDir?: string;
 }
 
 export interface StateBlobKeys {
@@ -99,5 +100,7 @@ export interface StateConfig {
 
   display: {
     pageTitle: string;
+    compareExample: string;
+    stateLowerChamberLabel: string;
   };
 }

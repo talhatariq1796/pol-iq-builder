@@ -642,6 +642,9 @@ export function SegmentBuilder({
             } else if (key === "min_college_pct") {
               converted.demographics!.minCollegePct =
                 demographicSource.min_college_pct;
+            } else if (key === "min_homeowner_pct") {
+              converted.demographics!.minHomeownerPct =
+                demographicSource.min_homeowner_pct;
             } else {
               (converted.demographics as any)[key] = (demographicSource as any)[
                 key

@@ -46,6 +46,7 @@ import {
 import { getStateManager } from "@/lib/ai-native/ApplicationStateManager";
 import { useToast } from "@/hooks/use-toast";
 import { CrossToolNavigator } from "@/lib/ai-native/navigation/CrossToolNavigator";
+import { activeState } from "@/lib/config/activeState";
 
 interface ComparisonViewProps {
   className?: string;
@@ -335,6 +336,13 @@ export function ComparisonView({ className = "" }: ComparisonViewProps) {
   const leftEntity = comparisonResult?.leftEntity ?? null;
   const rightEntity = comparisonResult?.rightEntity ?? null;
   const insights = comparisonResult?.insights ?? [];
+  const compareExample = activeState.display.compareExample;
+
+  if (!compareExample) {
+    throw new Error(
+      `Missing display.compareExample in active state config for ${activeState.name}`,
+    );
+  }
 
   // Handle boundary type change
   const handleBoundaryTypeChange = useCallback((boundaryType: BoundaryType) => {
@@ -496,8 +504,7 @@ export function ComparisonView({ className = "" }: ComparisonViewProps) {
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-4">
-                  Or ask the AI: &quot;Compare East Lansing to Meridian
-                  Township&quot;
+                  Or ask the AI: &quot;{compareExample}&quot;
                 </p>
               </div>
             </div>

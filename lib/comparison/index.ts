@@ -19,6 +19,7 @@
 
 // Core engines
 export { ComparisonEngine } from "./ComparisonEngine";
+export { InsightGenerator } from "./InsightGenerator";
 
 export { ResourceOptimizer } from "./ResourceOptimizer";
 

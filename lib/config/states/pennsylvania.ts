@@ -47,6 +47,7 @@ export const pennsylvaniaConfig: StateConfig = {
     h3GeoJSON: '/data/processed/h3_aggregates.geojson',
     stateH3Aggregates: `${PRECINCTS}/pa_h3_aggregates.json`,
     stateH3GeoJSON: `${PRECINCTS}/pa_h3_aggregates.geojson`,
+    demographicLayersDir: `${PA}/demographics/PA_Demographics_2025`,
   },
 
   blobKeys: {
@@ -303,5 +304,7 @@ export const pennsylvaniaConfig: StateConfig = {
 
   display: {
     pageTitle: 'MPIQ - PA',
+    compareExample: 'Compare Philadelphia to Pittsburgh',
+    stateLowerChamberLabel: 'State House Districts',
   },
 };

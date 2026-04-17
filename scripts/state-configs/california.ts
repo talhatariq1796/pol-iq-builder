@@ -86,6 +86,12 @@ export const californiaConfig: StateBuildConfig = {
       dstDir: 'demographics/CA_Demographics_2025',
       prefix: 'CA_2025_',
     },
+    {
+      type: 'dir-copy',
+      srcDir: 'CA_GIS_Data/ca_layers_geojson',
+      dstDir: 'demographics/CA_Demographics_2025',
+      prefix: 'CA_2023_',
+    },
   ],
 
   // -------------------------------------------------------------------------

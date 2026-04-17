@@ -234,7 +234,8 @@ export class SegmentEngine {
       }
     }
 
-    if (filters.demographics && !this.matchesDemographics(precinct, filters.demographics)) {
+    const demographicFilters = filters.demographics ?? (filters as any).demographic;
+    if (demographicFilters && !this.matchesDemographics(precinct, demographicFilters)) {
       return false;
     }
     if (filters.political && !this.matchesPolitical(precinct, filters.political)) {
@@ -408,53 +409,74 @@ export class SegmentEngine {
    */
   private matchesDemographics(precinct: PrecinctData, filters: DemographicFilters): boolean {
     const demo = precinct.demographics;
+    const hasMedianAge =
+      typeof demo.medianAge === 'number' &&
+      Number.isFinite(demo.medianAge) &&
+      demo.medianAge > 0;
 
     // Age range (component format)
     if (filters.ageRange) {
-      const [minAge, maxAge] = filters.ageRange;
-      const age = demo.medianAge;
-      if (age == null || age < minAge || age > maxAge) {
-        return false;
+      if (!hasMedianAge) {
+        // California precinct demographics currently use 0 for missing median age.
+        // Treat that as unavailable instead of excluding every age-based preset.
+      } else {
+        const [minAge, maxAge] = filters.ageRange;
+        const age = demo.medianAge;
+        if (age == null || age < minAge || age > maxAge) {
+          return false;
+        }
       }
     }
     // Age range - preset format (age_range: { min_median_age, max_median_age })
     if (filters.age_range) {
-      const minAge = filters.age_range.min_median_age ?? 0;
-      const maxAge = filters.age_range.max_median_age ?? 120;
-      const age = demo.medianAge;
-      if (age == null || age < minAge || age > maxAge) {
-        return false;
+      if (!hasMedianAge) {
+        // Missing age data: skip this constraint.
+      } else {
+        const minAge = filters.age_range.min_median_age ?? 0;
+        const maxAge = filters.age_range.max_median_age ?? 120;
+        const age = demo.medianAge;
+        if (age == null || age < minAge || age > maxAge) {
+          return false;
+        }
       }
     }
 
     // Age cohort (component format)
     if (filters.ageCohort) {
-      const age = demo.medianAge;
-      switch (filters.ageCohort) {
-        case 'young':
-          if (age >= 35) return false;
-          break;
-        case 'middle':
-          if (age < 35 || age >= 55) return false;
-          break;
-        case 'senior':
-          if (age < 55) return false;
-          break;
+      if (!hasMedianAge) {
+        // Missing age data: skip this constraint.
+      } else {
+        const age = demo.medianAge;
+        switch (filters.ageCohort) {
+          case 'young':
+            if (age >= 35) return false;
+            break;
+          case 'middle':
+            if (age < 35 || age >= 55) return false;
+            break;
+          case 'senior':
+            if (age < 55) return false;
+            break;
+        }
       }
     }
     // Age cohort - preset format (age_cohort_emphasis)
     if (filters.age_cohort_emphasis) {
-      const age = demo.medianAge;
-      switch (filters.age_cohort_emphasis) {
-        case 'young':
-          if (age >= 35) return false;
-          break;
-        case 'middle':
-          if (age < 35 || age >= 55) return false;
-          break;
-        case 'senior':
-          if (age < 55) return false;
-          break;
+      if (!hasMedianAge) {
+        // Missing age data: skip this constraint.
+      } else {
+        const age = demo.medianAge;
+        switch (filters.age_cohort_emphasis) {
+          case 'young':
+            if (age >= 35) return false;
+            break;
+          case 'middle':
+            if (age < 35 || age >= 55) return false;
+            break;
+          case 'senior':
+            if (age < 55) return false;
+            break;
+        }
       }
     }
 
@@ -603,7 +625,8 @@ export class SegmentEngine {
     }
 
     // Min homeowner percentage
-    if (filters.minHomeownerPct !== undefined && demo.homeownerPct < filters.minHomeownerPct) {
+    const minHomeownerPct = filters.minHomeownerPct ?? filters.min_homeowner_pct;
+    if (minHomeownerPct !== undefined && demo.homeownerPct < minHomeownerPct) {
       return false;
     }
 
