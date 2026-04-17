@@ -2150,8 +2150,8 @@ export function PoliticalAnalysisPanel({
                                 })}
                             </div>
                             <div className="text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
-                              Dataset avg GOTV: {targetingSummary.score_stats.gotv.mean.toFixed(0)} |
-                              Persuasion: {targetingSummary.score_stats.persuasion.mean.toFixed(0)}
+                              Dataset avg GOTV: {targetingSummary.score_stats?.gotv?.mean?.toFixed(0) ?? 'N/A'} |
+                              Persuasion: {targetingSummary.score_stats?.persuasion?.mean?.toFixed(0) ?? 'N/A'}
                             </div>
                           </div>
                         );

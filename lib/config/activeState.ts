@@ -17,7 +17,7 @@ const STATE_CONFIGS: Record<string, StateConfig> = {
   california: californiaConfig,
 };
 
-const activeKey = process.env.ACTIVE_STATE?.toLowerCase() ?? 'pennsylvania';
+const activeKey = process.env.ACTIVE_STATE?.toLowerCase() ?? 'california';
 
 export const activeState: StateConfig =
   STATE_CONFIGS[activeKey] ?? pennsylvaniaConfig;
