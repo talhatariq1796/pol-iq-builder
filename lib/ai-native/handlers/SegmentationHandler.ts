@@ -14,6 +14,7 @@ import type {
   HandlerResult,
   QueryPattern,
   ExtractedEntities,
+  HandlerContext,
 } from "./types";
 import {
   RESPONSE_TEMPLATES,
@@ -139,6 +140,9 @@ const SEGMENT_PATTERNS: QueryPattern[] = [
       // Words between "show" and "precincts" (e.g. "Show competitive precincts…")
       /show\s+(?:me\s+)?(?:[\s\S]{1,400}?)\bprecincts?\b(?!\s+near)/i,
       /\bcompetitive\s+precincts?\b/i,
+      /\bcompetitive\s+areas?\b/i,
+      /\btop\s+\d{1,2}\s+(?:most\s+)?competitive\s+(?:areas?|precincts?)\b/i,
+      /\bmost\s+competitive\s+(?:areas?|precincts?)\b/i,
       /\bnot\s+safe\s+seats?\b.*\bprecincts?\b/i,
       /which\s+precincts/i,
       /what\s+precincts/i,
@@ -342,14 +346,17 @@ export class SegmentationHandler implements NLPHandler {
     );
   }
 
-  async handle(query: ParsedQuery): Promise<HandlerResult> {
+  async handle(
+    query: ParsedQuery,
+    context?: HandlerContext,
+  ): Promise<HandlerResult> {
     const startTime = Date.now();
 
     try {
       switch (query.intent) {
         case "segment_create":
         case "segment_find":
-          return await this.handleSegmentQuery(query, startTime);
+          return await this.handleSegmentQuery(query, startTime, context);
 
         case "segment_save":
           return await this.handleSegmentSave(query, startTime);
@@ -401,6 +408,7 @@ export class SegmentationHandler implements NLPHandler {
   private async handleSegmentQuery(
     query: ParsedQuery,
     startTime: number,
+    context?: HandlerContext,
   ): Promise<HandlerResult> {
     // Extract entities and convert to filters
     const entities = this.extractEntities(query.originalQuery);
@@ -415,7 +423,11 @@ export class SegmentationHandler implements NLPHandler {
     );
 
     // Execute segment query
-    const results = await this.executeSegmentQuery(filters);
+    const results = await this.executeSegmentQuery(
+      filters,
+      query.originalQuery,
+      context,
+    );
     console.log("[SegmentationHandler] Query results:", {
       precinctCount: results.precinctCount,
       totalPrecincts: results.totalPrecincts,
@@ -538,6 +550,11 @@ export class SegmentationHandler implements NLPHandler {
   extractEntities(query: string): ExtractedEntities {
     const entities: ExtractedEntities = {};
 
+    const topMatch = query.match(/\btop\s+(\d{1,2})\b/i);
+    if (topMatch) {
+      entities.resultLimit = Math.max(1, Math.min(25, parseInt(topMatch[1], 10)));
+    }
+
     const gotvLowTurnoutComposite =
       /\b(gotv|get\s*out\s*the\s*vote|gotv\s+efforts)\b/i.test(query) &&
       /(?:lower|low)\s*↓?\s*turnout|turnout.*(?:lower|low|below|under)/i.test(
@@ -602,6 +619,12 @@ export class SegmentationHandler implements NLPHandler {
         ...entities.scoreThresholds.persuasion,
         min: Math.max(entities.scoreThresholds.persuasion?.min ?? 0, minPers),
       };
+      if (/\bswing\b/i.test(query)) {
+        entities.scoreThresholds.swing = {
+          ...entities.scoreThresholds.swing,
+          min: Math.max(entities.scoreThresholds.swing?.min ?? 0, 40),
+        };
+      }
     }
 
     // Ticket-split / crossover — swing + persuasion as proxy (we lack per-election ticket-split flags in segment JSON)
@@ -635,6 +658,29 @@ export class SegmentationHandler implements NLPHandler {
       entities.competitiveness = ["lean_d", "lean_r", "toss_up"];
     }
 
+    const marginUnderMatch =
+      query.match(/\b(?:presidential\s+)?margins?\s*(?:under|below|less\s+than|within|<)\s*(\d+(?:\.\d+)?)\s*(?:%|points?|pts?)?/i) ||
+      query.match(/\b(?:under|below|less\s+than|within|<)\s*(\d+(?:\.\d+)?)\s*(?:%|points?|pts?)?\s+(?:presidential\s+)?margins?\b/i);
+
+    if (marginUnderMatch) {
+      entities.presidentialMarginAbsLt = parseFloat(marginUnderMatch[1]);
+      delete entities.strategy;
+      if (!entities.resultLimit && /\btop\b/i.test(query)) {
+        entities.resultLimit = 10;
+      }
+    }
+
+    const topCompetitiveQuery =
+      /\b(?:top\s+\d{1,2}\s+)?(?:most\s+)?competitive\s+(?:areas?|precincts?)\b/i.test(
+        query,
+      ) || /\blist\s+the\s+top\s+\d{1,2}\s+(?:most\s+)?competitive\b/i.test(query);
+
+    if (topCompetitiveQuery && entities.presidentialMarginAbsLt == null) {
+      entities.presidentialMarginAbsLt = 5;
+      entities.resultLimit = entities.resultLimit ?? 10;
+      delete entities.strategy;
+    }
+
     // Extract density types
     const densities: ("urban" | "suburban" | "rural")[] = [];
     for (const [type, pattern] of Object.entries(DENSITY_PATTERNS)) {
@@ -657,7 +703,8 @@ export class SegmentationHandler implements NLPHandler {
       !persuasionAudienceQuery &&
       !crossoverTicketSplit &&
       !swingPersuasionComboQuery &&
-      !softSupportQuery
+      !softSupportQuery &&
+      entities.presidentialMarginAbsLt == null
     ) {
       const strategies: ("gotv" | "persuasion" | "battleground" | "base")[] =
         [];
@@ -960,6 +1007,12 @@ export class SegmentationHandler implements NLPHandler {
       (filters as ExtendedSegmentFilters).sortByCollegePctDesc = true;
     }
 
+    if (entities.presidentialMarginAbsLt != null) {
+      (filters as ExtendedSegmentFilters).electionHistory = {
+        presidentialMarginAbsLt: entities.presidentialMarginAbsLt,
+      };
+    }
+
     // Political
     if (
       entities.partyLean ||
@@ -1060,10 +1113,12 @@ export class SegmentationHandler implements NLPHandler {
 
   private async executeSegmentQuery(
     filters: SegmentFilters,
+    originalQuery?: string,
+    context?: HandlerContext,
   ): Promise<SegmentResults> {
     try {
       // Get real precinct data from PoliticalDataService
-      const precincts = await politicalDataService.getSegmentEnginePrecincts();
+      let precincts = await politicalDataService.getSegmentEnginePrecincts();
 
       if (!precincts || precincts.length === 0) {
         console.warn("[SegmentationHandler] No precinct data available");
@@ -1080,6 +1135,16 @@ export class SegmentationHandler implements NLPHandler {
           strategyBreakdown: {},
           calculatedAt: new Date().toISOString(),
         };
+      }
+
+      const scopedIds = this.getContextPrecinctScope(originalQuery, context);
+      if (scopedIds?.size) {
+        precincts = precincts.filter((p: any) => {
+          const ids = [p.id, p.name, p.precinctId, p.precinctName]
+            .filter(Boolean)
+            .map((v) => String(v));
+          return ids.some((id) => scopedIds.has(id));
+        });
       }
 
       // Create SegmentEngine with real data and execute query
@@ -1112,6 +1177,27 @@ export class SegmentationHandler implements NLPHandler {
         calculatedAt: new Date().toISOString(),
       };
     }
+  }
+
+  private getContextPrecinctScope(
+    originalQuery?: string,
+    context?: HandlerContext,
+  ): Set<string> | null {
+    if (!context || !originalQuery) return null;
+
+    const wantsCurrentArea =
+      /\b(this|selected|current|these)\s+(area|selection|precincts?|boundar(?:y|ies))\b/i.test(
+        originalQuery,
+      ) || /\bin\s+this\s+area\b/i.test(originalQuery);
+
+    if (!wantsCurrentArea) return null;
+
+    const ids =
+      context.selection?.selectedIds?.length
+        ? context.selection.selectedIds
+        : context.segmentation?.matchingPrecincts || [];
+
+    return ids.length > 0 ? new Set(ids.map(String)) : null;
   }
 
   // --------------------------------------------------------------------------
@@ -1176,7 +1262,7 @@ export class SegmentationHandler implements NLPHandler {
         `- **Avg Turnout:** ${results.avgTurnout.toFixed(0)}% (${turnoutAssess})`,
       );
       if (results.avgPartisanLean !== undefined) {
-        const leanDir = results.avgPartisanLean >= 0 ? "D" : "R";
+        const leanDir = results.avgPartisanLean >= 0 ? "R" : "D";
         const leanVal = Math.abs(results.avgPartisanLean).toFixed(1);
         lines.push(`- **Partisan Lean:** ${leanDir}+${leanVal}`);
       }
@@ -1186,13 +1272,23 @@ export class SegmentationHandler implements NLPHandler {
       if (results.matchingPrecincts.length > 0) {
         lines.push(`### 🎯 Top Targets`);
         lines.push("");
-        const top5 = results.matchingPrecincts.slice(0, 5);
-        for (const p of top5) {
-          const score =
-            p.matchScore !== undefined
-              ? ` (score: ${p.matchScore.toFixed(0)})`
-              : "";
-          lines.push(`- **${p.precinctName}** — ${p.jurisdiction}${score}`);
+        const topLimit = entities.resultLimit ?? 5;
+        const topPrecincts = results.matchingPrecincts.slice(0, topLimit);
+        for (const p of topPrecincts) {
+          const details: string[] = [];
+          if (p.presidentialMargin != null) {
+            const dir = p.presidentialMargin >= 0 ? "D" : "R";
+            details.push(
+              `${dir}+${Math.abs(p.presidentialMargin).toFixed(1)} presidential margin`,
+            );
+          } else if (p.matchScore !== undefined) {
+            details.push(`score: ${p.matchScore.toFixed(0)}`);
+          }
+          if (p.registeredVoters != null) {
+            details.push(`${p.registeredVoters.toLocaleString()} registered voters`);
+          }
+          const suffix = details.length ? ` (${details.join(", ")})` : "";
+          lines.push(`- **${p.precinctName}** - ${p.jurisdiction}${suffix}`);
         }
         lines.push("");
       }
@@ -1207,7 +1303,7 @@ export class SegmentationHandler implements NLPHandler {
       const precinctNames = results.matchingPrecincts.map(
         (p) => p.precinctName,
       );
-      lines.push(createPrecinctsSection(precinctNames, 8));
+      lines.push(createPrecinctsSection(precinctNames, entities.resultLimit ?? 8));
       lines.push("");
 
       // Collapsible sources section
@@ -1253,6 +1349,11 @@ export class SegmentationHandler implements NLPHandler {
     if (entities.scoreThresholds?.turnout?.max != null) {
       parts.push(
         `modeled turnout at most ${entities.scoreThresholds.turnout.max}%`,
+      );
+    }
+    if (entities.presidentialMarginAbsLt != null) {
+      parts.push(
+        `presidential margin under ${entities.presidentialMarginAbsLt} points`,
       );
     }
     if (entities.educationThreshold?.min) {
@@ -1352,6 +1453,12 @@ export class SegmentationHandler implements NLPHandler {
         );
       }
 
+      if (entities.presidentialMarginAbsLt != null) {
+        insights.push(
+          `These are true battleground precincts by the election-history filter: absolute presidential margin below ${entities.presidentialMarginAbsLt} points, using 2024 where available and 2020 otherwise.`,
+        );
+      }
+
       if (
         entities.educationThreshold?.min &&
         entities.educationThreshold.min >= 40
@@ -1406,6 +1513,10 @@ export class SegmentationHandler implements NLPHandler {
       parts.push(entities.jurisdictions.join(", "));
     }
 
+    if (entities.presidentialMarginAbsLt != null) {
+      parts.push(`Margin < ${entities.presidentialMarginAbsLt}`);
+    }
+
     if (parts.length === 0) {
       return "Custom Segment";
     }
@@ -1431,6 +1542,10 @@ export class SegmentationHandler implements NLPHandler {
         if (threshold?.min) parts.push(`${metric} > ${threshold.min}`);
         if (threshold?.max) parts.push(`${metric} < ${threshold.max}`);
       }
+    }
+
+    if (entities.presidentialMarginAbsLt != null) {
+      parts.push(`presidential margin < ${entities.presidentialMarginAbsLt}`);
     }
 
     return parts.length > 0 ? parts.join(", ") : "specified criteria";

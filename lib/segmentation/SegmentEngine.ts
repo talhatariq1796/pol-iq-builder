@@ -167,6 +167,12 @@ export class SegmentEngine {
         const cb = byId.get(b.precinctId)?.demographics?.collegePct ?? 0;
         return cb - ca;
       });
+    } else if (ext.electionHistory?.presidentialMarginAbsLt !== undefined) {
+      matchingPrecincts.sort((a, b) => {
+        const am = Math.abs(a.presidentialMargin ?? Number.POSITIVE_INFINITY);
+        const bm = Math.abs(b.presidentialMargin ?? Number.POSITIVE_INFINITY);
+        return am - bm || b.registeredVoters - a.registeredVoters;
+      });
     } else {
       matchingPrecincts.sort((a, b) => b.matchScore - a.matchScore);
     }

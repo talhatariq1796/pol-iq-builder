@@ -183,6 +183,10 @@ export interface ExtractedEntities {
   partyLean?: ('strong_dem' | 'lean_dem' | 'independent' | 'lean_rep' | 'strong_rep')[];
   competitiveness?: string[];
   partisanLeanRange?: { min?: number; max?: number };
+  /** Absolute presidential margin threshold, e.g. "margin under 5 points". */
+  presidentialMarginAbsLt?: number;
+  /** Number of rows to show in the response for "top N" queries. */
+  resultLimit?: number;
 
   // Targeting entities
   strategy?: ('gotv' | 'persuasion' | 'battleground' | 'base')[];

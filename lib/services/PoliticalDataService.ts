@@ -1377,6 +1377,13 @@ export class PoliticalDataService {
       const pop18 =
         targetingData?.population_age_18up ||
         (totalPop > 0 ? Math.round(totalPop * 0.78) : 0);
+      const registeredVoters =
+        typeof targetingData?.registered_voters === "number" &&
+        Number.isFinite(targetingData.registered_voters) &&
+        targetingData.registered_voters > 0
+          ? targetingData.registered_voters
+          : undefined;
+      const voterCount = registeredVoters ?? pop18;
 
       const paOutlook =
         !(targetingData?.moderate_pct || targetingData?.liberal_pct)
@@ -1388,13 +1395,13 @@ export class PoliticalDataService {
         // Core identifiers
         id: targetingData?.precinct_id || name.replace(/[^a-zA-Z0-9]/g, "_"),
         name: targetingData?.precinct_name || name,
-        jurisdiction: this.extractJurisdiction(name),
+        jurisdiction: this.extractJurisdictionLabel(name, targetingData),
 
         // Demographics (from targeting scores / BA data)
         demographics: {
           totalPopulation: totalPop,
-          population18up: pop18,
-          registeredVoters: targetingData?.registered_voters, // From election data
+          population18up: voterCount,
+          registeredVoters: voterCount,
           medianAge:
             paRow?.median_age ?? targetingData?.median_age ?? undefined,
           medianHHI:
@@ -3346,6 +3353,32 @@ export class PoliticalDataService {
 
     // Fallback: return as-is (might already be a jurisdiction name)
     return precinctName;
+  }
+
+  private extractJurisdictionLabel(
+    precinctKey: string,
+    targetingData?: TargetingScoresPrecinct,
+  ): string {
+    const rawJurisdiction = targetingData?.jurisdiction?.trim();
+    if (rawJurisdiction) {
+      const padded =
+        /^\d{1,3}$/.test(rawJurisdiction)
+          ? rawJurisdiction.padStart(3, "0")
+          : rawJurisdiction;
+      const countyName = activeState.countyFips?.[padded];
+      if (countyName) return `${countyName} County`;
+      if (!/^\d+$/.test(rawJurisdiction)) return rawJurisdiction;
+    }
+
+    const displayName = targetingData?.precinct_name || targetingData?.short_name;
+    const countyFromName = displayName?.match(/^(.+?)\s+-\s+/)?.[1]?.trim();
+    if (countyFromName) return `${countyFromName} County`;
+
+    const countyFp = precinctKey.match(/^(\d{3})-:-/)?.[1];
+    const countyName = countyFp ? activeState.countyFips?.[countyFp] : undefined;
+    if (countyName) return `${countyName} County`;
+
+    return this.extractJurisdiction(precinctKey);
   }
 
   /**
