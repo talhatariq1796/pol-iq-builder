@@ -140,6 +140,9 @@ export interface DemographicsConfig {
     medianIncome: string | null;
     medianHomeValue: string | null;
     medianAge: string | null;  // separate WGS84 layer; null = skip
+    tapestrySegment?: string | null;
+    tapestryLifeMode?: string | null;
+    tapestryUrbanicity?: string | null;
   };
 
   /** Field names within each demographic layer (usually identical across states). */
@@ -154,6 +157,7 @@ export interface DemographicsConfig {
     medianIncome: string;
     medianHomeValue: string;
     medianAge: string;
+    tapestryValue?: string;
   };
 }
 

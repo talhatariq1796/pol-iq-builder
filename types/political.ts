@@ -897,4 +897,7 @@ export interface UnifiedPrecinct {
   // Tapestry segment (when available from data source; used for segment filters)
   tapestryCode?: string;
   tapestrySegment?: string;
+  tapestryLifeModeGroup?: number;
+  tapestryLifeModeCode?: string;
+  tapestryUrbanicityCode?: string;
 }

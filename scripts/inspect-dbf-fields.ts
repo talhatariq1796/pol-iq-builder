@@ -82,19 +82,19 @@ const CA_DIR = path.join(process.cwd(), 'public/data/political/california');
 
 inspectFile(
   '2024 CA Election Precincts',
-  path.join(CA_DIR, 'CA Election results and precincts/mprec_state_g24_v01_shp/mprec_state_g24_v01_shp.dbf'),
+  path.join(CA_DIR, 'mprec_state_g24_v01_shp/mprec_state_g24_v01_shp.dbf'),
 );
 
 inspectFile(
   '2022 CA Election Precincts',
-  path.join(CA_DIR, 'CA Election results and precincts/mprec_state_g22_v01_shp/mprec_state_g22_v01_shp.dbf'),
+  path.join(CA_DIR, 'mprec_state_g22_v01_shp/mprec_state_g22_v01_shp.dbf'),
 );
 
-// Also peek at first feature of the 2020 GeoJSON (already converted)
-const ca2020Path = path.join(CA_DIR, 'CA_GIS_Data/ca_2020_geojson/ca_2020.geojson');
+// Also peek at first feature of the converted 2020-derived app GeoJSON.
+const ca2020Path = path.join(CA_DIR, 'precincts/ca_precincts.part000.geojson');
 if (fs.existsSync(ca2020Path)) {
   console.log(`\n${'='.repeat(60)}`);
-  console.log('2020 CA GeoJSON (ca_2020.geojson) — first feature properties');
+  console.log('Converted CA precinct GeoJSON - first feature properties');
   console.log('='.repeat(60));
   // Read just the first feature efficiently
   const stream = fs.createReadStream(ca2020Path, { start: 0, end: 2000 });

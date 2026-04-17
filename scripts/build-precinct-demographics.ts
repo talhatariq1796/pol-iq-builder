@@ -30,6 +30,10 @@ interface BgAttrs {
   grad?: number;
   med_home_value?: number;
   median_age?: number;
+  tapestry_code?: string;
+  tapestry_lifemode_group?: string;
+  tapestry_lifemode_group_num?: number;
+  tapestry_urbanicity_code?: string;
 }
 
 function loadDemographicLayer(
@@ -111,6 +115,11 @@ function ownerPctFromHomeValue(medVal: number | undefined): number {
   return Math.round(Math.min(92, Math.max(28, 32 + v * 48)) * 10) / 10;
 }
 
+function lifeModeGroupNumber(code: string | undefined): number | undefined {
+  if (!code || !/^[A-Z]$/i.test(code)) return undefined;
+  return code.toUpperCase().charCodeAt(0) - 64;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -169,6 +178,24 @@ function main() {
   mergeIfExists(demFile(demo.files.grad),             props => ({ grad: Number(props[f.grad]) || 0 }));
   mergeIfExists(demFile(demo.files.medianIncome),     props => ({ median_household_income: Number(props[f.medianIncome]) || 0 }));
   mergeIfExists(demFile(demo.files.medianHomeValue),  props => ({ med_home_value: Number(props[f.medianHomeValue]) || 0 }));
+  mergeIfExists(demFile(demo.files.tapestrySegment ?? null), props => {
+    const code = String(props[f.tapestryValue || 'thematic_value'] ?? '').trim();
+    return code ? { tapestry_code: code } : {};
+  });
+  mergeIfExists(demFile(demo.files.tapestryLifeMode ?? null), props => {
+    const group = String(props[f.tapestryValue || 'thematic_value'] ?? '').trim();
+    const groupNum = lifeModeGroupNumber(group);
+    return group
+      ? {
+          tapestry_lifemode_group: group,
+          ...(groupNum != null ? { tapestry_lifemode_group_num: groupNum } : {}),
+        }
+      : {};
+  });
+  mergeIfExists(demFile(demo.files.tapestryUrbanicity ?? null), props => {
+    const code = String(props[f.tapestryValue || 'thematic_value'] ?? '').trim();
+    return code ? { tapestry_urbanicity_code: code } : {};
+  });
 
   // For Mercator PIP (3857 layers), build county index from educBase layer
   let mercByCounty = new Map<string, Feature<Polygon | MultiPolygon>[]>();
@@ -196,7 +223,7 @@ function main() {
   // Precinct-level join
   // ---------------------------------------------------------------------------
   console.log(`Processing ${precinctGj.features.length.toLocaleString()} precincts…`);
-  const precincts: Record<string, Record<string, number>> = {};
+  const precincts: Record<string, Record<string, number | string>> = {};
   let hit = 0, miss = 0;
 
   for (const feat of precinctGj.features || []) {
@@ -244,6 +271,16 @@ function main() {
         diversity_index: div,
         population_density: density,
         owner_pct: owner,
+        ...(attrs?.tapestry_code ? { tapestry_code: attrs.tapestry_code } : {}),
+        ...(attrs?.tapestry_lifemode_group
+          ? { tapestry_lifemode_group: attrs.tapestry_lifemode_group }
+          : {}),
+        ...(attrs?.tapestry_lifemode_group_num != null
+          ? { tapestry_lifemode_group_num: attrs.tapestry_lifemode_group_num }
+          : {}),
+        ...(attrs?.tapestry_urbanicity_code
+          ? { tapestry_urbanicity_code: attrs.tapestry_urbanicity_code }
+          : {}),
       };
 
       if (attrs && hhi > 0) hit++; else miss++;

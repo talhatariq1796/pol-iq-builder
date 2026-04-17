@@ -277,14 +277,20 @@ export class SegmentEngine {
     // Characteristic filters (urbanization, lifestage, affluence) use real or inferred values
     if (filters.urbanization && filters.urbanization.length > 0 && precinct.tapestryUrbanization) {
       if (!filters.urbanization.includes(precinct.tapestryUrbanization as 'urban' | 'suburban' | 'exurban' | 'rural')) return false;
+    } else if (filters.urbanization && filters.urbanization.length > 0) {
+      return false;
     }
 
     if (filters.lifestage && filters.lifestage.length > 0 && precinct.tapestryLifestage) {
       if (!filters.lifestage.includes(precinct.tapestryLifestage as 'young_singles' | 'young_families' | 'middle_age' | 'empty_nesters' | 'seniors')) return false;
+    } else if (filters.lifestage && filters.lifestage.length > 0) {
+      return false;
     }
 
     if (filters.affluence && filters.affluence.length > 0 && precinct.tapestryAffluence) {
       if (!filters.affluence.includes(precinct.tapestryAffluence as 'high' | 'upper_middle' | 'middle' | 'modest' | 'low')) return false;
+    } else if (filters.affluence && filters.affluence.length > 0) {
+      return false;
     }
 
     if (filters.expectedPartisanLean !== undefined && precinct.tapestryExpectedPartisanLean !== undefined) {
@@ -297,6 +303,8 @@ export class SegmentEngine {
         case 'strong_rep': if (lean > -20) return false; break;
         default: break;
       }
+    } else if (filters.expectedPartisanLean !== undefined) {
+      return false;
     }
 
     return true;
@@ -315,8 +323,11 @@ export class SegmentEngine {
       if (isOnlyPresidentialMarginLt(filters)) return true;
     }
 
-    const year = filters.races?.[0]?.year ?? 2024;
-    const y = year.toString();
+    const requestedYear = filters.races?.[0]?.year;
+    const availableYears = Object.keys(elections || {})
+      .filter((year) => /^\d{4}$/.test(year))
+      .sort((a, b) => Number(b) - Number(a));
+    const y = requestedYear?.toString() ?? availableYears[0] ?? '2024';
 
     if (!elections || !elections[y]) {
       return false;
@@ -333,11 +344,16 @@ export class SegmentEngine {
       if (e.margin < minM || e.margin > maxM) return false;
     }
 
-    if (filters.minTurnout !== undefined && e.turnout < filters.minTurnout) return false;
-    if (filters.maxTurnout !== undefined && e.turnout > filters.maxTurnout) return false;
+    if (filters.minTurnout !== undefined || filters.maxTurnout !== undefined) {
+      if (!Number.isFinite(e.turnout)) return false;
+      if (filters.minTurnout !== undefined && e.turnout < filters.minTurnout) return false;
+      if (filters.maxTurnout !== undefined && e.turnout > filters.maxTurnout) return false;
+    }
 
-    if (filters.turnoutDropoff && elections['2024'] && elections['2022']) {
+    if (filters.turnoutDropoff) {
+      if (!elections['2024'] || !elections['2022']) return false;
       const dropoff = elections['2024'].turnout - elections['2022'].turnout;
+      if (!Number.isFinite(dropoff)) return false;
       if (filters.turnoutDropoff.min !== undefined && dropoff < filters.turnoutDropoff.min) return false;
       if (filters.turnoutDropoff.max !== undefined && dropoff > filters.turnoutDropoff.max) return false;
     }
@@ -417,8 +433,7 @@ export class SegmentEngine {
     // Age range (component format)
     if (filters.ageRange) {
       if (!hasMedianAge) {
-        // California precinct demographics currently use 0 for missing median age.
-        // Treat that as unavailable instead of excluding every age-based preset.
+        return false;
       } else {
         const [minAge, maxAge] = filters.ageRange;
         const age = demo.medianAge;
@@ -430,7 +445,7 @@ export class SegmentEngine {
     // Age range - preset format (age_range: { min_median_age, max_median_age })
     if (filters.age_range) {
       if (!hasMedianAge) {
-        // Missing age data: skip this constraint.
+        return false;
       } else {
         const minAge = filters.age_range.min_median_age ?? 0;
         const maxAge = filters.age_range.max_median_age ?? 120;
@@ -444,7 +459,7 @@ export class SegmentEngine {
     // Age cohort (component format)
     if (filters.ageCohort) {
       if (!hasMedianAge) {
-        // Missing age data: skip this constraint.
+        return false;
       } else {
         const age = demo.medianAge;
         switch (filters.ageCohort) {
@@ -463,7 +478,7 @@ export class SegmentEngine {
     // Age cohort - preset format (age_cohort_emphasis)
     if (filters.age_cohort_emphasis) {
       if (!hasMedianAge) {
-        // Missing age data: skip this constraint.
+        return false;
       } else {
         const age = demo.medianAge;
         switch (filters.age_cohort_emphasis) {
@@ -632,35 +647,21 @@ export class SegmentEngine {
 
     // Density type (component format - accepts array)
     if (filters.density && filters.density.length > 0) {
-      // Skip density check if density is missing or zero (data quality issue)
       if (demo.populationDensity && demo.populationDensity > 0) {
         const densityType = this.categorizeDensity(demo.populationDensity);
         if (!filters.density.includes(densityType)) {
-          console.log('[SegmentEngine] Demographics filter failed:', precinct.id, {
-            densityType,
-            filterDensity: filters.density,
-            populationDensity: demo.populationDensity,
-          });
           return false;
         }
-      } else {
-        // If density is missing/zero, skip this filter check (allow through)
-        // This handles data quality issues where density might not be available
-        console.log('[SegmentEngine] Skipping density filter for precinct with missing density:', precinct.id, 'populationDensity:', demo.populationDensity);
-      }
+      } else return false;
     }
     // Density - preset format (density_type - single value)
     if (filters.density_type) {
-      // Skip density check if density is missing or zero (data quality issue)
       if (demo.populationDensity && demo.populationDensity > 0) {
         const densityType = this.categorizeDensity(demo.populationDensity);
         if (densityType !== filters.density_type) {
           return false;
         }
-      } else {
-        // If density is missing/zero, skip this filter check (allow through)
-        console.log('[SegmentEngine] Skipping density_type filter for precinct with missing density:', precinct.id);
-      }
+      } else return false;
     }
 
     // Diversity range (component format)

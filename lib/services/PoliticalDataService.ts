@@ -36,6 +36,7 @@ import type {
   StateHouseDataFile,
   StateHouseRawData,
 } from "@/lib/comparison/types";
+import type * as GeoJSON from "geojson";
 import { formatPoliticalDistrictLabel } from "@/lib/political/formatPoliticalDistrictLabel";
 import {
   PA_COUNTY_FP_TO_NAME,
@@ -1359,6 +1360,11 @@ export class PoliticalDataService {
             diversity_index?: number;
             population_density?: number;
             owner_pct?: number;
+            tapestry_code?: string;
+            tapestry_segment?: string;
+            tapestry_lifemode_group?: string;
+            tapestry_lifemode_group_num?: number;
+            tapestry_urbanicity_code?: string;
           }
         | undefined;
 
@@ -1483,6 +1489,20 @@ export class PoliticalDataService {
 
         // Engagement / media (for segment News Preference and engagement filters)
         engagement: this.buildEngagementFromTargeting(targetingData),
+
+        ...(paRow?.tapestry_code ? { tapestryCode: paRow.tapestry_code } : {}),
+        ...(paRow?.tapestry_segment
+          ? { tapestrySegment: paRow.tapestry_segment }
+          : {}),
+        ...(paRow?.tapestry_lifemode_group_num != null
+          ? { tapestryLifeModeGroup: paRow.tapestry_lifemode_group_num }
+          : {}),
+        ...(paRow?.tapestry_lifemode_group
+          ? { tapestryLifeModeCode: paRow.tapestry_lifemode_group }
+          : {}),
+        ...(paRow?.tapestry_urbanicity_code
+          ? { tapestryUrbanicityCode: paRow.tapestry_urbanicity_code }
+          : {}),
       };
     }
 
@@ -1852,7 +1872,7 @@ export class PoliticalDataService {
         demographics: {
           totalPopulation: p.demographics.totalPopulation,
           population18up: p.demographics.population18up,
-          medianAge: p.demographics.medianAge ?? 35, // From unified/BA data; fallback when missing
+          medianAge: p.demographics.medianAge ?? 0,
           medianHHI: p.demographics.medianHHI,
           collegePct: p.demographics.collegePct,
           homeownerPct: p.demographics.homeownerPct ?? 0,
@@ -1897,6 +1917,15 @@ export class PoliticalDataService {
         ...(p.engagement && { engagement: p.engagement }),
         ...(p.tapestryCode && { tapestryCode: p.tapestryCode }),
         ...(p.tapestrySegment && { tapestrySegment: p.tapestrySegment }),
+        ...(p.tapestryLifeModeGroup != null && {
+          tapestryLifeModeGroup: p.tapestryLifeModeGroup,
+        }),
+        ...(p.tapestryLifeModeCode && {
+          tapestryLifeModeCode: p.tapestryLifeModeCode,
+        }),
+        ...(p.tapestryUrbanicityCode && {
+          tapestryUrbanicityCode: p.tapestryUrbanicityCode,
+        }),
       };
     }
 
@@ -2663,12 +2692,24 @@ export class PoliticalDataService {
     const data = await this.getPrecinctDataFileFormat();
     const crosswalk = await this.loadDistrictCrosswalk();
     const tapestrySegmentsMap = await this.loadTapestrySegmentsMap();
+    const densityByPrecinctKey =
+      await this.buildPrecinctPopulationDensityByArea(data.precincts);
     // Use canonical record keys (e.g. PA "037-:-BEAVER") — `p.name` is often a short label ("BEAVER") and
     // does not match crosswalk / election JSON keys, which breaks electoral district filters.
     const precincts = Object.entries(data.precincts).map(
       ([canonicalPrecinctKey, p]: [string, any]) => {
         const result: any = {
           ...p,
+          demographics: {
+            ...p.demographics,
+            populationDensity:
+              p.demographics?.populationDensity && p.demographics.populationDensity > 0
+                ? p.demographics.populationDensity
+                : (densityByPrecinctKey.get(canonicalPrecinctKey) ??
+                  densityByPrecinctKey.get(p.name) ??
+                  (p.id ? densityByPrecinctKey.get(p.id) : undefined) ??
+                  p.demographics?.populationDensity),
+          },
           electoral: {
             ...p.electoral,
             competitiveness: p.electoral.competitiveness as
@@ -2692,7 +2733,10 @@ export class PoliticalDataService {
           result.stateSenate = assignment.stateSenate ?? undefined;
           result.congressional = assignment.congressional ?? undefined;
           result.municipality = assignment.municipality ?? undefined;
-          result.municipalityType = assignment.municipalityType ?? undefined;
+          result.municipalityType =
+            assignment.municipalityType === "place"
+              ? "city"
+              : (assignment.municipalityType ?? undefined);
         }
 
         // Election history + PA turnout/dropoff: merged in getPrecinctDataFileFormat (mergeElectionHistoryIntoPrecinctRecords)
@@ -2708,6 +2752,17 @@ export class PoliticalDataService {
             result.tapestryAffluence = seg.affluence;
             result.tapestryExpectedPartisanLean = seg.expectedPartisanLean;
           }
+        }
+        if (
+          result.tapestryLifeModeGroup === undefined &&
+          typeof p.tapestryLifeModeGroup === "number"
+        ) {
+          result.tapestryLifeModeGroup = p.tapestryLifeModeGroup;
+        }
+        if (!result.tapestryUrbanization && p.tapestryUrbanicityCode) {
+          result.tapestryUrbanization = this.mapTapestryUrbanicityCode(
+            p.tapestryUrbanicityCode,
+          );
         }
 
         // When no Tapestry code is present, infer urbanization/lifestage/affluence from demographics
@@ -2906,6 +2961,104 @@ export class PoliticalDataService {
     }
   }
 
+  private polygonAreaSqMeters(ring: number[][]): number {
+    if (!ring || ring.length < 4) return 0;
+    const avgLat =
+      ring.reduce((sum, point) => sum + (Number(point[1]) || 0), 0) /
+      ring.length;
+    const metersPerDegreeLon = 111320 * Math.cos((avgLat * Math.PI) / 180);
+    const metersPerDegreeLat = 110540;
+    let area = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const x1 = (Number(ring[i][0]) || 0) * metersPerDegreeLon;
+      const y1 = (Number(ring[i][1]) || 0) * metersPerDegreeLat;
+      const x2 = (Number(ring[i + 1][0]) || 0) * metersPerDegreeLon;
+      const y2 = (Number(ring[i + 1][1]) || 0) * metersPerDegreeLat;
+      area += x1 * y2 - x2 * y1;
+    }
+    return Math.abs(area) / 2;
+  }
+
+  private geometryAreaSqMeters(
+    geometry: GeoJSON.Geometry | null | undefined,
+  ): number {
+    if (!geometry) return 0;
+    if (geometry.type === "Polygon") {
+      const [outer, ...holes] = geometry.coordinates;
+      return Math.max(
+        0,
+        this.polygonAreaSqMeters(outer) -
+          holes.reduce(
+            (sum: number, hole: number[][]) =>
+              sum + this.polygonAreaSqMeters(hole),
+            0,
+          ),
+      );
+    }
+    if (geometry.type === "MultiPolygon") {
+      return geometry.coordinates.reduce((sum: number, polygon: number[][][]) => {
+        const [outer, ...holes] = polygon;
+        return (
+          sum +
+          Math.max(
+            0,
+            this.polygonAreaSqMeters(outer) -
+              holes.reduce(
+                (holeSum: number, hole: number[][]) =>
+                  holeSum + this.polygonAreaSqMeters(hole),
+                0,
+              ),
+          )
+        );
+      }, 0);
+    }
+    return 0;
+  }
+
+  private async buildPrecinctPopulationDensityByArea(
+    precincts: Record<string, any>,
+  ): Promise<Map<string, number>> {
+    const densities = new Map<string, number>();
+    try {
+      const boundaries = await this.loadPrecinctBoundaries();
+      for (const feature of boundaries.features) {
+        const props = feature.properties as Record<string, unknown> | null;
+        const key =
+          props?.UNIQUE_ID != null
+            ? String(props.UNIQUE_ID)
+            : props?.NAME != null
+              ? String(props.NAME)
+              : "";
+        if (!key) continue;
+        const pop = Number(precincts[key]?.demographics?.totalPopulation ?? 0);
+        if (!(pop > 0)) continue;
+        const areaSqMeters = this.geometryAreaSqMeters(feature.geometry);
+        const areaSqMiles = areaSqMeters * 3.861021585424458e-7;
+        if (areaSqMiles > 0) {
+          densities.set(key, pop / areaSqMiles);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "[PoliticalDataService] Failed to derive precinct population density:",
+        error,
+      );
+    }
+    return densities;
+  }
+
+  private mapTapestryUrbanicityCode(
+    code: string,
+  ): "urban" | "suburban" | "exurban" | "rural" | undefined {
+    const n = Number(code);
+    if (!Number.isFinite(n)) return undefined;
+    if (n >= 1 && n <= 5) return "urban";
+    if (n >= 6 && n <= 8) return "suburban";
+    if (n === 9) return "exurban";
+    if (n >= 10) return "rural";
+    return undefined;
+  }
+
   /** Convert election-history raw format to PrecinctElectionResult (demPct/repPct 0-100, turnout 0-100) */
   private convertToPrecinctElectionResults(
     raw: Record<
@@ -3009,9 +3162,9 @@ export class PoliticalDataService {
       const repPct = (rep / total) * 100;
       const margin = demPct - repPct;
       const turnout =
-        typeof day.turnout === "number"
+        typeof day.turnout === "number" && Number.isFinite(day.turnout)
           ? Math.min(100, Math.max(0, day.turnout))
-          : 0;
+          : Number.NaN;
       out[year] = {
         demPct,
         repPct,
@@ -3092,10 +3245,19 @@ export class PoliticalDataService {
         ? Math.min(density / 55, 42)
         : Math.min(Math.max(100 - homeowner, 0) * 0.25 + college * 0.45, 42);
     const social = Math.min(88, Math.max(22, 38 + socialLift));
-    const fb = Math.min(85, Math.max(40, 55 + college * 0.1));
+    const fb = Math.min(
+      85,
+      Math.max(35, 45 + homeowner * 0.18 - Math.max(lean, 0) * 0.08),
+    );
     const yt = Math.min(
       78,
-      Math.max(22, 32 + college * 0.4 + Math.min(density / 70, 28)),
+      Math.max(
+        22,
+        28 +
+          college * 0.42 +
+          Math.max(100 - homeowner, 0) * 0.16 +
+          Math.min(density / 70, 28),
+      ),
     );
     return {
       politicalDonorPct: Math.min(18, Math.max(2, 4 + college * 0.12)),

@@ -16,6 +16,7 @@ interface ElectionHistoryFiltersProps {
 
 export function ElectionHistoryFilters({
   filters,
+  onChange,
 }: ElectionHistoryFiltersProps) {
   // Local state for immediate UI feedback
 
