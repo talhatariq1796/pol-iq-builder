@@ -27,7 +27,7 @@ import {
   getEnrichmentForQuery,
   formatEnrichmentSections,
 } from "./types";
-import { handleTrendQuery } from "@/lib/ai/workflowHandlers";
+import { politicalDataService } from "@/lib/services/PoliticalDataService";
 
 // Cache for demographic trends data
 const demographicTrendsCache: DemographicTrends | null = null;
@@ -244,17 +244,7 @@ export class TrendHandler implements NLPHandler {
     query: ParsedQuery,
     startTime: number,
   ): Promise<HandlerResult> {
-    const entities = this.extractEntities(query.originalQuery);
-    const precinctName = entities.precincts?.[0];
-
-    // Use existing handleTrendQuery from workflowHandlers
-    const result = await handleTrendQuery(precinctName);
-
-    return {
-      ...result,
-      success: true,
-      metadata: this.buildMetadata("election_trends", startTime, query),
-    };
+    return this.handlePartisanTrends(query, startTime);
   }
 
   private async handleTurnoutTrends(
@@ -262,19 +252,89 @@ export class TrendHandler implements NLPHandler {
     startTime: number,
   ): Promise<HandlerResult> {
     try {
-      // Dynamic import to avoid SSR issues
-      const { loadElectionHistory, analyzeTurnoutTrends } =
-        await import("@/lib/analysis/TrendAnalyzer");
+      const trends = await politicalDataService.getTurnoutTrendExtremes(10);
 
-      await loadElectionHistory();
-      const trends = analyzeTurnoutTrends();
+      const trendRows = trends
+        ? [...trends.largestIncreases, ...trends.largestDecreases]
+        : [];
+
+      if (!trends || trendRows.length === 0) {
+        const precincts = await politicalDataService.getSegmentEnginePrecincts();
+        const ranked = precincts
+          .filter(
+            (p: any) =>
+              Number.isFinite(p.electoral?.avgTurnout) &&
+              (p.demographics?.population18up ?? 0) >= 100,
+          )
+          .sort((a: any, b: any) => (a.electoral?.avgTurnout ?? 100) - (b.electoral?.avgTurnout ?? 100));
+        const lowTurnout = ranked.slice(0, 10);
+        const highTurnout = ranked.slice(-10).reverse();
+
+        return {
+          success: true,
+          response: [
+            "## Turnout Trends",
+            "",
+            "The loaded California files include current modeled turnout, but not comparable historical turnout rates for 2020 and 2022. So this is a current turnout read, not a literal multi-year trend.",
+            "",
+            "### Lowest Current Turnout",
+            "",
+            ...lowTurnout.map(
+              (p: any, i: number) =>
+                `${i + 1}. **${p.name ?? p.precinctName ?? p.id}** - ${p.jurisdiction ?? "California"} (${(p.electoral?.avgTurnout ?? 0).toFixed(1)}% turnout, GOTV ${(p.targeting?.gotvPriority ?? 0).toFixed(1)}, ${(p.demographics?.population18up ?? 0).toLocaleString()} registered voters)`,
+            ),
+            "",
+            "### Highest Current Turnout",
+            "",
+            ...highTurnout.map(
+              (p: any, i: number) =>
+                `${i + 1}. **${p.name ?? p.precinctName ?? p.id}** - ${p.jurisdiction ?? "California"} (${(p.electoral?.avgTurnout ?? 0).toFixed(1)}% turnout, GOTV ${(p.targeting?.gotvPriority ?? 0).toFixed(1)}, ${(p.demographics?.population18up ?? 0).toLocaleString()} registered voters)`,
+            ),
+          ].join("\n"),
+          mapCommands: [
+            {
+              action: "highlight",
+              target: "precincts",
+              ids: lowTurnout.map((p: any) => p.id ?? p.precinctId).filter(Boolean),
+              style: { fillColor: "#F59E0B", fillOpacity: 0.7 },
+            },
+          ],
+          data: {
+            lowTurnout,
+            highTurnout,
+            matchCount: ranked.length,
+            precinctCount: ranked.length,
+          },
+          suggestedActions: [
+            {
+              id: "show-gotv-priority",
+              label: "Show GOTV Priority",
+              action:
+                "Where should we focus GOTV? Show precincts with GOTV priority at least 60 and average turnout under 58%",
+              priority: 1,
+            },
+          ],
+          metadata: this.buildMetadata("turnout_trends", startTime, query),
+        };
+      }
 
       // Get enrichment context (RAG + Knowledge Graph)
       const enrichment = await getEnrichmentForQuery(query.originalQuery);
       const enrichmentSections = formatEnrichmentSections(enrichment);
 
       const responseText =
-        this.formatTurnoutTrendsResponse(trends) + enrichmentSections;
+        [
+          "## Turnout Trends",
+          "",
+          `Average turnout: 2020 ${trends.statewideMeanTurnout.y2020.toFixed(1)}%, 2022 ${trends.statewideMeanTurnout.y2022.toFixed(1)}%, 2024 ${trends.statewideMeanTurnout.y2024.toFixed(1)}%.`,
+          "",
+          "### Biggest Changes",
+          "",
+          ...trendRows.slice(0, 10).map(
+            (p: any, i: number) =>
+              `${i + 1}. **${p.precinctName}** (${p.turnout2020}% in 2020, ${p.turnout2022}% in 2022, ${p.turnout2024}% in 2024, net ${p.netChange2020to2024 > 0 ? "+" : ""}${p.netChange2020to2024} pts)`,
+          ),
+        ].join("\n") + enrichmentSections;
 
       return {
         success: true,
@@ -325,18 +385,54 @@ export class TrendHandler implements NLPHandler {
     startTime: number,
   ): Promise<HandlerResult> {
     try {
-      const { loadElectionHistory, analyzePartisanShifts } =
-        await import("@/lib/analysis/TrendAnalyzer");
+      const precincts = await politicalDataService.getSegmentEnginePrecincts();
+      const shifts = precincts
+        .map((p: any) => {
+          const m20 = p.elections?.["2020"]?.margin;
+          const m24 = p.elections?.["2024"]?.margin;
+          return {
+            id: p.id ?? p.precinctId,
+            name: p.name ?? p.precinctName ?? p.id,
+            jurisdiction: p.jurisdiction ?? "California",
+            margin2020: m20,
+            margin2024: m24,
+            netShift: Number.isFinite(m20) && Number.isFinite(m24) ? m24 - m20 : null,
+            absShift: Number.isFinite(m20) && Number.isFinite(m24) ? Math.abs(m24 - m20) : null,
+          };
+        })
+        .filter((p: any) => p.absShift != null)
+        .sort((a: any, b: any) => b.absShift - a.absShift);
 
-      await loadElectionHistory();
-      const shifts = analyzePartisanShifts();
+      if (shifts.length === 0) {
+        return {
+          success: true,
+          response:
+            "## Margin Trends\n\nI could not find precincts with both 2020 and 2024 presidential margins in the loaded California data, so there is not enough election history to rank partisan shifts yet.",
+          metadata: this.buildMetadata("partisan_trends", startTime, query),
+        };
+      }
 
       // Get enrichment context (RAG + Knowledge Graph)
       const enrichment = await getEnrichmentForQuery(query.originalQuery);
       const enrichmentSections = formatEnrichmentSections(enrichment);
 
+      const formatMargin = (value: number) => {
+        const dir = value >= 0 ? "D" : "R";
+        return `${dir}+${Math.abs(value).toFixed(1)}`;
+      };
       const responseText =
-        this.formatPartisanShiftsResponse(shifts) + enrichmentSections;
+        [
+          "## Margin Trends Since 2020",
+          "",
+          "California currently has comparable 2020 and 2024 presidential precinct margins loaded here. I ranked precincts by the absolute change in Dem-Rep margin; 2022 midterm margin history is not available in this CA dataset.",
+          "",
+          "### Largest Shifts",
+          "",
+          ...shifts.slice(0, 10).map((p: any, i: number) => {
+            const direction = p.netShift >= 0 ? "toward D" : "toward R";
+            return `${i + 1}. **${p.name}** - ${p.jurisdiction} (${formatMargin(p.margin2020)} in 2020 to ${formatMargin(p.margin2024)} in 2024, ${direction} ${Math.abs(p.netShift).toFixed(1)} pts)`;
+          }),
+        ].join("\n") + enrichmentSections;
 
       return {
         success: true,
@@ -345,7 +441,7 @@ export class TrendHandler implements NLPHandler {
           {
             action: "showTemporal",
             metric: "partisan_lean",
-            years: [2020, 2022, 2024],
+            years: [2020, 2024],
             autoPlay: false,
           },
         ],
@@ -372,14 +468,14 @@ export class TrendHandler implements NLPHandler {
             priority: 3,
           },
         ],
-        data: shifts,
+        data: { rankings: shifts.slice(0, 10), matchCount: shifts.length },
         citations: [
           {
-            id: "ingham-clerk-shifts",
-            source: "Ingham County Clerk",
+            id: "california-election-shifts",
+            source: "California precinct election results",
             type: "calculation",
             description:
-              "Partisan lean calculated from precinct results across 3 election cycles",
+              "Dem-Rep presidential margin shift calculated from loaded 2020 and 2024 precinct results",
           },
         ],
         metadata: this.buildMetadata("partisan_trends", startTime, query),

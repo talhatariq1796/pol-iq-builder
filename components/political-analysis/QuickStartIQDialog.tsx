@@ -194,13 +194,15 @@ const QUERY_CATEGORIES: QueryCategory[] = [
         description: 'Uses precinct education estimates — results ordered by college %',
         expectedVisual: 'choropleth',
       },
-      {
-        id: 'young-voters',
-        label: 'Young Voter Hubs',
-        query: 'Where are the concentrations of voters under 35?',
-        description: 'Identifies areas with younger voter demographics',
-        expectedVisual: 'heatmap',
-      },
+        {
+          id: 'young-voters',
+          label: 'Younger Voter Proxy Hubs',
+          query:
+            'Where are likely younger-voter concentrations based on proxy signals: higher college-educated share, higher renter share, and density?',
+          description:
+            'Uses available precinct-level proxy indicators for younger voter concentration',
+          expectedVisual: 'heatmap',
+        },
       {
         id: 'income-analysis',
         label: 'Income Distribution',

@@ -1481,8 +1481,16 @@ export default function UnifiedAIAssistant({
             formattedMessages.push({ role: 'user' as const, content: input });
 
             const behaviorState = stateManager.getBehaviorState();
+            const recentSelections = stateManager.getRecentExplorations();
+            const precinctNameById = new Map(
+              recentSelections
+                .filter((s) => s.type === 'precinct' && s.id && s.name)
+                .map((s) => [s.id, s.name] as const),
+            );
             const userContext = {
-              exploredPrecincts: Array.from(behaviorState.exploredPrecincts),
+              exploredPrecincts: Array.from(behaviorState.exploredPrecincts).map(
+                (id) => precinctNameById.get(id) || 'Unnamed precinct',
+              ),
               currentTool: toolContext,
               recentQueries: behaviorState.queriesAsked.slice(-5),
               expertiseLevel: stateManager.getUserExpertiseLevel(),

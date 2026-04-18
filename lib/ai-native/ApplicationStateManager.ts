@@ -1235,6 +1235,33 @@ class ApplicationStateManager {
     const parts: string[] = [];
     const metrics = this.getExplorationMetrics();
     const depth = this.getExplorationDepth();
+    const recentPrecinctNameById = new Map<string, string>();
+
+    // Build a lightweight id -> name map from the most recent known selections/actions.
+    this.state.selection.selectionHistory
+      .slice()
+      .reverse()
+      .forEach((sel) => {
+        if (sel.type === 'precinct' && sel.id && sel.name && !recentPrecinctNameById.has(sel.id)) {
+          recentPrecinctNameById.set(sel.id, sel.name);
+        }
+      });
+    this.state.explorationHistory
+      .slice()
+      .reverse()
+      .forEach((entry) => {
+        const id = entry.precinctIds?.[0];
+        if (
+          id &&
+          entry.result &&
+          !recentPrecinctNameById.has(id) &&
+          !entry.result.includes('-:-')
+        ) {
+          recentPrecinctNameById.set(id, entry.result);
+        }
+      });
+    const formatPrecinctRef = (id: string): string =>
+      recentPrecinctNameById.get(id) || 'Unnamed precinct';
 
     // Current tool and exploration depth
     parts.push(`Current tool: ${this.state.currentTool}`);
@@ -1272,7 +1299,10 @@ class ApplicationStateManager {
     // Explored precincts (with names if available)
     const exploredPrecincts = Array.from(this.state.behavior.exploredPrecincts);
     if (exploredPrecincts.length > 0) {
-      const precinctList = exploredPrecincts.slice(-5).join(', ');
+      const precinctList = exploredPrecincts
+        .slice(-5)
+        .map((id) => formatPrecinctRef(id))
+        .join(', ');
       parts.push(`Recent precincts: ${precinctList}${exploredPrecincts.length > 5 ? ` (+${exploredPrecincts.length - 5} more)` : ''}`);
     }
 
@@ -1353,7 +1383,8 @@ class ApplicationStateManager {
       const actionDetails = recentActions.map(a => {
         let detail = `${a.action}`;
         if (a.precinctIds && a.precinctIds.length > 0) {
-          detail += ` (${a.precinctIds.slice(0, 2).join(', ')}${a.precinctIds.length > 2 ? '...' : ''})`;
+          const precinctRefs = a.precinctIds.slice(0, 2).map((id) => formatPrecinctRef(id));
+          detail += ` (${precinctRefs.join(', ')}${a.precinctIds.length > 2 ? '...' : ''})`;
         }
         return detail;
       });

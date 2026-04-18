@@ -143,6 +143,26 @@ const SEGMENT_PATTERNS: QueryPattern[] = [
       /\bcompetitive\s+areas?\b/i,
       /\btop\s+\d{1,2}\s+(?:most\s+)?competitive\s+(?:areas?|precincts?)\b/i,
       /\bmost\s+competitive\s+(?:areas?|precincts?)\b/i,
+      /\bcombined\s+(?:targeting\s+)?priority\b/i,
+      /\bcombined\s+priority\s+score\b/i,
+      /\bturnout\s+dropoff\b/i,
+      /\bpresidential\s+and\s+midterm\s+turnout\b/i,
+      /\bfriendly\s+precincts?\b/i,
+      /\bbase\s+(?:voters?|mobilization)\b/i,
+      /\bvoters?\s+under\s+35\b/i,
+      /\byoung\s+voters?\b/i,
+      /\bincome\s+(?:levels?|analysis|bands?)\b/i,
+      /\bpolitical\s+lean\s+across\s+different\s+income\s+levels\b/i,
+      /\bshifted\s+most\s+dramatically\b/i,
+      /\bmargins?\s+(?:tightened|widened|changed)\b/i,
+      /\blimited\s+resources\b/i,
+      /\bwhich\s+\d{1,2}\s+precincts?\s+should\s+i\s+prioritize\b/i,
+      /\bopponent\s+territory\b/i,
+      /\btheir\s+strongest\s+precincts?\b/i,
+      /\bcanvassing\s+efficiency\b/i,
+      /\bdoors\s+per\s+persuadable\b/i,
+      /\byounger[-\s]?voters?.*proxy\b/i,
+      /\bproxy\s+signals\b.*\bcollege[-\s]?educated\b.*\brenter\b.*\bdensity\b/i,
       /\bnot\s+safe\s+seats?\b.*\bprecincts?\b/i,
       /which\s+precincts/i,
       /what\s+precincts/i,
@@ -271,7 +291,7 @@ const STRATEGY_PATTERNS: Record<string, RegExp> = {
 };
 
 const DEMOGRAPHIC_PATTERNS = {
-  young: /\b(young|youth|millennial|gen.?z|18.?34|college.?age)\b/i,
+  young: /\b(young|youth|millennial|gen.?z|18.?34|under\s+35|younger\s+than\s+35|college.?age)\b/i,
   middle: /\b(middle.?age|35.?54|family|working.?age)\b/i,
   senior: /\b(senior|elderly|retired|55\+|65\+|older)\b/i,
   highIncome: /\b(high.?income|wealthy|affluent|rich)\b/i,
@@ -412,6 +432,15 @@ export class SegmentationHandler implements NLPHandler {
   ): Promise<HandlerResult> {
     // Extract entities and convert to filters
     const entities = this.extractEntities(query.originalQuery);
+    const quickStartResult = await this.handleQuickStartInsight(
+      query,
+      startTime,
+      context,
+      entities,
+    );
+    if (quickStartResult) {
+      return quickStartResult;
+    }
     console.log(
       "[SegmentationHandler] Extracted entities:",
       JSON.stringify(entities, null, 2),
@@ -569,6 +598,25 @@ export class SegmentationHandler implements NLPHandler {
       };
     }
 
+    const baseMobilizationQuery =
+      /\b(?:friendly\s+precincts?|base\s+(?:voters?|mobilization)|turnout\s+improvement)\b/i.test(
+        query,
+      );
+    if (baseMobilizationQuery) {
+      entities.scoreThresholds = entities.scoreThresholds || {};
+      entities.scoreThresholds.gotv = {
+        ...entities.scoreThresholds.gotv,
+        min: Math.max(entities.scoreThresholds.gotv?.min ?? 0, 55),
+      };
+      entities.scoreThresholds.turnout = {
+        ...entities.scoreThresholds.turnout,
+        max: Math.min(entities.scoreThresholds.turnout?.max ?? 100, 58),
+      };
+      entities.partisanLeanRange = { max: -8 };
+      entities.resultLimit = entities.resultLimit ?? 10;
+      delete entities.strategy;
+    }
+
     // Persuasion / persuadable voters — use scores (not strategy-only) so PA data matches the question
     const persuasionAudienceQuery =
       /\b(persuadable|persuasion\s+opportunity)\b/i.test(query) ||
@@ -675,7 +723,11 @@ export class SegmentationHandler implements NLPHandler {
         query,
       ) || /\blist\s+the\s+top\s+\d{1,2}\s+(?:most\s+)?competitive\b/i.test(query);
 
-    if (topCompetitiveQuery && entities.presidentialMarginAbsLt == null) {
+    if (
+      topCompetitiveQuery &&
+      !softSupportQuery &&
+      entities.presidentialMarginAbsLt == null
+    ) {
       entities.presidentialMarginAbsLt = 5;
       entities.resultLimit = entities.resultLimit ?? 10;
       delete entities.strategy;
@@ -1198,6 +1250,617 @@ export class SegmentationHandler implements NLPHandler {
         : context.segmentation?.matchingPrecincts || [];
 
     return ids.length > 0 ? new Set(ids.map(String)) : null;
+  }
+
+  private async getScopedSegmentPrecincts(
+    originalQuery?: string,
+    context?: HandlerContext,
+  ): Promise<any[]> {
+    let precincts = await politicalDataService.getSegmentEnginePrecincts();
+    const scopedIds = this.getContextPrecinctScope(originalQuery, context);
+    if (!scopedIds?.size) return precincts;
+
+    return precincts.filter((p: any) => {
+      const ids = [p.id, p.name, p.precinctId, p.precinctName]
+        .filter(Boolean)
+        .map((v) => String(v));
+      return ids.some((id) => scopedIds.has(id));
+    });
+  }
+
+  private async handleQuickStartInsight(
+    query: ParsedQuery,
+    startTime: number,
+    context: HandlerContext | undefined,
+    entities: ExtractedEntities,
+  ): Promise<HandlerResult | null> {
+    const text = query.originalQuery;
+    if (
+      /\bfriendly\s+precincts?\b|\bbase\s+voters?\b|\broom\s+for\s+turnout\s+improvement\b/i.test(
+        text,
+      )
+    ) {
+      return this.handleBaseMobilizationQuickStart(
+        query,
+        startTime,
+        context,
+        entities.resultLimit ?? 10,
+      );
+    }
+    if (/\bturnout\s+dropoff\b|\bpresidential\s+and\s+midterm\s+turnout\b/i.test(text)) {
+      return this.handleTurnoutDropoffQuickStart(query, startTime, context);
+    }
+    if (
+      /\bvoters?\s+under\s+35\b|\byoung\s+voters?\b|\bconcentrations?\s+of\s+voters?\s+under\s+35\b|\byounger[-\s]?voters?\b|\byouth\s+proxy\b|\bproxy\s+signals\b/i.test(
+        text,
+      )
+    ) {
+      return this.handleYoungVotersQuickStart(query, startTime, context, entities.resultLimit ?? 10);
+    }
+    if (/\bincome\s+(?:levels?|analysis|bands?)\b|\bpolitical\s+lean\s+across\s+different\s+income\s+levels\b/i.test(text)) {
+      return this.handleIncomeLeanQuickStart(query, startTime, context);
+    }
+    if (/\bshifted\s+most\s+dramatically\b|\blast\s+3\s+elections\b|\bmargins?\s+(?:tightened|widened|changed)\b|\bsince\s+2020\b/i.test(text)) {
+      return this.handleMarginShiftQuickStart(query, startTime, context);
+    }
+    if (/\bcombined\s+(?:targeting\s+)?priority\b|\bcombined\s+priority\s+score\b/i.test(text)) {
+      return this.handleRankedPrecinctQuickStart(
+        query,
+        startTime,
+        context,
+        "Combined Targeting Priority",
+        "Ranked by the loaded targeting model's combined score, with turnout, swing, persuasion, and voter scale shown for context.",
+        (p) => p.targeting?.combinedScore ?? 0,
+        (p) => [
+          `combined ${this.formatNumber(p.targeting?.combinedScore)}`,
+          `swing ${this.formatNumber(p.electoral?.swingPotential)}`,
+          `turnout ${this.formatNumber(p.electoral?.avgTurnout)}%`,
+        ],
+        entities.resultLimit ?? 10,
+      );
+    }
+    if (/\blimited\s+resources\b|\bwhich\s+\d{1,2}\s+precincts?\s+should\s+i\s+prioritize\b/i.test(text)) {
+      const limit = entities.resultLimit ?? this.extractTopLimit(text, 5);
+      return this.handleRankedPrecinctQuickStart(
+        query,
+        startTime,
+        context,
+        "Resource Priority",
+        "These precincts offer the best mix of targeting score, persuasion opportunity, swing potential, and reachable voter scale.",
+        (p) => {
+          const combined = p.targeting?.combinedScore ?? 0;
+          const persuasion = p.targeting?.persuasionOpportunity ?? 0;
+          const swing = p.electoral?.swingPotential ?? 0;
+          const voters = this.getRegisteredVoters(p);
+          return combined * 0.45 + persuasion * 0.25 + swing * 0.2 + Math.min(10, voters / 1000);
+        },
+        (p) => [
+          `combined ${this.formatNumber(p.targeting?.combinedScore)}`,
+          `persuasion ${this.formatNumber(p.targeting?.persuasionOpportunity)}`,
+          `swing ${this.formatNumber(p.electoral?.swingPotential)}`,
+        ],
+        limit,
+      );
+    }
+    if (/\bopponent\s+territory\b|\btheir\s+strongest\s+precincts?\b|\bavoid\s+spending\s+resources\b/i.test(text)) {
+      return this.handleRankedPrecinctQuickStart(
+        query,
+        startTime,
+        context,
+        "Opponent Strongholds",
+        "Assuming the opponent is Republican, these are the strongest Republican-leaning precincts and are lower-efficiency persuasion targets.",
+        (p) => p.electoral?.partisanLean ?? 0,
+        (p) => [
+          `${this.formatPartisanLean(p.electoral?.partisanLean ?? 0)} modeled lean`,
+          `turnout ${this.formatNumber(p.electoral?.avgTurnout)}%`,
+          `persuasion ${this.formatNumber(p.targeting?.persuasionOpportunity)}`,
+        ],
+        entities.resultLimit ?? 10,
+        (p) => (p.electoral?.partisanLean ?? 0) >= 8,
+      );
+    }
+    if (/\bcanvassing\s+efficiency\b|\bdoors\s+per\s+persuadable\b/i.test(text)) {
+      return this.handleCanvassingEfficiencyQuickStart(query, startTime, context, entities.resultLimit ?? 10);
+    }
+
+    return null;
+  }
+
+  private async handleBaseMobilizationQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context: HandlerContext | undefined,
+    limit: number,
+  ): Promise<HandlerResult> {
+    const hasScope = !!this.getContextPrecinctScope(query.originalQuery, context)?.size;
+    const precincts = await this.getScopedSegmentPrecincts(
+      query.originalQuery,
+      context,
+    );
+    const rows = precincts
+      .filter((p) => (hasScope || this.getRegisteredVoters(p) >= 100))
+      .map((p) => {
+        const strategy = String(p.targeting?.strategy ?? "").toLowerCase();
+        const isBase =
+          strategy.includes("base mobilization") ||
+          strategy.includes("maintenance");
+        const gotv = p.targeting?.gotvPriority ?? 0;
+        const turnout = p.electoral?.avgTurnout ?? 100;
+        const turnoutHeadroom = Math.max(0, 58 - turnout);
+        const voters = this.getRegisteredVoters(p);
+        const score = (isBase ? 40 : 0) + gotv * 0.4 + turnoutHeadroom * 1.3 + Math.min(10, voters / 1500);
+        return {
+          precinct: p,
+          isBase,
+          gotv,
+          turnout,
+          turnoutHeadroom,
+          voters,
+          score,
+        };
+      })
+      .filter((r) => r.isBase && r.gotv >= 55 && r.turnout > 0 && r.turnout <= 58)
+      .sort((a, b) => b.score - a.score);
+
+    const fallback = precincts
+      .filter((p) => (hasScope || this.getRegisteredVoters(p) >= 100))
+      .map((p) => {
+        const gotv = p.targeting?.gotvPriority ?? 0;
+        const turnout = p.electoral?.avgTurnout ?? 100;
+        const turnoutHeadroom = Math.max(0, 58 - turnout);
+        const voters = this.getRegisteredVoters(p);
+        return { precinct: p, gotv, turnout, turnoutHeadroom, voters };
+      })
+      .filter((r) => r.gotv >= 55 && r.turnout > 0 && r.turnout <= 58)
+      .sort((a, b) => b.gotv - a.gotv || b.turnoutHeadroom - a.turnoutHeadroom);
+
+    const finalRows = rows.length > 0 ? rows : fallback;
+    const top = finalRows.slice(0, Math.max(1, limit));
+    const totalVoters = finalRows.reduce((sum, r: any) => sum + r.voters, 0);
+
+    const response = [
+      "## Friendly Base Mobilization Targets",
+      "",
+      rows.length > 0
+        ? "These are base-friendly precincts (modeled as Base Mobilization strategy) with strong GOTV opportunity and clear turnout headroom."
+        : "No rows were explicitly labeled Base Mobilization in the current scope, so this uses the closest available proxy: high GOTV priority with turnout at or below 58%.",
+      "",
+      `Found **${finalRows.length.toLocaleString()} precincts** with **${totalVoters.toLocaleString()} registered voters**.`,
+      "",
+      "### Top Precincts",
+      "",
+      ...top.map((r: any, i: number) => {
+        const lean = this.formatPartisanLean(
+          r.precinct.electoral?.partisanLean ?? 0,
+        );
+        return `${i + 1}. **${this.getPrecinctDisplayName(r.precinct)}** - ${this.getJurisdictionLabel(r.precinct)} (GOTV ${this.formatNumber(r.gotv)}, turnout ${this.formatNumber(r.turnout)}%, headroom ${this.formatNumber(r.turnoutHeadroom)} pts, ${lean}, ${r.voters.toLocaleString()} registered voters)`;
+      }),
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      mapCommands: this.buildHighlightCommands(top.map((r: any) => r.precinct)),
+      data: {
+        rankings: top,
+        matchCount: finalRows.length,
+        precinctCount: finalRows.length,
+        totalVoters,
+      },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private async handleRankedPrecinctQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context: HandlerContext | undefined,
+    title: string,
+    summary: string,
+    scoreFn: (p: any) => number,
+    detailFn: (p: any) => string[],
+    limit: number,
+    filterFn?: (p: any) => boolean,
+  ): Promise<HandlerResult> {
+    const hasScope = !!this.getContextPrecinctScope(query.originalQuery, context)?.size;
+    const precincts = (await this.getScopedSegmentPrecincts(query.originalQuery, context))
+      .filter((p) => (hasScope || this.getRegisteredVoters(p) >= 100) && (filterFn ? filterFn(p) : true))
+      .map((p) => ({ precinct: p, score: scoreFn(p) }))
+      .filter((r) => Number.isFinite(r.score))
+      .sort((a, b) => b.score - a.score);
+    const top = precincts.slice(0, Math.max(1, limit));
+    const totalVoters = precincts.reduce(
+      (sum, r) => sum + this.getRegisteredVoters(r.precinct),
+      0,
+    );
+
+    const response = [
+      `## ${title}`,
+      "",
+      summary,
+      "",
+      `Found **${precincts.length.toLocaleString()} precincts** with **${totalVoters.toLocaleString()} registered voters** in scope.`,
+      "",
+      "### Top Precincts",
+      "",
+      ...top.map((r, i) => {
+        const p = r.precinct;
+        const details = [
+          ...detailFn(p),
+          `${this.getRegisteredVoters(p).toLocaleString()} registered voters`,
+        ];
+        return `${i + 1}. **${this.getPrecinctDisplayName(p)}** - ${this.getJurisdictionLabel(p)} (${details.join(", ")})`;
+      }),
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      mapCommands: this.buildHighlightCommands(top.map((r) => r.precinct)),
+      data: {
+        rankings: top.map((r) => ({ ...r.precinct, rankingScore: r.score })),
+        matchCount: precincts.length,
+        precinctCount: precincts.length,
+        totalVoters,
+      },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private async handleTurnoutDropoffQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context?: HandlerContext,
+  ): Promise<HandlerResult> {
+    const precincts = await this.getScopedSegmentPrecincts(query.originalQuery, context);
+    const rows = precincts
+      .map((p) => {
+        const t24 = p.elections?.["2024"]?.turnout;
+        const t22 = p.elections?.["2022"]?.turnout;
+        return {
+          precinct: p,
+          t24,
+          t22,
+          dropoff: Number.isFinite(t24) && Number.isFinite(t22) ? t24 - t22 : null,
+        };
+      })
+      .filter((r) => r.dropoff != null)
+      .sort((a, b) => (b.dropoff ?? 0) - (a.dropoff ?? 0));
+
+    if (rows.length === 0) {
+      const proxyRows = precincts
+        .filter((p) => this.getRegisteredVoters(p) >= 100)
+        .map((p) => ({
+          precinct: p,
+          score:
+            (p.targeting?.gotvPriority ?? 0) * 0.55 +
+            Math.max(0, 70 - (p.electoral?.avgTurnout ?? 70)) * 0.45,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+      return {
+        success: true,
+        response: [
+          "## Turnout Dropoff Risk",
+          "",
+          "The loaded California files do not include comparable 2022 midterm turnout or 2020 turnout-rate baselines, so I cannot calculate a literal presidential-to-midterm dropoff.",
+          "",
+          "Using the available CA data instead, these are the strongest turnout-risk targets: high GOTV priority with lower current modeled turnout.",
+          "",
+          ...proxyRows.map(
+            (r, i) =>
+              `${i + 1}. **${this.getPrecinctDisplayName(r.precinct)}** - ${this.getJurisdictionLabel(r.precinct)} (GOTV ${this.formatNumber(r.precinct.targeting?.gotvPriority)}, turnout ${this.formatNumber(r.precinct.electoral?.avgTurnout)}%, ${this.getRegisteredVoters(r.precinct).toLocaleString()} registered voters)`,
+          ),
+        ].join("\n"),
+        mapCommands: this.buildHighlightCommands(proxyRows.map((r) => r.precinct)),
+        data: { rankings: proxyRows, matchCount: proxyRows.length, precinctCount: proxyRows.length },
+        suggestedActions: [
+          {
+            id: "show-gotv-priority",
+            label: "Show GOTV Priority",
+            action:
+              "Where should we focus GOTV? Show precincts with GOTV priority at least 60 and average turnout under 58%",
+            priority: 1,
+          },
+        ],
+        metadata: this.buildMetadata("segment_find", startTime, query),
+      };
+    }
+
+    const top = rows.slice(0, 10);
+    const response = [
+      "## Turnout Dropoff",
+      "",
+      "Ranked by the turnout gap between the 2024 presidential data and the 2022 midterm data.",
+      "",
+      ...top.map(
+        (r, i) =>
+          `${i + 1}. **${this.getPrecinctDisplayName(r.precinct)}** - ${this.getJurisdictionLabel(r.precinct)} (${this.formatNumber(r.dropoff)} point dropoff, 2024 ${this.formatNumber(r.t24)}%, 2022 ${this.formatNumber(r.t22)}%)`,
+      ),
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      mapCommands: this.buildHighlightCommands(top.map((r) => r.precinct)),
+      data: { rankings: top, matchCount: rows.length, precinctCount: rows.length },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private async handleYoungVotersQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context: HandlerContext | undefined,
+    limit: number,
+  ): Promise<HandlerResult> {
+    const precincts = await this.getScopedSegmentPrecincts(query.originalQuery, context);
+    const hasUsableMedianAge = precincts.some(
+      (p) => Number.isFinite(p.demographics?.medianAge) && p.demographics.medianAge > 0,
+    );
+    const rows = precincts
+      .map((p) => {
+        const medianAge = p.demographics?.medianAge;
+        const hasAge = Number.isFinite(medianAge) && medianAge > 0;
+        const youngByAge = hasAge && medianAge <= 35;
+        const collegePct = p.demographics?.collegePct ?? 0;
+        const renterPct = 100 - (p.demographics?.homeownerPct ?? 100);
+        const density = p.demographics?.populationDensity ?? 0;
+        const youngProxy = !hasUsableMedianAge && (collegePct >= 45 || renterPct >= 45);
+        const score =
+          (youngByAge ? 100 - medianAge : 0) +
+          (!hasUsableMedianAge ? collegePct * 0.6 + renterPct * 0.3 + Math.min(20, density / 100000) : 0) +
+          Math.min(15, this.getRegisteredVoters(p) / 500);
+        return { precinct: p, medianAge, collegePct, renterPct, youngByAge, youngProxy, score };
+      })
+      .filter((r) => (r.youngByAge || r.youngProxy) && this.getRegisteredVoters(r.precinct) >= 100)
+      .sort((a, b) => b.score - a.score);
+
+    const top = rows.slice(0, Math.max(1, limit));
+    const response = [
+      "## Young Voter Concentrations",
+      "",
+      hasUsableMedianAge
+        ? "Ranked by precincts with median age under 35."
+        : "The CA precinct demographic file has median_age set to 0, so a true under-35 count is not available at precinct level. I ranked the best available youth proxy instead: higher college-educated share, higher renter share, and dense precincts.",
+      "",
+      `Found **${rows.length.toLocaleString()} precincts** with usable young-voter proxy indicators.`,
+      "",
+      ...top.map((r, i) => {
+        const ageLabel =
+          Number.isFinite(r.medianAge) && r.medianAge > 0
+            ? `median age ${this.formatNumber(r.medianAge)}`
+            : `${this.formatNumber(r.collegePct)}% college educated, ${this.formatNumber(r.renterPct)}% renter`;
+        return `${i + 1}. **${this.getPrecinctDisplayName(r.precinct)}** - ${this.getJurisdictionLabel(r.precinct)} (${ageLabel}, ${this.getRegisteredVoters(r.precinct).toLocaleString()} registered voters)`;
+      }),
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      mapCommands: this.buildHighlightCommands(top.map((r) => r.precinct)),
+      data: { rankings: top, matchCount: rows.length, precinctCount: rows.length },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private async handleIncomeLeanQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context?: HandlerContext,
+  ): Promise<HandlerResult> {
+    const precincts = await this.getScopedSegmentPrecincts(query.originalQuery, context);
+    const bands = [
+      { label: "Under $50k", min: 0, max: 50000 },
+      { label: "$50k-$75k", min: 50000, max: 75000 },
+      { label: "$75k-$125k", min: 75000, max: 125000 },
+      { label: "$125k+", min: 125000, max: Infinity },
+    ];
+    const rows = bands
+      .map((band) => {
+        const matches = precincts.filter((p) => {
+          const income = p.demographics?.medianHHI ?? 0;
+          return income >= band.min && income < band.max;
+        });
+        const voters = matches.reduce((sum, p) => sum + this.getRegisteredVoters(p), 0);
+        const weightedLean =
+          voters > 0
+            ? matches.reduce(
+                (sum, p) => sum + (p.electoral?.partisanLean ?? 0) * this.getRegisteredVoters(p),
+                0,
+              ) / voters
+            : 0;
+        return { ...band, matches, voters, weightedLean };
+      })
+      .filter((row) => row.matches.length > 0);
+
+    const response = [
+      "## Political Lean by Income",
+      "",
+      `Compared **${precincts.length.toLocaleString()} precincts** in scope using modeled median household income and modeled partisan lean.`,
+      "",
+      "| Income band | Precincts | Registered voters | Avg modeled lean |",
+      "|---|---:|---:|---:|",
+      ...rows.map(
+        (row) =>
+          `| ${row.label} | ${row.matches.length.toLocaleString()} | ${row.voters.toLocaleString()} | ${this.formatPartisanLean(row.weightedLean)} |`,
+      ),
+      "",
+      "Positive lean here means Republican, negative lean means Democratic. Treat this as a directional targeting read, not a causal claim about income.",
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      data: { rows, matchCount: precincts.length, precinctCount: precincts.length },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private async handleMarginShiftQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context?: HandlerContext,
+  ): Promise<HandlerResult> {
+    const precincts = await this.getScopedSegmentPrecincts(query.originalQuery, context);
+    const rows = precincts
+      .map((p) => {
+        const m20 = p.elections?.["2020"]?.margin;
+        const m24 = p.elections?.["2024"]?.margin;
+        return {
+          precinct: p,
+          margin2020: m20,
+          margin2024: m24,
+          netShift: Number.isFinite(m20) && Number.isFinite(m24) ? m24 - m20 : null,
+          absShift: Number.isFinite(m20) && Number.isFinite(m24) ? Math.abs(m24 - m20) : null,
+          competitivenessChange:
+            Number.isFinite(m20) && Number.isFinite(m24)
+              ? Math.abs(m24) - Math.abs(m20)
+              : null,
+        };
+      })
+      .filter((r) => r.absShift != null)
+      .sort((a, b) => (b.absShift ?? 0) - (a.absShift ?? 0));
+
+    if (rows.length === 0) {
+      return {
+        success: true,
+        response:
+          "## Margin Changes\n\nI could not find precincts with both 2020 and 2024 presidential margins in the loaded California data, so there is not enough election history to rank margin shifts yet.",
+        metadata: this.buildMetadata("segment_find", startTime, query),
+      };
+    }
+
+    const top = rows.slice(0, 10);
+    const response = [
+      "## Margin Changes Since 2020",
+      "",
+      "California currently has comparable 2020 and 2024 presidential precinct margins loaded here. I ranked precincts by the absolute change in Dem-Rep margin; 2022 midterm margin history is not available in this CA dataset.",
+      "",
+      "### Largest Shifts",
+      "",
+      ...top.map((r, i) => {
+        const direction = (r.netShift ?? 0) >= 0 ? "toward D" : "toward R";
+        const comp =
+          (r.competitivenessChange ?? 0) < 0
+            ? "tightened"
+            : (r.competitivenessChange ?? 0) > 0
+              ? "widened"
+              : "held steady";
+        return `${i + 1}. **${this.getPrecinctDisplayName(r.precinct)}** - ${this.getJurisdictionLabel(r.precinct)} (${this.formatDemRepMargin(r.margin2020)} in 2020 to ${this.formatDemRepMargin(r.margin2024)} in 2024, ${direction} ${this.formatNumber(Math.abs(r.netShift ?? 0))} pts, ${comp})`;
+      }),
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      mapCommands: this.buildHighlightCommands(top.map((r) => r.precinct)),
+      data: { rankings: top, matchCount: rows.length, precinctCount: rows.length },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private async handleCanvassingEfficiencyQuickStart(
+    query: ParsedQuery,
+    startTime: number,
+    context: HandlerContext | undefined,
+    limit: number,
+  ): Promise<HandlerResult> {
+    const precincts = await this.getScopedSegmentPrecincts(query.originalQuery, context);
+    const rows = precincts
+      .map((p) => {
+        const voters = this.getRegisteredVoters(p);
+        const persuasionPct = Math.min(100, Math.max(0, p.targeting?.persuasionOpportunity ?? 0)) / 100;
+        const estimatedDoors = Math.max(1, Math.round(voters / 1.5));
+        const estimatedPersuadable = Math.max(1, Math.round(voters * persuasionPct));
+        return {
+          precinct: p,
+          voters,
+          estimatedDoors,
+          estimatedPersuadable,
+          doorsPerPersuadable: estimatedDoors / estimatedPersuadable,
+        };
+      })
+      .filter(
+        (r) =>
+          r.voters >= 100 &&
+          r.estimatedPersuadable >= 25 &&
+          Number.isFinite(r.doorsPerPersuadable),
+      )
+      .sort((a, b) => a.doorsPerPersuadable - b.doorsPerPersuadable);
+    const top = rows.slice(0, Math.max(1, limit));
+    const response = [
+      "## Canvassing Efficiency",
+      "",
+      "Ranked by estimated doors per persuadable voter. Lower is better, because each canvass pass is expected to find more persuadable voters.",
+      "",
+      ...top.map(
+        (r, i) =>
+          `${i + 1}. **${this.getPrecinctDisplayName(r.precinct)}** - ${this.getJurisdictionLabel(r.precinct)} (${this.formatNumber(r.doorsPerPersuadable)} doors per persuadable voter, ${r.estimatedPersuadable.toLocaleString()} persuadable voters, ${r.voters.toLocaleString()} registered voters)`,
+      ),
+    ].join("\n");
+
+    return {
+      success: true,
+      response,
+      mapCommands: this.buildHighlightCommands(top.map((r) => r.precinct)),
+      data: { rankings: top, matchCount: rows.length, precinctCount: rows.length },
+      metadata: this.buildMetadata("segment_find", startTime, query),
+    };
+  }
+
+  private buildHighlightCommands(precincts: any[]): any[] {
+    const ids = precincts.map((p) => p.id ?? p.precinctId).filter(Boolean);
+    if (ids.length === 0) return [];
+    return [
+      {
+        action: "highlight",
+        target: "precincts",
+        ids,
+        style: { fillColor: "#3B82F6", fillOpacity: 0.65 },
+      },
+      { action: "fitBounds", target: "selection" },
+    ];
+  }
+
+  private extractTopLimit(query: string, fallback: number): number {
+    const match = query.match(/\b(?:top|which)\s+(\d{1,2})\b/i);
+    if (!match) return fallback;
+    return Math.max(1, Math.min(25, parseInt(match[1], 10)));
+  }
+
+  private getRegisteredVoters(p: any): number {
+    return (
+      p.demographics?.population18up ??
+      p.registeredVoters ??
+      p.registered_voters ??
+      0
+    );
+  }
+
+  private getPrecinctDisplayName(p: any): string {
+    return p.name ?? p.precinctName ?? p.id ?? p.precinctId ?? "Unknown precinct";
+  }
+
+  private getJurisdictionLabel(p: any): string {
+    return p.jurisdiction ?? p.county ?? "California";
+  }
+
+  private formatNumber(value: unknown): string {
+    const n = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(n)) return "n/a";
+    return Math.round(n * 10) / 10 + "";
+  }
+
+  private formatPartisanLean(value: number): string {
+    const dir = value >= 0 ? "R" : "D";
+    return `${dir}+${Math.abs(value).toFixed(1)}`;
+  }
+
+  private formatDemRepMargin(value: number | null | undefined): string {
+    if (value == null || !Number.isFinite(value)) return "n/a";
+    const dir = value >= 0 ? "D" : "R";
+    return `${dir}+${Math.abs(value).toFixed(1)}`;
   }
 
   // --------------------------------------------------------------------------
