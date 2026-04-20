@@ -20,6 +20,9 @@
 // Core engines
 export { ComparisonEngine } from "./ComparisonEngine";
 export { InsightGenerator } from "./InsightGenerator";
+export { SimilarityEngine } from "./SimilarityEngine";
+export { FieldBriefGenerator } from "./FieldBriefGenerator";
+export { BatchComparisonEngine } from "./BatchComparisonEngine";
 
 export { ResourceOptimizer } from "./ResourceOptimizer";
 

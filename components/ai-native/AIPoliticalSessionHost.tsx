@@ -2015,12 +2015,6 @@ Available actions:
           metadata: orchestratorResult.metadata,
         };
 
-        // If result has graph data, update the graph state
-        if (result.metadata?.showGraph && result.metadata.entities) {
-          setGraphEntities(result.metadata.entities);
-          setGraphRelationships(result.metadata.relationships || []);
-        }
-
         // Orchestrator path skips /api/political-chat — still resolve export IDs for CSV/VAN.
         try {
           const idsRes = await fetch("/api/political-chat/precinct-ids", {
