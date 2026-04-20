@@ -25,10 +25,36 @@ import { loadStateConfig } from './lib/load-state-config';
 
 const H3_RES = 7;
 const H3_CELL_AREA_KM2 = 5.16;
-/** Guardrail: degenerate / huge geometries that explode cell count fall back to centroid. */
-const MAX_CELLS_PER_PRECINCT = 800;
 
 function abs(p: string) { return path.join(process.cwd(), p); }
+
+function loadFeatureCollection(filePath: string): FeatureCollection {
+  const raw = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as
+    | FeatureCollection
+    | { geojsonManifest?: string; merge?: unknown };
+
+  if (Array.isArray((raw as FeatureCollection).features)) {
+    return raw as FeatureCollection;
+  }
+
+  const manifest = raw as { geojsonManifest?: string; merge?: unknown };
+  if (manifest.geojsonManifest !== '1' || !Array.isArray(manifest.merge)) {
+    throw new Error(`Unsupported GeoJSON format: ${filePath}`);
+  }
+
+  const features: Feature[] = [];
+  for (const ref of manifest.merge) {
+    if (typeof ref !== 'string' || !ref.startsWith('/')) continue;
+    const chunkPath = abs(path.join('public', ref.slice(1)));
+    if (!fs.existsSync(chunkPath)) {
+      throw new Error(`Manifest chunk not found: ${chunkPath}`);
+    }
+    const chunk = JSON.parse(fs.readFileSync(chunkPath, 'utf-8')) as FeatureCollection;
+    if (Array.isArray(chunk.features)) features.push(...chunk.features);
+  }
+
+  return { type: 'FeatureCollection', features };
+}
 
 type PrecinctRow = {
   precinct_id?: string;
@@ -91,7 +117,7 @@ function aggregateMetrics(b: Bucket) {
 
 /**
  * All H3 cells that intersect the precinct polygon (GeoJSON [lng,lat] rings).
- * Falls back to centroid cell if polyfill fails or exceeds MAX_CELLS_PER_PRECINCT.
+ * Falls back to centroid cell only if polyfill fails.
  */
 function h3CellsForPrecinctFeature(
   feat: Feature<Polygon | MultiPolygon>,
@@ -126,12 +152,6 @@ function h3CellsForPrecinctFeature(
 
   try {
     let cells = tryPolyfill();
-    if (cells.length > MAX_CELLS_PER_PRECINCT) {
-      console.warn(
-        `[build-h3:${stateAbbr}] Precinct ${id}: ${cells.length} cells > max ${MAX_CELLS_PER_PRECINCT}, using centroid`,
-      );
-      cells = [];
-    }
     if (cells.length > 0) {
       return { cells, fallbackCentroid: false };
     }
@@ -163,7 +183,7 @@ function main() {
     throw new Error(`Targeting scores not found: ${scoresFile}\nRun build:targeting first.`);
   }
 
-  const fc = JSON.parse(fs.readFileSync(precinctFile, 'utf-8')) as FeatureCollection;
+  const fc = loadFeatureCollection(precinctFile);
   const scoresData = JSON.parse(fs.readFileSync(scoresFile, 'utf-8')) as {
     precincts: Record<string, PrecinctRow>;
   };

@@ -217,6 +217,18 @@ export class ComparisonEngine {
       municipality.density,
     );
 
+    const demVoteShare = 50 + municipality.partisanLean / 2;
+    const repVoteShare = 50 - municipality.partisanLean / 2;
+    const margin = demVoteShare - repVoteShare;
+    const ballotsCast = Math.round(
+      estimatedVoters * (municipality.avgTurnout / 100),
+    );
+    const historicalRows =
+      municipality.electionHistory && municipality.electionHistory.length > 0
+        ? [...municipality.electionHistory].sort((a, b) => b.year - a.year)
+        : null;
+    const latestHistory = historicalRows?.[0];
+
     return {
       id: municipality.id,
       name: municipality.name,
@@ -252,13 +264,11 @@ export class ComparisonEngine {
       },
 
       electoral: {
-        lastElectionYear: 2024, // Default
-        demVoteShare: 50 + municipality.partisanLean / 2,
-        repVoteShare: 50 - municipality.partisanLean / 2,
-        marginOfVictory: Math.abs(municipality.partisanLean),
-        totalVotesCast: Math.round(
-          estimatedVoters * (municipality.avgTurnout / 100),
-        ),
+        lastElectionYear: latestHistory?.year ?? 2024, // Default
+        demVoteShare: latestHistory?.demPct ?? demVoteShare,
+        repVoteShare: latestHistory?.repPct ?? repVoteShare,
+        marginOfVictory: Math.abs(latestHistory?.margin ?? municipality.partisanLean),
+        totalVotesCast: latestHistory?.ballotsCast ?? ballotsCast,
       },
 
       targetingScores: {
@@ -272,7 +282,19 @@ export class ComparisonEngine {
         ),
       },
 
-      electionHistory: [], // Not available in municipality data
+      // Prefer full historical series from aggregated source; fallback to latest-cycle row.
+      electionHistory:
+        historicalRows ??
+        [
+          {
+            year: 2024,
+            demPct: demVoteShare,
+            repPct: repVoteShare,
+            margin,
+            turnout: municipality.avgTurnout,
+            ballotsCast,
+          },
+        ],
     };
   }
 
@@ -296,6 +318,16 @@ export class ComparisonEngine {
     }
 
     const estimatedVoters = Math.round(district.population * 0.75);
+    const districtHistory =
+      district.electionHistory && district.electionHistory.length > 0
+        ? [...district.electionHistory].sort((a, b) => b.year - a.year)
+        : null;
+    const latestElection = districtHistory?.[0];
+    const fallbackDemPct = 50 + district.lastElectionMargin / 2;
+    const fallbackRepPct = 50 - district.lastElectionMargin / 2;
+    const fallbackBallots = Math.round(
+      estimatedVoters * (district.avgTurnout / 100),
+    );
 
     return {
       id: district.id,
@@ -308,13 +340,9 @@ export class ComparisonEngine {
         medianAge: district.keyDemographics.medianAge,
         medianIncome: district.keyDemographics.medianIncome,
         collegePct: district.keyDemographics.bachelorsPct,
-        homeownerPct: district.keyDemographics.density === "urban" ? 45 : 70,
-        diversityIndex: this.estimateDiversityByDensity(
-          district.keyDemographics.density as any,
-        ),
-        populationDensity: this.estimateDensity(
-          district.keyDemographics.density as any,
-        ),
+        homeownerPct: district.keyDemographics.homeownerPct,
+        diversityIndex: district.keyDemographics.diversityIndex,
+        populationDensity: district.keyDemographics.populationDensity,
       },
 
       politicalProfile: {
@@ -329,13 +357,11 @@ export class ComparisonEngine {
       },
 
       electoral: {
-        lastElectionYear: district.lastElectionYear,
-        demVoteShare: 50 + district.lastElectionMargin / 2,
-        repVoteShare: 50 - district.lastElectionMargin / 2,
-        marginOfVictory: district.lastElectionMargin,
-        totalVotesCast: Math.round(
-          estimatedVoters * (district.avgTurnout / 100),
-        ),
+        lastElectionYear: latestElection?.year ?? district.lastElectionYear,
+        demVoteShare: latestElection?.demPct ?? fallbackDemPct,
+        repVoteShare: latestElection?.repPct ?? fallbackRepPct,
+        marginOfVictory: latestElection?.margin ?? district.lastElectionMargin,
+        totalVotesCast: latestElection?.ballotsCast ?? fallbackBallots,
       },
 
       targetingScores: {
@@ -349,18 +375,18 @@ export class ComparisonEngine {
         ),
       },
 
-      electionHistory: [
-        {
-          year: district.lastElectionYear,
-          demPct: 50 + district.lastElectionMargin / 2,
-          repPct: 50 - district.lastElectionMargin / 2,
-          margin: district.lastElectionMargin,
-          turnout: district.avgTurnout,
-          ballotsCast: Math.round(
-            estimatedVoters * (district.avgTurnout / 100),
-          ),
-        },
-      ],
+      electionHistory:
+        districtHistory ??
+        [
+          {
+            year: district.lastElectionYear,
+            demPct: fallbackDemPct,
+            repPct: fallbackRepPct,
+            margin: district.lastElectionMargin,
+            turnout: district.avgTurnout,
+            ballotsCast: fallbackBallots,
+          },
+        ],
     };
   }
 

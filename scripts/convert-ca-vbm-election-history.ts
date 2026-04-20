@@ -18,16 +18,39 @@ import * as turf from '@turf/turf';
 import type { Feature, Geometry, Polygon, MultiPolygon } from 'geojson';
 
 const CA_DIR = path.join(process.cwd(), 'public/data/political/california');
-const VBM_DBF = path.join(
-  CA_DIR,
-  'CA_2024_VBM_Analysis',
-  'CA_2024_VBM_Analysis.dbf',
-);
-const VBM_SHP = path.join(
-  CA_DIR,
-  'CA_2024_VBM_Analysis',
-  'CA_2024_VBM_Analysis.shp',
-);
+function resolveFirstExisting(paths: string[]): string {
+  for (const p of paths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return paths[0];
+}
+
+const VBM_DBF = resolveFirstExisting([
+  path.join(
+    CA_DIR,
+    'CA_2024_VBM_Analysis',
+    'CA_2024_VBM_Analysis.dbf',
+  ),
+  path.join(
+    CA_DIR,
+    'CA_2024_VBM_Analysis',
+    'CA_2024_VBM_Analysis',
+    'CA_2024_VBM_Analysis.dbf',
+  ),
+]);
+const VBM_SHP = resolveFirstExisting([
+  path.join(
+    CA_DIR,
+    'CA_2024_VBM_Analysis',
+    'CA_2024_VBM_Analysis.shp',
+  ),
+  path.join(
+    CA_DIR,
+    'CA_2024_VBM_Analysis',
+    'CA_2024_VBM_Analysis',
+    'CA_2024_VBM_Analysis.shp',
+  ),
+]);
 const ELECTION_HISTORY = path.join(
   CA_DIR,
   'precincts',

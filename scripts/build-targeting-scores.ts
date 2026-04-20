@@ -38,6 +38,37 @@ function parseVote(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function loadFeatureCollection(filePath: string): FeatureCollection {
+  const raw = JSON.parse(fs.readFileSync(filePath, 'utf8')) as
+    | FeatureCollection
+    | { geojsonManifest?: string; merge?: unknown };
+
+  if (Array.isArray((raw as FeatureCollection).features)) {
+    return raw as FeatureCollection;
+  }
+
+  const manifest = raw as { geojsonManifest?: string; merge?: unknown };
+  if (manifest.geojsonManifest !== '1' || !Array.isArray(manifest.merge)) {
+    throw new Error(`Unsupported GeoJSON format: ${filePath}`);
+  }
+
+  const features: Feature[] = [];
+  for (const ref of manifest.merge) {
+    if (typeof ref !== 'string' || !ref.startsWith('/')) continue;
+    const chunkPath = abs(path.join('public', ref.slice(1)));
+    if (!fs.existsSync(chunkPath)) {
+      throw new Error(`Manifest chunk not found: ${chunkPath}`);
+    }
+    const chunk = JSON.parse(fs.readFileSync(chunkPath, 'utf8')) as FeatureCollection;
+    if (Array.isArray(chunk.features)) features.push(...chunk.features);
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features,
+  };
+}
+
 function marginStdDev(values: number[]): number {
   if (values.length < 2) return 0;
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
@@ -141,7 +172,7 @@ function loadElectionVotes(
     return new Map();
   }
 
-  const gj = JSON.parse(fs.readFileSync(filePath, 'utf8')) as { features: Array<{ properties?: Record<string, unknown> }> };
+  const gj = loadFeatureCollection(filePath) as { features: Array<{ properties?: Record<string, unknown> }> };
   const map = new Map<string, VoteRow>();
 
   const countyPad = src.countyPad ?? 3;
@@ -204,6 +235,34 @@ function buildPrecinctElectionPayload(
         other_votes: 0,
         winner: demVotes >= repVotes ? 'Democratic' : 'Republican',
         winner_party: demVotes >= repVotes ? 'DEM' : 'REP',
+      },
+    },
+  };
+}
+
+function buildNoDataElectionPayload(
+  electionType: 'general' | 'midterm',
+  office: string,
+  stateName: string,
+) {
+  return {
+    type: electionType,
+    registered_voters: 0,
+    ballots_cast: 0,
+    turnout: null as number | null,
+    data_status: 'unavailable',
+    races: {
+      [office]: {
+        office,
+        district: stateName,
+        candidates: [] as unknown[],
+        total_votes: 0,
+        dem_votes: 0,
+        rep_votes: 0,
+        other_votes: 0,
+        winner: 'Unknown',
+        winner_party: 'UNK',
+        data_status: 'unavailable',
       },
     },
   };
@@ -305,7 +364,7 @@ function main() {
     throw new Error(`Primary precinct file not found: ${primaryFile}\nRun organize:data first.`);
   }
   console.log(`Loading primary geometry: ${cfg.precincts.file}…`);
-  const primaryGj = JSON.parse(fs.readFileSync(primaryFile, 'utf8')) as FeatureCollection;
+  const primaryGj = loadFeatureCollection(primaryFile);
   console.log(`  ${primaryGj.features.length.toLocaleString()} features`);
 
   // Population file (from demographics dir, totalPopulation)
@@ -369,26 +428,80 @@ function main() {
       yearVotes[src.year] = { ...row, margin, demPct, repPct };
     }
 
-    if (allMargins.length === 0) continue; // no vote data for any year
+    const hasElectionData = allMargins.length > 0;
+    let registeredVoters = 0;
+    let scores:
+      | ReturnType<typeof computeScores>
+      | {
+          gotv_priority: number;
+          gotv_components: {
+            support_strength: number;
+            turnout_opportunity: number;
+            voter_pool_weight: number;
+          };
+          gotv_classification: string;
+          persuasion_opportunity: number;
+          persuasion_components: {
+            margin_closeness: number;
+            swing_factor: number;
+            moderate_factor: number;
+            independent_factor: number;
+            low_engagement: number;
+          };
+          persuasion_classification: string;
+          targeting_strategy: string;
+          targeting_priority: number;
+          combined_score: number;
+          recommendation: string;
+          swing_potential: number;
+          political_scores: { partisan_lean: number; swing_potential: number };
+        };
 
-    // Use the primary (first) year for base scores
-    const baseYear = sortedElections.find(s => yearVotes[s.year]);
-    if (!baseYear) continue;
-    const base = yearVotes[baseYear.year];
-    const turnout = base.registered && base.registered > 0
-      ? (base.demVotes + base.repVotes) / base.registered * 100
-      : 65;
+    if (hasElectionData) {
+      // Use the first election year with data for base scores.
+      const baseYear = sortedElections.find(s => yearVotes[s.year]);
+      if (!baseYear) continue;
+      const base = yearVotes[baseYear.year];
+      const turnout = base.registered && base.registered > 0
+        ? (base.demVotes + base.repVotes) / base.registered * 100
+        : 65;
 
-    const scores = computeScores(
-      base.demPct, base.repPct, base.margin, turnout,
-      base.registered ?? base.demVotes + base.repVotes,
-      base.demVotes + base.repVotes,
-      allMargins,
-    );
+      registeredVoters = base.registered ?? (base.demVotes + base.repVotes);
+      scores = computeScores(
+        base.demPct, base.repPct, base.margin, turnout,
+        registeredVoters,
+        base.demVotes + base.repVotes,
+        allMargins,
+      );
+    } else {
+      // Keep precincts that have boundaries but no election rows.
+      scores = {
+        gotv_priority: 0,
+        gotv_components: {
+          support_strength: 0,
+          turnout_opportunity: 0,
+          voter_pool_weight: 0,
+        },
+        gotv_classification: 'No Election Data',
+        persuasion_opportunity: 0,
+        persuasion_components: {
+          margin_closeness: 0,
+          swing_factor: 0,
+          moderate_factor: 0,
+          independent_factor: 0,
+          low_engagement: 0,
+        },
+        persuasion_classification: 'No Election Data',
+        targeting_strategy: 'No Election Data',
+        targeting_priority: 5,
+        combined_score: 0,
+        recommendation: 'No election results available for this precinct yet.',
+        swing_potential: 0,
+        political_scores: { partisan_lean: 0, swing_potential: 0 },
+      };
+    }
 
     const pop = popByPrecinct.get(uniqueId);
-    // Fall back to total votes if no explicit registration count (e.g. CA 2020 has no reg fields)
-    const registeredVoters = base.registered ?? (base.demVotes + base.repVotes);
     precincts[uniqueId] = {
       precinct_id: uniqueId,
       precinct_name: String(p[cfg.precincts.nameField ?? 'NAME'] ?? uniqueId),
@@ -410,9 +523,15 @@ function main() {
         yv.registered, yv.demVotes, yv.repVotes, src.type, src.office, cfg.stateName,
       );
     }
-    if (Object.keys(elections).length > 0) {
-      electionPrecincts[uniqueId] = { elections };
+    if (Object.keys(elections).length === 0 && sortedElections.length > 0) {
+      const fallbackElection = sortedElections[0];
+      elections[fallbackElection.date] = buildNoDataElectionPayload(
+        fallbackElection.type,
+        fallbackElection.office,
+        cfg.stateName,
+      );
     }
+    electionPrecincts[uniqueId] = { elections };
   }
 
   // ---------------------------------------------------------------------------

@@ -145,7 +145,7 @@ export const californiaConfig: StateBuildConfig = {
     electionHistory: 'precincts/ca_precinct_election_history.json',
     demographics: 'precincts/ca_precinct_demographics.json',
     districtCrosswalk: 'precincts/ca_precinct_district_crosswalk.json',
-    h3Json: 'precincts/ca_h3_aggregates.json',
-    h3GeoJSON: 'precincts/ca_h3_aggregates.geojson',
+    h3Json: 'precincts/ca_h3_aggregates.v2.json',
+    h3GeoJSON: 'precincts/ca_h3_aggregates.v2.geojson',
   },
 };

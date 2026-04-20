@@ -153,6 +153,14 @@ export interface MunicipalityRawData {
   avgTurnout: number;
   dominantStrategy: string;
   density: 'urban' | 'suburban' | 'rural';
+  electionHistory?: Array<{
+    year: number;
+    demPct: number;
+    repPct: number;
+    margin: number;
+    turnout: number;
+    ballotsCast: number;
+  }>;
 }
 
 export interface MunicipalityDataFile {
@@ -187,12 +195,23 @@ export interface StateHouseRawData {
   competitiveness: string;
   lastElectionMargin: number;
   lastElectionYear: number;
+  electionHistory?: Array<{
+    year: number;
+    demPct: number;
+    repPct: number;
+    margin: number;
+    turnout: number;
+    ballotsCast: number;
+  }>;
   coverage: string;
   dominantStrategy: string;
   keyDemographics: {
     medianAge: number;
     medianIncome: number;
     bachelorsPct: number;
+    homeownerPct: number;
+    diversityIndex: number;
+    populationDensity: number;
     density: string;
   };
 }

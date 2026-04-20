@@ -1999,6 +1999,16 @@ export class PoliticalDataService {
       sumTurnout: number;
       sumDensity: number;
       strategyWeights: Map<string, number>;
+      electionAgg: Map<
+        number,
+        {
+          totalBallots: number;
+          totalDemVotes: number;
+          totalRepVotes: number;
+          turnoutWeighted: number;
+          turnoutWeight: number;
+        }
+      >;
     };
 
     const accByJurisdictionKey = new Map<string, MuniAcc>();
@@ -2016,6 +2026,7 @@ export class PoliticalDataService {
         sumTurnout: 0,
         sumDensity: 0,
         strategyWeights: new Map(),
+        electionAgg: new Map(),
       };
       accByJurisdictionKey.set(j.id, acc);
       if (j.name !== j.id) accByJurisdictionKey.set(j.name, acc);
@@ -2043,6 +2054,40 @@ export class PoliticalDataService {
         strat,
         (acc.strategyWeights.get(strat) || 0) + pop,
       );
+
+      const elections = p.elections as
+        | Record<
+            string,
+            {
+              demPct?: number;
+              repPct?: number;
+              turnout?: number;
+              ballotsCast?: number;
+            }
+          >
+        | undefined;
+      if (elections) {
+        for (const [yearKey, row] of Object.entries(elections)) {
+          const year = parseInt(yearKey, 10);
+          if (!Number.isFinite(year)) continue;
+          const cur = acc.electionAgg.get(year) ?? {
+            totalBallots: 0,
+            totalDemVotes: 0,
+            totalRepVotes: 0,
+            turnoutWeighted: 0,
+            turnoutWeight: 0,
+          };
+          const ballots = Number(row?.ballotsCast) || 0;
+          const demPct = Number(row?.demPct) || 0;
+          const repPct = Number(row?.repPct) || 0;
+          cur.totalBallots += ballots;
+          cur.totalDemVotes += (demPct / 100) * ballots;
+          cur.totalRepVotes += (repPct / 100) * ballots;
+          cur.turnoutWeighted += (Number(row?.turnout) || 0) * pop;
+          cur.turnoutWeight += pop;
+          acc.electionAgg.set(year, cur);
+        }
+      }
     }
 
     const municipalities: MunicipalityRawData[] = [];
@@ -2065,6 +2110,34 @@ export class PoliticalDataService {
         }
       }
 
+      const electionHistory = Array.from(acc.electionAgg.keys())
+        .sort((a, b) => b - a)
+        .map((year) => {
+          const agg = acc.electionAgg.get(year);
+          const totalBallots = agg?.totalBallots ?? 0;
+          const totalDemVotes = agg?.totalDemVotes ?? 0;
+          const totalRepVotes = agg?.totalRepVotes ?? 0;
+          const turnoutWeighted = agg?.turnoutWeighted ?? 0;
+          const turnoutWeight = agg?.turnoutWeight ?? 0;
+
+          const demPct =
+            totalBallots > 0 ? (totalDemVotes / totalBallots) * 100 : 0;
+          const repPct =
+            totalBallots > 0 ? (totalRepVotes / totalBallots) * 100 : 0;
+          const turnout =
+            turnoutWeight > 0 ? turnoutWeighted / turnoutWeight : 0;
+
+          return {
+            year,
+            demPct: Math.round(demPct * 10) / 10,
+            repPct: Math.round(repPct * 10) / 10,
+            margin: Math.round((demPct - repPct) * 10) / 10,
+            turnout: Math.round(turnout * 10) / 10,
+            ballotsCast: Math.round(totalBallots),
+          };
+        })
+        .filter((row) => row.ballotsCast > 0);
+
       municipalities.push({
         id: j.id,
         name: j.name,
@@ -2078,6 +2151,7 @@ export class PoliticalDataService {
         avgTurnout: wAvg(acc.sumTurnout),
         dominantStrategy,
         density,
+        ...(electionHistory.length > 0 ? { electionHistory } : {}),
       });
     }
 
@@ -2236,6 +2310,54 @@ export class PoliticalDataService {
           : Math.round(lean * 10) / 10;
       const rowElectionYear = maxYear > 0 ? maxYear : 2024;
 
+      const electionYearSet = new Set<number>();
+      for (const p of list) {
+        for (const y of Object.keys(p?.elections || {})) {
+          const year = parseInt(y, 10);
+          if (Number.isFinite(year)) electionYearSet.add(year);
+        }
+      }
+      const electionHistory = Array.from(electionYearSet)
+        .sort((a, b) => b - a)
+        .map((year) => {
+          let totalBallots = 0;
+          let totalDemVotes = 0;
+          let totalRepVotes = 0;
+          let turnoutWeighted = 0;
+          let turnoutWeight = 0;
+
+          for (const p of list) {
+            const row = p?.elections?.[String(year)];
+            if (!row) continue;
+            const pop = p.demographics?.totalPopulation ?? 0;
+            const ballots = Number(row.ballotsCast) || 0;
+            const demPct = Number(row.demPct) || 0;
+            const repPct = Number(row.repPct) || 0;
+            totalBallots += ballots;
+            totalDemVotes += (demPct / 100) * ballots;
+            totalRepVotes += (repPct / 100) * ballots;
+            turnoutWeighted += (Number(row.turnout) || 0) * pop;
+            turnoutWeight += pop;
+          }
+
+          const demPct =
+            totalBallots > 0 ? (totalDemVotes / totalBallots) * 100 : 0;
+          const repPct =
+            totalBallots > 0 ? (totalRepVotes / totalBallots) * 100 : 0;
+          const turnout =
+            turnoutWeight > 0 ? turnoutWeighted / turnoutWeight : 0;
+
+          return {
+            year,
+            demPct: Math.round(demPct * 10) / 10,
+            repPct: Math.round(repPct * 10) / 10,
+            margin: Math.round((demPct - repPct) * 10) / 10,
+            turnout: Math.round(turnout * 10) / 10,
+            ballotsCast: Math.round(totalBallots),
+          };
+        })
+        .filter((row) => row.ballotsCast > 0);
+
       districts.push({
         id: districtId,
         name: displayName,
@@ -2259,6 +2381,7 @@ export class PoliticalDataService {
         competitiveness: competitivenessMode(list),
         lastElectionMargin,
         lastElectionYear: rowElectionYear,
+        ...(electionHistory.length > 0 ? { electionHistory } : {}),
         coverage: activeState.name,
         dominantStrategy,
         keyDemographics: {
@@ -2271,6 +2394,18 @@ export class PoliticalDataService {
           bachelorsPct:
             Math.round(
               wAvg(list, (p) => p.demographics?.collegePct ?? 0) * 10,
+            ) / 10,
+          homeownerPct:
+            Math.round(
+              wAvg(list, (p) => p.demographics?.homeownerPct ?? 0) * 10,
+            ) / 10,
+          diversityIndex:
+            Math.round(
+              wAvg(list, (p) => p.demographics?.diversityIndex ?? 0) * 10,
+            ) / 10,
+          populationDensity:
+            Math.round(
+              wAvg(list, (p) => p.demographics?.populationDensity ?? 0) * 10,
             ) / 10,
           density: densStr,
         },
@@ -3119,6 +3254,7 @@ export class PoliticalDataService {
       {
         turnout?: number;
         ballots_cast?: number;
+        registered_voters?: number;
         races?: Record<
           string,
           {
@@ -3171,7 +3307,16 @@ export class PoliticalDataService {
       const turnout =
         typeof day.turnout === "number" && Number.isFinite(day.turnout)
           ? Math.min(100, Math.max(0, day.turnout))
-          : Number.NaN;
+          : typeof day.ballots_cast === "number" &&
+              Number.isFinite(day.ballots_cast) &&
+              typeof day.registered_voters === "number" &&
+              Number.isFinite(day.registered_voters) &&
+              day.registered_voters > 0
+            ? Math.min(
+                100,
+                Math.max(0, (day.ballots_cast / day.registered_voters) * 100),
+              )
+            : Number.NaN;
       out[year] = {
         demPct,
         repPct,
