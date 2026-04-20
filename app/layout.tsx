@@ -5,11 +5,12 @@ import { Inter } from 'next/font/google'
 import { Toaster } from "@/components/ui/toaster"
 import { ChatProvider } from '@/contexts/ChatContext'
 import ThemeProvider from '@/components/theme/ThemeProvider'
+import { activeState } from '@/lib/config/activeState'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'MPIQ - PA',
+  title: activeState.display.pageTitle,
   description: '',
   icons: {
     icon: '/mpiq_pin2.png',
@@ -25,7 +26,7 @@ export default function RootLayout({
       <head>
         {/* Preload critical data files for faster initial load */}
         <link rel="preload" href="/data/blob-urls.json" as="fetch" crossOrigin="anonymous" />
-        <link rel="preload" href="/data/political/pensylvania/precincts/pa_2020_presidential.geojson" as="fetch" crossOrigin="anonymous" />
+        <link rel="preload" href={activeState.paths.precinctBoundaries} as="fetch" crossOrigin="anonymous" />
 
         {/* Preconnect to Vercel Blob Storage - set NEXT_PUBLIC_BLOB_STORE_URL in .env.local */}
       </head>

@@ -45,6 +45,7 @@ import type { BoundaryLayerType } from '@/types/political';
 import type { MapCommand } from '@/lib/ai-native/types';
 import { politicalDataService } from '@/lib/services/PoliticalDataService';
 import { resolveHeatmapMetric } from '@/lib/map/heatmapMetrics';
+import { activeState } from '@/lib/config/activeState';
 import GeoFileUploader, { type UploadedLayer } from './GeoFileUploader';
 import UploadedLayersPanel from './UploadedLayersPanel';
 import UploadedLayerRenderer from './UploadedLayerRenderer';
@@ -123,17 +124,9 @@ function geojsonToArcGIS(geojson: GeoJSON.Geometry): __esri.Geometry | null {
   return null;
 }
 
-// Ingham County bounds - centered properly on county centroid
-// County center is approximately: [-84.38, 42.60] (slightly east of Lansing)
-// Zoomed in tight for precinct visibility while covering the county
-// Width: 0.40 degree (0.20 each side), Height: 0.18 degree (0.09 each side)
-const PENSYLVANIA_EXTENT = {
-  xmin: -80.52,
-  ymin: 39.72,
-  xmax: -74.69,
-  ymax: 42.27,
-  spatialReference: { wkid: 4326 },
-};
+// Initial map view — driven by active state config (set ACTIVE_STATE env var to switch)
+const STATE_MAP_CENTER = activeState.map.defaultCenter;   // [lng, lat]
+const STATE_MAP_ZOOM   = activeState.map.defaultZoom;
 
 // IQ Action types for sync with AI chat
 export interface IQAction {
@@ -338,16 +331,14 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
         basemap: basemap as any,
       });
 
-      // Create extent for Ingham County
-      const extent = new Extent(PENSYLVANIA_EXTENT);
-
       // Create view with padding to account for asymmetric UI panels
       // Layout: Nav (56px) + Left AI panel (320px) = 376px left, Right panel = 400px
       // Difference is 24px, so we add slight left padding to visually center the map
       const view = new MapView({
         container: mapRef.current,
         map: map,
-        extent: extent,  // Use extent instead of center/zoom to fit Ingham County
+        center: STATE_MAP_CENTER,
+        zoom: STATE_MAP_ZOOM,
         padding: {
           left: 12,    // Half of panel difference (24px / 2) to center between panels
           right: 12    // Balanced padding for visual centering
@@ -2021,14 +2012,10 @@ const PoliticalMapContainer: React.FC<PoliticalMapContainerProps> = ({
   // Handle precinct selection for AI mode
   const handlePrecinctClickForAI = useCallback(
     (precinctName: string, data: any) => {
-      const isPA =
-        data?.STATEFP === '42' ||
-        data?.STATEFP === 42 ||
-        (typeof data?.UNIQUE_ID === 'string' && data.UNIQUE_ID.includes('-:-'));
       const precinctInfo = {
         precinctId: data?.precinct_id || data?.UNIQUE_ID || data?.id || precinctName,
         precinctName: data?.precinct_name || data?.NAME || precinctName,
-        county: isPA ? 'Pennsylvania' : data?.county || 'Ingham',
+        county: data?.county || activeState.name,
         attributes: data,
       };
 

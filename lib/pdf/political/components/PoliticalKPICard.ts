@@ -19,7 +19,7 @@
  * @lastUpdated 2025-12-18
  */
 
-import jsPDF from 'jspdf';
+import jsPDF from "jspdf";
 import {
   POLITICAL_COLORS,
   FONT_SPECS,
@@ -27,15 +27,13 @@ import {
   formatPartisanLean,
   getCompetitivenessLabel,
   getPriorityLabel,
-} from '../templates/PoliticalPageTemplates';
+} from "../templates/PoliticalPageTemplates";
 import {
   NEUTRAL_COLORS,
   CHART_COLORS,
   TYPOGRAPHY,
-  getMetricChartColor,
-  getPartisanTextColor,
-} from '../design/PoliticalDesignTokens';
-import { hexToRGB, darkenColor, formatValue, type NumberFormat } from '../utils';
+} from "../design/PoliticalDesignTokens";
+import { hexToRGB, darkenColor, formatValue } from "../utils";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -49,9 +47,9 @@ export interface PoliticalKPICardOptions {
   /** Optional trend indicator (e.g., "+2.3 pts") */
   trend?: string;
   /** Trend direction for coloring */
-  trendDirection?: 'up' | 'down' | 'neutral';
+  trendDirection?: "up" | "down" | "neutral";
   /** Card style variant */
-  variant?: 'filled' | 'outline' | 'gradient';
+  variant?: "filled" | "outline" | "gradient";
   /** Background color override */
   backgroundColor?: string;
   /** Text color override */
@@ -77,7 +75,7 @@ export interface ScoreCardOptions {
   /** Score value (0-100) */
   score: number;
   /** Metric type for color */
-  metric: 'swing' | 'gotv' | 'persuasion' | 'turnout' | 'combined';
+  metric: "swing" | "gotv" | "persuasion" | "turnout" | "combined";
   /** Card label */
   label: string;
   /** Optional sublabel */
@@ -90,7 +88,7 @@ export interface StatCardOptions {
   /** Value to display */
   value: string | number;
   /** Format type */
-  format?: 'number' | 'currency' | 'percent' | 'plain';
+  format?: "number" | "currency" | "percent" | "plain";
   /** Optional icon/indicator */
   icon?: string;
 }
@@ -108,14 +106,14 @@ export function renderPoliticalKPICard(
   y: number,
   width: number,
   height: number,
-  options: PoliticalKPICardOptions
+  options: PoliticalKPICardOptions,
 ): void {
   const {
     label,
     value,
     trend,
-    trendDirection = 'neutral',
-    variant = 'filled',
+    trendDirection = "neutral",
+    variant = "filled",
     backgroundColor = POLITICAL_COLORS.primary,
     textColor = POLITICAL_COLORS.white,
     showScoreBar = false,
@@ -128,25 +126,27 @@ export function renderPoliticalKPICard(
   const savedFontSize = pdf.getFontSize();
 
   // Draw background based on variant
-  if (variant === 'filled') {
+  if (variant === "filled") {
     const bgRGB = hexToRGB(backgroundColor);
     pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
-    pdf.rect(x, y, width, height, 'F');
-  } else if (variant === 'outline') {
+    pdf.rect(x, y, width, height, "F");
+  } else if (variant === "outline") {
     const borderRGB = hexToRGB(backgroundColor);
     pdf.setDrawColor(borderRGB.r, borderRGB.g, borderRGB.b);
     pdf.setLineWidth(0.5);
-    pdf.rect(x, y, width, height, 'S');
-  } else if (variant === 'gradient') {
+    pdf.rect(x, y, width, height, "S");
+  } else if (variant === "gradient") {
     // Simulate gradient with solid color (jsPDF doesn't support gradients natively)
     const bgRGB = hexToRGB(backgroundColor);
     pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
-    pdf.rect(x, y, width, height, 'F');
+    pdf.rect(x, y, width, height, "F");
   }
 
   // Determine text colors based on variant
-  const labelColor = variant === 'outline' ? POLITICAL_COLORS.textSecondary : textColor;
-  const valueColor = variant === 'outline' ? POLITICAL_COLORS.textPrimary : textColor;
+  const labelColor =
+    variant === "outline" ? POLITICAL_COLORS.textSecondary : textColor;
+  const valueColor =
+    variant === "outline" ? POLITICAL_COLORS.textPrimary : textColor;
 
   // Calculate vertical layout
   const hasScoreBar = showScoreBar && score !== undefined;
@@ -158,12 +158,12 @@ export function renderPoliticalKPICard(
   const labelRGB = hexToRGB(labelColor);
   pdf.setTextColor(labelRGB.r, labelRGB.g, labelRGB.b);
   pdf.setFontSize(8);
-  pdf.setFont(FONT_SPECS.family, 'normal');
+  pdf.setFont(FONT_SPECS.family, "normal");
 
   const labelLines = pdf.splitTextToSize(label, width - 4);
   let currentY = startY + 4;
   labelLines.forEach((line: string, index: number) => {
-    pdf.text(line, x + width / 2, currentY + index * 3, { align: 'center' });
+    pdf.text(line, x + width / 2, currentY + index * 3, { align: "center" });
   });
   currentY += labelLines.length * 3 + 2;
 
@@ -171,11 +171,11 @@ export function renderPoliticalKPICard(
   const valueRGB = hexToRGB(valueColor);
   pdf.setTextColor(valueRGB.r, valueRGB.g, valueRGB.b);
   pdf.setFontSize(16);
-  pdf.setFont(FONT_SPECS.family, 'bold');
+  pdf.setFont(FONT_SPECS.family, "bold");
 
   const valueLines = pdf.splitTextToSize(value, width - 4);
   valueLines.forEach((line: string, index: number) => {
-    pdf.text(line, x + width / 2, currentY + index * 5, { align: 'center' });
+    pdf.text(line, x + width / 2, currentY + index * 5, { align: "center" });
   });
   currentY += valueLines.length * 5 + 2;
 
@@ -189,12 +189,12 @@ export function renderPoliticalKPICard(
     // Background bar
     const bgBarRGB = hexToRGB(darkenColor(backgroundColor, 20));
     pdf.setFillColor(bgBarRGB.r, bgBarRGB.g, bgBarRGB.b);
-    pdf.rect(barX, barY, barWidth, barHeight, 'F');
+    pdf.rect(barX, barY, barWidth, barHeight, "F");
 
     // Score fill
     const scoreRGB = hexToRGB(scoreColor);
     pdf.setFillColor(scoreRGB.r, scoreRGB.g, scoreRGB.b);
-    pdf.rect(barX, barY, barWidth * (score / 100), barHeight, 'F');
+    pdf.rect(barX, barY, barWidth * (score / 100), barHeight, "F");
 
     currentY += barHeight + 2;
   }
@@ -202,17 +202,18 @@ export function renderPoliticalKPICard(
   // Draw trend indicator
   if (hasTrend) {
     const trendColors = {
-      up: '#10B981',     // Green
-      down: '#EF4444',   // Red
-      neutral: variant === 'outline' ? POLITICAL_COLORS.textMuted : textColor,
+      up: "#10B981", // Green
+      down: "#EF4444", // Red
+      neutral: variant === "outline" ? POLITICAL_COLORS.textMuted : textColor,
     };
     const trendRGB = hexToRGB(trendColors[trendDirection]);
     pdf.setTextColor(trendRGB.r, trendRGB.g, trendRGB.b);
     pdf.setFontSize(8);
-    pdf.setFont(FONT_SPECS.family, 'normal');
+    pdf.setFont(FONT_SPECS.family, "normal");
 
-    const arrow = trendDirection === 'up' ? '▲' : trendDirection === 'down' ? '▼' : '';
-    pdf.text(`${arrow} ${trend}`, x + width / 2, currentY, { align: 'center' });
+    const arrow =
+      trendDirection === "up" ? "▲" : trendDirection === "down" ? "▼" : "";
+    pdf.text(`${arrow} ${trend}`, x + width / 2, currentY, { align: "center" });
   }
 
   // Restore state
@@ -231,7 +232,7 @@ export function renderPartisanLeanCard(
   y: number,
   width: number,
   height: number,
-  options: PartisanLeanCardOptions
+  options: PartisanLeanCardOptions,
 ): void {
   const { lean, confidence, electionsCount } = options;
 
@@ -246,43 +247,43 @@ export function renderPartisanLeanCard(
   // White background
   const bgRGB = hexToRGB(NEUTRAL_COLORS.white);
   pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
-  pdf.roundedRect(x, y, width, height, 2, 2, 'F');
+  pdf.roundedRect(x, y, width, height, 2, 2, "F");
 
   // Border
   const borderRGB = hexToRGB(NEUTRAL_COLORS.border);
   pdf.setDrawColor(borderRGB.r, borderRGB.g, borderRGB.b);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(x, y, width, height, 2, 2, 'S');
+  pdf.roundedRect(x, y, width, height, 2, 2, "S");
 
   // Colored left accent border
   const accentRGB = hexToRGB(partisanColor);
   pdf.setFillColor(accentRGB.r, accentRGB.g, accentRGB.b);
-  pdf.rect(x, y + 2, 3, height - 4, 'F');
+  pdf.rect(x, y + 2, 3, height - 4, "F");
 
   // Label
   const labelRGB = hexToRGB(NEUTRAL_COLORS.textSecondary);
   pdf.setTextColor(labelRGB.r, labelRGB.g, labelRGB.b);
   pdf.setFontSize(TYPOGRAPHY.sizes.sm);
-  pdf.setFont(FONT_SPECS.family, 'normal');
-  pdf.text('Partisan Lean', x + width / 2, y + 10, { align: 'center' });
+  pdf.setFont(FONT_SPECS.family, "normal");
+  pdf.text("Partisan Lean", x + width / 2, y + 10, { align: "center" });
 
   // Value in partisan color
   const valueRGB = hexToRGB(partisanColor);
   pdf.setTextColor(valueRGB.r, valueRGB.g, valueRGB.b);
   pdf.setFontSize(18);
-  pdf.setFont(FONT_SPECS.family, 'bold');
-  pdf.text(displayValue, x + width / 2, y + 28, { align: 'center' });
+  pdf.setFont(FONT_SPECS.family, "bold");
+  pdf.text(displayValue, x + width / 2, y + 28, { align: "center" });
 
   // Classification
   const classRGB = hexToRGB(NEUTRAL_COLORS.textMuted);
   pdf.setTextColor(classRGB.r, classRGB.g, classRGB.b);
   pdf.setFontSize(TYPOGRAPHY.sizes.xs);
-  pdf.setFont(FONT_SPECS.family, 'normal');
-  pdf.text(classification, x + width / 2, y + 38, { align: 'center' });
+  pdf.setFont(FONT_SPECS.family, "normal");
+  pdf.text(classification, x + width / 2, y + 38, { align: "center" });
 
   // Confidence/elections if provided
   if (confidence !== undefined || electionsCount !== undefined) {
-    let infoText = '';
+    let infoText = "";
     if (confidence !== undefined && electionsCount !== undefined) {
       infoText = `${confidence}% conf. • ${electionsCount} elections`;
     } else if (confidence !== undefined) {
@@ -290,7 +291,7 @@ export function renderPartisanLeanCard(
     } else if (electionsCount !== undefined) {
       infoText = `${electionsCount} elections analyzed`;
     }
-    pdf.text(infoText, x + width / 2, y + height - 6, { align: 'center' });
+    pdf.text(infoText, x + width / 2, y + height - 6, { align: "center" });
   }
 
   // Restore state
@@ -309,7 +310,7 @@ export function renderScoreCard(
   y: number,
   width: number,
   height: number,
-  options: ScoreCardOptions
+  options: ScoreCardOptions,
 ): void {
   const { score, metric, label, sublabel } = options;
 
@@ -331,32 +332,34 @@ export function renderScoreCard(
   // White background
   const bgRGB = hexToRGB(NEUTRAL_COLORS.white);
   pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
-  pdf.roundedRect(x, y, width, height, 2, 2, 'F');
+  pdf.roundedRect(x, y, width, height, 2, 2, "F");
 
   // Border
   const borderRGB = hexToRGB(NEUTRAL_COLORS.border);
   pdf.setDrawColor(borderRGB.r, borderRGB.g, borderRGB.b);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(x, y, width, height, 2, 2, 'S');
+  pdf.roundedRect(x, y, width, height, 2, 2, "S");
 
   // Colored left accent border
   const accentRGB = hexToRGB(accentColor);
   pdf.setFillColor(accentRGB.r, accentRGB.g, accentRGB.b);
-  pdf.rect(x, y + 2, 3, height - 4, 'F');
+  pdf.rect(x, y + 2, 3, height - 4, "F");
 
   // Label
   const labelRGB = hexToRGB(NEUTRAL_COLORS.textSecondary);
   pdf.setTextColor(labelRGB.r, labelRGB.g, labelRGB.b);
   pdf.setFontSize(TYPOGRAPHY.sizes.sm);
-  pdf.setFont(FONT_SPECS.family, 'normal');
-  pdf.text(label, x + width / 2, y + 10, { align: 'center' });
+  pdf.setFont(FONT_SPECS.family, "normal");
+  pdf.text(label, x + width / 2, y + 10, { align: "center" });
 
   // Score value in accent color
   const valueRGB = hexToRGB(accentColor);
   pdf.setTextColor(valueRGB.r, valueRGB.g, valueRGB.b);
   pdf.setFontSize(16);
-  pdf.setFont(FONT_SPECS.family, 'bold');
-  pdf.text(`${Math.round(score)}/100`, x + width / 2, y + 26, { align: 'center' });
+  pdf.setFont(FONT_SPECS.family, "bold");
+  pdf.text(`${Math.round(score)}/100`, x + width / 2, y + 26, {
+    align: "center",
+  });
 
   // Progress bar
   const barX = x + 8;
@@ -367,21 +370,23 @@ export function renderScoreCard(
   // Background bar
   const barBgRGB = hexToRGB(NEUTRAL_COLORS.muted);
   pdf.setFillColor(barBgRGB.r, barBgRGB.g, barBgRGB.b);
-  pdf.roundedRect(barX, barY, barWidth, barHeight, 1, 1, 'F');
+  pdf.roundedRect(barX, barY, barWidth, barHeight, 1, 1, "F");
 
   // Score fill
   const scoreWidth = (score / 100) * barWidth;
   if (scoreWidth > 0) {
     pdf.setFillColor(accentRGB.r, accentRGB.g, accentRGB.b);
-    pdf.roundedRect(barX, barY, scoreWidth, barHeight, 1, 1, 'F');
+    pdf.roundedRect(barX, barY, scoreWidth, barHeight, 1, 1, "F");
   }
 
   // Priority label
   const subRGB = hexToRGB(NEUTRAL_COLORS.textMuted);
   pdf.setTextColor(subRGB.r, subRGB.g, subRGB.b);
   pdf.setFontSize(TYPOGRAPHY.sizes.xs);
-  pdf.setFont(FONT_SPECS.family, 'normal');
-  pdf.text(sublabel || priorityLabel, x + width / 2, y + height - 6, { align: 'center' });
+  pdf.setFont(FONT_SPECS.family, "normal");
+  pdf.text(sublabel || priorityLabel, x + width / 2, y + height - 6, {
+    align: "center",
+  });
 
   // Restore state
   pdf.setFont(savedFont.fontName, savedFont.fontStyle);
@@ -398,16 +403,17 @@ export function renderStatCard(
   y: number,
   width: number,
   height: number,
-  options: StatCardOptions
+  options: StatCardOptions,
 ): void {
-  const { label, value, format = 'number', icon } = options;
+  const { label, value, format = "number", icon } = options;
 
-  const displayValue = typeof value === 'number' ? formatValue(value, format) : value;
+  const displayValue =
+    typeof value === "number" ? formatValue(value, format) : value;
 
   renderPoliticalKPICard(pdf, x, y, width, height, {
     label: icon ? `${icon} ${label}` : label,
     value: displayValue,
-    variant: 'outline',
+    variant: "outline",
     backgroundColor: POLITICAL_COLORS.border,
     textColor: POLITICAL_COLORS.textPrimary,
   });
@@ -421,14 +427,18 @@ export function renderPoliticalKPICardGrid(
   startX: number,
   startY: number,
   cards: Array<{
-    type: 'kpi' | 'partisan' | 'score' | 'stat';
-    options: PoliticalKPICardOptions | PartisanLeanCardOptions | ScoreCardOptions | StatCardOptions;
+    type: "kpi" | "partisan" | "score" | "stat";
+    options:
+      | PoliticalKPICardOptions
+      | PartisanLeanCardOptions
+      | ScoreCardOptions
+      | StatCardOptions;
   }>,
   columns: number = 2,
   cardWidth: number = 85,
   cardHeight: number = 28,
   gapX: number = 10,
-  gapY: number = 6
+  gapY: number = 6,
 ): void {
   cards.forEach((card, index) => {
     const row = Math.floor(index / columns);
@@ -438,17 +448,45 @@ export function renderPoliticalKPICardGrid(
     const y = startY + row * (cardHeight + gapY);
 
     switch (card.type) {
-      case 'partisan':
-        renderPartisanLeanCard(pdf, x, y, cardWidth, cardHeight, card.options as PartisanLeanCardOptions);
+      case "partisan":
+        renderPartisanLeanCard(
+          pdf,
+          x,
+          y,
+          cardWidth,
+          cardHeight,
+          card.options as PartisanLeanCardOptions,
+        );
         break;
-      case 'score':
-        renderScoreCard(pdf, x, y, cardWidth, cardHeight, card.options as ScoreCardOptions);
+      case "score":
+        renderScoreCard(
+          pdf,
+          x,
+          y,
+          cardWidth,
+          cardHeight,
+          card.options as ScoreCardOptions,
+        );
         break;
-      case 'stat':
-        renderStatCard(pdf, x, y, cardWidth, cardHeight, card.options as StatCardOptions);
+      case "stat":
+        renderStatCard(
+          pdf,
+          x,
+          y,
+          cardWidth,
+          cardHeight,
+          card.options as StatCardOptions,
+        );
         break;
       default:
-        renderPoliticalKPICard(pdf, x, y, cardWidth, cardHeight, card.options as PoliticalKPICardOptions);
+        renderPoliticalKPICard(
+          pdf,
+          x,
+          y,
+          cardWidth,
+          cardHeight,
+          card.options as PoliticalKPICardOptions,
+        );
     }
   });
 }
@@ -467,7 +505,7 @@ export function renderCoverPageKPIGrid(
     registeredVoters: number;
     confidence?: number;
     electionsCount?: number;
-  }
+  },
 ): void {
   const cardWidth = 85;
   const cardHeight = 28;
@@ -481,28 +519,49 @@ export function renderCoverPageKPIGrid(
     electionsCount: data.electionsCount,
   });
 
-  renderScoreCard(pdf, startX + cardWidth + gapX, startY, cardWidth, cardHeight, {
-    score: data.swingPotential,
-    metric: 'swing',
-    label: 'Swing Potential',
-  });
+  renderScoreCard(
+    pdf,
+    startX + cardWidth + gapX,
+    startY,
+    cardWidth,
+    cardHeight,
+    {
+      score: data.swingPotential,
+      metric: "swing",
+      label: "Swing Potential",
+    },
+  );
 
   // Row 2: Avg Turnout, Registered Voters
-  renderPoliticalKPICard(pdf, startX, startY + cardHeight + gapY, cardWidth, cardHeight, {
-    label: 'Avg Turnout',
-    value: `${data.avgTurnout.toFixed(1)}%`,
-    backgroundColor: POLITICAL_COLORS.turnout,
-    textColor: POLITICAL_COLORS.white,
-    variant: 'filled',
-  });
+  renderPoliticalKPICard(
+    pdf,
+    startX,
+    startY + cardHeight + gapY,
+    cardWidth,
+    cardHeight,
+    {
+      label: "Avg Turnout",
+      value: `${data.avgTurnout.toFixed(1)}%`,
+      backgroundColor: POLITICAL_COLORS.turnout,
+      textColor: POLITICAL_COLORS.white,
+      variant: "filled",
+    },
+  );
 
-  renderPoliticalKPICard(pdf, startX + cardWidth + gapX, startY + cardHeight + gapY, cardWidth, cardHeight, {
-    label: 'Registered Voters',
-    value: data.registeredVoters.toLocaleString(),
-    backgroundColor: POLITICAL_COLORS.primary,
-    textColor: POLITICAL_COLORS.white,
-    variant: 'filled',
-  });
+  renderPoliticalKPICard(
+    pdf,
+    startX + cardWidth + gapX,
+    startY + cardHeight + gapY,
+    cardWidth,
+    cardHeight,
+    {
+      label: "Registered Voters",
+      value: data.registeredVoters.toLocaleString(),
+      backgroundColor: POLITICAL_COLORS.primary,
+      textColor: POLITICAL_COLORS.white,
+      variant: "filled",
+    },
+  );
 }
 
 /**
@@ -515,8 +574,8 @@ export function renderMiniStatRow(
   stats: Array<{
     label: string;
     value: string | number;
-    format?: 'number' | 'currency' | 'percent' | 'plain';
-  }>
+    format?: "number" | "currency" | "percent" | "plain";
+  }>,
 ): void {
   const cardWidth = 42;
   const cardHeight = 22;

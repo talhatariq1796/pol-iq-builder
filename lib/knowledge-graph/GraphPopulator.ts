@@ -8,14 +8,13 @@
  * - Offices, parties, jurisdictions, elections, and issues
  */
 
-import { KnowledgeGraph, getKnowledgeGraph } from './KnowledgeGraph';
+import { KnowledgeGraph, getKnowledgeGraph } from "./KnowledgeGraph";
 import {
   Entity,
   Relationship,
-  EntityType,
   RelationshipType,
   PrecinctEntity,
-} from './types';
+} from "./types";
 
 interface SeedData {
   metadata: {
@@ -52,7 +51,7 @@ export class GraphPopulator {
 
   constructor(graph?: KnowledgeGraph, seedDataUrl?: string) {
     this.graph = graph || getKnowledgeGraph();
-    this.seedDataUrl = seedDataUrl || '/data/political/knowledge-graph-seed.json';
+    this.seedDataUrl = seedDataUrl || "";
   }
 
   /**
@@ -72,7 +71,7 @@ export class GraphPopulator {
       const seedData = await this.loadSeedData();
 
       if (!seedData) {
-        console.warn('[GraphPopulator] No seed data available');
+        console.warn("[GraphPopulator] No seed data available");
         return { entitiesAdded: 0, relationshipsAdded: 0 };
       }
 
@@ -142,10 +141,11 @@ export class GraphPopulator {
         relationshipsAdded += precinctResult.relationships;
       }
 
-      console.log(`[GraphPopulator] Added ${entitiesAdded} entities, ${relationshipsAdded} relationships`);
-
+      console.log(
+        `[GraphPopulator] Added ${entitiesAdded} entities, ${relationshipsAdded} relationships`,
+      );
     } catch (error) {
-      console.error('[GraphPopulator] Error populating graph:', error);
+      console.error("[GraphPopulator] Error populating graph:", error);
     }
 
     return { entitiesAdded, relationshipsAdded };
@@ -161,7 +161,7 @@ export class GraphPopulator {
 
     try {
       // In browser context, fetch from URL
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const response = await fetch(this.seedDataUrl);
         if (!response.ok) {
           throw new Error(`Failed to fetch seed data: ${response.statusText}`);
@@ -171,15 +171,14 @@ export class GraphPopulator {
       }
 
       // In Node.js context, read from file system
-      const fs = await import('fs').then(m => m.promises);
-      const path = await import('path');
-      const filePath = path.join(process.cwd(), 'public', this.seedDataUrl);
-      const content = await fs.readFile(filePath, 'utf-8');
+      const fs = await import("fs").then((m) => m.promises);
+      const path = await import("path");
+      const filePath = path.join(process.cwd(), "public", this.seedDataUrl);
+      const content = await fs.readFile(filePath, "utf-8");
       cachedSeedData = JSON.parse(content);
       return cachedSeedData;
-
     } catch (error) {
-      console.warn('[GraphPopulator] Could not load seed data:', error);
+      console.warn("[GraphPopulator] Could not load seed data:", error);
       return null;
     }
   }
@@ -199,29 +198,34 @@ export class GraphPopulator {
   /**
    * Add precincts from PoliticalDataService
    */
-  private async addPrecinctsFromService(): Promise<{ entities: number; relationships: number }> {
+  private async addPrecinctsFromService(): Promise<{
+    entities: number;
+    relationships: number;
+  }> {
     let entities = 0;
     let relationships = 0;
 
     try {
       // Dynamically import to avoid circular dependencies
-      const { politicalDataService } = await import('@/lib/services/PoliticalDataService');
+      const { politicalDataService } =
+        await import("@/lib/services/PoliticalDataService");
       const precincts = await politicalDataService.getUnifiedPrecinctData();
       const now = new Date().toISOString();
 
       for (const [id, precinct] of Object.entries(precincts)) {
         const precinctEntity: PrecinctEntity = {
           id: `precinct:${id}`,
-          type: 'precinct',
+          type: "precinct",
           name: precinct.name,
           metadata: {
             jurisdiction: this.findJurisdictionId(precinct.name),
             partisanLean: precinct.electoral?.partisanLean || 0,
             swingPotential: precinct.electoral?.swingPotential || 0,
             gotvPriority: precinct.targeting?.gotvPriority || 0,
-            persuasionOpportunity: precinct.targeting?.persuasionOpportunity || 0,
-            competitiveness: precinct.electoral?.competitiveness || 'unknown',
-            strategy: precinct.targeting?.strategy || 'unknown',
+            persuasionOpportunity:
+              precinct.targeting?.persuasionOpportunity || 0,
+            competitiveness: precinct.electoral?.competitiveness || "unknown",
+            strategy: precinct.targeting?.strategy || "unknown",
             registeredVoters: precinct.demographics?.registeredVoters,
           },
           createdAt: now,
@@ -235,11 +239,11 @@ export class GraphPopulator {
         if (precinctEntity.metadata.jurisdiction) {
           const rel: Relationship = {
             id: `${precinctEntity.id}--PART_OF--${precinctEntity.metadata.jurisdiction}`,
-            type: 'PART_OF',
+            type: "PART_OF",
             sourceId: precinctEntity.id,
-            sourceType: 'precinct',
+            sourceType: "precinct",
             targetId: precinctEntity.metadata.jurisdiction,
-            targetType: 'jurisdiction',
+            targetType: "jurisdiction",
             createdAt: now,
           };
           this.graph.addRelationship(rel);
@@ -251,11 +255,11 @@ export class GraphPopulator {
         if (districtMatch) {
           const rel: Relationship = {
             id: `${precinctEntity.id}--PART_OF--office:mi-house-${districtMatch}`,
-            type: 'PART_OF',
+            type: "PART_OF",
             sourceId: precinctEntity.id,
-            sourceType: 'precinct',
+            sourceType: "precinct",
             targetId: `office:mi-house-${districtMatch}`,
-            targetType: 'office',
+            targetType: "office",
             createdAt: now,
           };
           this.graph.addRelationship(rel);
@@ -263,7 +267,7 @@ export class GraphPopulator {
         }
       }
     } catch (error) {
-      console.warn('[GraphPopulator] Could not load precinct data:', error);
+      console.warn("[GraphPopulator] Could not load precinct data:", error);
     }
 
     return { entities, relationships };
@@ -274,28 +278,34 @@ export class GraphPopulator {
    */
   private findJurisdictionId(precinctName: string): string {
     const jurisdictionPatterns: Array<{ pattern: RegExp; id: string }> = [
-      { pattern: /^lansing\s+(city\s+)?(\d|precinct)/i, id: 'jurisdiction:lansing' },
-      { pattern: /^east\s+lansing/i, id: 'jurisdiction:east-lansing' },
-      { pattern: /^meridian/i, id: 'jurisdiction:meridian-township' },
-      { pattern: /^delhi/i, id: 'jurisdiction:delhi-township' },
-      { pattern: /^mason\s+(city\s+)?(\d|precinct)/i, id: 'jurisdiction:mason' },
-      { pattern: /^williamston/i, id: 'jurisdiction:williamston' },
-      { pattern: /^leslie/i, id: 'jurisdiction:leslie' },
-      { pattern: /^lansing\s+township/i, id: 'jurisdiction:lansing-township' },
-      { pattern: /^alaiedon/i, id: 'jurisdiction:alaiedon-township' },
-      { pattern: /^aurelius/i, id: 'jurisdiction:aurelius-township' },
-      { pattern: /^bunker\s+hill/i, id: 'jurisdiction:bunker-hill-township' },
-      { pattern: /^ingham\s+township/i, id: 'jurisdiction:ingham-township' },
-      { pattern: /^leroy/i, id: 'jurisdiction:leroy-township' },
-      { pattern: /^locke/i, id: 'jurisdiction:locke-township' },
-      { pattern: /^onondaga/i, id: 'jurisdiction:onondaga-township' },
-      { pattern: /^stockbridge/i, id: 'jurisdiction:stockbridge-township' },
-      { pattern: /^vevay/i, id: 'jurisdiction:vevay-township' },
-      { pattern: /^wheatfield/i, id: 'jurisdiction:wheatfield-township' },
-      { pattern: /^white\s+oak/i, id: 'jurisdiction:white-oak-township' },
-      { pattern: /^okemos/i, id: 'jurisdiction:meridian-township' },
-      { pattern: /^haslett/i, id: 'jurisdiction:meridian-township' },
-      { pattern: /^holt/i, id: 'jurisdiction:delhi-township' },
+      {
+        pattern: /^lansing\s+(city\s+)?(\d|precinct)/i,
+        id: "jurisdiction:lansing",
+      },
+      { pattern: /^east\s+lansing/i, id: "jurisdiction:east-lansing" },
+      { pattern: /^meridian/i, id: "jurisdiction:meridian-township" },
+      { pattern: /^delhi/i, id: "jurisdiction:delhi-township" },
+      {
+        pattern: /^mason\s+(city\s+)?(\d|precinct)/i,
+        id: "jurisdiction:mason",
+      },
+      { pattern: /^williamston/i, id: "jurisdiction:williamston" },
+      { pattern: /^leslie/i, id: "jurisdiction:leslie" },
+      { pattern: /^lansing\s+township/i, id: "jurisdiction:lansing-township" },
+      { pattern: /^alaiedon/i, id: "jurisdiction:alaiedon-township" },
+      { pattern: /^aurelius/i, id: "jurisdiction:aurelius-township" },
+      { pattern: /^bunker\s+hill/i, id: "jurisdiction:bunker-hill-township" },
+      { pattern: /^ingham\s+township/i, id: "jurisdiction:ingham-township" },
+      { pattern: /^leroy/i, id: "jurisdiction:leroy-township" },
+      { pattern: /^locke/i, id: "jurisdiction:locke-township" },
+      { pattern: /^onondaga/i, id: "jurisdiction:onondaga-township" },
+      { pattern: /^stockbridge/i, id: "jurisdiction:stockbridge-township" },
+      { pattern: /^vevay/i, id: "jurisdiction:vevay-township" },
+      { pattern: /^wheatfield/i, id: "jurisdiction:wheatfield-township" },
+      { pattern: /^white\s+oak/i, id: "jurisdiction:white-oak-township" },
+      { pattern: /^okemos/i, id: "jurisdiction:meridian-township" },
+      { pattern: /^haslett/i, id: "jurisdiction:meridian-township" },
+      { pattern: /^holt/i, id: "jurisdiction:delhi-township" },
     ];
 
     for (const { pattern, id } of jurisdictionPatterns) {
@@ -304,7 +314,7 @@ export class GraphPopulator {
       }
     }
 
-    return 'jurisdiction:ingham-county';
+    return "jurisdiction:ingham-county";
   }
 
   /**
@@ -315,33 +325,42 @@ export class GraphPopulator {
     const nameLower = precinctName.toLowerCase();
 
     // District 73: MSU campus, Okemos, Mason area
-    if (nameLower.includes('okemos') ||
-        nameLower.includes('haslett') ||
-        nameLower.includes('mason') ||
-        nameLower.includes('alaiedon') ||
-        nameLower.includes('vevay') ||
-        (nameLower.includes('meridian') && !nameLower.includes('east'))) {
-      return '73';
+    if (
+      nameLower.includes("okemos") ||
+      nameLower.includes("haslett") ||
+      nameLower.includes("mason") ||
+      nameLower.includes("alaiedon") ||
+      nameLower.includes("vevay") ||
+      (nameLower.includes("meridian") && !nameLower.includes("east"))
+    ) {
+      return "73";
     }
 
     // District 74: Parts of Lansing
-    if ((nameLower.includes('lansing') && !nameLower.includes('east')) &&
-        (nameLower.includes('city') || /lansing\s+\d/.test(nameLower))) {
+    if (
+      nameLower.includes("lansing") &&
+      !nameLower.includes("east") &&
+      (nameLower.includes("city") || /lansing\s+\d/.test(nameLower))
+    ) {
       // Most Lansing city precincts are in 74 or 75
-      return '74';
+      return "74";
     }
 
     // District 75: Parts of Lansing, Lansing Township
-    if (nameLower.includes('lansing township') ||
-        nameLower.includes('lansing twp')) {
-      return '75';
+    if (
+      nameLower.includes("lansing township") ||
+      nameLower.includes("lansing twp")
+    ) {
+      return "75";
     }
 
     // District 77: East Lansing, parts of Lansing
-    if (nameLower.includes('east lansing') ||
-        nameLower.includes('e. lansing') ||
-        nameLower.includes('el ')) {
-      return '77';
+    if (
+      nameLower.includes("east lansing") ||
+      nameLower.includes("e. lansing") ||
+      nameLower.includes("el ")
+    ) {
+      return "77";
     }
 
     // Default - need more precise mapping
@@ -351,7 +370,10 @@ export class GraphPopulator {
   /**
    * Get candidate info for a district
    */
-  getCandidatesForDistrict(districtType: string, districtNumber: string): {
+  getCandidatesForDistrict(
+    districtType: string,
+    districtNumber: string,
+  ): {
     incumbent: Entity | undefined;
     challengers: Entity[];
     office: Entity | undefined;
@@ -359,20 +381,20 @@ export class GraphPopulator {
     let officeId: string;
 
     switch (districtType.toLowerCase()) {
-      case 'state_house':
-      case 'state house':
-      case 'house':
+      case "state_house":
+      case "state house":
+      case "house":
         officeId = `office:mi-house-${districtNumber}`;
         break;
-      case 'state_senate':
-      case 'state senate':
-      case 'senate':
+      case "state_senate":
+      case "state senate":
+      case "senate":
         officeId = `office:mi-senate-${districtNumber}`;
         break;
-      case 'congressional':
-      case 'congress':
-      case 'us_house':
-        officeId = `office:us-house-mi-${districtNumber.padStart(2, '0')}`;
+      case "congressional":
+      case "congress":
+      case "us_house":
+        officeId = `office:us-house-mi-${districtNumber.padStart(2, "0")}`;
         break;
       default:
         officeId = `office:${districtType}-${districtNumber}`;
@@ -382,15 +404,17 @@ export class GraphPopulator {
     const candidates = this.graph.getCandidatesForOffice(officeId);
 
     // Find incumbent
-    const incumbent = candidates.find(c =>
-      c.metadata?.status === 'incumbent' ||
-      c.metadata?.incumbentOf === officeId
+    const incumbent = candidates.find(
+      (c) =>
+        c.metadata?.status === "incumbent" ||
+        c.metadata?.incumbentOf === officeId,
     );
 
     // Find challengers
-    const challengers = candidates.filter(c =>
-      c.metadata?.status !== 'incumbent' &&
-      c.metadata?.incumbentOf !== officeId
+    const challengers = candidates.filter(
+      (c) =>
+        c.metadata?.status !== "incumbent" &&
+        c.metadata?.incumbentOf !== officeId,
     );
 
     return { incumbent, challengers, office };
@@ -411,24 +435,25 @@ export class GraphPopulator {
     }> = [];
 
     const officeIds = [
-      { id: 'office:us-senate-mi-class1', level: 'Federal' },
-      { id: 'office:us-senate-mi-class2', level: 'Federal' },
-      { id: 'office:us-house-mi-07', level: 'Federal' },
-      { id: 'office:mi-senate-21', level: 'State Senate' },
-      { id: 'office:mi-senate-28', level: 'State Senate' },
-      { id: 'office:mi-house-73', level: 'State House' },
-      { id: 'office:mi-house-74', level: 'State House' },
-      { id: 'office:mi-house-75', level: 'State House' },
-      { id: 'office:mi-house-77', level: 'State House' },
+      { id: "office:us-senate-mi-class1", level: "Federal" },
+      { id: "office:us-senate-mi-class2", level: "Federal" },
+      { id: "office:us-house-mi-07", level: "Federal" },
+      { id: "office:mi-senate-21", level: "State Senate" },
+      { id: "office:mi-senate-28", level: "State Senate" },
+      { id: "office:mi-house-73", level: "State House" },
+      { id: "office:mi-house-74", level: "State House" },
+      { id: "office:mi-house-75", level: "State House" },
+      { id: "office:mi-house-77", level: "State House" },
     ];
 
     for (const { id, level } of officeIds) {
       const office = this.graph.getEntity(id);
       if (office) {
         const candidates = this.graph.getCandidatesForOffice(id);
-        const representative = candidates.find(c =>
-          c.metadata?.status === 'incumbent' ||
-          c.metadata?.incumbentOf === id
+        const representative = candidates.find(
+          (c) =>
+            c.metadata?.status === "incumbent" ||
+            c.metadata?.incumbentOf === id,
         );
         results.push({ office, representative, level });
       }

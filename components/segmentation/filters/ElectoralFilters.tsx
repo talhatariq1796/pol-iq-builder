@@ -7,13 +7,14 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { ElectoralFilters as ElectoralFiltersType } from '@/lib/segmentation/types';
 import { formatPoliticalDistrictLabel } from '@/lib/political/formatPoliticalDistrictLabel';
+import { activeState } from '@/lib/config/activeState';
 
 interface ElectoralFiltersProps {
   filters: ElectoralFiltersType;
   onChange: (filters: ElectoralFiltersType) => void;
 }
 
-const PA_CROSSWALK_URL = '/data/political/pensylvania/precincts/pa_precinct_district_crosswalk.json';
+const DISTRICT_CROSSWALK_URL = activeState.paths.districtCrosswalk;
 
 function titleCaseWords(s: string): string {
   return s
@@ -25,13 +26,13 @@ function titleCaseWords(s: string): string {
 /** Crosswalk slugs like `columbia-beaver` → readable label */
 function formatMunicipalitySlug(slug: string): string {
   const parts = slug.split('-');
-  if (parts.length < 2) return slug;
+  if (parts.length < 2) return titleCaseWords(slug.replace(/-/g, ' '));
   const county = parts[0];
   const place = parts.slice(1).join(' ');
   return `${titleCaseWords(place)} (${titleCaseWords(county)} Co.)`;
 }
 
-interface PaDistrictLists {
+interface DistrictLists {
   stateHouse: string[];
   stateSenate: string[];
   congressional: string[];
@@ -39,18 +40,18 @@ interface PaDistrictLists {
 }
 
 export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
-  const [paLists, setPaLists] = useState<PaDistrictLists | null>(null);
-  const [paLoadError, setPaLoadError] = useState(false);
+  const [districtLists, setDistrictLists] = useState<DistrictLists | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(PA_CROSSWALK_URL);
+        const res = await fetch(DISTRICT_CROSSWALK_URL);
         if (!res.ok) {
           if (!cancelled) {
-            setPaLoadError(true);
-            setPaLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
+            setLoadError(true);
+            setDistrictLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
           }
           return;
         }
@@ -58,8 +59,8 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
         const precincts = data.precincts as Record<string, Record<string, string | null>> | undefined;
         if (!precincts) {
           if (!cancelled) {
-            setPaLoadError(true);
-            setPaLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
+            setLoadError(true);
+            setDistrictLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
           }
           return;
         }
@@ -74,18 +75,18 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
           if (a.municipality) mun.add(String(a.municipality));
         }
         if (!cancelled) {
-          setPaLists({
+          setDistrictLists({
             stateHouse: [...sh].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
             stateSenate: [...ss].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
             congressional: [...cd].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
             municipalities: [...mun].sort((a, b) => a.localeCompare(b)),
           });
-          setPaLoadError(false);
+          setLoadError(false);
         }
       } catch {
         if (!cancelled) {
-          setPaLoadError(true);
-          setPaLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
+          setLoadError(true);
+          setDistrictLists({ stateHouse: [], stateSenate: [], congressional: [], municipalities: [] });
         }
       }
     })();
@@ -143,21 +144,21 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
 
   return (
     <div className="space-y-6">
-      {paLoadError && (
+      {loadError && (
         <p className="text-sm text-muted-foreground">
-          Could not load Pennsylvania district lists. Place{' '}
-          <code className="text-xs">pa_precinct_district_crosswalk.json</code> under public data paths.
+          Could not load {activeState.name} district lists. Check{' '}
+          <code className="text-xs">{DISTRICT_CROSSWALK_URL}</code>.
         </p>
       )}
 
       {/* State House Districts */}
       <div className="space-y-3">
         <Label>State House Districts</Label>
-        {!paLists ? (
+        {!districtLists ? (
           <p className="text-sm text-muted-foreground">Loading districts…</p>
         ) : (
           <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-            {paLists.stateHouse.map((id) => (
+            {districtLists.stateHouse.map((id) => (
               <div key={id} className="flex items-start space-x-2">
                 <Checkbox
                   id={`state-house-${id}`}
@@ -179,11 +180,11 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
       {/* State Senate Districts */}
       <div className="space-y-3">
         <Label>State Senate Districts</Label>
-        {!paLists ? (
+        {!districtLists ? (
           <p className="text-sm text-muted-foreground">Loading districts…</p>
         ) : (
           <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-            {paLists.stateSenate.map((id) => (
+            {districtLists.stateSenate.map((id) => (
               <div key={id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`state-senate-${id}`}
@@ -205,11 +206,11 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
       {/* Congressional Districts */}
       <div className="space-y-3">
         <Label>Congressional Districts</Label>
-        {!paLists ? (
+        {!districtLists ? (
           <p className="text-sm text-muted-foreground">Loading districts…</p>
         ) : (
           <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-            {paLists.congressional.map((id) => (
+            {districtLists.congressional.map((id) => (
               <div key={id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`congressional-${id}`}
@@ -231,11 +232,11 @@ export function ElectoralFilters({ filters, onChange }: ElectoralFiltersProps) {
       {/* Municipalities */}
       <div className="space-y-3">
         <Label>Municipalities</Label>
-        {!paLists ? (
+        {!districtLists ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-            {paLists.municipalities.map((id) => (
+            {districtLists.municipalities.map((id) => (
               <div key={id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`municipality-${id}`}

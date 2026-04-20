@@ -1,45 +1,50 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from "@/components/ui/accordion";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 // Filter components
-import { DemographicFilters } from '@/components/segmentation/filters/DemographicFilters';
-import { PoliticalFilters } from '@/components/segmentation/filters/PoliticalFilters';
-import { TargetingFilters } from '@/components/segmentation/filters/TargetingFilters';
-import { EngagementFilters } from '@/components/segmentation/filters/EngagementFilters';
-import { ElectoralFilters } from '@/components/segmentation/filters/ElectoralFilters';
-import { ElectionHistoryFilters } from '@/components/segmentation/filters/ElectionHistoryFilters';
-import { TapestryFilters } from '@/components/segmentation/filters/TapestryFilters';
+import { DemographicFilters } from "@/components/segmentation/filters/DemographicFilters";
+import { PoliticalFilters } from "@/components/segmentation/filters/PoliticalFilters";
+import { TargetingFilters } from "@/components/segmentation/filters/TargetingFilters";
+import { EngagementFilters } from "@/components/segmentation/filters/EngagementFilters";
+import { ElectoralFilters } from "@/components/segmentation/filters/ElectoralFilters";
+import { ElectionHistoryFilters } from "@/components/segmentation/filters/ElectionHistoryFilters";
+import { TapestryFilters } from "@/components/segmentation/filters/TapestryFilters";
 
 // Results and saved segments
-import { SegmentResults } from '@/components/segmentation/SegmentResults';
-import { SavedSegmentsList } from '@/components/segmentation/SavedSegmentsList';
-import { ExportDialog } from '@/components/segmentation/ExportDialog';
+import { SegmentResults } from "@/components/segmentation/SegmentResults";
+import { SavedSegmentsList } from "@/components/segmentation/SavedSegmentsList";
+import { ExportDialog } from "@/components/segmentation/ExportDialog";
 
 // Core lib
 import {
@@ -47,8 +52,8 @@ import {
   segmentStore,
   getAllPresets,
   getPreset,
-} from '@/lib/segmentation';
-import { politicalDataService } from '@/lib/services/PoliticalDataService';
+} from "@/lib/segmentation";
+import { politicalDataService } from "@/lib/services/PoliticalDataService";
 import type {
   SegmentFilters,
   SegmentResults as SegmentResultsType,
@@ -62,29 +67,43 @@ import type {
   ElectionHistoryFilters as ElectionHistoryFiltersType,
   TapestryFilters as TapestryFiltersType,
   ExtendedSegmentFilters,
-} from '@/lib/segmentation/types';
+} from "@/lib/segmentation/types";
 
 // Icons
-import { Download, Save, FolderOpen, Filter, Map, Trash2, Search, Target, Loader2, Undo, Redo } from 'lucide-react';
+import {
+  Download,
+  Save,
+  FolderOpen,
+  Filter,
+  Map,
+  Trash2,
+  Search,
+  Target,
+  Loader2,
+  Undo,
+  Redo,
+} from "lucide-react";
 
 // UI Components
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Router for navigation
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Link from "next/link";
 
 // NOTE: AIToolAssistant removed - UnifiedAIAssistant is now rendered at page level (app/segments/page.tsx)
 // This prevents duplicate AI chat interfaces on the same page
 
 // State Management - Wave 6A: Component Sync
-import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
-import type { MapCommand } from '@/lib/ai-native/types';
-import { useToast } from '@/hooks/use-toast';
-import { CrossToolNavigator } from '@/lib/ai-native/navigation/CrossToolNavigator';
+import { getStateManager } from "@/lib/ai-native/ApplicationStateManager";
+import type { MapCommand } from "@/lib/ai-native/types";
+import { useToast } from "@/hooks/use-toast";
+import { CrossToolNavigator } from "@/lib/ai-native/navigation/CrossToolNavigator";
 
 // Wave 4A: Undo/Redo
-import { getFilterHistoryManager, type HistoryPosition } from '@/lib/segmentation/FilterHistoryManager';
+import {
+  getFilterHistoryManager,
+  type HistoryPosition,
+} from "@/lib/segmentation/FilterHistoryManager";
 
 interface SegmentBuilderProps {
   /** Optional preset ID to load on mount (from quick-start buttons) */
@@ -97,9 +116,11 @@ interface SegmentBuilderProps {
  * Main SegmentBuilder component
  * Orchestrates voter segmentation with filters, results, and persistence
  */
-export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilderProps) {
+export function SegmentBuilder({
+  initialPresetId,
+  onMapCommand,
+}: SegmentBuilderProps) {
   // Router for navigation
-  const router = useRouter();
   const { toast } = useToast();
 
   // State: Filters (using ExtendedSegmentFilters for new filter types)
@@ -113,26 +134,28 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   const [savedSegments, setSavedSegments] = useState<SegmentDefinition[]>([]);
 
   // State: UI
-  const [activeTab, setActiveTab] = useState<string>('demographic');
-  const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [filterUpdatePending, setFilterUpdatePending] = useState(false);
   const [recentlySaved, setRecentlySaved] = useState<string | null>(null);
 
   // Wave 4A: Undo/Redo state
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [historyPosition, setHistoryPosition] = useState<HistoryPosition | null>(null);
+  const [historyPosition, setHistoryPosition] =
+    useState<HistoryPosition | null>(null);
   const historyManager = useRef(getFilterHistoryManager());
 
   // State: Save dialog
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
-  const [segmentName, setSegmentName] = useState('');
-  const [segmentDescription, setSegmentDescription] = useState('');
+  const [segmentName, setSegmentName] = useState("");
+  const [segmentDescription, setSegmentDescription] = useState("");
 
   // State: Confirmation dialog
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [confirmDialogAction, setConfirmDialogAction] = useState<(() => void) | null>(null);
-  const [confirmDialogMessage, setConfirmDialogMessage] = useState('');
+  const [confirmDialogAction, setConfirmDialogAction] = useState<
+    (() => void) | null
+  >(null);
+  const [confirmDialogMessage, setConfirmDialogMessage] = useState("");
 
   // State: Export dialog
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -155,12 +178,12 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     if (initialPresetId && engine) {
       const preset = getPreset(initialPresetId);
       if (preset) {
-        console.log('[SegmentBuilder] Applying initial preset:', preset.name);
+        console.log("[SegmentBuilder] Applying initial preset:", preset.name);
         const convertedFilters = convertPresetToComponentFormat(preset.filters);
         setFilters(convertedFilters);
         setSelectedPreset(initialPresetId);
         toast({
-          title: 'Preset Applied',
+          title: "Preset Applied",
           description: `Loaded "${preset.name}" preset`,
         });
       }
@@ -173,23 +196,26 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
     const unsubscribe = stateManager.subscribe((state, event) => {
       switch (event.type) {
-        case 'PRECINCT_SELECTED':
+        case "PRECINCT_SELECTED":
           // When user clicks a precinct on map, offer to add it to segment
-          console.log('[SegmentBuilder] Precinct selected from map:', event.payload);
+          console.log(
+            "[SegmentBuilder] Precinct selected from map:",
+            event.payload,
+          );
           // Could auto-add to segment or show prompt
           break;
 
-        case 'MAP_LAYER_CHANGED':
+        case "MAP_LAYER_CHANGED":
           // Suggest filters based on the visible metric
-          console.log('[SegmentBuilder] Map layer changed:', event.payload);
+          console.log("[SegmentBuilder] Map layer changed:", event.payload);
           break;
 
-        case 'SAVED_SEGMENT_UPDATED':
+        case "SAVED_SEGMENT_UPDATED":
           // Refresh saved segments list
           loadSavedSegments();
           break;
 
-        case 'SEGMENT_FILTER_CHANGED':
+        case "SEGMENT_FILTER_CHANGED":
           // Another component changed filters - sync if needed
           // (Only if this component didn't trigger the change)
           break;
@@ -198,8 +224,8 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
     // Set current tool context
     stateManager.dispatch({
-      type: 'TOOL_CHANGED',
-      payload: { tool: 'segments' },
+      type: "TOOL_CHANGED",
+      payload: { tool: "segments" },
       timestamp: new Date(),
     });
 
@@ -216,24 +242,24 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check for Cmd+Z (Mac) or Ctrl+Z (Windows) for undo
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
       }
       // Check for Cmd+Shift+Z (Mac) or Ctrl+Shift+Z (Windows) for redo
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) {
         e.preventDefault();
         handleRedo();
       }
       // Also support Cmd+Y for redo (Windows convention)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "y") {
         e.preventDefault();
         handleRedo();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Wave 4A: Update history state after filter changes
@@ -270,20 +296,24 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     try {
       // Use PoliticalDataService for single source of truth (blob storage)
       // The returned format matches what SegmentEngine expects internally
-      const precinctData = await politicalDataService.getSegmentEnginePrecincts();
+      const precinctData =
+        await politicalDataService.getSegmentEnginePrecincts();
       // Note: We use 'any' here because SegmentEngine has its own internal PrecinctData type
       // that differs from the exported PrecinctData type in types.ts
       setPrecincts(precinctData as unknown as PrecinctData[]);
       setEngine(new SegmentEngine(precinctData as any));
-      console.log(`[SegmentBuilder] Loaded ${precinctData.length} precincts from PoliticalDataService`);
+      console.log(
+        `[SegmentBuilder] Loaded ${precinctData.length} precincts from PoliticalDataService`,
+      );
     } catch (error) {
-      console.error('Error loading precincts:', error);
+      console.error("Error loading precincts:", error);
       // S8-014: Show toast with error details
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       toast({
-        title: 'Error loading precinct data',
+        title: "Error loading precinct data",
         description: `Failed to load precincts: ${errorMessage}. Please check your connection and try refreshing the page.`,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -322,14 +352,17 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
         // Wave 6A.5: Emit state change so AI knows about segment results
         const stateManager = getStateManager();
-        const filterCount = Object.keys(filters).filter(k => filters[k as keyof ExtendedSegmentFilters] !== undefined).length;
+        const filterCount = Object.keys(filters).filter(
+          (k) => filters[k as keyof ExtendedSegmentFilters] !== undefined,
+        ).length;
 
         stateManager.dispatch({
-          type: 'SEGMENT_FILTER_CHANGED',
+          type: "SEGMENT_FILTER_CHANGED",
           payload: {
             filters: filters,
             filterCount: filterCount,
-            matchingPrecincts: queryResults.matchingPrecincts?.map(p => p.precinctId) || [],
+            matchingPrecincts:
+              queryResults.matchingPrecincts?.map((p) => p.precinctId) || [],
             matchCount: queryResults.precinctCount || 0,
             totalVoters: queryResults.estimatedVoters || 0,
           },
@@ -338,8 +371,8 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
         // Also log to exploration history for AI context
         stateManager.logExploration({
-          tool: 'segments',
-          action: 'applied filters',
+          tool: "segments",
+          action: "applied filters",
           result: `${queryResults.precinctCount || 0} precincts matched`,
           metadata: {
             filterCount,
@@ -351,12 +384,12 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
         // P2 Fix: Auto-sync map to segment results - highlight matching precincts
         if (onMapCommand && queryResults.matchingPrecincts?.length > 0) {
           onMapCommand({
-            type: 'highlight',
-            ids: queryResults.matchingPrecincts.map(p => p.precinctId),
+            type: "highlight",
+            ids: queryResults.matchingPrecincts.map((p) => p.precinctId),
           });
         }
       } catch (error) {
-        console.error('Error executing query:', error);
+        console.error("Error executing query:", error);
       } finally {
         setIsLoading(false);
         setFilterUpdatePending(false);
@@ -372,24 +405,38 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     if (!results || !results.matchingPrecincts) return null;
 
     // Extract precinct IDs for quick lookup
-    const precinctIds = results.matchingPrecincts.map(p => p.precinctId);
+    const precinctIds = results.matchingPrecincts.map((p) => p.precinctId);
 
     // Calculate aggregate metrics from matching precincts
-    const aggregates = results.matchingPrecincts.reduce((acc, precinct) => {
-      acc.totalVoters += precinct.registeredVoters || 0;
-      acc.totalSwingPotential += precinct.swingPotential || 0;
-      acc.totalGotvPriority += precinct.gotvPriority || 0;
-      acc.count += 1;
-      return acc;
-    }, { totalVoters: 0, totalSwingPotential: 0, totalGotvPriority: 0, count: 0 });
+    const aggregates = results.matchingPrecincts.reduce(
+      (acc, precinct) => {
+        acc.totalVoters += precinct.registeredVoters || 0;
+        acc.totalSwingPotential += precinct.swingPotential || 0;
+        acc.totalGotvPriority += precinct.gotvPriority || 0;
+        acc.count += 1;
+        return acc;
+      },
+      {
+        totalVoters: 0,
+        totalSwingPotential: 0,
+        totalGotvPriority: 0,
+        count: 0,
+      },
+    );
 
     return {
       ...results,
       precinctIds,
       aggregates: {
         ...aggregates,
-        avgSwingPotential: aggregates.count > 0 ? aggregates.totalSwingPotential / aggregates.count : 0,
-        avgGotvPriority: aggregates.count > 0 ? aggregates.totalGotvPriority / aggregates.count : 0,
+        avgSwingPotential:
+          aggregates.count > 0
+            ? aggregates.totalSwingPotential / aggregates.count
+            : 0,
+        avgGotvPriority:
+          aggregates.count > 0
+            ? aggregates.totalGotvPriority / aggregates.count
+            : 0,
       },
     };
   }, [results]);
@@ -409,8 +456,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     setFilters((prev: ExtendedSegmentFilters) => {
       const newFilters = {
         ...prev,
-        demographics: Object.keys(demographic).length > 0 ? demographic : undefined,
-        demographic: Object.keys(demographic).length > 0 ? demographic : undefined,
+        demographics:
+          Object.keys(demographic).length > 0 ? demographic : undefined,
+        demographic:
+          Object.keys(demographic).length > 0 ? demographic : undefined,
       };
       // Push to history for undo/redo
       historyManager.current.push(newFilters);
@@ -467,11 +516,14 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     });
   };
 
-  const handleElectionHistoryChange = (electionHistory: ElectionHistoryFiltersType) => {
+  const handleElectionHistoryChange = (
+    electionHistory: ElectionHistoryFiltersType,
+  ) => {
     setFilters((prev: ExtendedSegmentFilters) => {
       const newFilters = {
         ...prev,
-        electionHistory: Object.keys(electionHistory).length > 0 ? electionHistory : undefined,
+        electionHistory:
+          Object.keys(electionHistory).length > 0 ? electionHistory : undefined,
       };
       historyManager.current.push(newFilters);
       updateHistoryState();
@@ -497,7 +549,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   const handleClearFilters = () => {
     setFilters({});
     setResults(null);
-    setSelectedPreset('');
+    setSelectedPreset("");
   };
 
   /**
@@ -507,18 +559,23 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   const handleLoadPreset = (presetId: string) => {
     if (!presetId) {
       // Clear selection
-      setSelectedPreset('');
+      setSelectedPreset("");
       return;
     }
 
     const preset = getPreset(presetId);
     if (preset) {
       const convertedFilters = convertPresetToComponentFormat(preset.filters);
-      console.log('[SegmentBuilder] Loading preset:', presetId, 'Converted filters:', convertedFilters);
+      console.log(
+        "[SegmentBuilder] Loading preset:",
+        presetId,
+        "Converted filters:",
+        convertedFilters,
+      );
       setFilters(convertedFilters);
       setSelectedPreset(presetId);
-      setSegmentName('');
-      setSegmentDescription('');
+      setSegmentName("");
+      setSegmentDescription("");
     }
   };
 
@@ -527,7 +584,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
    * - Presets use: partisan_lean_range: { min, max }, min_persuasion, min_gotv_priority
    * - Components expect: partisanLeanRange: [min, max], persuasionRange: [min, max], gotvPriorityRange: [min, max]
    */
-  const convertPresetToComponentFormat = (filters: SegmentFilters): SegmentFilters => {
+  const convertPresetToComponentFormat = (
+    filters: SegmentFilters,
+  ): SegmentFilters => {
     const converted: SegmentFilters = {};
 
     // Handle demographic filters (presets use 'demographic', SegmentEngine expects 'demographics')
@@ -550,7 +609,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       }
 
       // Convert diversity min/max to diversityRange
-      if (demographicSource.min_diversity_index !== undefined || demographicSource.max_diversity_index !== undefined) {
+      if (
+        demographicSource.min_diversity_index !== undefined ||
+        demographicSource.max_diversity_index !== undefined
+      ) {
         const min = demographicSource.min_diversity_index ?? 0;
         const max = demographicSource.max_diversity_index ?? 100;
         converted.demographics!.diversityRange = [min, max];
@@ -559,17 +621,34 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       // Copy other demographic filters that don't need conversion
       if (demographicSource) {
         Object.keys(demographicSource).forEach((key) => {
-          if (!['age_range', 'income_range', 'min_diversity_index', 'max_diversity_index'].includes(key)) {
+          if (
+            ![
+              "age_range",
+              "income_range",
+              "min_diversity_index",
+              "max_diversity_index",
+            ].includes(key)
+          ) {
             // Handle density_type -> density array conversion
-            if (key === 'density_type') {
-              converted.demographics!.density = [demographicSource[key] as 'urban' | 'suburban' | 'rural'];
-            } else if (key === 'income_level') {
+            if (key === "density_type") {
+              converted.demographics!.density = [
+                demographicSource[key] as "urban" | "suburban" | "rural",
+              ];
+            } else if (key === "income_level") {
               // Income level is handled separately, but we can keep it for compatibility
-              (converted.demographics as any)[key] = (demographicSource as any)[key];
-            } else if (key === 'min_college_pct') {
-              converted.demographics!.minCollegePct = demographicSource.min_college_pct;
+              (converted.demographics as any)[key] = (demographicSource as any)[
+                key
+              ];
+            } else if (key === "min_college_pct") {
+              converted.demographics!.minCollegePct =
+                demographicSource.min_college_pct;
+            } else if (key === "min_homeowner_pct") {
+              converted.demographics!.minHomeownerPct =
+                demographicSource.min_homeowner_pct;
             } else {
-              (converted.demographics as any)[key] = (demographicSource as any)[key];
+              (converted.demographics as any)[key] = (demographicSource as any)[
+                key
+              ];
             }
           }
         });
@@ -591,10 +670,12 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
       // Copy other political filters, converting preset format to component format
       Object.keys(filters.political).forEach((key) => {
-        if (key !== 'partisan_lean_range') {
+        if (key !== "partisan_lean_range") {
           // Convert 'outlook' (preset) to 'politicalOutlook' (component)
-          if (key === 'outlook') {
-            converted.political!.politicalOutlook = (filters.political as any)[key];
+          if (key === "outlook") {
+            converted.political!.politicalOutlook = (filters.political as any)[
+              key
+            ];
           } else {
             (converted.political as any)[key] = (filters.political as any)[key];
           }
@@ -607,7 +688,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       converted.targeting = {};
 
       // Convert min_gotv_priority/max to gotvPriorityRange
-      if (filters.targeting.min_gotv_priority !== undefined || filters.targeting.max_gotv_priority !== undefined) {
+      if (
+        filters.targeting.min_gotv_priority !== undefined ||
+        filters.targeting.max_gotv_priority !== undefined
+      ) {
         const min = filters.targeting.min_gotv_priority ?? 0;
         const max = filters.targeting.max_gotv_priority ?? 100;
         converted.targeting.gotvPriorityRange = [min, max];
@@ -617,7 +701,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       }
 
       // Convert min_persuasion/max to persuasionRange
-      if (filters.targeting.min_persuasion !== undefined || filters.targeting.max_persuasion !== undefined) {
+      if (
+        filters.targeting.min_persuasion !== undefined ||
+        filters.targeting.max_persuasion !== undefined
+      ) {
         const min = filters.targeting.min_persuasion ?? 0;
         const max = filters.targeting.max_persuasion ?? 100;
         converted.targeting.persuasionRange = [min, max];
@@ -627,7 +714,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       }
 
       // Convert min_swing_potential/max to swingPotentialRange
-      if (filters.targeting.min_swing_potential !== undefined || filters.targeting.max_swing_potential !== undefined) {
+      if (
+        filters.targeting.min_swing_potential !== undefined ||
+        filters.targeting.max_swing_potential !== undefined
+      ) {
         const min = filters.targeting.min_swing_potential ?? 0;
         const max = filters.targeting.max_swing_potential ?? 100;
         converted.targeting.swingPotentialRange = [min, max];
@@ -637,7 +727,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       }
 
       // Convert min_turnout/max to turnoutRange
-      if (filters.targeting.min_turnout !== undefined || filters.targeting.max_turnout !== undefined) {
+      if (
+        filters.targeting.min_turnout !== undefined ||
+        filters.targeting.max_turnout !== undefined
+      ) {
         const min = filters.targeting.min_turnout ?? 0;
         const max = filters.targeting.max_turnout ?? 100;
         converted.targeting.turnoutRange = [min, max];
@@ -648,13 +741,25 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
       // Copy other targeting filters (including targeting_strategy)
       Object.keys(filters.targeting).forEach((key) => {
-        if (!['min_gotv_priority', 'max_gotv_priority', 'min_persuasion', 'max_persuasion',
-          'min_swing_potential', 'max_swing_potential', 'min_turnout', 'max_turnout'].includes(key)) {
+        if (
+          ![
+            "min_gotv_priority",
+            "max_gotv_priority",
+            "min_persuasion",
+            "max_persuasion",
+            "min_swing_potential",
+            "max_swing_potential",
+            "min_turnout",
+            "max_turnout",
+          ].includes(key)
+        ) {
           (converted.targeting as any)[key] = (filters.targeting as any)[key];
 
           // SegmentEngine expects targeting_strategy at top level, so also set it there
-          if (key === 'targeting_strategy') {
-            (converted as any).targeting_strategy = (filters.targeting as any)[key];
+          if (key === "targeting_strategy") {
+            (converted as any).targeting_strategy = (filters.targeting as any)[
+              key
+            ];
             (converted as any).strategy = (filters.targeting as any)[key];
           }
         }
@@ -675,8 +780,8 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   const handleLoadSavedSegment = (segment: SegmentDefinition) => {
     setFilters(segment.filters);
     setSegmentName(segment.name);
-    setSegmentDescription(segment.description || '');
-    setSelectedPreset('');
+    setSegmentDescription(segment.description || "");
+    setSelectedPreset("");
   };
 
   /**
@@ -685,16 +790,18 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
   const handleSaveSegment = () => {
     if (!segmentName.trim()) {
       toast({
-        title: 'Name Required',
-        description: 'Please enter a segment name',
-        variant: 'destructive',
+        title: "Name Required",
+        description: "Please enter a segment name",
+        variant: "destructive",
       });
       return;
     }
 
     // Check if name exists
     if (segmentStore.nameExists(segmentName)) {
-      setConfirmDialogMessage(`A segment with the name "${segmentName}" already exists. Overwrite?`);
+      setConfirmDialogMessage(
+        `A segment with the name "${segmentName}" already exists. Overwrite?`,
+      );
       setConfirmDialogAction(() => () => doSaveSegment());
       setConfirmDialogOpen(true);
       return;
@@ -718,17 +825,18 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       segmentStore.save(segment);
       loadSavedSegments();
       setIsSaveDialogOpen(false);
-      setSegmentName('');
-      setSegmentDescription('');
+      setSegmentName("");
+      setSegmentDescription("");
 
       // Wave 6A.5: Emit SEGMENT_SAVED event for AI context
       const stateManager = getStateManager();
       stateManager.dispatch({
-        type: 'SEGMENT_SAVED',
+        type: "SEGMENT_SAVED",
         payload: {
           segmentId: segment.id,
           segmentName: segment.name,
-          matchingPrecincts: results?.matchingPrecincts?.map(p => p.precinctId) || [],
+          matchingPrecincts:
+            results?.matchingPrecincts?.map((p) => p.precinctId) || [],
           precinctCount: results?.precinctCount || 0,
         },
         timestamp: new Date(),
@@ -736,15 +844,15 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
       // Log to exploration history
       stateManager.logExploration({
-        tool: 'segments',
-        action: 'saved segment',
+        tool: "segments",
+        action: "saved segment",
         result: `Saved "${segment.name}" with ${results?.precinctCount || 0} precincts`,
         metadata: { segmentId: segment.id, segmentName: segment.name },
       });
 
       // Wave 6C: Show toast instead of alert (better UX)
       toast({
-        title: 'Segment saved',
+        title: "Segment saved",
         description: `"${segment.name}" saved with ${results?.precinctCount || 0} precincts`,
         duration: 5000,
       });
@@ -753,11 +861,11 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       setRecentlySaved(segment.name);
       setTimeout(() => setRecentlySaved(null), 5000);
     } catch (error) {
-      console.error('Error saving segment:', error);
+      console.error("Error saving segment:", error);
       toast({
-        title: 'Failed to save segment',
-        description: 'Please try again',
-        variant: 'destructive',
+        title: "Failed to save segment",
+        description: "Please try again",
+        variant: "destructive",
       });
     }
   };
@@ -766,21 +874,21 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
    * Delete a saved segment
    */
   const handleDeleteSegment = (id: string) => {
-    setConfirmDialogMessage('Are you sure you want to delete this segment?');
+    setConfirmDialogMessage("Are you sure you want to delete this segment?");
     setConfirmDialogAction(() => () => {
       try {
         segmentStore.delete(id);
         loadSavedSegments();
         toast({
-          title: 'Segment Deleted',
-          description: 'The segment has been removed',
+          title: "Segment Deleted",
+          description: "The segment has been removed",
         });
       } catch (error) {
-        console.error('Error deleting segment:', error);
+        console.error("Error deleting segment:", error);
         toast({
-          title: 'Delete Failed',
-          description: 'Failed to delete segment',
-          variant: 'destructive',
+          title: "Delete Failed",
+          description: "Failed to delete segment",
+          variant: "destructive",
         });
       }
     });
@@ -796,9 +904,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
     try {
       const csv = segmentStore.exportToCSV(results);
-      const blob = new Blob([csv], { type: 'text/csv' });
+      const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       const filename = `segment-${Date.now()}.csv`;
       a.href = url;
       a.download = filename;
@@ -808,24 +916,24 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
       // Wave 6A.5: Log export to AI context
       const stateManager = getStateManager();
       stateManager.logExploration({
-        tool: 'segments',
-        action: 'exported segment',
+        tool: "segments",
+        action: "exported segment",
         result: `Exported ${results.precinctCount} precincts to CSV`,
         metadata: { filename, precinctCount: results.precinctCount },
       });
 
       // Show success toast
       toast({
-        title: 'Export complete',
+        title: "Export complete",
         description: `Downloaded ${results.precinctCount} precincts as CSV`,
         duration: 5000,
       });
     } catch (error) {
-      console.error('Error exporting CSV:', error);
+      console.error("Error exporting CSV:", error);
       toast({
-        title: 'Export failed',
-        description: 'Please try again',
-        variant: 'destructive',
+        title: "Export failed",
+        description: "Please try again",
+        variant: "destructive",
       });
     }
   };
@@ -839,17 +947,17 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
     }
 
     // Prepare precinct IDs for URL params
-    const precinctIds = results.matchingPrecincts.map(p => p.precinctId);
+    const precinctIds = results.matchingPrecincts.map((p) => p.precinctId);
 
     // Create URL params with segment data
     const params = new URLSearchParams({
-      mode: 'segment',
-      precinctIds: precinctIds.join(','),
+      mode: "segment",
+      precinctIds: precinctIds.join(","),
       count: results.precinctCount.toString(),
     });
 
     // Navigate to political-ai with segment filter using context-preserving navigation
-    CrossToolNavigator.navigateWithContext('political-ai', {
+    CrossToolNavigator.navigateWithContext("political-ai", {
       precincts: precinctIds,
     });
   };
@@ -926,7 +1034,7 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                 <SelectValue placeholder="Select a preset..." />
               </SelectTrigger>
               <SelectContent>
-                {presetOptions.map(preset => (
+                {presetOptions.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id}>
                     {preset.name}
                   </SelectItem>
@@ -938,12 +1046,18 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
         <CardContent className="flex-1 overflow-y-auto">
           {/* Filters Accordion */}
-          <Accordion type="multiple" defaultValue={['demographic']} className="w-full">
+          <Accordion
+            type="multiple"
+            defaultValue={["demographic"]}
+            className="w-full"
+          >
             <AccordionItem value="demographic">
               <AccordionTrigger>
                 Demographics
                 {(filters.demographics || filters.demographic) && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -958,7 +1072,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               <AccordionTrigger>
                 Political Profile
                 {filters.political && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -973,7 +1089,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               <AccordionTrigger>
                 Targeting Scores
                 {filters.targeting && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -988,7 +1106,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               <AccordionTrigger>
                 Engagement
                 {filters.engagement && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -1003,7 +1123,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               <AccordionTrigger>
                 Electoral Districts
                 {filters.electoral && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -1018,7 +1140,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               <AccordionTrigger>
                 Election History
                 {filters.electionHistory && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -1033,7 +1157,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               <AccordionTrigger>
                 Tapestry Segments
                 {filters.tapestry && (
-                  <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (active)
+                  </span>
                 )}
               </AccordionTrigger>
               <AccordionContent>
@@ -1064,7 +1190,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                     <Input
                       id="segment-name"
                       value={segmentName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSegmentName(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setSegmentName(e.target.value)
+                      }
                       placeholder="e.g., Metro Swing Voters"
                     />
                   </div>
@@ -1073,12 +1201,17 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                     <Input
                       id="segment-description"
                       value={segmentDescription}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSegmentDescription(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setSegmentDescription(e.target.value)
+                      }
                       placeholder="Optional description..."
                     />
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsSaveDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
                     <Button onClick={handleSaveSegment}>Save</Button>
@@ -1187,7 +1320,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       </div>
                       {/* Table Rows */}
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex gap-4 p-4 border-b last:border-b-0">
+                        <div
+                          key={i}
+                          className="flex gap-4 p-4 border-b last:border-b-0"
+                        >
                           <Skeleton className="h-4 w-20" />
                           <Skeleton className="h-4 w-24" />
                           <Skeleton className="h-4 w-16" />
@@ -1204,14 +1340,21 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
               results.precinctCount === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64">
                   <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground font-medium">No precincts match your criteria</p>
+                  <p className="text-muted-foreground font-medium">
+                    No precincts match your criteria
+                  </p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Your filters may be too restrictive. Try one of these recovery options:
+                    Your filters may be too restrictive. Try one of these
+                    recovery options:
                   </p>
                   <div className="mt-4 space-y-3 w-full max-w-md">
                     {/* Primary actions - most common fixes */}
                     <div className="flex gap-2 flex-wrap justify-center">
-                      <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearFilters}
+                      >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Clear All Filters
                       </Button>
@@ -1249,8 +1392,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                           }
                           setFilters(broadenedFilters);
                           toast({
-                            title: 'Filters Broadened',
-                            description: 'Range filters widened to capture more precincts',
+                            title: "Filters Broadened",
+                            description:
+                              "Range filters widened to capture more precincts",
                           });
                         }}
                         className="text-[#33a852] border-[#33a852]/30 hover:bg-[#33a852]/10"
@@ -1266,7 +1410,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                         <span className="w-full border-t" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-2 text-muted-foreground">Or try a preset</span>
+                        <span className="bg-white px-2 text-muted-foreground">
+                          Or try a preset
+                        </span>
                       </div>
                     </div>
 
@@ -1275,7 +1421,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLoadPreset('preset-suburban-swing')}
+                        onClick={() =>
+                          handleLoadPreset("preset-suburban-swing")
+                        }
                       >
                         <Target className="h-4 w-4 mr-1" />
                         Swing Voters
@@ -1283,7 +1431,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLoadPreset('preset-base-mobilization')}
+                        onClick={() =>
+                          handleLoadPreset("preset-base-mobilization")
+                        }
                       >
                         <Target className="h-4 w-4 mr-1" />
                         GOTV Targets
@@ -1291,7 +1441,9 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLoadPreset('preset-college-independents')}
+                        onClick={() =>
+                          handleLoadPreset("preset-college-independents")
+                        }
                       >
                         <Target className="h-4 w-4 mr-1" />
                         High Turnout Dems
@@ -1300,7 +1452,10 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
 
                     {/* Additional help */}
                     <div className="text-xs text-center text-muted-foreground pt-2">
-                      <p>Need help? The AI assistant can suggest filters based on your goal.</p>
+                      <p>
+                        Need help? The AI assistant can suggest filters based on
+                        your goal.
+                      </p>
                       <Link
                         href="/political-ai"
                         className="text-[#33a852] hover:underline inline-flex items-center gap-1 mt-1"
@@ -1342,8 +1497,11 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
                 className="text-xs text-gray-500 hover:text-[#33a852] transition-colors flex items-center gap-1"
                 onClick={() => {
                   // Store the category preference for Settings page
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('settings_active_category', 'savedSegments');
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem(
+                      "settings_active_category",
+                      "savedSegments",
+                    );
                   }
                 }}
               >
@@ -1375,9 +1533,14 @@ export function SegmentBuilder({ initialPresetId, onMapCommand }: SegmentBuilder
           <DialogHeader>
             <DialogTitle>Confirm Action</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">{confirmDialogMessage}</p>
+          <p className="text-sm text-muted-foreground">
+            {confirmDialogMessage}
+          </p>
           <div className="flex justify-end gap-3 mt-4">
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button

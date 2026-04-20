@@ -1,37 +1,39 @@
-import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { activeState } from '@/lib/config/activeState';
 
-/** Human-readable label for canonical district ids (pa-* / mi-*). */
+/** Human-readable label for canonical district ids (e.g. ca-congress-07, pa-house-123). */
 export function formatPoliticalDistrictLabel(districtId: string): string {
-  if (districtId.startsWith('pa-congress-')) {
-    const n = parseInt(districtId.replace('pa-congress-', ''), 10);
-    return `Congressional District ${Number.isFinite(n) ? n : districtId.replace('pa-congress-', '')}`;
+  // Match any state abbreviation prefix: <abbr>-congress-NN
+  const congressMatch = districtId.match(/^[a-z]{2}-congress-(\d+)$/i);
+  if (congressMatch) {
+    const n = parseInt(congressMatch[1], 10);
+    return `Congressional District ${Number.isFinite(n) ? n : congressMatch[1]}`;
   }
-  if (districtId.startsWith('pa-senate-')) {
-    return `State Senate District ${districtId.replace('pa-senate-', '')}`;
+  // <abbr>-senate-N
+  const senateMatch = districtId.match(/^[a-z]{2}-senate-(.+)$/i);
+  if (senateMatch) {
+    return `State Senate District ${senateMatch[1]}`;
   }
-  if (districtId.startsWith('pa-house-')) {
-    return `State House District ${districtId.replace('pa-house-', '')}`;
+  // <abbr>-house-N
+  const houseMatch = districtId.match(/^[a-z]{2}-house-(.+)$/i);
+  if (houseMatch) {
+    return `State House District ${houseMatch[1]}`;
   }
-  if (districtId.startsWith('mi-senate-')) {
-    return `State Senate District ${districtId.replace('mi-senate-', '')}`;
-  }
-  if (districtId.startsWith('mi-house-')) {
-    return `State House District ${districtId.replace('mi-house-', '')}`;
-  }
+  // Legacy MI congressional shorthand: mi-07
   if (/^mi-0?\d{1,2}$/i.test(districtId)) {
     const raw = districtId.replace(/^mi-/i, '');
     const n = parseInt(raw, 10);
     return `Congressional District ${Number.isFinite(n) ? n : raw}`;
   }
-  if (districtId.startsWith('pa-county-')) {
-    const fp = districtId.replace('pa-county-', '');
-    return `County FIPS ${fp}`;
+  // Misc suffixes (county, school district, zip) — strip any known state prefix
+  const abbr = activeState.abbreviation.toLowerCase();
+  if (districtId.startsWith(`${abbr}-county-`)) {
+    return `County FIPS ${districtId.replace(`${abbr}-county-`, '')}`;
   }
-  if (districtId.startsWith('pa-sd-')) {
-    return `School District ${districtId.replace('pa-sd-', '')}`;
+  if (districtId.startsWith(`${abbr}-sd-`)) {
+    return `School District ${districtId.replace(`${abbr}-sd-`, '')}`;
   }
-  if (districtId.startsWith('pa-zip-')) {
-    return `ZIP ${districtId.replace('pa-zip-', '')}`;
+  if (districtId.startsWith(`${abbr}-zip-`)) {
+    return `ZIP ${districtId.replace(`${abbr}-zip-`, '')}`;
   }
   return districtId;
 }
@@ -42,24 +44,24 @@ export function stripDistrictIdForEnrichment(
   level: 'congressional' | 'state_senate' | 'state_house'
 ): string {
   if (level === 'congressional') {
-    if (districtId.startsWith('pa-congress-')) {
-      return String(parseInt(districtId.replace('pa-congress-', ''), 10));
-    }
+    const m = districtId.match(/^[a-z]{2}-congress-(\d+)$/i);
+    if (m) return String(parseInt(m[1], 10));
     if (/^mi-0?\d{1,2}$/i.test(districtId)) {
       return String(parseInt(districtId.replace(/^mi-/i, ''), 10));
     }
   }
   if (level === 'state_senate') {
-    if (districtId.startsWith('pa-senate-')) return districtId.replace('pa-senate-', '');
-    if (districtId.startsWith('mi-senate-')) return districtId.replace('mi-senate-', '');
+    const m = districtId.match(/^[a-z]{2}-senate-(.+)$/i);
+    if (m) return m[1];
   }
   if (level === 'state_house') {
-    if (districtId.startsWith('pa-house-')) return districtId.replace('pa-house-', '');
-    if (districtId.startsWith('mi-house-')) return districtId.replace('mi-house-', '');
+    const m = districtId.match(/^[a-z]{2}-house-(.+)$/i);
+    if (m) return m[1];
   }
-  return districtId.replace(/^(pa|mi)-(congress|house|senate)-/i, '');
+  return districtId.replace(/^[a-z]{2}-(congress|house|senate)-/i, '');
 }
 
+/** Returns true for all non-Michigan state deployments (PA-style district key format). */
 export function isPAPoliticalRegion(): boolean {
-  return getPoliticalRegionEnv().stateFips === '42';
+  return activeState.fips !== '26';
 }

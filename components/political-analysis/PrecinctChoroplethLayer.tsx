@@ -553,7 +553,7 @@ export function PrecinctChoroplethLayer({
 
         const isPA = boundaries.features.length > 0 && boundaries.features[0]?.properties?.UNIQUE_ID != null;
         console.log(
-          `[PrecinctChoroplethLayer] Loaded ${boundaries.features.length} ${isPA ? "precinct" : "municipality"} boundaries (${isPA ? "PA" : "MI"})`,
+          `[PrecinctChoroplethLayer] Loaded ${boundaries.features.length} ${isPA ? "precinct" : "municipality"} boundaries`,
         );
         console.log(
           `[PrecinctChoroplethLayer] Loaded ${Object.keys(targetingScores).length} targeting scores`,

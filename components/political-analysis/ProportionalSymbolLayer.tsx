@@ -19,7 +19,6 @@ import Point from "@arcgis/core/geometry/Point";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 import PopupTemplate from "@arcgis/core/PopupTemplate";
 import { politicalDataService } from "@/lib/services/PoliticalDataService";
-import { loadBoundariesWithFallback } from "@/lib/map/boundariesLoader";
 
 // ============================================================================
 // Name Normalization Helpers (shared logic with PrecinctChoroplethLayer)
@@ -331,18 +330,14 @@ export function ProportionalSymbolLayer({
 
         if (!pointData) {
           // Load precinct data and create centroids.
-          // Load municipality boundaries directly from local high-res file + targeting scores
+          // Load PA precinct boundaries + targeting scores
           await politicalDataService.initialize();
-          const [boundaryResponse, targetingScores] = await Promise.all([
-            fetch("/data/political/ingham_municipalities.geojson"),
+          const [boundaries, targetingScores] = await Promise.all([
+            politicalDataService.loadPrecinctBoundaries(),
             politicalDataService.getAllTargetingScores(),
           ]);
-          if (!boundaryResponse.ok)
-            throw new Error(
-              `Failed to load boundaries: ${boundaryResponse.status}`,
-            );
-          const boundaries: GeoJSON.FeatureCollection =
-            await boundaryResponse.json();
+          if (!boundaries)
+            throw new Error("Failed to load precinct boundaries");
 
           const targetingScoreKeys = Object.keys(targetingScores);
           const normalizedScoreKeys =

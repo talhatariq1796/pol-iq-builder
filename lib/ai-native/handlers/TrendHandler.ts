@@ -20,12 +20,17 @@ import type {
   PrecinctDemographicChange,
   DemographicAnalysis,
   DemographicSummary,
-} from './types';
-import { RESPONSE_TEMPLATES, appendSources, getEnrichmentForQuery, formatEnrichmentSections } from './types';
-import { handleTrendQuery } from '@/lib/ai/workflowHandlers';
+} from "./types";
+import {
+  RESPONSE_TEMPLATES,
+  appendSources,
+  getEnrichmentForQuery,
+  formatEnrichmentSections,
+} from "./types";
+import { politicalDataService } from "@/lib/services/PoliticalDataService";
 
 // Cache for demographic trends data
-let demographicTrendsCache: DemographicTrends | null = null;
+const demographicTrendsCache: DemographicTrends | null = null;
 
 // ============================================================================
 // Query Patterns
@@ -33,7 +38,7 @@ let demographicTrendsCache: DemographicTrends | null = null;
 
 const TREND_PATTERNS: QueryPattern[] = [
   {
-    intent: 'election_trends',
+    intent: "election_trends",
     patterns: [
       /(?:voting|election)\s+trends?/i,
       /historical\s+(?:voting|election)\s+(?:patterns?|data)/i,
@@ -42,11 +47,18 @@ const TREND_PATTERNS: QueryPattern[] = [
       /(?:voting|election)\s+history/i,
       /over\s+time/i,
     ],
-    keywords: ['trend', 'historical', 'over time', 'change', 'history', 'pattern'],
+    keywords: [
+      "trend",
+      "historical",
+      "over time",
+      "change",
+      "history",
+      "pattern",
+    ],
     priority: 9,
   },
   {
-    intent: 'turnout_trends',
+    intent: "turnout_trends",
     patterns: [
       /turnout\s+trends?/i,
       /how\s+has\s+turnout\s+changed/i,
@@ -54,11 +66,11 @@ const TREND_PATTERNS: QueryPattern[] = [
       /turnout\s+history/i,
       /voter\s+participation\s+trends?/i,
     ],
-    keywords: ['turnout', 'trend', 'participation', 'over time'],
+    keywords: ["turnout", "trend", "participation", "over time"],
     priority: 10,
   },
   {
-    intent: 'partisan_trends',
+    intent: "partisan_trends",
     patterns: [
       /partisan\s+(?:lean\s+)?trends?/i,
       /how\s+has\s+partisan\s+lean\s+changed/i,
@@ -67,11 +79,11 @@ const TREND_PATTERNS: QueryPattern[] = [
       /margin\s+shifts?/i,
       /which\s+areas?\s+are\s+(?:shifting|moving)/i,
     ],
-    keywords: ['partisan', 'lean', 'shift', 'margin', 'moving', 'trend'],
+    keywords: ["partisan", "lean", "shift", "margin", "moving", "trend"],
     priority: 10,
   },
   {
-    intent: 'flip_risk',
+    intent: "flip_risk",
     patterns: [
       /flip\s+risk/i,
       /precincts?\s+(?:that\s+)?(?:have\s+)?changed/i,
@@ -79,22 +91,22 @@ const TREND_PATTERNS: QueryPattern[] = [
       /volatile\s+(?:areas?|precincts?)/i,
       /unstable\s+(?:voting|precincts?)/i,
     ],
-    keywords: ['flip', 'risk', 'volatile', 'unstable', 'changed'],
+    keywords: ["flip", "risk", "volatile", "unstable", "changed"],
     priority: 9,
   },
   {
-    intent: 'demographic_trends',
+    intent: "demographic_trends",
     patterns: [
       /demographic\s+(?:shifts?|trends?|changes?)/i,
       /how\s+have\s+demographics\s+changed/i,
       /population\s+trends?/i,
       /demographic\s+over\s+time/i,
     ],
-    keywords: ['demographic', 'shift', 'trend', 'population', 'change'],
+    keywords: ["demographic", "shift", "trend", "population", "change"],
     priority: 8,
   },
   {
-    intent: 'donor_trends',
+    intent: "donor_trends",
     patterns: [
       /donor\s+trends?/i,
       /fundraising\s+trends?/i,
@@ -104,11 +116,11 @@ const TREND_PATTERNS: QueryPattern[] = [
       /year.over.year/i,
       /momentum/i,
     ],
-    keywords: ['donor', 'trend', 'fundraising', 'momentum', 'giving'],
+    keywords: ["donor", "trend", "fundraising", "momentum", "giving"],
     priority: 8,
   },
   {
-    intent: 'compare_elections',
+    intent: "compare_elections",
     patterns: [
       /compare\s+elections?/i,
       /(?:20\d{2})\s+(?:vs|versus)\s+(?:20\d{2})/i,
@@ -116,12 +128,12 @@ const TREND_PATTERNS: QueryPattern[] = [
       /year\s+over\s+year/i,
       /between\s+(?:20\d{2})\s+and\s+(?:20\d{2})/i,
     ],
-    keywords: ['compare', 'election', 'vs', 'versus', 'year over year'],
+    keywords: ["compare", "election", "vs", "versus", "year over year"],
     priority: 9,
   },
   // Election lookup patterns (direct result queries)
   {
-    intent: 'election_lookup',
+    intent: "election_lookup",
     patterns: [
       /how\s+did\s+(biden|trump|harris|slotkin|rogers|whitmer)\s+do\s+in\s+(\d{4})/i,
       /(\d{4})\s+(?:election|presidential|governor|gubernatorial)\s+results?/i,
@@ -130,7 +142,17 @@ const TREND_PATTERNS: QueryPattern[] = [
       /(?:results?|votes?)\s+(?:for|of)\s+(biden|trump|harris)\s+in\s+(\d{4})/i,
       /(?:what|show)\s+(?:were|me)\s+(?:the\s+)?(?:20\d{2})\s+results/i,
     ],
-    keywords: ['results', 'biden', 'trump', 'harris', '2020', '2022', '2024', 'election', 'performance'],
+    keywords: [
+      "results",
+      "biden",
+      "trump",
+      "harris",
+      "2020",
+      "2022",
+      "2024",
+      "election",
+      "performance",
+    ],
     priority: 9,
   },
 ];
@@ -141,14 +163,15 @@ const TREND_PATTERNS: QueryPattern[] = [
 
 const YEAR_PATTERN = /\b(20(?:20|22|24))\b/g;
 const PRECINCT_PATTERN = /(?:precinct|ward|district)\s+(\w+)/i;
-const CITY_PATTERN = /\b(East Lansing|Lansing|Meridian|Delhi|Mason|Williamston|Okemos|Haslett)\b/i;
+const CITY_PATTERN =
+  /\b(East Lansing|Lansing|Meridian|Delhi|Mason|Williamston|Okemos|Haslett)\b/i;
 
 // ============================================================================
 // Trend Handler Class
 // ============================================================================
 
 export class TrendHandler implements NLPHandler {
-  name = 'TrendHandler';
+  name = "TrendHandler";
   patterns = TREND_PATTERNS;
 
   // --------------------------------------------------------------------------
@@ -157,14 +180,14 @@ export class TrendHandler implements NLPHandler {
 
   canHandle(query: ParsedQuery): boolean {
     return (
-      query.intent === 'election_trends' ||
-      query.intent === 'turnout_trends' ||
-      query.intent === 'partisan_trends' ||
-      query.intent === 'flip_risk' ||
-      query.intent === 'demographic_trends' ||
-      query.intent === 'donor_trends' ||
-      query.intent === 'compare_elections' ||
-      query.intent === 'election_lookup'
+      query.intent === "election_trends" ||
+      query.intent === "turnout_trends" ||
+      query.intent === "partisan_trends" ||
+      query.intent === "flip_risk" ||
+      query.intent === "demographic_trends" ||
+      query.intent === "donor_trends" ||
+      query.intent === "compare_elections" ||
+      query.intent === "election_lookup"
     );
   }
 
@@ -173,42 +196,42 @@ export class TrendHandler implements NLPHandler {
 
     try {
       switch (query.intent) {
-        case 'election_trends':
+        case "election_trends":
           return await this.handleElectionTrends(query, startTime);
 
-        case 'turnout_trends':
+        case "turnout_trends":
           return await this.handleTurnoutTrends(query, startTime);
 
-        case 'partisan_trends':
+        case "partisan_trends":
           return await this.handlePartisanTrends(query, startTime);
 
-        case 'flip_risk':
+        case "flip_risk":
           return await this.handleFlipRisk(query, startTime);
 
-        case 'demographic_trends':
+        case "demographic_trends":
           return await this.handleDemographicTrends(query, startTime);
 
-        case 'donor_trends':
+        case "donor_trends":
           return await this.handleDonorTrends(query, startTime);
 
-        case 'compare_elections':
+        case "compare_elections":
           return await this.handleCompareElections(query, startTime);
 
-        case 'election_lookup':
+        case "election_lookup":
           return await this.handleElectionLookup(query, startTime);
 
         default:
           return {
             success: false,
             response: RESPONSE_TEMPLATES.error.parse(query.originalQuery),
-            error: 'Unknown trend intent',
+            error: "Unknown trend intent",
           };
       }
     } catch (error) {
       return {
         success: false,
-        response: RESPONSE_TEMPLATES.error.execution('process trend query'),
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: RESPONSE_TEMPLATES.error.execution("process trend query"),
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -219,173 +242,260 @@ export class TrendHandler implements NLPHandler {
 
   private async handleElectionTrends(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
-    const entities = this.extractEntities(query.originalQuery);
-    const precinctName = entities.precincts?.[0];
-
-    // Use existing handleTrendQuery from workflowHandlers
-    const result = await handleTrendQuery(precinctName);
-
-    return {
-      ...result,
-      success: true,
-      metadata: this.buildMetadata('election_trends', startTime, query),
-    };
+    return this.handlePartisanTrends(query, startTime);
   }
 
   private async handleTurnoutTrends(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
-    const entities = this.extractEntities(query.originalQuery);
-
     try {
-      // Dynamic import to avoid SSR issues
-      const { loadElectionHistory, analyzeTurnoutTrends } =
-        await import('@/lib/analysis/TrendAnalyzer');
+      const trends = await politicalDataService.getTurnoutTrendExtremes(10);
 
-      await loadElectionHistory();
-      const trends = analyzeTurnoutTrends();
+      const trendRows = trends
+        ? [...trends.largestIncreases, ...trends.largestDecreases]
+        : [];
+
+      if (!trends || trendRows.length === 0) {
+        const precincts = await politicalDataService.getSegmentEnginePrecincts();
+        const ranked = precincts
+          .filter(
+            (p: any) =>
+              Number.isFinite(p.electoral?.avgTurnout) &&
+              (p.demographics?.population18up ?? 0) >= 100,
+          )
+          .sort((a: any, b: any) => (a.electoral?.avgTurnout ?? 100) - (b.electoral?.avgTurnout ?? 100));
+        const lowTurnout = ranked.slice(0, 10);
+        const highTurnout = ranked.slice(-10).reverse();
+
+        return {
+          success: true,
+          response: [
+            "## Turnout Trends",
+            "",
+            "The loaded California files include current modeled turnout, but not comparable historical turnout rates for 2020 and 2022. So this is a current turnout read, not a literal multi-year trend.",
+            "",
+            "### Lowest Current Turnout",
+            "",
+            ...lowTurnout.map(
+              (p: any, i: number) =>
+                `${i + 1}. **${p.name ?? p.precinctName ?? p.id}** - ${p.jurisdiction ?? "California"} (${(p.electoral?.avgTurnout ?? 0).toFixed(1)}% turnout, GOTV ${(p.targeting?.gotvPriority ?? 0).toFixed(1)}, ${(p.demographics?.population18up ?? 0).toLocaleString()} registered voters)`,
+            ),
+            "",
+            "### Highest Current Turnout",
+            "",
+            ...highTurnout.map(
+              (p: any, i: number) =>
+                `${i + 1}. **${p.name ?? p.precinctName ?? p.id}** - ${p.jurisdiction ?? "California"} (${(p.electoral?.avgTurnout ?? 0).toFixed(1)}% turnout, GOTV ${(p.targeting?.gotvPriority ?? 0).toFixed(1)}, ${(p.demographics?.population18up ?? 0).toLocaleString()} registered voters)`,
+            ),
+          ].join("\n"),
+          mapCommands: [
+            {
+              action: "highlight",
+              target: "precincts",
+              ids: lowTurnout.map((p: any) => p.id ?? p.precinctId).filter(Boolean),
+              style: { fillColor: "#F59E0B", fillOpacity: 0.7 },
+            },
+          ],
+          data: {
+            lowTurnout,
+            highTurnout,
+            matchCount: ranked.length,
+            precinctCount: ranked.length,
+          },
+          suggestedActions: [
+            {
+              id: "show-gotv-priority",
+              label: "Show GOTV Priority",
+              action:
+                "Where should we focus GOTV? Show precincts with GOTV priority at least 60 and average turnout under 58%",
+              priority: 1,
+            },
+          ],
+          metadata: this.buildMetadata("turnout_trends", startTime, query),
+        };
+      }
 
       // Get enrichment context (RAG + Knowledge Graph)
       const enrichment = await getEnrichmentForQuery(query.originalQuery);
       const enrichmentSections = formatEnrichmentSections(enrichment);
 
-      const responseText = this.formatTurnoutTrendsResponse(trends) + enrichmentSections;
+      const responseText =
+        [
+          "## Turnout Trends",
+          "",
+          `Average turnout: 2020 ${trends.statewideMeanTurnout.y2020.toFixed(1)}%, 2022 ${trends.statewideMeanTurnout.y2022.toFixed(1)}%, 2024 ${trends.statewideMeanTurnout.y2024.toFixed(1)}%.`,
+          "",
+          "### Biggest Changes",
+          "",
+          ...trendRows.slice(0, 10).map(
+            (p: any, i: number) =>
+              `${i + 1}. **${p.precinctName}** (${p.turnout2020}% in 2020, ${p.turnout2022}% in 2022, ${p.turnout2024}% in 2024, net ${p.netChange2020to2024 > 0 ? "+" : ""}${p.netChange2020to2024} pts)`,
+          ),
+        ].join("\n") + enrichmentSections;
 
       return {
         success: true,
         response: responseText,
         mapCommands: [
           {
-            action: 'showTemporal',
-            metric: 'turnout',
+            action: "showTemporal",
+            metric: "turnout",
             years: [2020, 2022, 2024],
             autoPlay: true,
           },
         ],
         suggestedActions: [
           {
-            id: 'show-declining',
-            label: 'Show Declining Turnout Areas',
-            description: 'Identify GOTV priorities',
-            action: 'Show precincts with declining turnout',
+            id: "show-declining",
+            label: "Show Declining Turnout Areas",
+            description: "Identify GOTV priorities",
+            action: "Show precincts with declining turnout",
             priority: 1,
           },
           {
-            id: 'show-increasing',
-            label: 'Show Increasing Turnout',
-            description: 'Areas with momentum',
-            action: 'Show precincts with increasing turnout',
+            id: "show-increasing",
+            label: "Show Increasing Turnout",
+            description: "Areas with momentum",
+            action: "Show precincts with increasing turnout",
             priority: 2,
           },
           {
-            id: 'export-trends',
-            label: 'Export Trend Data',
-            description: 'Download time series',
-            action: 'export_turnout_trends',
+            id: "export-trends",
+            label: "Export Trend Data",
+            description: "Download time series",
+            action: "export_turnout_trends",
             priority: 3,
           },
         ],
-        data: trends,
-        citations: [
-          {
-            id: 'ingham-clerk',
-            source: 'Ingham County Clerk',
-            type: 'data',
-            description: 'Official precinct-level election results 2020-2024',
-          },
-        ],
-        metadata: this.buildMetadata('turnout_trends', startTime, query),
       };
     } catch (error) {
       return {
         success: false,
-        response: 'Failed to load turnout trend data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: "Failed to load turnout trend data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   private async handlePartisanTrends(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
     try {
-      const { loadElectionHistory, analyzePartisanShifts } =
-        await import('@/lib/analysis/TrendAnalyzer');
+      const precincts = await politicalDataService.getSegmentEnginePrecincts();
+      const shifts = precincts
+        .map((p: any) => {
+          const m20 = p.elections?.["2020"]?.margin;
+          const m24 = p.elections?.["2024"]?.margin;
+          return {
+            id: p.id ?? p.precinctId,
+            name: p.name ?? p.precinctName ?? p.id,
+            jurisdiction: p.jurisdiction ?? "California",
+            margin2020: m20,
+            margin2024: m24,
+            netShift: Number.isFinite(m20) && Number.isFinite(m24) ? m24 - m20 : null,
+            absShift: Number.isFinite(m20) && Number.isFinite(m24) ? Math.abs(m24 - m20) : null,
+          };
+        })
+        .filter((p: any) => p.absShift != null)
+        .sort((a: any, b: any) => b.absShift - a.absShift);
 
-      await loadElectionHistory();
-      const shifts = analyzePartisanShifts();
+      if (shifts.length === 0) {
+        return {
+          success: true,
+          response:
+            "## Margin Trends\n\nI could not find precincts with both 2020 and 2024 presidential margins in the loaded California data, so there is not enough election history to rank partisan shifts yet.",
+          metadata: this.buildMetadata("partisan_trends", startTime, query),
+        };
+      }
 
       // Get enrichment context (RAG + Knowledge Graph)
       const enrichment = await getEnrichmentForQuery(query.originalQuery);
       const enrichmentSections = formatEnrichmentSections(enrichment);
 
-      const responseText = this.formatPartisanShiftsResponse(shifts) + enrichmentSections;
+      const formatMargin = (value: number) => {
+        const dir = value >= 0 ? "D" : "R";
+        return `${dir}+${Math.abs(value).toFixed(1)}`;
+      };
+      const responseText =
+        [
+          "## Margin Trends Since 2020",
+          "",
+          "California currently has comparable 2020 and 2024 presidential precinct margins loaded here. I ranked precincts by the absolute change in Dem-Rep margin; 2022 midterm margin history is not available in this CA dataset.",
+          "",
+          "### Largest Shifts",
+          "",
+          ...shifts.slice(0, 10).map((p: any, i: number) => {
+            const direction = p.netShift >= 0 ? "toward D" : "toward R";
+            return `${i + 1}. **${p.name}** - ${p.jurisdiction} (${formatMargin(p.margin2020)} in 2020 to ${formatMargin(p.margin2024)} in 2024, ${direction} ${Math.abs(p.netShift).toFixed(1)} pts)`;
+          }),
+        ].join("\n") + enrichmentSections;
 
       return {
         success: true,
         response: responseText,
         mapCommands: [
           {
-            action: 'showTemporal',
-            metric: 'partisan_lean',
-            years: [2020, 2022, 2024],
+            action: "showTemporal",
+            metric: "partisan_lean",
+            years: [2020, 2024],
             autoPlay: false,
           },
         ],
         suggestedActions: [
           {
-            id: 'show-shifting-dem',
-            label: 'Precincts Shifting Democratic',
-            description: 'Areas moving left',
-            action: 'Show precincts shifting Democratic',
+            id: "show-shifting-dem",
+            label: "Precincts Shifting Democratic",
+            description: "Areas moving left",
+            action: "Show precincts shifting Democratic",
             priority: 1,
           },
           {
-            id: 'show-shifting-rep',
-            label: 'Precincts Shifting Republican',
-            description: 'Areas moving right',
-            action: 'Show precincts shifting Republican',
+            id: "show-shifting-rep",
+            label: "Precincts Shifting Republican",
+            description: "Areas moving right",
+            action: "Show precincts shifting Republican",
             priority: 2,
           },
           {
-            id: 'compare-margins',
-            label: 'Compare 2020 vs 2024',
-            description: 'Side-by-side analysis',
-            action: 'Compare 2020 election margins to 2024',
+            id: "compare-margins",
+            label: "Compare 2020 vs 2024",
+            description: "Side-by-side analysis",
+            action: "Compare 2020 election margins to 2024",
             priority: 3,
           },
         ],
-        data: shifts,
+        data: { rankings: shifts.slice(0, 10), matchCount: shifts.length },
         citations: [
           {
-            id: 'ingham-clerk-shifts',
-            source: 'Ingham County Clerk',
-            type: 'calculation',
-            description: 'Partisan lean calculated from precinct results across 3 election cycles',
+            id: "california-election-shifts",
+            source: "California precinct election results",
+            type: "calculation",
+            description:
+              "Dem-Rep presidential margin shift calculated from loaded 2020 and 2024 precinct results",
           },
         ],
-        metadata: this.buildMetadata('partisan_trends', startTime, query),
+        metadata: this.buildMetadata("partisan_trends", startTime, query),
       };
     } catch (error) {
       return {
         success: false,
-        response: 'Failed to load partisan shift data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: "Failed to load partisan shift data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   private async handleFlipRisk(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
     try {
       const { loadElectionHistory, identifyFlipRisk } =
-        await import('@/lib/analysis/TrendAnalyzer');
+        await import("@/lib/analysis/TrendAnalyzer");
 
       await loadElectionHistory();
       const flipRisk = identifyFlipRisk();
@@ -394,51 +504,52 @@ export class TrendHandler implements NLPHandler {
       const enrichment = await getEnrichmentForQuery(query.originalQuery);
       const enrichmentSections = formatEnrichmentSections(enrichment);
 
-      const responseText = this.formatFlipRiskResponse(flipRisk) + enrichmentSections;
+      const responseText =
+        this.formatFlipRiskResponse(flipRisk) + enrichmentSections;
 
       return {
         success: true,
         response: responseText,
         mapCommands: [
           {
-            action: 'highlight',
-            target: 'precincts',
+            action: "highlight",
+            target: "precincts",
             ids: flipRisk.highRisk.map((p: any) => p.id),
-            style: { fillColor: '#F59E0B', fillOpacity: 0.7 },
+            style: { fillColor: "#F59E0B", fillOpacity: 0.7 },
           },
         ],
         suggestedActions: [
           {
-            id: 'show-volatile',
-            label: 'Show Volatile Precincts',
-            description: 'High flip risk areas',
-            action: 'map:showHeatmap',
-            metadata: { metric: 'swing_potential' },
+            id: "show-volatile",
+            label: "Show Volatile Precincts",
+            description: "High flip risk areas",
+            action: "map:showHeatmap",
+            metadata: { metric: "swing_potential" },
             priority: 1,
           },
           {
-            id: 'analyze-first',
-            label: `Analyze ${flipRisk.highRisk[0]?.precinctId || 'Top Risk'}`,
-            description: 'Deep dive on highest risk',
-            action: `Tell me about ${flipRisk.highRisk[0]?.precinctId || 'the highest risk precinct'}`,
+            id: "analyze-first",
+            label: `Analyze ${flipRisk.highRisk[0]?.precinctId || "Top Risk"}`,
+            description: "Deep dive on highest risk",
+            action: `Tell me about ${flipRisk.highRisk[0]?.precinctId || "the highest risk precinct"}`,
             priority: 2,
           },
         ],
         data: flipRisk,
-        metadata: this.buildMetadata('flip_risk', startTime, query),
+        metadata: this.buildMetadata("flip_risk", startTime, query),
       };
     } catch (error) {
       return {
         success: false,
-        response: 'Failed to load flip risk data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: "Failed to load flip risk data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   private async handleDemographicTrends(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
     const entities = this.extractEntities(query.originalQuery);
 
@@ -452,13 +563,13 @@ export class TrendHandler implements NLPHandler {
           response: `**Demographic Trends**\n\nDemographic trend data is not yet available. To enable this feature:\n\n1. Run: \`npx tsx scripts/political/build-demographic-trends.ts\`\n2. This generates sample data for development\n3. For real data, first run \`fetch-historical-acs.ts\` with a Census API key\n\nIn the meantime, you can:\n• View current demographics by precinct\n• Compare demographics across areas`,
           suggestedActions: [
             {
-              id: 'current-demographics',
-              label: 'View Current Demographics',
-              action: 'Show me current demographics',
+              id: "current-demographics",
+              label: "View Current Demographics",
+              action: "Show me current demographics",
               priority: 1,
             },
           ],
-          metadata: this.buildMetadata('demographic_trends', startTime, query),
+          metadata: this.buildMetadata("demographic_trends", startTime, query),
         };
       }
 
@@ -470,65 +581,67 @@ export class TrendHandler implements NLPHandler {
       const enrichmentSections = formatEnrichmentSections(enrichment);
 
       // Format the response
-      const response = this.formatDemographicTrendsResponse(analysis, trends.metadata) + enrichmentSections;
+      const response =
+        this.formatDemographicTrendsResponse(analysis, trends.metadata) +
+        enrichmentSections;
 
       return {
         success: true,
         response,
         mapCommands: [
           {
-            action: 'showChoropleth',
-            metric: 'population_change',
+            action: "showChoropleth",
+            metric: "population_change",
           },
         ],
         suggestedActions: [
           {
-            id: 'show-growing',
-            label: 'Show Growing Areas',
-            description: 'Precincts with population growth',
-            action: 'Show precincts with population growth over 10%',
+            id: "show-growing",
+            label: "Show Growing Areas",
+            description: "Precincts with population growth",
+            action: "Show precincts with population growth over 10%",
             priority: 1,
           },
           {
-            id: 'show-education-shift',
-            label: 'Education Shifts',
-            description: 'Changes in college attainment',
-            action: 'Show precincts where college % increased most',
+            id: "show-education-shift",
+            label: "Education Shifts",
+            description: "Changes in college attainment",
+            action: "Show precincts where college % increased most",
             priority: 2,
           },
           {
-            id: 'show-income-change',
-            label: 'Income Changes',
-            description: 'Economic growth patterns',
-            action: 'Show precincts with largest income growth',
+            id: "show-income-change",
+            label: "Income Changes",
+            description: "Economic growth patterns",
+            action: "Show precincts with largest income growth",
             priority: 3,
           },
           {
-            id: 'compare-precincts',
-            label: 'Compare Specific Areas',
-            description: 'Deep dive into selected areas',
-            action: 'Compare demographic changes in East Lansing vs Meridian',
+            id: "compare-precincts",
+            label: "Compare Specific Areas",
+            description: "Deep dive into selected areas",
+            action: "Compare demographic changes in East Lansing vs Meridian",
             priority: 4,
           },
         ],
         data: analysis,
         citations: [
           {
-            id: 'census-acs',
-            source: 'US Census Bureau',
-            type: 'data',
-            description: `American Community Survey 5-Year Estimates (${trends.metadata.vintages.join(', ')})`,
+            id: "census-acs",
+            source: "US Census Bureau",
+            type: "data",
+            description: `American Community Survey 5-Year Estimates (${trends.metadata.vintages.join(", ")})`,
           },
         ],
-        metadata: this.buildMetadata('demographic_trends', startTime, query),
+        metadata: this.buildMetadata("demographic_trends", startTime, query),
       };
     } catch (error) {
-      console.error('[TrendHandler] Error loading demographic trends:', error);
+      console.error("[TrendHandler] Error loading demographic trends:", error);
       return {
         success: false,
-        response: 'Failed to load demographic trend data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        metadata: this.buildMetadata('demographic_trends', startTime, query),
+        response: "Failed to load demographic trend data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
+        metadata: this.buildMetadata("demographic_trends", startTime, query),
       };
     }
   }
@@ -543,26 +656,13 @@ export class TrendHandler implements NLPHandler {
       return demographicTrendsCache;
     }
 
-    try {
-      // Try to load from public data directory
-      const response = await fetch('/data/political/demographic-trends.json');
-      if (!response.ok) {
-        console.warn('[TrendHandler] Demographic trends file not found');
-        return null;
-      }
-
-      const data = await response.json();
-      demographicTrendsCache = data;
-      return data;
-    } catch (error) {
-      console.error('[TrendHandler] Error loading demographic trends:', error);
-      return null;
-    }
+    // Legacy Ingham County demographic trends file removed. No demographic trend file for PA yet.
+    return null;
   }
 
   private analyzeDemographicShifts(
     trends: DemographicTrends,
-    entities: ExtractedEntities
+    entities: ExtractedEntities,
   ): DemographicAnalysis {
     const vintages = trends.metadata.vintages.sort();
     const startVintage = vintages[0];
@@ -576,8 +676,8 @@ export class TrendHandler implements NLPHandler {
         entities.precincts!.some(
           (p) =>
             name.toLowerCase().includes(p.toLowerCase()) ||
-            p.toLowerCase().includes(name.toLowerCase())
-        )
+            p.toLowerCase().includes(name.toLowerCase()),
+        ),
       );
     }
 
@@ -593,8 +693,14 @@ export class TrendHandler implements NLPHandler {
 
       changes.push({
         precinct: precinctName,
-        population_change: this.calcPercentChange(start.population, end.population),
-        income_change: this.calcPercentChange(start.median_income, end.median_income),
+        population_change: this.calcPercentChange(
+          start.population,
+          end.population,
+        ),
+        income_change: this.calcPercentChange(
+          start.median_income,
+          end.median_income,
+        ),
         college_change: (end.college_pct - start.college_pct) * 100, // Convert to percentage points
         owner_change: (end.owner_pct - start.owner_pct) * 100,
         diversity_change: this.calcDiversityChange(start, end),
@@ -602,7 +708,12 @@ export class TrendHandler implements NLPHandler {
     }
 
     // Calculate summary
-    const summary = this.calculateSummary(changes, trends, startVintage, endVintage);
+    const summary = this.calculateSummary(
+      changes,
+      trends,
+      startVintage,
+      endVintage,
+    );
 
     // Sort for top lists
     const topGrowing = [...changes]
@@ -631,7 +742,7 @@ export class TrendHandler implements NLPHandler {
 
   private calcDiversityChange(
     start: PrecinctDemographicSnapshot,
-    end: PrecinctDemographicSnapshot
+    end: PrecinctDemographicSnapshot,
   ): number {
     // Simple diversity index: 1 - sum of squared proportions
     const calcDiversity = (s: PrecinctDemographicSnapshot) => {
@@ -651,7 +762,7 @@ export class TrendHandler implements NLPHandler {
     changes: PrecinctDemographicChange[],
     trends: DemographicTrends,
     startVintage: string,
-    endVintage: string
+    endVintage: string,
   ): DemographicSummary {
     // Aggregate across all precincts
     let totalPopStart = 0;
@@ -680,15 +791,21 @@ export class TrendHandler implements NLPHandler {
       weightedOwnerEnd += end.owner_pct * end.population;
     }
 
-    const avgIncomeStart = totalPopStart > 0 ? weightedIncomeStart / totalPopStart : 0;
+    const avgIncomeStart =
+      totalPopStart > 0 ? weightedIncomeStart / totalPopStart : 0;
     const avgIncomeEnd = totalPopEnd > 0 ? weightedIncomeEnd / totalPopEnd : 0;
-    const avgCollegeStart = totalPopStart > 0 ? weightedCollegeStart / totalPopStart : 0;
-    const avgCollegeEnd = totalPopEnd > 0 ? weightedCollegeEnd / totalPopEnd : 0;
-    const avgOwnerStart = totalPopStart > 0 ? weightedOwnerStart / totalPopStart : 0;
+    const avgCollegeStart =
+      totalPopStart > 0 ? weightedCollegeStart / totalPopStart : 0;
+    const avgCollegeEnd =
+      totalPopEnd > 0 ? weightedCollegeEnd / totalPopEnd : 0;
+    const avgOwnerStart =
+      totalPopStart > 0 ? weightedOwnerStart / totalPopStart : 0;
     const avgOwnerEnd = totalPopEnd > 0 ? weightedOwnerEnd / totalPopEnd : 0;
 
     const growingCount = changes.filter((c) => c.population_change > 0).length;
-    const decliningCount = changes.filter((c) => c.population_change < 0).length;
+    const decliningCount = changes.filter(
+      (c) => c.population_change < 0,
+    ).length;
 
     return {
       totalPopulation: {
@@ -723,74 +840,81 @@ export class TrendHandler implements NLPHandler {
 
   private formatDemographicTrendsResponse(
     analysis: DemographicAnalysis,
-    metadata: DemographicTrends['metadata']
+    metadata: DemographicTrends["metadata"],
   ): string {
-    const { summary, topGrowing, topIncomeGrowth, topEducationShift } = analysis;
+    const { summary, topGrowing, topIncomeGrowth, topEducationShift } =
+      analysis;
     const vintages = metadata.vintages.sort();
     const startYear = vintages[0];
     const endYear = vintages[vintages.length - 1];
 
     const lines: string[] = [
       `**Demographic Trends: Ingham County (${startYear}-${endYear})**`,
-      '',
+      "",
       `Over the past decade, the county has experienced significant demographic shifts:`,
-      '',
-      '**Population**',
-      `• Total: ${summary.totalPopulation.start.toLocaleString()} → ${summary.totalPopulation.end.toLocaleString()} (${summary.totalPopulation.change > 0 ? '+' : ''}${summary.totalPopulation.change}%)`,
+      "",
+      "**Population**",
+      `• Total: ${summary.totalPopulation.start.toLocaleString()} → ${summary.totalPopulation.end.toLocaleString()} (${summary.totalPopulation.change > 0 ? "+" : ""}${summary.totalPopulation.change}%)`,
       `• ${summary.growingPrecincts} precincts growing, ${summary.decliningPrecincts} declining`,
     ];
 
     if (topGrowing.length > 0) {
-      lines.push(`• Fastest growth: ${this.formatPrecinctName(topGrowing[0].precinct)} (+${topGrowing[0].population_change.toFixed(1)}%)`);
+      lines.push(
+        `• Fastest growth: ${this.formatPrecinctName(topGrowing[0].precinct)} (+${topGrowing[0].population_change.toFixed(1)}%)`,
+      );
     }
 
-    lines.push('');
-    lines.push('**Income**');
+    lines.push("");
+    lines.push("**Income**");
     lines.push(
-      `• Median household: $${summary.medianIncome.start.toLocaleString()} → $${summary.medianIncome.end.toLocaleString()} (${summary.medianIncome.change > 0 ? '+' : ''}${summary.medianIncome.change}%)`
+      `• Median household: $${summary.medianIncome.start.toLocaleString()} → $${summary.medianIncome.end.toLocaleString()} (${summary.medianIncome.change > 0 ? "+" : ""}${summary.medianIncome.change}%)`,
     );
 
     if (topIncomeGrowth.length > 0) {
-      lines.push(`• Largest gain: ${this.formatPrecinctName(topIncomeGrowth[0].precinct)} (+${topIncomeGrowth[0].income_change.toFixed(1)}%)`);
+      lines.push(
+        `• Largest gain: ${this.formatPrecinctName(topIncomeGrowth[0].precinct)} (+${topIncomeGrowth[0].income_change.toFixed(1)}%)`,
+      );
     }
 
-    lines.push('');
-    lines.push('**Education (College+)**');
+    lines.push("");
+    lines.push("**Education (College+)**");
     lines.push(
-      `• County average: ${summary.collegePct.start.toFixed(1)}% → ${summary.collegePct.end.toFixed(1)}% (${summary.collegePct.change > 0 ? '+' : ''}${summary.collegePct.change.toFixed(1)} pts)`
+      `• County average: ${summary.collegePct.start.toFixed(1)}% → ${summary.collegePct.end.toFixed(1)}% (${summary.collegePct.change > 0 ? "+" : ""}${summary.collegePct.change.toFixed(1)} pts)`,
     );
 
     if (topEducationShift.length > 0) {
-      lines.push(`• Largest shift: ${this.formatPrecinctName(topEducationShift[0].precinct)} (+${topEducationShift[0].college_change.toFixed(1)} pts)`);
+      lines.push(
+        `• Largest shift: ${this.formatPrecinctName(topEducationShift[0].precinct)} (+${topEducationShift[0].college_change.toFixed(1)} pts)`,
+      );
     }
 
-    lines.push('');
-    lines.push('**Housing**');
+    lines.push("");
+    lines.push("**Housing**");
     lines.push(
-      `• Owner-occupied: ${summary.ownerPct.start.toFixed(1)}% → ${summary.ownerPct.end.toFixed(1)}% (${summary.ownerPct.change > 0 ? '+' : ''}${summary.ownerPct.change.toFixed(1)} pts)`
+      `• Owner-occupied: ${summary.ownerPct.start.toFixed(1)}% → ${summary.ownerPct.end.toFixed(1)}% (${summary.ownerPct.change > 0 ? "+" : ""}${summary.ownerPct.change.toFixed(1)} pts)`,
     );
 
-    return appendSources(lines.join('\n'), ['demographics']);
+    return appendSources(lines.join("\n"), ["demographics"]);
   }
 
   private formatPrecinctName(name: string): string {
     // Shorten long precinct names for readability
     return name
-      .replace(', Precinct ', ' P')
-      .replace(' Township', ' Twp')
-      .replace(' City', '');
+      .replace(", Precinct ", " P")
+      .replace(" Township", " Twp")
+      .replace(" City", "");
   }
 
   private async handleDonorTrends(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
     // Redirect to DonorHandler for donor-specific trends
     const entities = this.extractEntities(query.originalQuery);
     const targetZip = entities.zipCodes?.[0];
 
     try {
-      const response = await fetch('/data/donors/zip-aggregates.json');
+      const response = await fetch("/data/donors/zip-aggregates.json");
       const zipData = await response.json();
 
       // If targeting specific ZIP, filter for it
@@ -800,132 +924,143 @@ export class TrendHandler implements NLPHandler {
       }
 
       // Calculate recent activity metrics
-      const last90Days = relevantData.reduce((sum: number, z: any) => sum + z.amountLast90Days, 0);
-      const last12Months = relevantData.reduce((sum: number, z: any) => sum + z.amountLast12Months, 0);
+      const last90Days = relevantData.reduce(
+        (sum: number, z: any) => sum + z.amountLast90Days,
+        0,
+      );
+      const last12Months = relevantData.reduce(
+        (sum: number, z: any) => sum + z.amountLast12Months,
+        0,
+      );
 
       // Build quarterly breakdown (estimated)
       const quarterlyAmount = Math.round(last12Months / 4);
       const periods = [
-        { period: '2024 Q1', amount: Math.round(quarterlyAmount * 0.7) },
-        { period: '2024 Q2', amount: Math.round(quarterlyAmount * 0.9) },
-        { period: '2024 Q3', amount: Math.round(quarterlyAmount * 1.1) },
-        { period: '2024 Q4', amount: Math.round(quarterlyAmount * 1.3) },
+        { period: "2024 Q1", amount: Math.round(quarterlyAmount * 0.7) },
+        { period: "2024 Q2", amount: Math.round(quarterlyAmount * 0.9) },
+        { period: "2024 Q3", amount: Math.round(quarterlyAmount * 1.1) },
+        { period: "2024 Q4", amount: Math.round(quarterlyAmount * 1.3) },
       ];
 
       const yoyChange = -13; // Estimated
-      const direction = yoyChange >= 0 ? '📈' : '📉';
-      const changeText = yoyChange >= 0 ? `up ${yoyChange}%` : `down ${Math.abs(yoyChange)}%`;
+      const direction = yoyChange >= 0 ? "📈" : "📉";
+      const changeText =
+        yoyChange >= 0 ? `up ${yoyChange}%` : `down ${Math.abs(yoyChange)}%`;
 
       const responseText = [
-        `**Donor Trends for ${targetZip || 'Ingham County'}:**`,
-        '',
+        `**Donor Trends for ${targetZip || "Ingham County"}:**`,
+        "",
         `${direction} **Cycle-to-date:** $${last12Months.toLocaleString()} (${changeText} vs same point in 2022)`,
-        '',
-        '**Quarterly Breakdown:**',
-        ...periods.map(p => `- ${p.period}: $${p.amount.toLocaleString()}`),
-        '',
+        "",
+        "**Quarterly Breakdown:**",
+        ...periods.map((p) => `- ${p.period}: $${p.amount.toLocaleString()}`),
+        "",
         `**Recent Activity (Last 90 days):** $${last90Days.toLocaleString()}`,
-      ].join('\n');
+      ].join("\n");
 
       return {
         success: true,
         response: responseText,
         mapCommands: [
           {
-            action: 'showMomentum',
-            layer: 'donors',
-            comparisonPeriod: 'prior_year',
+            action: "showMomentum",
+            layer: "donors",
+            comparisonPeriod: "prior_year",
           },
         ],
         suggestedActions: [
           {
-            id: 'view-momentum',
-            label: 'View Momentum Map',
-            description: 'See which areas are growing',
-            action: 'show_momentum',
+            id: "view-momentum",
+            label: "View Momentum Map",
+            description: "See which areas are growing",
+            action: "show_momentum",
             priority: 1,
           },
           {
-            id: 'compare-cycles',
-            label: 'Compare Election Cycles',
-            description: '2024 vs 2022 vs 2020',
-            action: 'compare_cycles',
+            id: "compare-cycles",
+            label: "Compare Election Cycles",
+            description: "2024 vs 2022 vs 2020",
+            action: "compare_cycles",
             priority: 2,
           },
           {
-            id: 'export-trends',
-            label: 'Export Trend Data',
-            description: 'Download time series',
-            action: 'export_donor_trends',
+            id: "export-trends",
+            label: "Export Trend Data",
+            description: "Download time series",
+            action: "export_donor_trends",
             priority: 3,
           },
         ],
         data: { periods, last90Days, last12Months, yoyChange },
-        metadata: this.buildMetadata('donor_trends', startTime, query),
+        metadata: this.buildMetadata("donor_trends", startTime, query),
       };
     } catch (error) {
       return {
         success: false,
-        response: 'Failed to load donor trend data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: "Failed to load donor trend data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   private async handleCompareElections(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
     // Extract years from query text (e.g., "compare 2020 and 2024")
     const yearMatches = query.originalQuery.match(/\b(20\d{2})\b/g);
-    const years = yearMatches && yearMatches.length >= 2
-      ? [parseInt(yearMatches[0]), parseInt(yearMatches[1])]
-      : [2020, 2024];
+    const years =
+      yearMatches && yearMatches.length >= 2
+        ? [parseInt(yearMatches[0]), parseInt(yearMatches[1])]
+        : [2020, 2024];
 
     try {
       const { loadElectionHistory, compareElections } =
-        await import('@/lib/analysis/TrendAnalyzer');
+        await import("@/lib/analysis/TrendAnalyzer");
 
       await loadElectionHistory();
       const comparison = compareElections(years[0], years[1]);
 
-      const responseText = this.formatElectionComparisonResponse(comparison, years);
+      const responseText = this.formatElectionComparisonResponse(
+        comparison,
+        years,
+      );
 
       return {
         success: true,
         response: responseText,
         mapCommands: [
           {
-            action: 'showTemporal',
-            metric: 'partisan_lean',
+            action: "showTemporal",
+            metric: "partisan_lean",
             years: years,
             autoPlay: false,
           },
         ],
         suggestedActions: [
           {
-            id: 'show-biggest-swings',
-            label: 'Show Biggest Swings',
-            description: 'Areas with largest changes',
+            id: "show-biggest-swings",
+            label: "Show Biggest Swings",
+            description: "Areas with largest changes",
             action: `Show precincts with biggest changes between ${years[0]} and ${years[1]}`,
             priority: 1,
           },
           {
-            id: 'add-middle-year',
-            label: 'Add 2022 to Comparison',
-            description: 'Three-way comparison',
-            action: 'Compare 2020, 2022, and 2024 elections',
+            id: "add-middle-year",
+            label: "Add 2022 to Comparison",
+            description: "Three-way comparison",
+            action: "Compare 2020, 2022, and 2024 elections",
             priority: 2,
           },
         ],
         data: comparison,
-        metadata: this.buildMetadata('compare_elections', startTime, query),
+        metadata: this.buildMetadata("compare_elections", startTime, query),
       };
     } catch (error) {
       return {
         success: false,
-        response: 'Failed to load election comparison data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: "Failed to load election comparison data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -936,7 +1071,7 @@ export class TrendHandler implements NLPHandler {
 
   private async handleElectionLookup(
     query: ParsedQuery,
-    startTime: number
+    startTime: number,
   ): Promise<HandlerResult> {
     // Extract candidate and year from query
     const candidatePattern = /(biden|trump|harris|slotkin|rogers|whitmer)/i;
@@ -950,88 +1085,107 @@ export class TrendHandler implements NLPHandler {
 
     try {
       // Import politicalDataService
-      const { politicalDataService } = await import('@/lib/services/PoliticalDataService');
+      const { politicalDataService } =
+        await import("@/lib/services/PoliticalDataService");
 
       // Get all precincts to calculate election results
-      const allPrecincts = await politicalDataService.getSegmentEnginePrecincts();
+      const allPrecincts =
+        await politicalDataService.getSegmentEnginePrecincts();
 
       // Calculate aggregate results based on partisan lean (proxy for results)
-      const totalVoters = allPrecincts.reduce((sum: number, p: any) => sum + (p.registeredVoters || 0), 0);
-      const avgLean = allPrecincts.reduce((sum: number, p: any) => sum + (p.partisanLean || 0), 0) / allPrecincts.length;
+      const totalVoters = allPrecincts.reduce(
+        (sum: number, p: any) => sum + (p.registeredVoters || 0),
+        0,
+      );
+      const avgLean =
+        allPrecincts.reduce(
+          (sum: number, p: any) => sum + (p.partisanLean || 0),
+          0,
+        ) / allPrecincts.length;
 
       // Estimate candidate performance based on partisan lean
-      const isDemocrat = ['biden', 'harris', 'slotkin', 'whitmer'].includes(candidate || '');
-      const baselinePct = 50 - (avgLean / 2); // Convert lean to Democratic vote share
+      const isDemocrat = ["biden", "harris", "slotkin", "whitmer"].includes(
+        candidate || "",
+      );
+      const baselinePct = 50 - avgLean / 2; // Convert lean to Democratic vote share
 
       // Year-specific adjustments (simplified model)
       const yearAdjustment = year === 2020 ? 2 : year === 2022 ? -3 : 1; // Dems did better in 2020, worse in 2022
       const estimatedPct = isDemocrat
         ? Math.max(30, Math.min(70, baselinePct + yearAdjustment))
-        : Math.max(30, Math.min(70, (100 - baselinePct) + yearAdjustment));
+        : Math.max(30, Math.min(70, 100 - baselinePct + yearAdjustment));
 
       // Build response
       const candidateName = candidate
         ? candidate.charAt(0).toUpperCase() + candidate.slice(1)
-        : 'Democratic candidate';
+        : "Democratic candidate";
 
       const response = [
         `**${year} Election Results - Ingham County:**`,
-        '',
+        "",
         candidate
           ? `**${candidateName}'s Performance:** ~${estimatedPct.toFixed(1)}%`
-          : `**County Partisan Lean:** ${avgLean > 0 ? 'R+' : 'D+'}${Math.abs(avgLean).toFixed(1)}`,
-        '',
+          : `**County Partisan Lean:** ${avgLean > 0 ? "R+" : "D+"}${Math.abs(avgLean).toFixed(1)}`,
+        "",
         `**County Stats:**`,
         `- Total Registered Voters: ${totalVoters.toLocaleString()}`,
-        `- Average Partisan Lean: ${avgLean > 0 ? 'R+' : 'D+'}${Math.abs(avgLean).toFixed(1)}`,
-        '',
-        `**Top ${isDemocrat ? 'Democratic' : 'Republican'} Precincts:**`,
+        `- Average Partisan Lean: ${avgLean > 0 ? "R+" : "D+"}${Math.abs(avgLean).toFixed(1)}`,
+        "",
+        `**Top ${isDemocrat ? "Democratic" : "Republican"} Precincts:**`,
         ...[...allPrecincts]
-          .sort((a: any, b: any) => isDemocrat ? a.partisanLean - b.partisanLean : b.partisanLean - a.partisanLean)
+          .sort((a: any, b: any) =>
+            isDemocrat
+              ? a.partisanLean - b.partisanLean
+              : b.partisanLean - a.partisanLean,
+          )
           .slice(0, 5)
           .map((p: any, i: number) => {
-            const pct = isDemocrat ? (50 - p.partisanLean / 2) : (50 + p.partisanLean / 2);
+            const pct = isDemocrat
+              ? 50 - p.partisanLean / 2
+              : 50 + p.partisanLean / 2;
             return `${i + 1}. ${p.precinctName}: ~${pct.toFixed(0)}%`;
           }),
-      ].join('\n');
+      ].join("\n");
 
       return {
         success: true,
         response,
         mapCommands: [
           {
-            action: 'showChoropleth',
-            metric: 'partisan_lean',
+            action: "showChoropleth",
+            metric: "partisan_lean",
           },
         ],
         suggestedActions: [
           {
-            id: 'compare-years',
-            label: 'Compare to Other Years',
+            id: "compare-years",
+            label: "Compare to Other Years",
             action: `Compare ${year} vs ${year === 2020 ? 2024 : 2020}`,
             priority: 1,
           },
           {
-            id: 'turnout-analysis',
-            label: 'View Turnout',
+            id: "turnout-analysis",
+            label: "View Turnout",
             action: `Show ${year} turnout`,
             priority: 2,
           },
-          candidate ? {
-            id: 'find-strongholds',
-            label: `Find ${candidateName} Strongholds`,
-            action: `Find precincts with ${estimatedPct > 50 ? 65 : 35}%+ for ${candidate}`,
-            priority: 3,
-          } : null,
+          candidate
+            ? {
+                id: "find-strongholds",
+                label: `Find ${candidateName} Strongholds`,
+                action: `Find precincts with ${estimatedPct > 50 ? 65 : 35}%+ for ${candidate}`,
+                priority: 3,
+              }
+            : null,
         ].filter(Boolean) as any[],
         data: { year, candidate, estimatedPct, avgLean, totalVoters },
-        metadata: this.buildMetadata('election_lookup', startTime, query),
+        metadata: this.buildMetadata("election_lookup", startTime, query),
       };
     } catch (error) {
       return {
         success: false,
-        response: 'Failed to load election data. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        response: "Failed to load election data. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -1075,112 +1229,123 @@ export class TrendHandler implements NLPHandler {
 
   private formatTurnoutTrendsResponse(trends: any): string {
     const lines = [
-      '**Turnout Trends (2020-2024):**',
-      '',
+      "**Turnout Trends (2020-2024):**",
+      "",
       `**County Average:**`,
-      `- 2020: ${trends.countyAvg['2020']?.toFixed(1)}%`,
-      `- 2022: ${trends.countyAvg['2022']?.toFixed(1)}%`,
-      `- 2024: ${trends.countyAvg['2024']?.toFixed(1)}%`,
-      '',
-      `**Trend:** ${trends.direction} (${trends.change >= 0 ? '+' : ''}${trends.change.toFixed(1)}% since 2020)`,
-      '',
+      `- 2020: ${trends.countyAvg["2020"]?.toFixed(1)}%`,
+      `- 2022: ${trends.countyAvg["2022"]?.toFixed(1)}%`,
+      `- 2024: ${trends.countyAvg["2024"]?.toFixed(1)}%`,
+      "",
+      `**Trend:** ${trends.direction} (${trends.change >= 0 ? "+" : ""}${trends.change.toFixed(1)}% since 2020)`,
+      "",
     ];
 
     if (trends.topIncreasing?.length > 0) {
-      lines.push('**Top Increasing Turnout:**');
+      lines.push("**Top Increasing Turnout:**");
       trends.topIncreasing.slice(0, 5).forEach((p: any, i: number) => {
         lines.push(`${i + 1}. ${p.name}: +${p.increase.toFixed(1)}%`);
       });
-      lines.push('');
+      lines.push("");
     }
 
     if (trends.topDecreasing?.length > 0) {
-      lines.push('**Top Decreasing Turnout (GOTV Priorities):**');
+      lines.push("**Top Decreasing Turnout (GOTV Priorities):**");
       trends.topDecreasing.slice(0, 5).forEach((p: any, i: number) => {
         lines.push(`${i + 1}. ${p.name}: ${p.decrease.toFixed(1)}%`);
       });
     }
 
-    return appendSources(lines.join('\n'), ['elections']);
+    return appendSources(lines.join("\n"), ["elections"]);
   }
 
   private formatPartisanShiftsResponse(shifts: any): string {
-    const lines = [
-      '**Partisan Shifts (2020-2024):**',
-      '',
-    ];
+    const lines = ["**Partisan Shifts (2020-2024):**", ""];
 
     if (shifts.shiftingDemocratic?.length > 0) {
-      lines.push('**Shifting Democratic:**');
+      lines.push("**Shifting Democratic:**");
       shifts.shiftingDemocratic.slice(0, 5).forEach((p: any, i: number) => {
-        lines.push(`${i + 1}. ${p.name}: ${p.shift >= 0 ? '+' : ''}${p.shift.toFixed(1)} points`);
+        lines.push(
+          `${i + 1}. ${p.name}: ${p.shift >= 0 ? "+" : ""}${p.shift.toFixed(1)} points`,
+        );
       });
-      lines.push('');
+      lines.push("");
     }
 
     if (shifts.shiftingRepublican?.length > 0) {
-      lines.push('**Shifting Republican:**');
+      lines.push("**Shifting Republican:**");
       shifts.shiftingRepublican.slice(0, 5).forEach((p: any, i: number) => {
-        lines.push(`${i + 1}. ${p.name}: ${p.shift >= 0 ? '+' : ''}${p.shift.toFixed(1)} points`);
+        lines.push(
+          `${i + 1}. ${p.name}: ${p.shift >= 0 ? "+" : ""}${p.shift.toFixed(1)} points`,
+        );
       });
-      lines.push('');
+      lines.push("");
     }
 
     lines.push(`**Overall Trend:** ${shifts.overallTrend}`);
 
-    return appendSources(lines.join('\n'), ['elections']);
+    return appendSources(lines.join("\n"), ["elections"]);
   }
 
   private formatFlipRiskResponse(flipRisk: any): string {
     const lines = [
-      '**Flip Risk Analysis:**',
-      '',
+      "**Flip Risk Analysis:**",
+      "",
       `Found **${flipRisk.highRisk?.length || 0} high-risk precincts** vulnerable to flipping.`,
-      '',
+      "",
     ];
 
     if (flipRisk.highRisk?.length > 0) {
-      lines.push('**High Risk Precincts:**');
-      lines.push('| Rank | Precinct | Current | Volatility | Last Flip |');
-      lines.push('|------|----------|---------|------------|-----------|');
+      lines.push("**High Risk Precincts:**");
+      lines.push("| Rank | Precinct | Current | Volatility | Last Flip |");
+      lines.push("|------|----------|---------|------------|-----------|");
 
       flipRisk.highRisk.slice(0, 10).forEach((p: any, i: number) => {
         lines.push(
-          `| ${i + 1} | ${p.name} | ${p.currentLean} | ${p.volatility.toFixed(0)} | ${p.lastFlip || 'Never'} |`
+          `| ${i + 1} | ${p.name} | ${p.currentLean} | ${p.volatility.toFixed(0)} | ${p.lastFlip || "Never"} |`,
         );
       });
     }
 
-    return appendSources(lines.join('\n'), ['elections']);
+    return appendSources(lines.join("\n"), ["elections"]);
   }
 
-  private formatElectionComparisonResponse(comparison: any, years: number[]): string {
+  private formatElectionComparisonResponse(
+    comparison: any,
+    years: number[],
+  ): string {
     const [year1, year2] = years;
 
     const response = [
       `**Election Comparison: ${year1} vs ${year2}**`,
-      '',
-      `**Turnout Change:** ${comparison.turnoutChange >= 0 ? '+' : ''}${comparison.turnoutChange.toFixed(1)}%`,
-      `**Partisan Shift:** ${comparison.partisanShift >= 0 ? 'D+' : 'R+'}${Math.abs(comparison.partisanShift).toFixed(1)} points`,
-      '',
+      "",
+      `**Turnout Change:** ${comparison.turnoutChange >= 0 ? "+" : ""}${comparison.turnoutChange.toFixed(1)}%`,
+      `**Partisan Shift:** ${comparison.partisanShift >= 0 ? "D+" : "R+"}${Math.abs(comparison.partisanShift).toFixed(1)} points`,
+      "",
       `**Biggest Swings:**`,
-      ...comparison.biggestSwings.slice(0, 5).map((p: any, i: number) =>
-        `${i + 1}. ${p.name}: ${p.swing >= 0 ? 'D+' : 'R+'}${Math.abs(p.swing).toFixed(1)}`
-      ),
-    ].join('\n');
+      ...comparison.biggestSwings
+        .slice(0, 5)
+        .map(
+          (p: any, i: number) =>
+            `${i + 1}. ${p.name}: ${p.swing >= 0 ? "D+" : "R+"}${Math.abs(p.swing).toFixed(1)}`,
+        ),
+    ].join("\n");
 
-    return appendSources(response, ['elections']);
+    return appendSources(response, ["elections"]);
   }
 
   // --------------------------------------------------------------------------
   // Metadata
   // --------------------------------------------------------------------------
 
-  private buildMetadata(intent: string, startTime: number, query: ParsedQuery): any {
+  private buildMetadata(
+    intent: string,
+    startTime: number,
+    query: ParsedQuery,
+  ): any {
     return {
       handlerName: this.name,
       processingTimeMs: Date.now() - startTime,
-      queryType: 'trend',
+      queryType: "trend",
       matchedIntent: intent,
       confidence: query.confidence,
     };

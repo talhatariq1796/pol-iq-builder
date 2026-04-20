@@ -7,7 +7,7 @@
 interface PerformanceMetrics {
   requestId: string;
   timestamp: number;
-  version: 'v2';
+  version: "v2";
 
   // Timing metrics (milliseconds)
   totalDuration: number;
@@ -45,8 +45,8 @@ export class PerformanceMonitor {
 
   constructor(
     private requestId: string,
-    private version: 'v2',
-    enabled: boolean = true
+    private version: "v2",
+    enabled: boolean = true,
   ) {
     this.enabled = enabled;
     this.metrics = {
@@ -114,7 +114,11 @@ export class PerformanceMonitor {
   /**
    * Set additional context
    */
-  setContext(context: { dataSize?: number; complexity?: string; pageCount?: number }): void {
+  setContext(context: {
+    dataSize?: number;
+    complexity?: string;
+    pageCount?: number;
+  }): void {
     if (!this.enabled) return;
 
     Object.assign(this.metrics, context);
@@ -138,36 +142,36 @@ export class PerformanceMonitor {
   log(): void {
     if (!this.enabled) return;
 
-    console.log('PDF Generation Performance Metrics:');
+    console.log("PDF Generation Performance Metrics:");
     console.log(`  Request ID: ${this.metrics.requestId}`);
     console.log(`  Version: ${this.metrics.version}`);
     console.log(`  Total Duration: ${this.metrics.totalDuration}ms`);
     console.log(`  File Size: ${this.formatBytes(this.metrics.fileSize || 0)}`);
-    console.log(`  Memory Used: ${this.formatBytes(this.metrics.memoryUsage?.heapUsed || 0)}`);
+    console.log(
+      `  Memory Used: ${this.formatBytes(this.metrics.memoryUsage?.heapUsed || 0)}`,
+    );
     console.log(`  Page Timings:`);
 
-    Object.entries(this.metrics.pageTimings || {}).forEach(([page, duration]) => {
-      console.log(`    ${page}: ${duration}ms`);
-    });
-
+    Object.entries(this.metrics.pageTimings || {}).forEach(
+      ([page, duration]) => {
+        console.log(`    ${page}: ${duration}ms`);
+      },
+    );
   }
 
   /**
    * Format bytes to human-readable string
    */
   private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
 
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   }
 
-  /**
-   * Export metrics for external logging/monitoring
-   */
   export(): PerformanceMetrics {
     return this.metrics as PerformanceMetrics;
   }
@@ -175,25 +179,40 @@ export class PerformanceMonitor {
   /**
    * Compare with another metric set (for A/B testing)
    */
-  static compare(v1Metrics: PerformanceMetrics, v2Metrics: PerformanceMetrics): ComparisonResult {
+  static compare(
+    v1Metrics: PerformanceMetrics,
+    v2Metrics: PerformanceMetrics,
+  ): ComparisonResult {
     return {
-      durationImprovement: this.calculateImprovement(v1Metrics.totalDuration, v2Metrics.totalDuration),
-      fileSizeImprovement: this.calculateImprovement(v1Metrics.fileSize, v2Metrics.fileSize),
+      durationImprovement: this.calculateImprovement(
+        v1Metrics.totalDuration,
+        v2Metrics.totalDuration,
+      ),
+      fileSizeImprovement: this.calculateImprovement(
+        v1Metrics.fileSize,
+        v2Metrics.fileSize,
+      ),
       memoryImprovement: this.calculateImprovement(
         v1Metrics.memoryUsage.heapUsed,
-        v2Metrics.memoryUsage.heapUsed
+        v2Metrics.memoryUsage.heapUsed,
       ),
-      pageImprovements: this.comparePageTimings(v1Metrics.pageTimings, v2Metrics.pageTimings),
+      pageImprovements: this.comparePageTimings(
+        v1Metrics.pageTimings,
+        v2Metrics.pageTimings,
+      ),
     };
   }
 
-  private static calculateImprovement(baseline: number, current: number): number {
+  private static calculateImprovement(
+    baseline: number,
+    current: number,
+  ): number {
     return ((baseline - current) / baseline) * 100;
   }
 
   private static comparePageTimings(
-    v1Timings: PerformanceMetrics['pageTimings'],
-    v2Timings: PerformanceMetrics['pageTimings']
+    v1Timings: PerformanceMetrics["pageTimings"],
+    v2Timings: PerformanceMetrics["pageTimings"],
   ): Record<string, number> {
     const improvements: Record<string, number> = {};
 
@@ -213,7 +232,7 @@ export class PerformanceMonitor {
 interface ComparisonResult {
   durationImprovement: number; // Percentage improvement (positive = faster)
   fileSizeImprovement: number; // Percentage improvement (positive = smaller)
-  memoryImprovement: number;   // Percentage improvement (positive = less memory)
+  memoryImprovement: number; // Percentage improvement (positive = less memory)
   pageImprovements: Record<string, number>; // Per-page improvements
 }
 
@@ -236,7 +255,7 @@ export class MetricsAggregator {
   /**
    * Get average metrics by version
    */
-  getAverages(version: 'v1' | 'v2'): Partial<PerformanceMetrics> {
+  getAverages(version: "v1" | "v2"): Partial<PerformanceMetrics> {
     const versionMetrics = this.metrics.filter((m) => m.version === version);
 
     if (versionMetrics.length === 0) {
@@ -247,9 +266,15 @@ export class MetricsAggregator {
       totalDuration: this.average(versionMetrics.map((m) => m.totalDuration)),
       fileSize: this.average(versionMetrics.map((m) => m.fileSize)),
       memoryUsage: {
-        heapUsed: this.average(versionMetrics.map((m) => m.memoryUsage.heapUsed)),
-        heapTotal: this.average(versionMetrics.map((m) => m.memoryUsage.heapTotal)),
-        external: this.average(versionMetrics.map((m) => m.memoryUsage.external)),
+        heapUsed: this.average(
+          versionMetrics.map((m) => m.memoryUsage.heapUsed),
+        ),
+        heapTotal: this.average(
+          versionMetrics.map((m) => m.memoryUsage.heapTotal),
+        ),
+        external: this.average(
+          versionMetrics.map((m) => m.memoryUsage.external),
+        ),
       },
     };
 

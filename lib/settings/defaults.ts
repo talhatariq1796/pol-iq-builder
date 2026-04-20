@@ -14,31 +14,24 @@ import type {
   MapSettings,
   OrganizationSettings,
 } from './types';
+import { activeState } from '@/lib/config/activeState';
 
 // =============================================================================
 // Campaign Calendar Defaults
 // =============================================================================
 
 /**
- * Default campaign calendar settings.
- * Uses 2026 Michigan election dates as defaults.
+ * Default campaign calendar settings — sourced from the active state config.
  */
 export const DEFAULT_CAMPAIGN_SETTINGS: CampaignCalendarSettings = {
-  // Michigan 2026 Elections
-  primaryDate: '2026-08-04', // First Tuesday in August
-  primaryType: 'open',
-  generalElectionDate: '2026-11-03', // First Tuesday after first Monday
-
-  // Michigan-specific deadlines (can be overridden)
-  voterRegistrationDeadline: '2026-10-19', // 15 days before election
-  earlyVotingStart: '2026-10-24', // 9 days before election
-  earlyVotingEnd: '2026-11-02', // Day before election
-  absenteeRequestDeadline: '2026-10-30', // Friday before election
-
-  // No custom deadlines by default
+  primaryDate: activeState.elections.primaryDate,
+  primaryType: activeState.elections.primaryType,
+  generalElectionDate: activeState.elections.generalDate,
+  voterRegistrationDeadline: activeState.elections.voterRegistrationDeadline,
+  earlyVotingStart: activeState.elections.earlyVotingStart,
+  earlyVotingEnd: activeState.elections.earlyVotingEnd,
+  absenteeRequestDeadline: activeState.elections.absenteeRequestDeadline,
   customDeadlines: [],
-
-  // Auto-detect phase based on dates
   forcePhase: 'auto',
 };
 
@@ -134,13 +127,11 @@ export const DEFAULT_DATA_SETTINGS: DataSettings = {
 // =============================================================================
 
 /**
- * Default map and visualization settings.
- * Centered on Ingham County, MI (pilot area).
+ * Default map and visualization settings — sourced from the active state config.
  */
 export const DEFAULT_MAP_SETTINGS: MapSettings = {
-  // Ingham County center (Lansing area)
-  defaultCenter: [-84.55, 42.73],
-  defaultZoom: 10,
+  defaultCenter: activeState.map.defaultCenter,
+  defaultZoom: activeState.map.defaultZoom,
   defaultMetric: 'partisan_lean',
 
   // Traditional Dem/Rep color scheme
@@ -167,9 +158,8 @@ export const DEFAULT_ORGANIZATION_SETTINGS: OrganizationSettings = {
   primaryColor: '#2563eb', // Blue
   logoUrl: '',
 
-  // Ingham County, MI as pilot
-  targetState: 'MI',
-  targetCounties: ['Ingham'],
+  targetState: activeState.abbreviation,
+  targetCounties: [activeState.defaultCounty],
   targetDistricts: [],
 
   // Generic report branding

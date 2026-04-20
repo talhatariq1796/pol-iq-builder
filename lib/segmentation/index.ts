@@ -9,39 +9,21 @@
  */
 
 // Core engine
-export { SegmentEngine } from './SegmentEngine';
+export { SegmentEngine } from "./SegmentEngine";
 
 // Storage/persistence
-export { SegmentStore, segmentStore } from './SegmentStore';
+export { SegmentStore, segmentStore } from "./SegmentStore";
 
-// Presets
+// Phase 3: Export Manager & Exporters
+export { ExportManager } from "./ExportManager";
+export { CSVExporter } from "./exporters";
+
 export {
   defaultSegments,
   getPreset,
   getAllPresets,
   isPreset,
-} from './presets/default-segments';
-
-// Phase 1: Electoral Filtering
-export { ElectoralFilter } from './ElectoralFilter';
-
-// Phase 2: Election History Filtering
-export { ElectionHistoryFilter } from './ElectionHistoryFilter';
-
-// Phase 3: Export Manager & Exporters
-export { ExportManager } from './ExportManager';
-export {
-  CSVExporter,
-  VANExporter,
-  PhoneListExporter,
-  DigitalAdsExporter,
-} from './exporters';
-
-// Phase 4: Tapestry Segmentation
-export { TapestryFilter } from './TapestryFilter';
-
-// Phase 5: Lookalike Modeling
-export { LookalikeEngine } from './LookalikeEngine';
+} from "./presets/default-segments";
 
 // Types
 export type {
@@ -108,4 +90,4 @@ export type {
   // Extended types
   ExtendedSegmentFilters,
   ExtendedSegmentResults,
-} from './types';
+} from "./types";

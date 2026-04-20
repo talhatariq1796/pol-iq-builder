@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card } from '@/components/ui/card';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   ArrowLeftRight,
   X,
@@ -21,13 +21,15 @@ import {
   GitCompare,
   ArrowRight,
   Save,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { EntitySelector } from './EntitySelector';
-import { ComparisonPane } from './ComparisonPane';
-import { InsightsSummary } from './InsightsSummary';
-import { ComparisonHistory } from './ComparisonHistory';
-import { saveComparison, type SavedComparison } from '@/lib/comparison/ComparisonHistoryStore';
+import { EntitySelector } from "./EntitySelector";
+import { ComparisonPane } from "./ComparisonPane";
+import { InsightsSummary } from "./InsightsSummary";
+import {
+  saveComparison,
+  type SavedComparison,
+} from "@/lib/comparison/ComparisonHistoryStore";
 
 // NOTE: AIToolAssistant removed - UnifiedAIAssistant is now rendered at page level (app/compare/page.tsx)
 // This prevents duplicate AI chat interfaces on the same page
@@ -38,25 +40,28 @@ import {
   type BoundaryType,
   type ComparisonResult,
   type EntityType,
-} from '@/lib/comparison';
+} from "@/lib/comparison";
 
 // Wave 6A: State Management for AI context sync
-import { getStateManager } from '@/lib/ai-native/ApplicationStateManager';
-import { useToast } from '@/hooks/use-toast';
-import { CrossToolNavigator } from '@/lib/ai-native/navigation/CrossToolNavigator';
+import { getStateManager } from "@/lib/ai-native/ApplicationStateManager";
+import { useToast } from "@/hooks/use-toast";
+import { CrossToolNavigator } from "@/lib/ai-native/navigation/CrossToolNavigator";
+import { activeState } from "@/lib/config/activeState";
 
 interface ComparisonViewProps {
   className?: string;
 }
 
-export function ComparisonView({ className = '' }: ComparisonViewProps) {
+export function ComparisonView({ className = "" }: ComparisonViewProps) {
   const searchParams = useSearchParams();
 
   // State
-  const [selectedBoundaryType, setSelectedBoundaryType] = useState<BoundaryType>('municipalities');
+  const [selectedBoundaryType, setSelectedBoundaryType] =
+    useState<BoundaryType>("municipalities");
   const [leftEntityId, setLeftEntityId] = useState<string | null>(null);
   const [rightEntityId, setRightEntityId] = useState<string | null>(null);
-  const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
+  const [comparisonResult, setComparisonResult] =
+    useState<ComparisonResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Wave 6A: Toast for feedback
@@ -68,27 +73,30 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
 
     const unsubscribe = stateManager.subscribe((state, event) => {
       switch (event.type) {
-        case 'PRECINCT_SELECTED':
+        case "PRECINCT_SELECTED":
           // When user clicks a precinct on map, offer to add to comparison
-          console.log('[ComparisonView] Precinct selected:', event.payload);
+          console.log("[ComparisonView] Precinct selected:", event.payload);
           break;
 
-        case 'SEGMENT_CREATED':
+        case "SEGMENT_CREATED":
           // When segment is created, could compare segment vs. other
-          console.log('[ComparisonView] Segment created:', event.payload);
+          console.log("[ComparisonView] Segment created:", event.payload);
           break;
 
-        case 'COMPARISON_ENTITY_SELECTED':
+        case "COMPARISON_ENTITY_SELECTED":
           // Another component selected an entity for comparison
-          console.log('[ComparisonView] Entity selected for comparison:', event.payload);
+          console.log(
+            "[ComparisonView] Entity selected for comparison:",
+            event.payload,
+          );
           break;
       }
     });
 
     // Set current tool context
     stateManager.dispatch({
-      type: 'TOOL_CHANGED',
-      payload: { tool: 'compare' },
+      type: "TOOL_CHANGED",
+      payload: { tool: "compare" },
       timestamp: new Date(),
     });
 
@@ -99,9 +107,11 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
   useEffect(() => {
     if (!searchParams) return;
 
-    const left = searchParams.get('left');
-    const right = searchParams.get('right');
-    const boundaryType = searchParams.get('boundaryType') as BoundaryType | null;
+    const left = searchParams.get("left");
+    const right = searchParams.get("right");
+    const boundaryType = searchParams.get(
+      "boundaryType",
+    ) as BoundaryType | null;
 
     if (boundaryType && getBoundaryTypeInfo(boundaryType)) {
       setSelectedBoundaryType(boundaryType);
@@ -113,12 +123,12 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
   // Update URL when selections change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (leftEntityId) params.set('left', leftEntityId);
-    if (rightEntityId) params.set('right', rightEntityId);
-    params.set('boundaryType', selectedBoundaryType);
+    if (leftEntityId) params.set("left", leftEntityId);
+    if (rightEntityId) params.set("right", rightEntityId);
+    params.set("boundaryType", selectedBoundaryType);
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newUrl);
+    window.history.replaceState({}, "", newUrl);
   }, [leftEntityId, rightEntityId, selectedBoundaryType]);
 
   // Load comparison when both entities are selected
@@ -139,7 +149,7 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
     try {
       const boundaryInfo = getBoundaryTypeInfo(selectedBoundaryType);
       if (!boundaryInfo) {
-        throw new Error('Invalid boundary type');
+        throw new Error("Invalid boundary type");
       }
 
       const url = `/api/comparison?left=${encodeURIComponent(leftEntityId)}&right=${encodeURIComponent(rightEntityId)}&boundaryType=${selectedBoundaryType}`;
@@ -147,7 +157,7 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
       const response = await fetch(url);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to load comparison');
+        throw new Error(errorData.error || "Failed to load comparison");
       }
 
       const data = await response.json();
@@ -158,7 +168,7 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
       // Wave 6A: Emit comparison loaded event
       const stateManager = getStateManager();
       stateManager.dispatch({
-        type: 'COMPARISON_LOADED',
+        type: "COMPARISON_LOADED",
         payload: {
           leftEntityId,
           rightEntityId,
@@ -170,17 +180,18 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
 
       // Log exploration for AI context
       stateManager.logExploration({
-        tool: 'compare',
-        action: 'comparison_loaded',
+        tool: "compare",
+        action: "comparison_loaded",
         result: `Compared ${leftEntityId} vs ${rightEntityId}`,
       });
     } catch (err) {
-      console.error('Error loading comparison:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load comparison';
+      console.error("Error loading comparison:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load comparison";
       toast({
-        title: 'Comparison Failed',
+        title: "Comparison Failed",
         description: `Unable to compare selected entities: ${errorMessage}. Please check your selections and try again.`,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -194,8 +205,8 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
     // Wave 6A: Log entity selection
     const stateManager = getStateManager();
     stateManager.logExploration({
-      tool: 'compare',
-      action: 'left_entity_selected',
+      tool: "compare",
+      action: "left_entity_selected",
       metadata: { entityId },
     });
   }, []);
@@ -206,8 +217,8 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
     // Wave 6A: Log entity selection
     const stateManager = getStateManager();
     stateManager.logExploration({
-      tool: 'compare',
-      action: 'right_entity_selected',
+      tool: "compare",
+      action: "right_entity_selected",
       metadata: { entityId },
     });
   }, []);
@@ -221,8 +232,8 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
     // Wave 6A: Log swap action
     const stateManager = getStateManager();
     stateManager.logExploration({
-      tool: 'compare',
-      action: 'entities_swapped',
+      tool: "compare",
+      action: "entities_swapped",
       metadata: { left: rightEntityId, right: tempLeft },
     });
   }, [leftEntityId, rightEntityId]);
@@ -236,7 +247,7 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
     // Wave 6A: Emit clear event
     const stateManager = getStateManager();
     stateManager.dispatch({
-      type: 'COMPARISON_CLEARED',
+      type: "COMPARISON_CLEARED",
       payload: {},
       timestamp: new Date(),
     });
@@ -249,9 +260,9 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
 
     if (!left || !right) {
       toast({
-        title: 'Cannot Save',
-        description: 'Please select both entities before saving.',
-        variant: 'destructive',
+        title: "Cannot Save",
+        description: "Please select both entities before saving.",
+        variant: "destructive",
       });
       return;
     }
@@ -262,55 +273,58 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
         right.id,
         left.name,
         right.name,
-        selectedBoundaryType
+        selectedBoundaryType,
       );
 
       toast({
-        title: 'Comparison Saved',
+        title: "Comparison Saved",
         description: `Saved comparison: ${left.name} vs ${right.name}`,
       });
 
       // Log save action for AI context
       const stateManager = getStateManager();
       stateManager.logExploration({
-        tool: 'compare',
-        action: 'comparison_saved',
+        tool: "compare",
+        action: "comparison_saved",
         metadata: { leftId: left.id, rightId: right.id },
       });
     } catch (err) {
-      console.error('Error saving comparison:', err);
+      console.error("Error saving comparison:", err);
       toast({
-        title: 'Save Failed',
-        description: 'Failed to save comparison. Please try again.',
-        variant: 'destructive',
+        title: "Save Failed",
+        description: "Failed to save comparison. Please try again.",
+        variant: "destructive",
       });
     }
   }, [comparisonResult, selectedBoundaryType, toast]);
 
   // Load comparison from history
-  const handleLoadComparison = useCallback((comparison: SavedComparison) => {
-    // Switch boundary type if needed
-    if (comparison.boundaryType !== selectedBoundaryType) {
-      setSelectedBoundaryType(comparison.boundaryType as BoundaryType);
-    }
+  const handleLoadComparison = useCallback(
+    (comparison: SavedComparison) => {
+      // Switch boundary type if needed
+      if (comparison.boundaryType !== selectedBoundaryType) {
+        setSelectedBoundaryType(comparison.boundaryType as BoundaryType);
+      }
 
-    // Set entities
-    setLeftEntityId(comparison.leftEntityId);
-    setRightEntityId(comparison.rightEntityId);
+      // Set entities
+      setLeftEntityId(comparison.leftEntityId);
+      setRightEntityId(comparison.rightEntityId);
 
-    toast({
-      title: 'Comparison Loaded',
-      description: `Loading: ${comparison.leftEntityName} vs ${comparison.rightEntityName}`,
-    });
+      toast({
+        title: "Comparison Loaded",
+        description: `Loading: ${comparison.leftEntityName} vs ${comparison.rightEntityName}`,
+      });
 
-    // Log load action for AI context
-    const stateManager = getStateManager();
-    stateManager.logExploration({
-      tool: 'compare',
-      action: 'comparison_loaded_from_history',
-      metadata: { comparisonId: comparison.id },
-    });
-  }, [selectedBoundaryType, toast]);
+      // Log load action for AI context
+      const stateManager = getStateManager();
+      stateManager.logExploration({
+        tool: "compare",
+        action: "comparison_loaded_from_history",
+        metadata: { comparisonId: comparison.id },
+      });
+    },
+    [selectedBoundaryType, toast],
+  );
 
   // Get current boundary type info
   const currentBoundaryInfo = useMemo(() => {
@@ -322,6 +336,13 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
   const leftEntity = comparisonResult?.leftEntity ?? null;
   const rightEntity = comparisonResult?.rightEntity ?? null;
   const insights = comparisonResult?.insights ?? [];
+  const compareExample = activeState.display.compareExample;
+
+  if (!compareExample) {
+    throw new Error(
+      `Missing display.compareExample in active state config for ${activeState.name}`,
+    );
+  }
 
   // Handle boundary type change
   const handleBoundaryTypeChange = useCallback((boundaryType: BoundaryType) => {
@@ -347,7 +368,9 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
           </label>
           <Select
             value={selectedBoundaryType}
-            onValueChange={(value) => handleBoundaryTypeChange(value as BoundaryType)}
+            onValueChange={(value) =>
+              handleBoundaryTypeChange(value as BoundaryType)
+            }
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select boundary type" />
@@ -358,11 +381,11 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
                   key={boundaryType.value}
                   value={boundaryType.value}
                   disabled={!boundaryType.available}
-                  className={!boundaryType.available ? 'opacity-50' : ''}
+                  className={!boundaryType.available ? "opacity-50" : ""}
                 >
                   <div className="flex items-center justify-between w-full">
                     <span className="flex items-center gap-2">
-                      {boundaryType.entityType === 'precinct' ? (
+                      {boundaryType.entityType === "precinct" ? (
                         <MapPin className="h-3 w-3" />
                       ) : (
                         <Building2 className="h-3 w-3" />
@@ -464,20 +487,24 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
                 Compare Districts or Precincts
               </h2>
               <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                Select two areas to compare their demographics, voting patterns, and targeting scores side by side.
+                Select two areas to compare their demographics, voting patterns,
+                and targeting scores side by side.
               </p>
 
               <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <div className="p-2 rounded-full bg-muted">1</div>
-                  <span>Select a {currentBoundaryInfo.label.toLowerCase().slice(0, -1)} above</span>
+                  <span>
+                    Select a{" "}
+                    {currentBoundaryInfo.label.toLowerCase().slice(0, -1)} above
+                  </span>
                   <ArrowRight className="h-4 w-4" />
                   <div className="p-2 rounded-full bg-muted">2</div>
                   <span>Select another to compare</span>
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-4">
-                  Or ask the AI: &quot;Compare East Lansing to Meridian Township&quot;
+                  Or ask the AI: &quot;{compareExample}&quot;
                 </p>
               </div>
             </div>
@@ -492,12 +519,15 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
               ) : (
                 <Card className="flex items-center justify-center p-8 text-center text-gray-500 dark:text-gray-400 min-h-[200px]">
                   <div>
-                    {entityType === 'precinct' ? (
+                    {entityType === "precinct" ? (
                       <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     ) : (
                       <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     )}
-                    <p className="text-sm">Select left {currentBoundaryInfo.label.toLowerCase().slice(0, -1)}</p>
+                    <p className="text-sm">
+                      Select left{" "}
+                      {currentBoundaryInfo.label.toLowerCase().slice(0, -1)}
+                    </p>
                   </div>
                 </Card>
               )}
@@ -508,12 +538,15 @@ export function ComparisonView({ className = '' }: ComparisonViewProps) {
               ) : (
                 <Card className="flex items-center justify-center p-8 text-center text-gray-500 dark:text-gray-400 min-h-[200px]">
                   <div>
-                    {entityType === 'precinct' ? (
+                    {entityType === "precinct" ? (
                       <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     ) : (
                       <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     )}
-                    <p className="text-sm">Select right {currentBoundaryInfo.label.toLowerCase().slice(0, -1)}</p>
+                    <p className="text-sm">
+                      Select right{" "}
+                      {currentBoundaryInfo.label.toLowerCase().slice(0, -1)}
+                    </p>
                   </div>
                 </Card>
               )}

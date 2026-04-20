@@ -631,19 +631,7 @@ class InsightEngine {
   private async loadCrosswalkData(): Promise<ZipPrecinctCrosswalk | null> {
     if (crosswalkData) return crosswalkData;
 
-    try {
-      // In browser context, fetch from public data
-      if (typeof window !== 'undefined') {
-        const response = await fetch('/data/political/zip-precinct-crosswalk.json');
-        if (response.ok) {
-          crosswalkData = await response.json();
-          return crosswalkData;
-        }
-      }
-    } catch (error) {
-      console.warn('[InsightEngine] Failed to load crosswalk data:', error);
-    }
-
+    // Legacy Ingham County ZIP→precinct crosswalk removed. PA uses district crosswalk via PoliticalDataService.
     return null;
   }
 

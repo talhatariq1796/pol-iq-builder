@@ -157,8 +157,13 @@ export function H3HeatmapLayer({
 
     const classBreaks = [];
     for (let i = 0; i < config.breaks.length - 1; i++) {
-      const minValue = config.breaks[i];
-      const maxValue = config.breaks[i + 1];
+      // Keep first/last class open-ended so tiny floating point drift
+      // (e.g. 100.00000000000001) still renders as a valid filled cell.
+      const minValue = i === 0 ? -Number.MAX_VALUE : config.breaks[i];
+      const maxValue =
+        i === config.breaks.length - 2
+          ? Number.MAX_VALUE
+          : config.breaks[i + 1];
       const color = config.colors[i];
 
       classBreaks.push({

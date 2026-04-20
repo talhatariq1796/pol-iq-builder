@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processQuery, canHandleQuery } from '@/lib/ai-native/handlers/ToolOrchestrator';
 import { enrich } from '@/lib/context/ContextEnrichmentService';
+import { activeState } from '@/lib/config/activeState';
 
 interface QueryRequest {
   query: string;
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       try {
         enrichmentContext = await enrich(query, {
           intent: result.metadata?.matchedIntent || '',
-          jurisdiction: 'Ingham County',
+          jurisdiction: activeState.summaryAreaName,
         });
       } catch (enrichError) {
         console.error('[AI Query API] Enrichment error:', enrichError);

@@ -20,6 +20,7 @@ import type {
 } from './types';
 import { RESPONSE_TEMPLATES, getEnrichmentForQuery, formatEnrichmentSections } from './types';
 import { handleDataRequest, handleOutputIntent } from '@/lib/ai/workflowHandlers';
+import { activeState } from '@/lib/config/activeState';
 
 // ============================================================================
 // Query Patterns
@@ -97,7 +98,7 @@ const GENERAL_PATTERNS: QueryPattern[] = [
       /political\s+landscape\s+(?:of\s+)?(?:ingham\s+)?(?:county)?/i,
       /county\s+(?:profile|summary|overview)/i,
     ],
-    keywords: ['overview', 'summary', 'county', 'landscape', 'glance', 'ingham'],
+    keywords: ['overview', 'summary', 'county', 'landscape', 'glance', activeState.defaultCounty.toLowerCase()],
     priority: 7,
   },
   {
@@ -215,7 +216,7 @@ const TOOL_INFO: Record<string, ToolInfo> = {
     description: 'Analyze historical trends in elections, turnout, demographics, and donations over time.',
     examples: [
       'How has turnout changed over time?',
-      'Show demographic trends in Ingham County',
+      `Show demographic trends in ${activeState.name}`,
       'Which precincts are shifting Republican?',
       'Show areas at risk of flipping',
     ],
@@ -838,7 +839,7 @@ export class GeneralHandler implements NLPHandler {
       const topGOTV = [...allPrecincts].sort((a: any, b: any) => (b.gotvPriority || 0) - (a.gotvPriority || 0)).slice(0, 3);
 
       const response = [
-        '**Ingham County Political Overview**',
+        `**${activeState.summaryAreaName} Political Overview**`,
         '',
         '**At a Glance:**',
         `- Total Precincts: ${allPrecincts.length}`,

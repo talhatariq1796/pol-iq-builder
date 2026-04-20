@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { activeState } from '@/lib/config/activeState';
 import type { TapestryFilters as TapestryFiltersType, TapestrySegment } from '@/lib/segmentation/types';
 
 interface TapestryFiltersProps {
@@ -26,8 +27,14 @@ interface TapestryFiltersProps {
   onChange: (filters: TapestryFiltersType) => void;
 }
 
-// LifeMode groups with their names
-const LIFEMODE_GROUPS = [
+type LifeModeGroupOption = {
+  id: number;
+  name: string;
+  description: string;
+};
+
+// Generic fallback LifeMode groups used when the active state has no precinct-level Tapestry codes.
+const FALLBACK_LIFEMODE_GROUPS: LifeModeGroupOption[] = [
   { id: 1, name: 'Affluent Estates', description: 'Wealthy, suburban, established families' },
   { id: 2, name: 'Uptown Individuals', description: 'Urban singles, high-income, young professionals' },
   { id: 3, name: 'Upscale Avenues', description: 'Successful urban professionals' },
@@ -84,6 +91,78 @@ export function TapestryFilters({ filters, onChange }: TapestryFiltersProps) {
 
   const loadSegments = async () => {
     try {
+      const precinctResponse = await fetch(activeState.paths.precinctDemographics);
+      if (precinctResponse.ok) {
+        const data = await precinctResponse.json();
+        const precinctRows = Object.values(
+          data?.precincts || {},
+        ) as Array<Record<string, unknown>>;
+        const byCode = new Map<
+          string,
+          {
+            count: number;
+            lifeModeGroup?: number;
+            lifeModeCode?: string;
+            urbanicityCode?: string;
+          }
+        >();
+
+        for (const row of precinctRows) {
+          const code = String(
+            row.tapestry_code ?? row.tapestryCode ?? '',
+          ).trim();
+          if (!code || code === 'UN') continue;
+          const current = byCode.get(code) || { count: 0 };
+          const lifeModeGroup = Number(
+            row.tapestry_lifemode_group_num ?? row.tapestryLifeModeGroup,
+          );
+          const lifeModeCode = String(
+            row.tapestry_lifemode_group ?? row.tapestryLifeModeCode ?? '',
+          ).trim();
+          const urbanicityCode = String(
+            row.tapestry_urbanicity_code ?? row.tapestryUrbanicityCode ?? '',
+          ).trim();
+          byCode.set(code, {
+            count: current.count + 1,
+            lifeModeGroup: Number.isFinite(lifeModeGroup)
+              ? lifeModeGroup
+              : current.lifeModeGroup,
+            lifeModeCode: lifeModeCode || current.lifeModeCode,
+            urbanicityCode: urbanicityCode || current.urbanicityCode,
+          });
+        }
+
+        if (byCode.size > 0) {
+          const actualSegments = Array.from(byCode.entries())
+            .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+            .map(([code, meta]) => {
+              const urbanization = urbanicityToBucket(meta.urbanicityCode);
+              return {
+                code,
+                name: `Tapestry ${code}`,
+                lifeModeGroup: meta.lifeModeGroup ?? 0,
+                lifeModeGroupName: meta.lifeModeCode
+                  ? `LifeMode ${meta.lifeModeCode}`
+                  : 'LifeMode',
+                urbanization,
+                lifestage: inferLifestageFromLifeMode(meta.lifeModeCode),
+                affluence: inferAffluenceFromLifeMode(meta.lifeModeCode),
+                medianAge: 0,
+                medianIncome: 0,
+                collegePct: 0,
+                expectedPartisanLean: 0,
+                expectedTurnout: 0,
+                donorPropensity: 'medium',
+                mediaPreference: [],
+                topIssues: [],
+                description: `${meta.count.toLocaleString()} precincts`,
+              } satisfies TapestrySegment;
+            });
+          setSegments(actualSegments);
+          return;
+        }
+      }
+
       const response = await fetch('/data/tapestry/tapestry_segments.json');
       if (response.ok) {
         const data = await response.json();
@@ -91,6 +170,68 @@ export function TapestryFilters({ filters, onChange }: TapestryFiltersProps) {
       }
     } catch (error) {
       console.error('Error loading Tapestry segments:', error);
+    }
+  };
+
+  const urbanicityToBucket = (
+    code?: string,
+  ): 'urban' | 'suburban' | 'exurban' | 'rural' => {
+    const n = Number(code);
+    if (Number.isFinite(n)) {
+      if (n >= 1 && n <= 5) return 'urban';
+      if (n >= 6 && n <= 8) return 'suburban';
+      if (n === 9) return 'exurban';
+      if (n >= 10) return 'rural';
+    }
+    return 'suburban';
+  };
+
+  const inferLifestageFromLifeMode = (
+    code?: string,
+  ): 'young_singles' | 'young_families' | 'middle_age' | 'empty_nesters' | 'seniors' => {
+    switch ((code || '').toUpperCase()) {
+      case 'C':
+      case 'K':
+        return 'young_singles';
+      case 'D':
+        return 'young_families';
+      case 'I':
+      case 'J':
+      case 'L':
+        return 'seniors';
+      case 'A':
+      case 'B':
+      case 'E':
+      case 'F':
+      case 'G':
+      case 'H':
+      default:
+        return 'middle_age';
+    }
+  };
+
+  const inferAffluenceFromLifeMode = (
+    code?: string,
+  ): 'high' | 'upper_middle' | 'middle' | 'modest' | 'low' => {
+    switch ((code || '').toUpperCase()) {
+      case 'A':
+      case 'B':
+        return 'high';
+      case 'C':
+      case 'D':
+      case 'E':
+        return 'upper_middle';
+      case 'F':
+      case 'H':
+        return 'middle';
+      case 'G':
+      case 'I':
+      case 'K':
+        return 'modest';
+      case 'J':
+      case 'L':
+      default:
+        return 'low';
     }
   };
 
@@ -143,6 +284,11 @@ export function TapestryFilters({ filters, onChange }: TapestryFiltersProps) {
 
   // Quick filter presets
   const applyQuickFilter = (preset: string) => {
+    const codesFor = (predicate: (segment: TapestrySegment) => boolean) => {
+      const codes = segments.filter(predicate).map((segment) => segment.code);
+      return codes.length > 0 ? codes : undefined;
+    };
+
     switch (preset) {
       case 'progressive_urban':
         onChange({
@@ -161,17 +307,41 @@ export function TapestryFilters({ filters, onChange }: TapestryFiltersProps) {
       case 'young_voters':
         onChange({
           ...filters,
-          lifestage: ['young_singles', 'young_families'],
+          tapestrySegments: codesFor((segment) =>
+            ['young_singles', 'young_families'].includes(segment.lifestage),
+          ),
         });
         break;
       case 'high_donor':
         onChange({
           ...filters,
-          affluence: ['high', 'upper_middle'],
+          tapestrySegments: codesFor((segment) =>
+            ['high', 'upper_middle'].includes(segment.affluence),
+          ),
         });
         break;
     }
   };
+
+  const lifeModeGroups = useMemo<LifeModeGroupOption[]>(() => {
+    const fromSegments = new Map<
+      number,
+      { id: number; name: string; description: string }
+    >();
+    for (const segment of segments) {
+      if (!segment.lifeModeGroup) continue;
+      if (!fromSegments.has(segment.lifeModeGroup)) {
+        fromSegments.set(segment.lifeModeGroup, {
+          id: segment.lifeModeGroup,
+          name: segment.lifeModeGroupName || `LifeMode ${segment.lifeModeGroup}`,
+          description: 'Present in the active state data',
+        });
+      }
+    }
+    return fromSegments.size > 0
+      ? Array.from(fromSegments.values()).sort((a, b) => a.id - b.id)
+      : FALLBACK_LIFEMODE_GROUPS;
+  }, [segments]);
 
   // Get partisan lean color
   const getPartisanColor = (lean: number) => {
@@ -294,7 +464,7 @@ export function TapestryFilters({ filters, onChange }: TapestryFiltersProps) {
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2">
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {LIFEMODE_GROUPS.map((group) => (
+            {lifeModeGroups.map((group) => (
               <div key={group.id} className="flex items-start space-x-2">
                 <Checkbox
                   id={`lifemode-${group.id}`}

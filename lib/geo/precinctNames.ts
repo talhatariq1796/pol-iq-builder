@@ -17,19 +17,8 @@ let friendlyNames: Record<string, PrecinctFriendlyData> | null = null;
  * Results are cached after first load
  */
 export async function loadFriendlyNames(): Promise<Record<string, PrecinctFriendlyData>> {
-  if (friendlyNames) return friendlyNames;
-
-  try {
-    const response = await fetch('/data/political/precinct-friendly-names.json');
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    friendlyNames = await response.json();
-    return friendlyNames || {};
-  } catch (error) {
-    console.warn('Could not load friendly precinct names:', error);
-    return {};
-  }
+  // Legacy Ingham County friendly names removed. PA precinct names come from GeoJSON properties.
+  return {};
 }
 
 /**

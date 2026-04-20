@@ -1,8 +1,8 @@
-import { AnalysisState, StateSubscriber, ProcessingStep, DeepPartial } from './types';
+import { AnalysisState, StateSubscriber, DeepPartial } from "./types";
 
 /**
  * StateManager - Central state management for the AnalysisEngine
- * 
+ *
  * Replaces scattered state management across multiple components
  * with a single, predictable state store.
  */
@@ -34,7 +34,7 @@ export class StateManager {
    */
   subscribe(callback: StateSubscriber): () => void {
     this.subscribers.push(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const index = this.subscribers.indexOf(callback);
@@ -63,38 +63,45 @@ export class StateManager {
       processingStatus: {
         isProcessing: false,
         currentStep: null,
-        progress: 0
+        progress: 0,
       },
       errorState: null,
       lastQuery: null,
       selectedEndpoint: undefined,
-      history: []
+      history: [],
     };
     return defaultState;
   }
 
   private notifySubscribers(): void {
     const currentState = this.getState();
-    this.subscribers.forEach(callback => {
+    this.subscribers.forEach((callback) => {
       try {
         callback(currentState);
       } catch (error) {
-        console.error('[StateManager] Error notifying subscriber:', error);
+        console.error("[StateManager] Error notifying subscriber:", error);
       }
     });
   }
 
-  private mergeState(current: AnalysisState, updates: DeepPartial<AnalysisState>): AnalysisState {
+  private mergeState(
+    current: AnalysisState,
+    updates: DeepPartial<AnalysisState>,
+  ): AnalysisState {
     const merged = { ...current };
-    
+
     for (const key in updates) {
       const updateValue = updates[key as keyof AnalysisState];
       if (updateValue !== undefined) {
-        if (typeof updateValue === 'object' && updateValue !== null && !Array.isArray(updateValue)) {
+        if (
+          typeof updateValue === "object" &&
+          updateValue !== null &&
+          !Array.isArray(updateValue)
+        ) {
           // Deep merge for objects
           merged[key as keyof AnalysisState] = {
             ...((current[key as keyof AnalysisState] as any) || {}),
-            ...updateValue
+            ...updateValue,
           } as any;
         } else {
           // Direct assignment for primitives and arrays
@@ -102,7 +109,7 @@ export class StateManager {
         }
       }
     }
-    
+
     return merged;
   }
-} 
+}

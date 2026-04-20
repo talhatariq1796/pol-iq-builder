@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm';
 import { useRouter } from 'next/navigation';
 import {
   HelpCircle, X, Zap, Download, ExternalLink, FileText, MessageSquare,
-  Target, TrendingUp, Users, GitCompare, Route, Map, MapPin,
+  Target, TrendingUp, Users, GitCompare, Route, Map as MapIcon, MapPin,
   Save, Search, RefreshCw, DollarSign, MessageCircle, History,
   Filter, Settings, Plus, Info, Loader2, Sparkles
 } from 'lucide-react';
@@ -260,7 +260,7 @@ function getActionIcon(action: string, iconName?: string): React.ReactNode {
       'users': <Users className="w-3 h-3" />,
       'git-compare': <GitCompare className="w-3 h-3" />,
       'route': <Route className="w-3 h-3" />,
-      'map': <Map className="w-3 h-3" />,
+      'map': <MapIcon className="w-3 h-3" />,
       'map-pin': <MapPin className="w-3 h-3" />,
       'download': <Download className="w-3 h-3" />,
       'save': <Save className="w-3 h-3" />,
@@ -1481,8 +1481,16 @@ export default function UnifiedAIAssistant({
             formattedMessages.push({ role: 'user' as const, content: input });
 
             const behaviorState = stateManager.getBehaviorState();
+            const recentSelections = stateManager.getRecentExplorations();
+            const precinctNameById = new Map(
+              recentSelections
+                .filter((s) => s.type === 'precinct' && s.id && s.name)
+                .map((s) => [s.id, s.name] as const),
+            );
             const userContext = {
-              exploredPrecincts: Array.from(behaviorState.exploredPrecincts),
+              exploredPrecincts: Array.from(behaviorState.exploredPrecincts).map(
+                (id) => precinctNameById.get(id) || 'Unnamed precinct',
+              ),
               currentTool: toolContext,
               recentQueries: behaviorState.queriesAsked.slice(-5),
               expertiseLevel: stateManager.getUserExpertiseLevel(),

@@ -32,6 +32,7 @@ import {
   getFollowUpQuestions,
 } from '@/lib/ai/insights';
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { activeState } from '@/lib/config/activeState';
 
 // ============================================================================
 // Types
@@ -183,7 +184,7 @@ class SuggestionEngine {
     const suggestions = this.generateMunicipalitySuggestions(municipality, state);
 
     const regionLabel =
-      getPoliticalRegionEnv().stateFips === '42' ? 'Pennsylvania' : 'Ingham County';
+      getPoliticalRegionEnv().state;
     const acknowledgment = `I see you selected **${municipality.name}**, a ${municipality.type || 'municipality'} in ${regionLabel}`;
 
     return {
@@ -771,21 +772,26 @@ class SuggestionEngine {
         suggestions: (state) => {
           const suggestions: SuggestedAction[] = [];
 
-          // Context-aware suggestions based on what's on screen
-          const pa = getPoliticalRegionEnv().stateFips === '42';
+          // Context-aware suggestions based on active state
+          const { summaryAreaName } = getPoliticalRegionEnv();
+          const topCities = activeState.entities
+            .filter((e) => e.level === 'city')
+            .slice(0, 2)
+            .map((e) => e.name.replace(/\b\w/g, (c) => c.toUpperCase()));
+          const compareExample = topCities.length >= 2
+            ? `Compare ${topCities[0]} to ${topCities[1]}`
+            : 'Compare two areas';
           suggestions.push({
             id: 'county-overview',
-            label: pa ? 'State overview' : 'County overview',
-            action: pa
-              ? `Give me an overview of ${getPoliticalRegionEnv().summaryAreaName} politics`
-              : 'Give me an overview of Ingham County politics',
+            label: 'State overview',
+            action: `Give me an overview of ${summaryAreaName} politics`,
             priority: 85,
             category: 'analysis',
           });
           suggestions.push({
             id: 'compare-areas',
             label: 'Compare areas',
-            action: pa ? 'Compare Philadelphia to Pittsburgh' : 'Compare East Lansing to Lansing',
+            action: compareExample,
             priority: 80,
             category: 'comparison',
           });
@@ -1451,9 +1457,8 @@ class SuggestionEngine {
         const e = precinct.electoral as { partisanLean?: number; partisan_lean?: number } | undefined;
         const v = e?.partisanLean ?? e?.partisan_lean ?? (rawPrecinct.partisan_lean as number | undefined);
         if (v == null || Number.isNaN(Number(v))) return undefined;
-        // PA stores Segment-style lean in unified data; insights use display convention (positive = Dem).
-        if (getPoliticalRegionEnv().stateFips === '42') return -Number(v);
-        return Number(v);
+        // Segment-style lean is stored negated (negative=D); display convention is positive=D.
+        return -Number(v);
       })(),
       registered_voters: precinct.demographics?.total_population ?? rawPrecinct.registered_voters as number | undefined,
       // turnout may come as turnout_rate (0-1) or turnout (0-100 percentage from political_scores)
@@ -1932,26 +1937,15 @@ class SuggestionEngine {
    * Uses jurisdiction-level approximate centers with small offsets for variation
    */
   private getPrecinctCentroid(precinctId: string, jurisdiction: string): [number, number] {
-    const JURISDICTION_CENTERS: Record<string, [number, number]> = {
-      'East Lansing': [-84.4839, 42.7369],
-      Lansing: [-84.5555, 42.7337],
-      'Meridian Township': [-84.41, 42.71],
-      'Delhi Township': [-84.58, 42.65],
-      Williamston: [-84.283, 42.689],
-      Philadelphia: [-75.1652, 39.9526],
-      Pittsburgh: [-79.9959, 40.4406],
-      Harrisburg: [-76.8867, 40.2732],
-      Allentown: [-75.4772, 40.6023],
-      Erie: [-80.0851, 42.1292],
-      Reading: [-75.9269, 40.3356],
-      Scranton: [-75.6649, 41.4089],
-      Lancaster: [-76.3055, 40.0379],
-      York: [-76.7277, 39.9626],
-      Chester: [-75.3557, 39.8496],
-      Bethlehem: [-75.3705, 40.6259],
-      Unknown:
-        getPoliticalRegionEnv().stateFips === '42' ? [-77.1945, 41.2033] : [-84.55, 42.73],
-    };
+    // Build from active state jurisdiction centroids (keyed by slug, e.g. "los_angeles")
+    const rawCentroids = activeState.map.jurisdictionCentroids;
+    const JURISDICTION_CENTERS: Record<string, [number, number]> = { ...rawCentroids };
+    // Add title-cased aliases so the lookup works with display names too
+    for (const [slug, coords] of Object.entries(rawCentroids)) {
+      const displayName = slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      JURISDICTION_CENTERS[displayName] = coords;
+    }
+    JURISDICTION_CENTERS['Unknown'] = activeState.map.defaultCenter;
 
     // Get base center
     const baseCenter = JURISDICTION_CENTERS[jurisdiction] || JURISDICTION_CENTERS['Unknown'];

@@ -3,11 +3,15 @@
  * Based on modern infographic design specification
  */
 
-import { ModernColorPalette, getTrendColor, getScoreColor, withOpacity } from './ModernColorPalette';
-import { TypographyStyles, formatCurrency, formatMetricNumber } from './ModernTypography';
-import { Spacing, Radius, Shadow, LineWidth, IconSize } from './ModernTokens';
-import type { StyleProps } from './StyleProps';
-import { resolveSpacing } from './StyleProps';
+import {
+  ModernColorPalette,
+  getTrendColor,
+  withOpacity,
+} from "./ModernColorPalette";
+import { TypographyStyles, formatMetricNumber } from "./ModernTypography";
+import { Spacing, Radius, IconSize } from "./ModernTokens";
+import type { StyleProps } from "./StyleProps";
+import { resolveSpacing } from "./StyleProps";
 
 /**
  * Component Configuration Types
@@ -34,27 +38,40 @@ export interface KPICardConfig {
   icon?: string;
   label: string;
   metric: string | number;
-  trend?: number;  // Percentage change
-  comparison?: string;  // Comparison text
-  showGauge?: boolean;  // Show radial gauge
-  gaugeValue?: number;  // 0-100 for gauge
+  trend?: number; // Percentage change
+  comparison?: string; // Comparison text
+  showGauge?: boolean; // Show radial gauge
+  gaugeValue?: number; // 0-100 for gauge
   showTrendArrow?: boolean;
   showComparisonBar?: boolean;
-  styleProps?: StyleProps;  // Additional style customization
+  styleProps?: StyleProps; // Additional style customization
 }
 
 export function createKPICard(config: KPICardConfig) {
-  const { bounds, label, metric, trend, comparison, showGauge, gaugeValue, showTrendArrow, showComparisonBar, styleProps } = config;
+  const {
+    bounds,
+    label,
+    metric,
+    trend,
+    comparison,
+    showGauge,
+    gaugeValue,
+    showTrendArrow,
+    showComparisonBar,
+    styleProps,
+  } = config;
 
   // Apply style props with defaults - Flat white cards with subtle borders (reference design)
   const padding = resolveSpacing(styleProps?.padding ?? Spacing.lg);
   const borderRadius = styleProps?.borderRadius ?? Radius.sm;
-  const shadow = styleProps?.shadow ?? 'none'; // NO SHADOWS - flat design like reference
-  const backgroundColor = styleProps?.backgroundColor ?? ModernColorPalette.background.card; // White cards
-  const borderColor = styleProps?.borderColor ?? ModernColorPalette.border.subtle; // Subtle grey borders
+  const shadow = styleProps?.shadow ?? "none"; // NO SHADOWS - flat design like reference
+  const backgroundColor =
+    styleProps?.backgroundColor ?? ModernColorPalette.background.card; // White cards
+  const borderColor =
+    styleProps?.borderColor ?? ModernColorPalette.border.subtle; // Subtle grey borders
 
   return {
-    type: 'kpi-card',
+    type: "kpi-card",
     bounds,
     background: backgroundColor,
     borderColor,
@@ -63,17 +80,17 @@ export function createKPICard(config: KPICardConfig) {
     elements: [
       // Left accent bar (burgundy tint - used sparingly like reference uses blue accent)
       {
-        type: 'rect',
+        type: "rect",
         x: bounds.x,
         y: bounds.y,
         width: 3, // 3mm accent bar
         height: bounds.height,
         color: ModernColorPalette.chart.primary, // Light burgundy tint (like reference light blue)
-        borderRadius: 0
+        borderRadius: 0,
       },
       // Label
       {
-        type: 'text',
+        type: "text",
         text: label.toUpperCase(),
         x: bounds.x + padding,
         y: bounds.y + Spacing.lg + Spacing.md,
@@ -82,52 +99,68 @@ export function createKPICard(config: KPICardConfig) {
       },
       // Metric
       {
-        type: 'text',
-        text: typeof metric === 'number' ? formatMetricNumber(metric) : metric,
+        type: "text",
+        text: typeof metric === "number" ? formatMetricNumber(metric) : metric,
         x: bounds.x + padding,
-        y: bounds.y + Spacing['2xl'] + Spacing.lg + Spacing.sm,
+        y: bounds.y + Spacing["2xl"] + Spacing.lg + Spacing.sm,
         style: TypographyStyles.metric,
         color: ModernColorPalette.text.dark,
       },
       // Trend Arrow (if enabled)
-      ...(showTrendArrow && trend !== undefined ? [{
-        type: 'trend-arrow',
-        x: bounds.x + bounds.width - (Spacing['2xl'] + Spacing.xl),
-        y: bounds.y + Spacing.lg + Spacing.md,
-        direction: trend > 0 ? 'up' : trend < 0 ? 'down' : 'flat',
-        color: getTrendColor(trend),
-        value: `${Math.abs(trend)}%`,
-      }] : []),
+      ...(showTrendArrow && trend !== undefined
+        ? [
+            {
+              type: "trend-arrow",
+              x: bounds.x + bounds.width - (Spacing["2xl"] + Spacing.xl),
+              y: bounds.y + Spacing.lg + Spacing.md,
+              direction: trend > 0 ? "up" : trend < 0 ? "down" : "flat",
+              color: getTrendColor(trend),
+              value: `${Math.abs(trend)}%`,
+            },
+          ]
+        : []),
       // Radial Gauge (if enabled)
-      ...(showGauge && gaugeValue !== undefined ? [{
-        type: 'radial-gauge',
-        centerX: bounds.x + bounds.width - (Spacing['2xl'] + Spacing.xl),
-        centerY: bounds.y + bounds.height - (Spacing['2xl'] + Spacing.xl),
-        radius: Spacing['2xl'] + Spacing.sm,
-        value: gaugeValue,
-        color: ModernColorPalette.chart.primary,
-        backgroundColor: ModernColorPalette.border.light,
-      }] : []),
+      ...(showGauge && gaugeValue !== undefined
+        ? [
+            {
+              type: "radial-gauge",
+              centerX: bounds.x + bounds.width - (Spacing["2xl"] + Spacing.xl),
+              centerY: bounds.y + bounds.height - (Spacing["2xl"] + Spacing.xl),
+              radius: Spacing["2xl"] + Spacing.sm,
+              value: gaugeValue,
+              color: ModernColorPalette.chart.primary,
+              backgroundColor: ModernColorPalette.border.light,
+            },
+          ]
+        : []),
       // Comparison Text
-      ...(comparison ? [{
-        type: 'text',
-        text: comparison,
-        x: bounds.x + padding,
-        y: bounds.y + bounds.height - Spacing.lg - Spacing.md,
-        style: TypographyStyles.small,
-        color: ModernColorPalette.text.light,
-      }] : []),
+      ...(comparison
+        ? [
+            {
+              type: "text",
+              text: comparison,
+              x: bounds.x + padding,
+              y: bounds.y + bounds.height - Spacing.lg - Spacing.md,
+              style: TypographyStyles.small,
+              color: ModernColorPalette.text.light,
+            },
+          ]
+        : []),
       // Comparison Bar (if enabled)
-      ...(showComparisonBar && trend !== undefined ? [{
-        type: 'comparison-bar',
-        x: bounds.x + padding,
-        y: bounds.y + bounds.height - Spacing.lg,
-        width: bounds.width - (padding * 2),
-        height: Spacing.sm,
-        value: Math.min(Math.abs(trend), 100),
-        color: getTrendColor(trend),
-        backgroundColor: ModernColorPalette.border.light,
-      }] : []),
+      ...(showComparisonBar && trend !== undefined
+        ? [
+            {
+              type: "comparison-bar",
+              x: bounds.x + padding,
+              y: bounds.y + bounds.height - Spacing.lg,
+              width: bounds.width - padding * 2,
+              height: Spacing.sm,
+              value: Math.min(Math.abs(trend), 100),
+              color: getTrendColor(trend),
+              backgroundColor: ModernColorPalette.border.light,
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -138,13 +171,18 @@ export function createKPICard(config: KPICardConfig) {
  */
 export interface GradientPanelConfig {
   bounds: Bounds;
-  gradientType?: 'primary' | 'light' | 'success' | 'warning';
+  gradientType?: "primary" | "light" | "success" | "warning";
   borderRadius?: number;
   opacity?: number;
 }
 
 export function createGradientPanel(config: GradientPanelConfig) {
-  const { bounds, gradientType = 'primary', borderRadius = Radius['2xl'], opacity = 1 } = config;
+  const {
+    bounds,
+    gradientType = "primary",
+    borderRadius = Radius["2xl"],
+    opacity = 1,
+  } = config;
 
   const gradientMap = {
     primary: ModernColorPalette.gradients.primary,
@@ -156,12 +194,12 @@ export function createGradientPanel(config: GradientPanelConfig) {
   const gradient = gradientMap[gradientType];
 
   return {
-    type: 'gradient-panel',
+    type: "gradient-panel",
     bounds,
     gradient: {
       start: withOpacity(gradient.start, opacity),
       end: withOpacity(gradient.end, opacity),
-      direction: 'diagonal',
+      direction: "diagonal",
     },
     borderRadius,
   };
@@ -173,9 +211,9 @@ export function createGradientPanel(config: GradientPanelConfig) {
  */
 export interface ProgressMeterConfig {
   bounds: Bounds;
-  value: number;  // 0-100
+  value: number; // 0-100
   label?: string;
-  orientation?: 'horizontal' | 'vertical';
+  orientation?: "horizontal" | "vertical";
   color?: string;
   backgroundColor?: string;
   showPercentage?: boolean;
@@ -186,7 +224,7 @@ export function createProgressMeter(config: ProgressMeterConfig) {
     bounds,
     value,
     label,
-    orientation = 'horizontal',
+    orientation = "horizontal",
     color = ModernColorPalette.primary,
     backgroundColor = ModernColorPalette.border.light,
     showPercentage = true,
@@ -195,48 +233,62 @@ export function createProgressMeter(config: ProgressMeterConfig) {
   const normalizedValue = Math.min(Math.max(value, 0), 100);
 
   return {
-    type: 'progress-meter',
+    type: "progress-meter",
     bounds,
     orientation,
     elements: [
       // Background bar
       {
-        type: 'rect',
+        type: "rect",
         x: bounds.x,
         y: bounds.y,
-        width: orientation === 'horizontal' ? bounds.width : bounds.height,
-        height: orientation === 'horizontal' ? bounds.height : bounds.width,
+        width: orientation === "horizontal" ? bounds.width : bounds.height,
+        height: orientation === "horizontal" ? bounds.height : bounds.width,
         color: backgroundColor,
         borderRadius: Radius.full,
       },
       // Progress fill
       {
-        type: 'rect',
+        type: "rect",
         x: bounds.x,
         y: bounds.y,
-        width: orientation === 'horizontal' ? (bounds.width * normalizedValue / 100) : bounds.height,
-        height: orientation === 'horizontal' ? bounds.height : (bounds.width * normalizedValue / 100),
+        width:
+          orientation === "horizontal"
+            ? (bounds.width * normalizedValue) / 100
+            : bounds.height,
+        height:
+          orientation === "horizontal"
+            ? bounds.height
+            : (bounds.width * normalizedValue) / 100,
         color,
         borderRadius: Radius.full,
       },
       // Label
-      ...(label ? [{
-        type: 'text',
-        text: label,
-        x: bounds.x,
-        y: bounds.y - Spacing.xl + Spacing.sm,
-        style: TypographyStyles.small,
-        color: ModernColorPalette.text.body,
-      }] : []),
+      ...(label
+        ? [
+            {
+              type: "text",
+              text: label,
+              x: bounds.x,
+              y: bounds.y - Spacing.xl + Spacing.sm,
+              style: TypographyStyles.small,
+              color: ModernColorPalette.text.body,
+            },
+          ]
+        : []),
       // Percentage
-      ...(showPercentage ? [{
-        type: 'text',
-        text: `${Math.round(normalizedValue)}%`,
-        x: bounds.x + bounds.width + Spacing.md,
-        y: bounds.y + (bounds.height / 2) + Spacing.xs + Spacing.sm,
-        style: TypographyStyles.smallBold,
-        color: ModernColorPalette.text.dark,
-      }] : []),
+      ...(showPercentage
+        ? [
+            {
+              type: "text",
+              text: `${Math.round(normalizedValue)}%`,
+              x: bounds.x + bounds.width + Spacing.md,
+              y: bounds.y + bounds.height / 2 + Spacing.xs + Spacing.sm,
+              style: TypographyStyles.smallBold,
+              color: ModernColorPalette.text.dark,
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -248,7 +300,7 @@ export function createProgressMeter(config: ProgressMeterConfig) {
 export interface RadialGaugeConfig {
   center: Position;
   radius: number;
-  value: number;  // 0-100
+  value: number; // 0-100
   strokeWidth?: number;
   color?: string;
   backgroundColor?: string;
@@ -270,13 +322,13 @@ export function createRadialGauge(config: RadialGaugeConfig) {
   const angle = (normalizedValue / 100) * 360;
 
   return {
-    type: 'radial-gauge',
+    type: "radial-gauge",
     center,
     radius,
     elements: [
       // Background circle
       {
-        type: 'arc',
+        type: "arc",
         centerX: center.x,
         centerY: center.y,
         radius,
@@ -288,26 +340,30 @@ export function createRadialGauge(config: RadialGaugeConfig) {
       },
       // Progress arc
       {
-        type: 'arc',
+        type: "arc",
         centerX: center.x,
         centerY: center.y,
         radius,
-        startAngle: -90,  // Start from top
+        startAngle: -90, // Start from top
         endAngle: -90 + angle,
         strokeWidth,
         strokeColor: color,
         fill: false,
       },
       // Value text
-      ...(showValue ? [{
-        type: 'text',
-        text: `${Math.round(normalizedValue)}`,
-        x: center.x,
-        y: center.y + Spacing.sm + Spacing.xs,
-        style: TypographyStyles.h3,
-        color: ModernColorPalette.text.dark,
-        align: 'center',
-      }] : []),
+      ...(showValue
+        ? [
+            {
+              type: "text",
+              text: `${Math.round(normalizedValue)}`,
+              x: center.x,
+              y: center.y + Spacing.sm + Spacing.xs,
+              style: TypographyStyles.h3,
+              color: ModernColorPalette.text.dark,
+              align: "center",
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -318,7 +374,7 @@ export function createRadialGauge(config: RadialGaugeConfig) {
  */
 export interface TrendArrowConfig {
   position: Position;
-  direction: 'up' | 'down' | 'flat';
+  direction: "up" | "down" | "flat";
   size?: number;
   color?: string;
   value?: string;
@@ -327,12 +383,16 @@ export interface TrendArrowConfig {
 export function createTrendArrow(config: TrendArrowConfig) {
   const { position, direction, size = IconSize.lg, color, value } = config;
 
-  const arrowColor = color || (direction === 'up' ? ModernColorPalette.accent.success :
-                                direction === 'down' ? ModernColorPalette.accent.error :
-                                ModernColorPalette.accent.warning);
+  const arrowColor =
+    color ||
+    (direction === "up"
+      ? ModernColorPalette.accent.success
+      : direction === "down"
+        ? ModernColorPalette.accent.error
+        : ModernColorPalette.accent.warning);
 
   return {
-    type: 'trend-arrow',
+    type: "trend-arrow",
     position,
     direction,
     size,
@@ -340,7 +400,7 @@ export function createTrendArrow(config: TrendArrowConfig) {
     elements: [
       // Arrow path (will be implemented in PDF renderer)
       {
-        type: 'arrow',
+        type: "arrow",
         x: position.x,
         y: position.y,
         direction,
@@ -348,14 +408,18 @@ export function createTrendArrow(config: TrendArrowConfig) {
         color: arrowColor,
       },
       // Value text
-      ...(value ? [{
-        type: 'text',
-        text: value,
-        x: position.x + size + Spacing.sm + Spacing.xs,
-        y: position.y + (size / 2),
-        style: TypographyStyles.smallBold,
-        color: arrowColor,
-      }] : []),
+      ...(value
+        ? [
+            {
+              type: "text",
+              text: value,
+              x: position.x + size + Spacing.sm + Spacing.xs,
+              y: position.y + size / 2,
+              style: TypographyStyles.smallBold,
+              color: arrowColor,
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -379,27 +443,29 @@ export function createComparisonBar(config: ComparisonBarConfig) {
     bounds,
     subjectValue,
     compareValue,
-    subjectLabel = 'Subject',
-    compareLabel = 'Market',
+    subjectLabel = "Subject",
+    compareLabel = "Market",
     color = ModernColorPalette.primary,
     compareColor = ModernColorPalette.chart.tertiary,
   } = config;
 
-  const labelWidth = Spacing['3xl'] + Spacing['3xl'] + Spacing.xl;
+  const labelWidth = Spacing["3xl"] + Spacing["3xl"] + Spacing.xl;
   const maxValue = Math.max(subjectValue, compareValue);
-  const subjectWidth = (subjectValue / maxValue) * (bounds.width - labelWidth - Spacing.lg);
-  const compareWidth = (compareValue / maxValue) * (bounds.width - labelWidth - Spacing.lg);
+  const subjectWidth =
+    (subjectValue / maxValue) * (bounds.width - labelWidth - Spacing.lg);
+  const compareWidth =
+    (compareValue / maxValue) * (bounds.width - labelWidth - Spacing.lg);
 
   const barHeight = Spacing.lg;
   const spacing = Spacing.md;
 
   return {
-    type: 'comparison-bar',
+    type: "comparison-bar",
     bounds,
     elements: [
       // Subject label
       {
-        type: 'text',
+        type: "text",
         text: subjectLabel,
         x: bounds.x,
         y: bounds.y + Spacing.lg - Spacing.xs,
@@ -408,7 +474,7 @@ export function createComparisonBar(config: ComparisonBarConfig) {
       },
       // Subject bar
       {
-        type: 'rect',
+        type: "rect",
         x: bounds.x + labelWidth,
         y: bounds.y,
         width: subjectWidth,
@@ -418,7 +484,7 @@ export function createComparisonBar(config: ComparisonBarConfig) {
       },
       // Subject value
       {
-        type: 'text',
+        type: "text",
         text: formatMetricNumber(subjectValue),
         x: bounds.x + labelWidth + subjectWidth + Spacing.sm + Spacing.xs,
         y: bounds.y + Spacing.lg - Spacing.xs,
@@ -427,7 +493,7 @@ export function createComparisonBar(config: ComparisonBarConfig) {
       },
       // Compare label
       {
-        type: 'text',
+        type: "text",
         text: compareLabel,
         x: bounds.x,
         y: bounds.y + barHeight + spacing + Spacing.lg - Spacing.xs,
@@ -436,7 +502,7 @@ export function createComparisonBar(config: ComparisonBarConfig) {
       },
       // Compare bar
       {
-        type: 'rect',
+        type: "rect",
         x: bounds.x + labelWidth,
         y: bounds.y + barHeight + spacing,
         width: compareWidth,
@@ -446,7 +512,7 @@ export function createComparisonBar(config: ComparisonBarConfig) {
       },
       // Compare value
       {
-        type: 'text',
+        type: "text",
         text: formatMetricNumber(compareValue),
         x: bounds.x + labelWidth + compareWidth + Spacing.sm + Spacing.xs,
         y: bounds.y + barHeight + spacing + Spacing.lg - Spacing.xs,
@@ -464,12 +530,12 @@ export function createComparisonBar(config: ComparisonBarConfig) {
 export interface BadgeConfig {
   position: Position;
   text: string;
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'neutral';
-  size?: 'small' | 'medium' | 'large';
+  variant?: "primary" | "success" | "warning" | "error" | "neutral";
+  size?: "small" | "medium" | "large";
 }
 
 export function createBadge(config: BadgeConfig) {
-  const { position, text, variant = 'primary', size = 'medium' } = config;
+  const { position, text, variant = "primary", size = "medium" } = config;
 
   const colorMap = {
     primary: ModernColorPalette.primary,
@@ -480,9 +546,21 @@ export function createBadge(config: BadgeConfig) {
   };
 
   const sizeMap = {
-    small: { fontSize: Spacing.md, padding: Spacing.sm + Spacing.xs, height: Spacing.xl + Spacing.xs },
-    medium: { fontSize: Spacing.lg - Spacing.xs, padding: Spacing.lg - Spacing.xs, height: Spacing['2xl'] },
-    large: { fontSize: Spacing.lg, padding: Spacing.lg + Spacing.xs, height: Spacing['3xl'] },
+    small: {
+      fontSize: Spacing.md,
+      padding: Spacing.sm + Spacing.xs,
+      height: Spacing.xl + Spacing.xs,
+    },
+    medium: {
+      fontSize: Spacing.lg - Spacing.xs,
+      padding: Spacing.lg - Spacing.xs,
+      height: Spacing["2xl"],
+    },
+    large: {
+      fontSize: Spacing.lg,
+      padding: Spacing.lg + Spacing.xs,
+      height: Spacing["3xl"],
+    },
   };
 
   const badgeColor = colorMap[variant];
@@ -490,15 +568,15 @@ export function createBadge(config: BadgeConfig) {
 
   // Estimate text width (rough approximation)
   const textWidth = text.length * (badgeSize.fontSize * 0.6);
-  const badgeWidth = textWidth + (badgeSize.padding * 2);
+  const badgeWidth = textWidth + badgeSize.padding * 2;
 
   return {
-    type: 'badge',
+    type: "badge",
     position,
     elements: [
       // Badge background
       {
-        type: 'rect',
+        type: "rect",
         x: position.x,
         y: position.y,
         width: badgeWidth,
@@ -508,10 +586,10 @@ export function createBadge(config: BadgeConfig) {
       },
       // Badge text
       {
-        type: 'text',
+        type: "text",
         text: text.toUpperCase(),
         x: position.x + badgeSize.padding,
-        y: position.y + (badgeSize.height / 2) + (badgeSize.fontSize / 3),
+        y: position.y + badgeSize.height / 2 + badgeSize.fontSize / 3,
         style: {
           ...TypographyStyles.small,
           fontSize: badgeSize.fontSize,
@@ -532,7 +610,7 @@ export interface SectionHeaderConfig {
   subtitle?: string;
   icon?: string;
   iconColor?: string;
-  styleProps?: StyleProps;  // Additional style customization
+  styleProps?: StyleProps; // Additional style customization
 }
 
 export function createSectionHeader(config: SectionHeaderConfig) {
@@ -547,24 +625,28 @@ export function createSectionHeader(config: SectionHeaderConfig) {
 
   // Apply style props with defaults
   const iconSize = styleProps?.iconSize ?? IconSize.xl;
-  const spacing = resolveSpacing(styleProps?.spacing ?? Spacing['3xl']);
+  const spacing = resolveSpacing(styleProps?.spacing ?? Spacing["3xl"]);
 
   return {
-    type: 'section-header',
+    type: "section-header",
     position,
     elements: [
       // Icon (if provided)
-      ...(icon ? [{
-        type: 'icon',
-        name: icon,
-        x: position.x,
-        y: position.y,
-        size: iconSize,
-        color: iconColor,
-      }] : []),
+      ...(icon
+        ? [
+            {
+              type: "icon",
+              name: icon,
+              x: position.x,
+              y: position.y,
+              size: iconSize,
+              color: iconColor,
+            },
+          ]
+        : []),
       // Title
       {
-        type: 'text',
+        type: "text",
         text: title,
         x: position.x + (icon ? spacing : 0),
         y: position.y + resolveSpacing(Spacing.lg) + resolveSpacing(Spacing.md),
@@ -572,14 +654,18 @@ export function createSectionHeader(config: SectionHeaderConfig) {
         color: ModernColorPalette.text.dark,
       },
       // Subtitle (if provided)
-      ...(subtitle ? [{
-        type: 'text',
-        text: subtitle,
-        x: position.x + (icon ? spacing : 0),
-        y: position.y + Spacing['3xl'] + Spacing['2xl'] - Spacing.sm,
-        style: TypographyStyles.body,
-        color: ModernColorPalette.text.light,
-      }] : []),
+      ...(subtitle
+        ? [
+            {
+              type: "text",
+              text: subtitle,
+              x: position.x + (icon ? spacing : 0),
+              y: position.y + Spacing["3xl"] + Spacing["2xl"] - Spacing.sm,
+              style: TypographyStyles.body,
+              color: ModernColorPalette.text.light,
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -603,22 +689,28 @@ export interface IconGridConfig {
 }
 
 export function createIconGrid(config: IconGridConfig) {
-  const { bounds, items, columns = 2, iconSize = IconSize.lg, spacing = Spacing.lg + Spacing.md } = config;
+  const {
+    bounds,
+    items,
+    columns = 2,
+    iconSize = IconSize.lg,
+    spacing = Spacing.lg + Spacing.md,
+  } = config;
 
-  const columnWidth = (bounds.width - (spacing * (columns - 1))) / columns;
-  const rowHeight = Spacing['3xl'] + Spacing['2xl'] - Spacing.xs;
+  const columnWidth = (bounds.width - spacing * (columns - 1)) / columns;
+  const rowHeight = Spacing["3xl"] + Spacing["2xl"] - Spacing.xs;
   const elements: any[] = [];
 
   items.forEach((item, index) => {
     const row = Math.floor(index / columns);
     const col = index % columns;
-    const x = bounds.x + (col * (columnWidth + spacing));
-    const y = bounds.y + (row * rowHeight);
+    const x = bounds.x + col * (columnWidth + spacing);
+    const y = bounds.y + row * rowHeight;
 
     elements.push(
       // Icon
       {
-        type: 'icon',
+        type: "icon",
         name: item.icon,
         x,
         y,
@@ -627,7 +719,7 @@ export function createIconGrid(config: IconGridConfig) {
       },
       // Label
       {
-        type: 'text',
+        type: "text",
         text: item.label,
         x: x + iconSize + Spacing.lg - Spacing.xs,
         y: y + Spacing.md,
@@ -636,18 +728,21 @@ export function createIconGrid(config: IconGridConfig) {
       },
       // Value
       {
-        type: 'text',
-        text: typeof item.value === 'number' ? formatMetricNumber(item.value) : item.value,
+        type: "text",
+        text:
+          typeof item.value === "number"
+            ? formatMetricNumber(item.value)
+            : item.value,
         x: x + iconSize + Spacing.lg - Spacing.xs,
-        y: y + Spacing['2xl'],
+        y: y + Spacing["2xl"],
         style: TypographyStyles.bodyBold,
         color: ModernColorPalette.text.dark,
-      }
+      },
     );
   });
 
   return {
-    type: 'icon-grid',
+    type: "icon-grid",
     bounds,
     columns,
     elements,

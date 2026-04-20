@@ -719,7 +719,7 @@ export interface TapestryFilters {
   tapestrySegments?: string[];           // ['14B', '3A', '5D'] - segment codes
 
   // LifeMode group filtering
-  lifeModeGroups?: number[];             // [1, 2, 3] - Affluent Estates, Upscale Avenues, etc.
+  lifeModeGroups?: number[];             // [1, 2, 3] - state-specific LifeMode groups
 
   // Characteristic filtering
   urbanization?: ('urban' | 'suburban' | 'exurban' | 'rural')[];

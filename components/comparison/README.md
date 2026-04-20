@@ -188,9 +188,9 @@ All components use:
 
 **Workflow:**
 1. Select "Precincts" tab
-2. Search and select "Lansing Ward 1 Precinct 1"
-3. Search and select "Lansing Ward 2 Precinct 3"
-4. Review insights: "Lansing Ward 1 has higher GOTV priority..."
+2. Search and select a first precinct
+3. Search and select a second precinct
+4. Review insights for GOTV priority, persuasion, and turnout differences
 5. Use swap button to flip comparison if needed
 
 ### Scenario 2: Jurisdiction-to-Jurisdiction Comparison
@@ -198,8 +198,8 @@ All components use:
 
 **Workflow:**
 1. Select "Jurisdictions" tab
-2. Select "City of Lansing"
-3. Select "City of East Lansing"
+2. Select a first jurisdiction
+3. Select a second jurisdiction
 4. Review demographic and targeting differences
 5. Generate PDF report (future feature)
 

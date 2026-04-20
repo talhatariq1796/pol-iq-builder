@@ -3,8 +3,7 @@
  * Optional style overrides for PDF components
  */
 
-import { ModernColorPalette } from './ModernColorPalette';
-import { TypographyStyles } from './ModernTypography';
+import { ModernColorPalette } from "./ModernColorPalette";
 import {
   Spacing,
   Radius,
@@ -17,8 +16,8 @@ import {
   ShadowToken,
   LineWidthToken,
   OpacityToken,
-  IconSizeToken
-} from './ModernTokens';
+  IconSizeToken,
+} from "./ModernTokens";
 
 /**
  * Base Style Props
@@ -78,9 +77,9 @@ export interface TextStyleProps extends StyleProps {
   fontWeight?: string | number;
   lineHeight?: number;
   letterSpacing?: number;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  textDecoration?: 'none' | 'underline' | 'line-through';
+  textAlign?: "left" | "center" | "right" | "justify";
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  textDecoration?: "none" | "underline" | "line-through";
 }
 
 /**
@@ -88,7 +87,7 @@ export interface TextStyleProps extends StyleProps {
  * Positioning and sizing
  */
 export interface LayoutStyleProps extends StyleProps {
-  display?: 'block' | 'inline' | 'flex' | 'grid';
+  display?: "block" | "inline" | "flex" | "grid";
   width?: number | string;
   height?: number | string;
   minWidth?: number;
@@ -97,10 +96,15 @@ export interface LayoutStyleProps extends StyleProps {
   maxHeight?: number;
 
   // Flexbox (for future use)
-  flexDirection?: 'row' | 'column';
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
-  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
-  flexWrap?: 'nowrap' | 'wrap';
+  flexDirection?: "row" | "column";
+  justifyContent?:
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "space-between"
+    | "space-around";
+  alignItems?: "flex-start" | "center" | "flex-end" | "stretch";
+  flexWrap?: "nowrap" | "wrap";
   gap?: number | SpacingToken;
 }
 
@@ -108,63 +112,87 @@ export interface LayoutStyleProps extends StyleProps {
  * Resolve style prop value
  * Converts token names to actual values
  */
-export function resolveSpacing(value: number | SpacingToken | undefined, defaultValue: number = 0): number {
+export function resolveSpacing(
+  value: number | SpacingToken | undefined,
+  defaultValue: number = 0,
+): number {
   if (value === undefined) return defaultValue;
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     if (value < 0) console.warn(`Negative spacing value detected: ${value}`);
     return value;
   }
   const resolved = Spacing[value];
   if (resolved === undefined) {
-    console.warn(`Invalid spacing token: ${value}, using default: ${defaultValue}`);
+    console.warn(
+      `Invalid spacing token: ${value}, using default: ${defaultValue}`,
+    );
     return defaultValue;
   }
   return resolved;
 }
 
-export function resolveRadius(value: number | RadiusToken | undefined, defaultValue: number = 0): number {
+export function resolveRadius(
+  value: number | RadiusToken | undefined,
+  defaultValue: number = 0,
+): number {
   if (value === undefined) return defaultValue;
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     if (value < 0) console.warn(`Negative radius value detected: ${value}`);
     return value;
   }
   const resolved = Radius[value];
   if (resolved === undefined) {
-    console.warn(`Invalid radius token: ${value}, using default: ${defaultValue}`);
+    console.warn(
+      `Invalid radius token: ${value}, using default: ${defaultValue}`,
+    );
     return defaultValue;
   }
   return resolved;
 }
 
-export function resolveShadow(value: string | ShadowToken | undefined, defaultValue: string = Shadow.none): string {
+export function resolveShadow(
+  value: string | ShadowToken | undefined,
+  defaultValue: string = Shadow.none,
+): string {
   if (value === undefined) return defaultValue;
-  if (value.startsWith('rgba(') || value.startsWith('rgb(')) return value;
+  if (value.startsWith("rgba(") || value.startsWith("rgb(")) return value;
   return Shadow[value as ShadowToken] ?? defaultValue;
 }
 
-export function resolveLineWidth(value: number | LineWidthToken | undefined, defaultValue: number = 0): number {
+export function resolveLineWidth(
+  value: number | LineWidthToken | undefined,
+  defaultValue: number = 0,
+): number {
   if (value === undefined) return defaultValue;
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     if (value < 0) console.warn(`Negative line width value detected: ${value}`);
     return value;
   }
   const resolved = LineWidth[value];
   if (resolved === undefined) {
-    console.warn(`Invalid line width token: ${value}, using default: ${defaultValue}`);
+    console.warn(
+      `Invalid line width token: ${value}, using default: ${defaultValue}`,
+    );
     return defaultValue;
   }
   return resolved;
 }
 
-export function resolveOpacity(value: number | OpacityToken | undefined, defaultValue: number = 1): number {
+export function resolveOpacity(
+  value: number | OpacityToken | undefined,
+  defaultValue: number = 1,
+): number {
   if (value === undefined) return defaultValue;
-  if (typeof value === 'number') {
-    if (value < 0 || value > 1) console.warn(`Invalid opacity value (must be 0-1): ${value}`);
+  if (typeof value === "number") {
+    if (value < 0 || value > 1)
+      console.warn(`Invalid opacity value (must be 0-1): ${value}`);
     return Math.max(0, Math.min(1, value));
   }
   const resolved = Opacity[value];
   if (resolved === undefined) {
-    console.warn(`Invalid opacity token: ${value}, using default: ${defaultValue}`);
+    console.warn(
+      `Invalid opacity token: ${value}, using default: ${defaultValue}`,
+    );
     return defaultValue;
   }
   return resolved;
@@ -173,15 +201,20 @@ export function resolveOpacity(value: number | OpacityToken | undefined, default
 /**
  * Resolve icon size
  */
-export function resolveIconSize(value: number | IconSizeToken | undefined, defaultValue: number = 16): number {
+export function resolveIconSize(
+  value: number | IconSizeToken | undefined,
+  defaultValue: number = 16,
+): number {
   if (value === undefined) return defaultValue;
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     if (value < 0) console.warn(`Negative icon size value detected: ${value}`);
     return value;
   }
   const resolved = IconSize[value];
   if (resolved === undefined) {
-    console.warn(`Invalid icon size token: ${value}, using default: ${defaultValue}`);
+    console.warn(
+      `Invalid icon size token: ${value}, using default: ${defaultValue}`,
+    );
     return defaultValue;
   }
   return resolved;
@@ -190,7 +223,10 @@ export function resolveIconSize(value: number | IconSizeToken | undefined, defau
 /**
  * Merge style props with defaults
  */
-export function mergeStyles<T extends StyleProps>(defaults: T, overrides?: Partial<T>): T {
+export function mergeStyles<T extends StyleProps>(
+  defaults: T,
+  overrides?: Partial<T>,
+): T {
   if (!overrides) return defaults;
 
   return {
@@ -247,32 +283,32 @@ export function extractMargin(style?: StyleProps): {
  */
 export const StylePresets = {
   card: {
-    padding: 'md' as SpacingToken,
-    borderRadius: 'lg' as RadiusToken,
-    shadow: 'sm' as ShadowToken,
+    padding: "md" as SpacingToken,
+    borderRadius: "lg" as RadiusToken,
+    shadow: "sm" as ShadowToken,
     backgroundColor: ModernColorPalette.background.card,
-    borderWidth: 'hairline' as LineWidthToken,
+    borderWidth: "hairline" as LineWidthToken,
     borderColor: ModernColorPalette.border.light,
   },
 
   panel: {
-    padding: 'lg' as SpacingToken,
-    borderRadius: 'xl' as RadiusToken,
-    shadow: 'md' as ShadowToken,
+    padding: "lg" as SpacingToken,
+    borderRadius: "xl" as RadiusToken,
+    shadow: "md" as ShadowToken,
     backgroundColor: ModernColorPalette.background.card,
   },
 
   section: {
-    marginBottom: 'xl' as SpacingToken,
+    marginBottom: "xl" as SpacingToken,
   },
 
   compact: {
-    padding: 'sm' as SpacingToken,
-    gap: 'sm' as SpacingToken,
+    padding: "sm" as SpacingToken,
+    gap: "sm" as SpacingToken,
   },
 
   spacious: {
-    padding: 'xl' as SpacingToken,
-    gap: 'lg' as SpacingToken,
+    padding: "xl" as SpacingToken,
+    gap: "lg" as SpacingToken,
   },
 } as const;

@@ -28,11 +28,16 @@
     "test:routing": "jest tests/validation/QueryRoutingTests.test.ts",
     "test:patterns": "jest tests/validation/QueryPatternAnalyzer.test.ts",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "organize:data": "ts-node scripts/organize-state-data.ts",
+    "build:targeting": "ts-node scripts/build-targeting-scores.ts",
+    "build:demographics": "ts-node scripts/build-precinct-demographics.ts",
+    "build:district-crosswalk": "ts-node scripts/build-precinct-district-crosswalk.ts",
+    "build:h3": "ts-node scripts/build-h3-aggregates.ts",
+    "split-geojson": "ts-node scripts/split-geojson-for-github.ts",
     "build:pa-targeting": "ts-node scripts/build-pa-targeting-scores.ts",
     "build:pa-demographics": "ts-node scripts/build-pa-precinct-demographics.ts",
     "build:pa-district-crosswalk": "ts-node scripts/build-pa-precinct-district-crosswalk.ts",
-    "build:pa-h3": "ts-node scripts/build-pa-h3-aggregates.ts",
-    "split-geojson": "ts-node scripts/split-geojson-for-github.ts"
+    "build:pa-h3": "ts-node scripts/build-pa-h3-aggregates.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

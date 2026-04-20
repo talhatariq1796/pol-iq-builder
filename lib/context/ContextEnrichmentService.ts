@@ -5,18 +5,26 @@
  * relevant, hyperlocal political intelligence to every AI response.
  */
 
-import { getDocumentRetriever, type RAGDocument, type CurrentIntelDocument, type DataFileCitation } from '../rag';
-import { getKnowledgeGraph, getGraphPopulator } from '../knowledge-graph';
+import {
+  getDocumentRetriever,
+  type RAGDocument,
+  type CurrentIntelDocument,
+  type DataFileCitation,
+} from "../rag";
+import { getKnowledgeGraph, getGraphPopulator } from "../knowledge-graph";
 import {
   getStateHouseContext,
   getStateSenateContext,
   getCongressionalContext,
-  getUSSenateContext,
   getInghamCountyRepresentatives,
   formatCandidateContextForResponse,
   type CandidateContext,
-} from '../knowledge-graph/CandidateContextService';
-import type { Entity, Relationship, OfficeEntity, IssueEntity } from '../knowledge-graph/types';
+} from "../knowledge-graph/CandidateContextService";
+import type {
+  Relationship,
+  OfficeEntity,
+  IssueEntity,
+} from "../knowledge-graph/types";
 import {
   scoreRAGDocument,
   scoreCurrentIntel,
@@ -24,18 +32,10 @@ import {
   scoreIssue,
   filterByRelevance,
   getMaxRelevance,
-  getRelevanceReasons,
-} from './RelevanceScorer';
-import type { ScoredItem } from './types';
-import type {
-  EnrichmentContext,
-  EnrichmentOptions,
-  RAGContent,
-  GraphContent,
-  RelevanceMetadata,
-  DEFAULT_ENRICHMENT_OPTIONS,
-} from './types';
-import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+} from "./RelevanceScorer";
+import type { ScoredItem } from "./types";
+import type { EnrichmentContext, EnrichmentOptions } from "./types";
+import { getPoliticalRegionEnv } from "@/lib/political/politicalRegionConfig";
 
 // Track initialization state
 let initialized = false;
@@ -56,9 +56,9 @@ async function ensureInitialized(): Promise<void> {
     await populator.populate({ includePrecincts: false });
 
     initialized = true;
-    console.log('[ContextEnrichmentService] Initialized');
+    console.log("[ContextEnrichmentService] Initialized");
   } catch (error) {
-    console.error('[ContextEnrichmentService] Initialization error:', error);
+    console.error("[ContextEnrichmentService] Initialization error:", error);
     // Continue anyway - services may partially work
     initialized = true;
   }
@@ -67,33 +67,36 @@ async function ensureInitialized(): Promise<void> {
 /**
  * Get candidate contexts based on options
  */
-async function getCandidateContexts(options: EnrichmentOptions): Promise<CandidateContext[]> {
+async function getCandidateContexts(
+  options: EnrichmentOptions,
+): Promise<CandidateContext[]> {
   const contexts: CandidateContext[] = [];
 
   try {
-    // Knowledge-graph candidate rows are Michigan/Ingham-seeded; skip for Pennsylvania deployment.
+    // Knowledge-graph candidate rows are Michigan/Ingham-seeded; only load for MI deployments.
+    const isMichigan = getPoliticalRegionEnv().stateFips === "26";
     if (
-      getPoliticalRegionEnv().stateFips !== '42' &&
+      isMichigan &&
       options.districtType &&
       options.districtNumber
     ) {
       switch (options.districtType) {
-        case 'state_house':
+        case "state_house":
           contexts.push(await getStateHouseContext(options.districtNumber));
           break;
-        case 'state_senate':
+        case "state_senate":
           contexts.push(await getStateSenateContext(options.districtNumber));
           break;
-        case 'congressional':
+        case "congressional":
           contexts.push(await getCongressionalContext());
           break;
       }
     }
 
-    // For county-level or general queries, inject MI knowledge-graph reps only (seed is Ingham-specific).
+    // Inject MI knowledge-graph reps for county/general queries — Ingham-specific seed.
     if (
-      getPoliticalRegionEnv().stateFips !== '42' &&
-      (options.districtType === 'county' || !options.districtType)
+      isMichigan &&
+      (options.districtType === "county" || !options.districtType)
     ) {
       const reps = await getInghamCountyRepresentatives();
 
@@ -107,7 +110,10 @@ async function getCandidateContexts(options: EnrichmentOptions): Promise<Candida
       }
     }
   } catch (error) {
-    console.error('[ContextEnrichmentService] Error getting candidate contexts:', error);
+    console.error(
+      "[ContextEnrichmentService] Error getting candidate contexts:",
+      error,
+    );
   }
 
   return contexts;
@@ -116,18 +122,27 @@ async function getCandidateContexts(options: EnrichmentOptions): Promise<Candida
 /**
  * Get relevant issues from Knowledge Graph
  */
-function getRelevantIssues(query: string, options: EnrichmentOptions): IssueEntity[] {
+function getRelevantIssues(
+  query: string,
+  options: EnrichmentOptions,
+): IssueEntity[] {
   try {
     const graph = getKnowledgeGraph();
     // Use query method to get issues by type
-    const result = graph.query({ entityTypes: ['issue'], limit: 20 });
+    const result = graph.query({ entityTypes: ["issue"], limit: 20 });
     const allIssues = result.entities as IssueEntity[];
 
     // Score and filter issues
-    const scoredIssues = allIssues.map(issue => scoreIssue(issue, query, options));
-    return filterByRelevance(scoredIssues, options.relevanceThreshold || 0.3, 5);
+    const scoredIssues = allIssues.map((issue) =>
+      scoreIssue(issue, query, options),
+    );
+    return filterByRelevance(
+      scoredIssues,
+      options.relevanceThreshold || 0.3,
+      5,
+    );
   } catch (error) {
-    console.error('[ContextEnrichmentService] Error getting issues:', error);
+    console.error("[ContextEnrichmentService] Error getting issues:", error);
     return [];
   }
 }
@@ -135,7 +150,9 @@ function getRelevantIssues(query: string, options: EnrichmentOptions): IssueEnti
 /**
  * Get relevant relationships from Knowledge Graph
  */
-function getRelevantRelationships(candidateContexts: CandidateContext[]): Relationship[] {
+function getRelevantRelationships(
+  candidateContexts: CandidateContext[],
+): Relationship[] {
   try {
     const graph = getKnowledgeGraph();
     const relationships: Relationship[] = [];
@@ -143,15 +160,19 @@ function getRelevantRelationships(candidateContexts: CandidateContext[]): Relati
     for (const context of candidateContexts) {
       if (context.incumbent) {
         // Find candidate entity by name
-        const candidateName = context.incumbent.name.toLowerCase().replace(/\s+/g, '-');
+        const candidateName = context.incumbent.name
+          .toLowerCase()
+          .replace(/\s+/g, "-");
         const candidateId = `candidate:${candidateName}`;
 
         // Get endorsements and other relationships
         const connections = graph.getConnections(candidateId);
         for (const conn of connections) {
-          if (conn.relationship.type === 'ENDORSED_BY' ||
-              conn.relationship.type === 'SUPPORTS' ||
-              conn.relationship.type === 'MEMBER_OF') {
+          if (
+            conn.relationship.type === "ENDORSED_BY" ||
+            conn.relationship.type === "SUPPORTS" ||
+            conn.relationship.type === "MEMBER_OF"
+          ) {
             relationships.push(conn.relationship);
           }
         }
@@ -160,7 +181,10 @@ function getRelevantRelationships(candidateContexts: CandidateContext[]): Relati
 
     return relationships.slice(0, 10); // Limit to 10 relationships
   } catch (error) {
-    console.error('[ContextEnrichmentService] Error getting relationships:', error);
+    console.error(
+      "[ContextEnrichmentService] Error getting relationships:",
+      error,
+    );
     return [];
   }
 }
@@ -171,18 +195,24 @@ function getRelevantRelationships(candidateContexts: CandidateContext[]): Relati
 function formatRAGContent(
   documents: RAGDocument[],
   currentIntel: CurrentIntelDocument[],
-  citations: DataFileCitation[]
+  citations: DataFileCitation[],
 ): string {
   const parts: string[] = [];
 
   // Add current intel first (most actionable)
   if (currentIntel.length > 0) {
-    parts.push('### Current Political Intelligence\n');
+    parts.push("### Current Political Intelligence\n");
     for (const intel of currentIntel) {
-      const typeLabel = intel.type === 'upcoming' ? '[UPCOMING]' :
-                       intel.type === 'poll' ? '[POLL]' :
-                       intel.type === 'news' ? '[NEWS]' :
-                       intel.type === 'analysis' ? '[ANALYSIS]' : '[INFO]';
+      const typeLabel =
+        intel.type === "upcoming"
+          ? "[UPCOMING]"
+          : intel.type === "poll"
+            ? "[POLL]"
+            : intel.type === "news"
+              ? "[NEWS]"
+              : intel.type === "analysis"
+                ? "[ANALYSIS]"
+                : "[INFO]";
       parts.push(`**${typeLabel} ${intel.title}**`);
       parts.push(`*Source: ${intel.source} | ${intel.published}*\n`);
     }
@@ -190,13 +220,13 @@ function formatRAGContent(
 
   // Add methodology/reference docs if present
   if (documents.length > 0) {
-    parts.push('\n### Reference Information\n');
+    parts.push("\n### Reference Information\n");
     for (const doc of documents) {
       parts.push(`**${doc.title}**: ${doc.description}`);
     }
   }
 
-  return parts.join('\n');
+  return parts.join("\n");
 }
 
 /**
@@ -205,30 +235,31 @@ function formatRAGContent(
 function formatGraphContent(
   candidates: CandidateContext[],
   issues: IssueEntity[],
-  relationships: Relationship[]
+  relationships: Relationship[],
 ): string {
   const parts: string[] = [];
 
   // Add candidate context
   if (candidates.length > 0) {
-    parts.push('### Current Representatives\n');
+    parts.push("### Current Representatives\n");
     for (const context of candidates) {
       parts.push(formatCandidateContextForResponse(context));
-      parts.push('');
+      parts.push("");
     }
   }
 
   // Add key issues if relevant
   if (issues.length > 0) {
-    parts.push('\n### Key Political Issues\n');
+    parts.push("\n### Key Political Issues\n");
     for (const issue of issues) {
       const salience = issue.metadata.salience || 0;
-      const salienceLabel = salience > 70 ? 'High' : salience > 40 ? 'Medium' : 'Low';
+      const salienceLabel =
+        salience > 70 ? "High" : salience > 40 ? "Medium" : "Low";
       parts.push(`- **${issue.name}** (${salienceLabel} salience)`);
     }
   }
 
-  return parts.join('\n');
+  return parts.join("\n");
 }
 
 /**
@@ -236,16 +267,16 @@ function formatGraphContent(
  */
 export async function enrich(
   query: string,
-  options: Partial<EnrichmentOptions> = {}
+  options: Partial<EnrichmentOptions> = {},
 ): Promise<EnrichmentContext> {
   await ensureInitialized();
 
   // Merge with defaults
   const opts: EnrichmentOptions = {
-    intent: '',
+    intent: "",
     jurisdiction: getPoliticalRegionEnv().summaryAreaName,
-    districtType: 'county',
-    districtNumber: '',
+    districtType: "county",
+    districtNumber: "",
     precincts: [],
     candidates: [],
     topics: [],
@@ -276,16 +307,28 @@ export async function enrich(
     });
 
     // Score and filter RAG documents
-    ragScoredDocs = retrievalResult.documents.map(doc => scoreRAGDocument(doc, query, opts));
-    ragDocuments = filterByRelevance(ragScoredDocs, opts.relevanceThreshold!, opts.maxRagDocs!);
+    ragScoredDocs = retrievalResult.documents.map((doc) =>
+      scoreRAGDocument(doc, query, opts),
+    );
+    ragDocuments = filterByRelevance(
+      ragScoredDocs,
+      opts.relevanceThreshold!,
+      opts.maxRagDocs!,
+    );
 
     // Score and filter current intel
-    ragScoredIntel = retrievalResult.currentIntel.map(intel => scoreCurrentIntel(intel, query, opts));
-    currentIntel = filterByRelevance(ragScoredIntel, opts.relevanceThreshold!, opts.maxIntelDocs!);
+    ragScoredIntel = retrievalResult.currentIntel.map((intel) =>
+      scoreCurrentIntel(intel, query, opts),
+    );
+    currentIntel = filterByRelevance(
+      ragScoredIntel,
+      opts.relevanceThreshold!,
+      opts.maxIntelDocs!,
+    );
 
     citations = retrievalResult.citations;
   } catch (error) {
-    console.error('[ContextEnrichmentService] RAG retrieval error:', error);
+    console.error("[ContextEnrichmentService] RAG retrieval error:", error);
   }
 
   // ===== Knowledge Graph =====
@@ -298,8 +341,14 @@ export async function enrich(
   try {
     // Get candidate contexts
     const allCandidates = await getCandidateContexts(opts);
-    graphScoredCandidates = allCandidates.map(c => scoreCandidateContext(c, query, opts));
-    candidateContexts = filterByRelevance(graphScoredCandidates, opts.relevanceThreshold!, opts.maxGraphEntities!);
+    graphScoredCandidates = allCandidates.map((c) =>
+      scoreCandidateContext(c, query, opts),
+    );
+    candidateContexts = filterByRelevance(
+      graphScoredCandidates,
+      opts.relevanceThreshold!,
+      opts.maxGraphEntities!,
+    );
 
     // Get issues
     if (opts.includeIssues) {
@@ -313,7 +362,7 @@ export async function enrich(
     const graph = getKnowledgeGraph();
     for (const context of candidateContexts) {
       if (context.office) {
-        const officeId = `office:mi-${opts.districtType === 'state_house' ? 'house' : opts.districtType === 'state_senate' ? 'senate' : 'house'}-${context.office.district}`;
+        const officeId = `office:mi-${opts.districtType === "state_house" ? "house" : opts.districtType === "state_senate" ? "senate" : "house"}-${context.office.district}`;
         const office = graph.getEntity(officeId) as OfficeEntity | undefined;
         if (office) {
           offices.push(office);
@@ -321,33 +370,39 @@ export async function enrich(
       }
     }
   } catch (error) {
-    console.error('[ContextEnrichmentService] Knowledge Graph error:', error);
+    console.error("[ContextEnrichmentService] Knowledge Graph error:", error);
   }
 
   // ===== Calculate Relevance =====
   const ragScore = Math.max(
     getMaxRelevance(ragScoredDocs),
-    getMaxRelevance(ragScoredIntel)
+    getMaxRelevance(ragScoredIntel),
   );
   const graphScore = getMaxRelevance(graphScoredCandidates);
   const overallScore = Math.max(ragScore, graphScore);
   const shouldInclude = overallScore >= opts.relevanceThreshold!;
 
   const reasons: string[] = [];
-  if (ragDocuments.length > 0) reasons.push(`${ragDocuments.length} relevant documents`);
-  if (currentIntel.length > 0) reasons.push(`${currentIntel.length} current intel items`);
-  if (candidateContexts.length > 0) reasons.push(`${candidateContexts.length} candidate contexts`);
+  if (ragDocuments.length > 0)
+    reasons.push(`${ragDocuments.length} relevant documents`);
+  if (currentIntel.length > 0)
+    reasons.push(`${currentIntel.length} current intel items`);
+  if (candidateContexts.length > 0)
+    reasons.push(`${candidateContexts.length} candidate contexts`);
   if (issues.length > 0) reasons.push(`${issues.length} relevant issues`);
-  if (reasons.length === 0) reasons.push('No relevant context found');
+  if (reasons.length === 0) reasons.push("No relevant context found");
 
   // ===== Format Context =====
   const ragFormatted = formatRAGContent(ragDocuments, currentIntel, citations);
-  const graphFormatted = formatGraphContent(candidateContexts, issues, relationships);
+  const graphFormatted = formatGraphContent(
+    candidateContexts,
+    issues,
+    relationships,
+  );
 
-  const formattedContext = [
-    ragFormatted,
-    graphFormatted,
-  ].filter(Boolean).join('\n\n---\n\n');
+  const formattedContext = [ragFormatted, graphFormatted]
+    .filter(Boolean)
+    .join("\n\n---\n\n");
 
   // ===== Build Result =====
   const result: EnrichmentContext = {
@@ -372,11 +427,11 @@ export async function enrich(
       shouldInclude,
       reasons,
     },
-    formattedContext: shouldInclude ? formattedContext : '',
+    formattedContext: shouldInclude ? formattedContext : "",
     timestamp: new Date().toISOString(),
   };
 
-  console.log('[ContextEnrichmentService] Enrichment complete:', {
+  console.log("[ContextEnrichmentService] Enrichment complete:", {
     ragDocs: ragDocuments.length,
     currentIntel: currentIntel.length,
     candidates: candidateContexts.length,
@@ -392,11 +447,11 @@ export async function enrich(
  * Quick enrichment for district analysis
  */
 export async function enrichDistrictAnalysis(
-  districtType: 'state_house' | 'state_senate' | 'congressional' | 'county',
-  districtNumber?: string
+  districtType: "state_house" | "state_senate" | "congressional" | "county",
+  districtNumber?: string,
 ): Promise<EnrichmentContext> {
   const query = districtNumber
-    ? `${districtType.replace('_', ' ')} district ${districtNumber}`
+    ? `${districtType.replace("_", " ")} district ${districtNumber}`
     : districtType;
 
   return enrich(query, {
@@ -416,14 +471,16 @@ export async function enrichDistrictAnalysis(
 export async function enrichFilterQuery(
   query: string,
   precincts: string[],
-  options?: { includeCurrentIntel?: boolean }
+  options?: { includeCurrentIntel?: boolean },
 ): Promise<EnrichmentContext> {
   return enrich(query, {
     precincts,
     includeCandidates: false, // Less relevant for filter queries
     includeCurrentIntel: options?.includeCurrentIntel ?? true,
     includeIssues: true,
-    includeMethodology: query.toLowerCase().includes('how') || query.toLowerCase().includes('why'),
+    includeMethodology:
+      query.toLowerCase().includes("how") ||
+      query.toLowerCase().includes("why"),
     relevanceThreshold: 0.4, // Higher threshold - only very relevant content
   });
 }
@@ -434,7 +491,7 @@ export async function enrichFilterQuery(
 export async function enrichComparison(
   query: string,
   entityA: string,
-  entityB: string
+  entityB: string,
 ): Promise<EnrichmentContext> {
   return enrich(`${query} comparing ${entityA} and ${entityB}`, {
     includeCandidates: true,
@@ -450,7 +507,7 @@ export async function enrichComparison(
  */
 export function formatForResponse(context: EnrichmentContext): string {
   if (!context.relevance.shouldInclude) {
-    return '';
+    return "";
   }
 
   return context.formattedContext;
@@ -462,7 +519,7 @@ export function formatForResponse(context: EnrichmentContext): string {
  */
 export function formatForSystemPrompt(context: EnrichmentContext): string {
   if (!context.relevance.shouldInclude) {
-    return '';
+    return "";
   }
 
   return `

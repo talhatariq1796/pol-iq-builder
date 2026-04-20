@@ -1,7 +1,9 @@
 /**
- * Default region labels for political data / PDF when not overridden by env.
- * PA-only deployment: set POLITICAL_REPORT_* in .env for other states.
+ * Default region labels for political data / PDF.
+ * Values come from the active state config; individual env vars still work as overrides.
  */
+
+import { activeState } from '@/lib/config/activeState';
 
 export function getPoliticalRegionEnv(): {
   state: string;
@@ -11,10 +13,10 @@ export function getPoliticalRegionEnv(): {
   summaryAreaName: string;
 } {
   return {
-    state: process.env.POLITICAL_REPORT_STATE || 'Pennsylvania',
-    county: process.env.POLITICAL_REPORT_COUNTY || 'Statewide',
-    stateFips: process.env.POLITICAL_STATE_FIPS || '42',
-    summaryAreaName: process.env.POLITICAL_SUMMARY_AREA_NAME || 'Pennsylvania',
+    state: process.env.POLITICAL_REPORT_STATE || activeState.name,
+    county: process.env.POLITICAL_REPORT_COUNTY || activeState.defaultCounty,
+    stateFips: process.env.POLITICAL_STATE_FIPS || activeState.fips,
+    summaryAreaName: process.env.POLITICAL_SUMMARY_AREA_NAME || activeState.summaryAreaName,
   };
 }
 

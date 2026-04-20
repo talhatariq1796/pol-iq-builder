@@ -1,4 +1,5 @@
 import { getPoliticalRegionEnv } from '@/lib/political/politicalRegionConfig';
+import { activeState } from '@/lib/config/activeState';
 
 export interface ParsedIntent {
   type:
@@ -30,7 +31,6 @@ export interface ParsedIntent {
   | 'report_request'  // Generate/create report requests
   | 'report_history'  // View report history requests
   | 'spatial_query'   // Spatial/proximity queries (radius, drive-time, walk-time)
-  | 'graph_query'     // Knowledge graph exploration
   | 'trend_query'     // Historical trend analysis (2020-2024 elections)
   | 'navigation'      // Map navigation (zoom to, fly to, center on)
   | 'general';
@@ -87,16 +87,6 @@ export interface ParsedIntent {
     location: string;  // Address, landmark, or place name to geocode
     dataType: 'donors' | 'precincts' | 'voters' | 'all';
   };
-  // Knowledge graph query parameters
-  graphParams?: {
-    queryType: 'overview' | 'explore' | 'path' | 'list' | 'search';
-    entityName?: string;
-    entityType?: string;
-    sourceName?: string;
-    targetName?: string;
-    searchTerm?: string;
-    maxDepth?: number;
-  };
   // Segment query parameters
   segmentParams?: {
     intentType: 'segment_create' | 'segment_find' | 'segment_save' | 'segment_compare';
@@ -133,18 +123,6 @@ export function parseIntent(query: string): ParsedIntent {
       type: 'output_request',
       entities: [],
       outputParams: outputIntent,
-    };
-  }
-
-  // ============================================================================
-  // KNOWLEDGE GRAPH INTENT DETECTION
-  // ============================================================================
-  const graphIntent = detectGraphIntent(lower);
-  if (graphIntent) {
-    return {
-      type: 'graph_query',
-      entities: [],
-      graphParams: graphIntent,
     };
   }
 
@@ -685,23 +663,25 @@ function slugifySchoolPhrase(s: string): string {
 }
 
 /**
- * Extract all district entities from query (Pennsylvania when POLITICAL_STATE_FIPS=42).
+ * Extract all district entities from query using the active state's abbreviation.
  */
 function extractDistrictEntities(query: string): ExtractedDistrictEntities {
-  if (getPoliticalRegionEnv().stateFips === '42') {
-    return extractDistrictEntitiesPA(query);
-  }
-  return extractDistrictEntitiesMI(query);
+  return extractDistrictEntitiesForState(query, activeState.abbreviation, activeState.name);
 }
 
-function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
+function extractDistrictEntitiesForState(
+  query: string,
+  abbr: string,
+  stateName: string,
+): ExtractedDistrictEntities {
   const result: ExtractedDistrictEntities = {};
-  const lower = query.toLowerCase();
+  const abbrLower = abbr.toLowerCase();
+  const stateNameLower = stateName.toLowerCase();
 
   const congressionalPatterns = [
-    /\bpa[-\s]?0?(\d{1,2})\b/i,
-    /\bpennsylvania\s+(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
-    /\bpennsylvania\s+(\d{1,2})(?:th|st|nd|rd)?\s+congressional\s+district\b/i,
+    new RegExp(`\\b${abbrLower}[-\\s]?0?(\\d{1,2})\\b`, 'i'),
+    new RegExp(`\\b${stateNameLower}\\s+(\\d{1,2})(?:th|st|nd|rd)?\\s+congressional\\b`, 'i'),
+    new RegExp(`\\b${stateNameLower}\\s+(\\d{1,2})(?:th|st|nd|rd)?\\s+congressional\\s+district\\b`, 'i'),
     /\b(\d{1,2})(?:th|st|nd|rd)?\s+congressional\b/i,
     /\bcongressional\s+district\s+(\d{1,2})\b/i,
     /\bcd[-\s]?0?(\d{1,2})\b/i,
@@ -712,14 +692,14 @@ function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
     const match = query.match(pattern);
     if (match) {
       const num = match[1].padStart(2, '0');
-      result.congressional = `pa-congress-${num}`;
+      result.congressional = `${abbrLower}-congress-${num}`;
       result.districtLevel = 'congressional';
       break;
     }
   }
 
   const stateSenatePatterns = [
-    /\b(?:pa|pennsylvania)\s+senate\s+(\d{1,3})\b/i,
+    new RegExp(`\\b(?:${abbrLower}|${stateNameLower})\\s+senate\\s+(\\d{1,3})\\b`, 'i'),
     /\b(?:state\s+)?senate\s+district\s+(\d{1,3})\b/i,
     /\bsd[-\s]?(\d{1,3})\b/i,
     /\bstate\s+senate\s+(\d{1,3})\b/i,
@@ -730,25 +710,25 @@ function extractDistrictEntitiesPA(query: string): ExtractedDistrictEntities {
   for (const pattern of stateSenatePatterns) {
     const match = query.match(pattern);
     if (match) {
-      result.stateSenate = `pa-senate-${match[1]}`;
+      result.stateSenate = `${abbrLower}-senate-${match[1]}`;
       result.districtLevel = 'state_senate';
       break;
     }
   }
 
   const stateHousePatterns = [
-    /\b(?:pa|pennsylvania)\s+house\s+(\d{1,3})\b/i,
+    new RegExp(`\\b(?:${abbrLower}|${stateNameLower})\\s+(?:house|assembly)\\s+(\\d{1,3})\\b`, 'i'),
     /\b(?:state\s+)?house\s+district\s+(\d{1,3})\b/i,
     /\bhd[-\s]?(\d{1,3})\b/i,
-    /\bstate\s+house\s+(\d{1,3})\b/i,
-    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?house\b/i,
+    /\bstate\s+(?:house|assembly)\s+(\d{1,3})\b/i,
+    /\b(\d{1,3})(?:th|st|nd|rd)?\s+(?:state\s+)?(?:house|assembly)\b/i,
     /\brep(?:resentative)?\.?\s+dist(?:rict)?\.?\s+(\d{1,3})\b/i,
   ];
 
   for (const pattern of stateHousePatterns) {
     const match = query.match(pattern);
     if (match) {
-      result.stateHouse = `pa-house-${match[1]}`;
+      result.stateHouse = `${abbrLower}-house-${match[1]}`;
       result.districtLevel = 'state_house';
       break;
     }
@@ -934,40 +914,13 @@ function extractDistrictEntitiesMI(query: string): ExtractedDistrictEntities {
 function extractPrecinctNames(query: string): string[] {
   const entities: string[] = [];
 
-  const jurisdictions =
-    getPoliticalRegionEnv().stateFips === '42'
-      ? [
-          'Philadelphia',
-          'Pittsburgh',
-          'Harrisburg',
-          'Allentown',
-          'Erie',
-          'Reading',
-          'Scranton',
-          'Bethlehem',
-          'Lancaster',
-          'York',
-          'Chester',
-          'Allegheny County',
-          'Montgomery County',
-          'Bucks County',
-          'Delaware County',
-        ]
-      : [
-          'East Lansing',
-          'Lansing',
-          'Meridian Township',
-          'Delhi Township',
-          'Williamston',
-          'Mason',
-          'Leslie',
-          'Haslett',
-          'Okemos',
-          'Holt',
-          'Webberville',
-          'Stockbridge',
-          'Dansville',
-        ];
+  // Build jurisdiction list from active state entities (cities, counties, townships)
+  const jurisdictions = activeState.entities
+    .filter((e) => ['city', 'county', 'township', 'region'].includes(e.level))
+    .flatMap((e) => [
+      e.name.replace(/\b\w/g, (c) => c.toUpperCase()),
+      ...(e.aliases?.map((a) => a.replace(/\b\w/g, (c) => c.toUpperCase())) ?? []),
+    ]);
 
   jurisdictions.forEach(jurisdiction => {
     if (query.toLowerCase().includes(jurisdiction.toLowerCase())) {
@@ -1865,170 +1818,6 @@ function detectReportTypeFromQuery(lower: string): 'executive' | 'targeting' | '
   return 'general';
 }
 
-/**
- * Detect knowledge graph query intent
- * Handles patterns like:
- * - "show me the knowledge graph"
- * - "what's in the knowledge graph"
- * - "show relationships for [entity]"
- * - "how is [entity1] connected to [entity2]"
- * - "list all candidates"
- */
-function detectGraphIntent(lower: string): ParsedIntent['graphParams'] | null {
-  // ============================================================================
-  // OVERVIEW PATTERNS
-  // ============================================================================
-  const overviewPatterns = [
-    /(?:show|display|view|open)\s+(?:the\s+)?knowledge\s*graph/i,
-    /what(?:'s| is)\s+in\s+the\s+(?:knowledge\s+)?graph/i,
-    /knowledge\s*graph\s+(?:overview|summary|stats|statistics)/i,
-    /graph\s+overview/i,
-    /show\s+(?:me\s+)?(?:all\s+)?entities/i,
-    /what\s+entities\s+(?:do\s+you\s+have|are\s+there)/i,
-  ];
-
-  for (const pattern of overviewPatterns) {
-    if (pattern.test(lower)) {
-      return { queryType: 'overview' };
-    }
-  }
-
-  // ============================================================================
-  // PATH/CONNECTION PATTERNS
-  // ============================================================================
-  // "how is X connected to Y"
-  const pathMatch1 = lower.match(/how\s+is\s+(.+?)\s+connected\s+to\s+(.+?)(?:\?|$)/i);
-  if (pathMatch1) {
-    return {
-      queryType: 'path',
-      sourceName: pathMatch1[1].trim(),
-      targetName: pathMatch1[2].trim(),
-    };
-  }
-
-  // "connection between X and Y"
-  const pathMatch2 = lower.match(/connection(?:s)?\s+between\s+(.+?)\s+and\s+(.+?)(?:\?|$)/i);
-  if (pathMatch2) {
-    return {
-      queryType: 'path',
-      sourceName: pathMatch2[1].trim(),
-      targetName: pathMatch2[2].trim(),
-    };
-  }
-
-  // "path from X to Y"
-  const pathMatch3 = lower.match(/path\s+from\s+(.+?)\s+to\s+(.+?)(?:\?|$)/i);
-  if (pathMatch3) {
-    return {
-      queryType: 'path',
-      sourceName: pathMatch3[1].trim(),
-      targetName: pathMatch3[2].trim(),
-    };
-  }
-
-  // ============================================================================
-  // EXPLORE ENTITY PATTERNS
-  // ============================================================================
-  // "show relationships for X"
-  const exploreMatch1 = lower.match(/(?:show|display|view)\s+(?:me\s+)?relationships?\s+for\s+(.+?)(?:\?|$)/i);
-  if (exploreMatch1) {
-    return {
-      queryType: 'explore',
-      entityName: exploreMatch1[1].trim(),
-    };
-  }
-
-  // "explore X" (in graph context)
-  const exploreMatch2 = lower.match(/explore\s+(.+?)\s+(?:in\s+(?:the\s+)?graph|relationships?)(?:\?|$)/i);
-  if (exploreMatch2) {
-    return {
-      queryType: 'explore',
-      entityName: exploreMatch2[1].trim(),
-    };
-  }
-
-  // "what is connected to X"
-  const exploreMatch3 = lower.match(/what(?:'s| is)\s+connected\s+to\s+(.+?)(?:\?|$)/i);
-  if (exploreMatch3) {
-    return {
-      queryType: 'explore',
-      entityName: exploreMatch3[1].trim(),
-    };
-  }
-
-  // "who/what is related to X"
-  const exploreMatch4 = lower.match(/(?:who|what)\s+is\s+related\s+to\s+(.+?)(?:\?|$)/i);
-  if (exploreMatch4) {
-    return {
-      queryType: 'explore',
-      entityName: exploreMatch4[1].trim(),
-    };
-  }
-
-  // ============================================================================
-  // SEARCH ENTITY PATTERNS
-  // ============================================================================
-  // "search for X" / "find entities related to X"
-  // IMPORTANT: Exclude filter-like queries (precincts with, voters with, etc.)
-  // These should be handled by the filter/segment handlers, not graph search
-  const isFilterQuery = /(?:precincts?|voters?|areas?|districts?)\s+(?:with|where|that|having)/i.test(lower) ||
-    /(?:swing|gotv|turnout|lean|education|income|age)\s*(?:>|<|over|under|above|below)/i.test(lower);
-
-  const searchMatch1 = lower.match(/(?:search|find)\s+(?:for\s+)?(?:entities\s+)?(?:related\s+to\s+)?(.+?)(?:\s+in\s+(?:the\s+)?graph)?(?:\?|$)/i);
-  if (searchMatch1 && !lower.includes('similar') && !lower.includes('connected') && !isFilterQuery) {
-    return {
-      queryType: 'search' as const,
-      searchTerm: searchMatch1[1].trim(),
-    };
-  }
-
-  // ============================================================================
-  // LIST ENTITY TYPE PATTERNS
-  // ============================================================================
-  const entityTypes = [
-    'candidate', 'candidates',
-    'office', 'offices',
-    'party', 'parties',
-    'jurisdiction', 'jurisdictions',
-    'precinct', 'precincts',
-    'issue', 'issues',
-    'organization', 'organizations',
-    'event', 'events',
-    'poll', 'polls',
-    'election', 'elections',
-  ];
-
-  // "list all candidates" / "show me the offices"
-  const listMatch = lower.match(/(?:list|show|display|get)\s+(?:me\s+)?(?:all\s+)?(?:the\s+)?(candidate|office|part(?:y|ies)|jurisdiction|precinct|issue|organization|event|poll|election)s?(?:\s+in\s+(?:the\s+)?graph)?/i);
-  if (listMatch) {
-    const typeRaw = listMatch[1].toLowerCase();
-    // Normalize plural/singular
-    let entityType = typeRaw;
-    if (typeRaw === 'parties') entityType = 'party';
-    else if (typeRaw.endsWith('s')) entityType = typeRaw.slice(0, -1);
-
-    return {
-      queryType: 'list',
-      entityType,
-    };
-  }
-
-  // "what candidates are there"
-  const whatListMatch = lower.match(/what\s+(candidate|office|part(?:y|ies)|jurisdiction|precinct|issue|organization|event|poll|election)s?\s+(?:are\s+there|do\s+you\s+have|exist)/i);
-  if (whatListMatch) {
-    const typeRaw = whatListMatch[1].toLowerCase();
-    let entityType = typeRaw;
-    if (typeRaw === 'parties') entityType = 'party';
-    else if (typeRaw.endsWith('s')) entityType = typeRaw.slice(0, -1);
-
-    return {
-      queryType: 'list',
-      entityType,
-    };
-  }
-
-  return null;
-}
 
 /**
  * Detect navigation intent (P0-6)

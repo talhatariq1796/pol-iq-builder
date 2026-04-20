@@ -11,21 +11,20 @@
  * @lastUpdated 2025-12-18
  */
 
-import jsPDF from 'jspdf';
+import jsPDF from "jspdf";
 import {
   NEUTRAL_COLORS,
   CHART_COLORS,
   CARD_ACCENT_COLORS,
   TYPOGRAPHY,
   SPACING,
-  getPartisanChartColor,
   getPartisanTextColor,
   formatPartisanLean,
   getCompetitivenessLabel,
   getPriorityLabel,
   getMetricChartColor,
-} from '../design/PoliticalDesignTokens';
-import { hexToRGB } from '../utils/colorUtils';
+} from "../design/PoliticalDesignTokens";
+import { hexToRGB } from "../utils/colorUtils";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -39,7 +38,7 @@ export interface CleanKPICardOptions {
   /** Optional sublabel/description */
   sublabel?: string;
   /** Metric type for accent color */
-  metric?: 'partisan' | 'swing' | 'gotv' | 'persuasion' | 'turnout' | 'neutral';
+  metric?: "partisan" | "swing" | "gotv" | "persuasion" | "turnout" | "neutral";
   /** Show accent left border */
   showAccent?: boolean;
   /** Show progress bar for scores */
@@ -63,7 +62,7 @@ export interface CleanScoreCardOptions {
   /** Score value (0-100) */
   score: number;
   /** Metric type */
-  metric: 'swing' | 'gotv' | 'persuasion' | 'turnout';
+  metric: "swing" | "gotv" | "persuasion" | "turnout";
   /** Card label */
   label: string;
 }
@@ -74,7 +73,7 @@ export interface CleanStatCardOptions {
   /** Value to display */
   value: string | number;
   /** Format type */
-  format?: 'number' | 'currency' | 'percent' | 'plain';
+  format?: "number" | "currency" | "percent" | "plain";
   /** Optional icon prefix */
   icon?: string;
 }
@@ -83,15 +82,18 @@ export interface CleanStatCardOptions {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function formatValue(value: string | number, format: string = 'number'): string {
-  if (typeof value === 'string') return value;
+function formatValue(
+  value: string | number,
+  format: string = "number",
+): string {
+  if (typeof value === "string") return value;
 
   switch (format) {
-    case 'number':
+    case "number":
       return value.toLocaleString();
-    case 'currency':
+    case "currency":
       return `$${value.toLocaleString()}`;
-    case 'percent':
+    case "percent":
       return `${value.toFixed(1)}%`;
     default:
       return String(value);
@@ -126,13 +128,13 @@ export function renderCleanKPICard(
   y: number,
   width: number,
   height: number,
-  options: CleanKPICardOptions
+  options: CleanKPICardOptions,
 ): void {
   const {
     label,
     value,
     sublabel,
-    metric = 'neutral',
+    metric = "neutral",
     showAccent = true,
     showProgress = false,
     progressValue = 0,
@@ -145,26 +147,33 @@ export function renderCleanKPICard(
 
   // Draw card background (white)
   setFillColor(pdf, NEUTRAL_COLORS.white);
-  pdf.rect(x, y, width, height, 'F');
+  pdf.rect(x, y, width, height, "F");
 
   // Draw border
   setDrawColor(pdf, NEUTRAL_COLORS.border);
   pdf.setLineWidth(0.3);
-  pdf.rect(x, y, width, height, 'S');
+  pdf.rect(x, y, width, height, "S");
 
   // Draw accent left border if enabled
   if (showAccent) {
-    const accentColor = CARD_ACCENT_COLORS[metric] || CARD_ACCENT_COLORS.neutral;
+    const accentColor =
+      CARD_ACCENT_COLORS[metric] || CARD_ACCENT_COLORS.neutral;
     // Use chart color for the actual accent line
-    const chartColor = metric === 'swing' ? CHART_COLORS.swing :
-                       metric === 'gotv' ? CHART_COLORS.gotv :
-                       metric === 'persuasion' ? CHART_COLORS.persuasion :
-                       metric === 'turnout' ? CHART_COLORS.turnout :
-                       metric === 'partisan' ? CHART_COLORS.democrat :
-                       NEUTRAL_COLORS.borderStrong;
+    const chartColor =
+      metric === "swing"
+        ? CHART_COLORS.swing
+        : metric === "gotv"
+          ? CHART_COLORS.gotv
+          : metric === "persuasion"
+            ? CHART_COLORS.persuasion
+            : metric === "turnout"
+              ? CHART_COLORS.turnout
+              : metric === "partisan"
+                ? CHART_COLORS.democrat
+                : NEUTRAL_COLORS.borderStrong;
 
     setFillColor(pdf, chartColor);
-    pdf.rect(x, y, 2, height, 'F');
+    pdf.rect(x, y, 2, height, "F");
   }
 
   // Calculate layout
@@ -175,7 +184,7 @@ export function renderCleanKPICard(
   // Draw label
   setTextColor(pdf, NEUTRAL_COLORS.textSecondary);
   pdf.setFontSize(TYPOGRAPHY.sizes.sm);
-  pdf.setFont(TYPOGRAPHY.family, 'normal');
+  pdf.setFont(TYPOGRAPHY.family, "normal");
 
   const labelY = y + padding + 3;
   pdf.text(label.toUpperCase(), contentX, labelY);
@@ -184,7 +193,7 @@ export function renderCleanKPICard(
   const finalValueColor = valueColor || NEUTRAL_COLORS.textPrimary;
   setTextColor(pdf, finalValueColor);
   pdf.setFontSize(TYPOGRAPHY.sizes.xl);
-  pdf.setFont(TYPOGRAPHY.family, 'bold');
+  pdf.setFont(TYPOGRAPHY.family, "bold");
 
   const valueY = labelY + 8;
   pdf.text(value, contentX, valueY);
@@ -197,24 +206,29 @@ export function renderCleanKPICard(
 
     // Background bar
     setFillColor(pdf, NEUTRAL_COLORS.muted);
-    pdf.rect(contentX, barY, barWidth, barHeight, 'F');
+    pdf.rect(contentX, barY, barWidth, barHeight, "F");
 
     // Progress fill (use chart color)
-    const progressColor = metric === 'swing' ? CHART_COLORS.swing :
-                          metric === 'gotv' ? CHART_COLORS.gotv :
-                          metric === 'persuasion' ? CHART_COLORS.persuasion :
-                          metric === 'turnout' ? CHART_COLORS.turnout :
-                          CHART_COLORS.series[0];
+    const progressColor =
+      metric === "swing"
+        ? CHART_COLORS.swing
+        : metric === "gotv"
+          ? CHART_COLORS.gotv
+          : metric === "persuasion"
+            ? CHART_COLORS.persuasion
+            : metric === "turnout"
+              ? CHART_COLORS.turnout
+              : CHART_COLORS.series[0];
 
     setFillColor(pdf, progressColor);
-    pdf.rect(contentX, barY, barWidth * (progressValue / 100), barHeight, 'F');
+    pdf.rect(contentX, barY, barWidth * (progressValue / 100), barHeight, "F");
   }
 
   // Draw sublabel
   if (sublabel) {
     setTextColor(pdf, NEUTRAL_COLORS.textMuted);
     pdf.setFontSize(TYPOGRAPHY.sizes.xs);
-    pdf.setFont(TYPOGRAPHY.family, 'normal');
+    pdf.setFont(TYPOGRAPHY.family, "normal");
 
     const sublabelY = showProgress ? valueY + 10 : valueY + 5;
     pdf.text(sublabel, contentX, sublabelY);
@@ -236,7 +250,7 @@ export function renderCleanPartisanCard(
   y: number,
   width: number,
   height: number,
-  options: CleanPartisanCardOptions
+  options: CleanPartisanCardOptions,
 ): void {
   const { lean, confidence, electionsCount } = options;
 
@@ -253,10 +267,10 @@ export function renderCleanPartisanCard(
   }
 
   renderCleanKPICard(pdf, x, y, width, height, {
-    label: 'Partisan Lean',
+    label: "Partisan Lean",
     value: displayValue,
     sublabel,
-    metric: 'partisan',
+    metric: "partisan",
     showAccent: true,
     valueColor,
   });
@@ -271,7 +285,7 @@ export function renderCleanScoreCard(
   y: number,
   width: number,
   height: number,
-  options: CleanScoreCardOptions
+  options: CleanScoreCardOptions,
 ): void {
   const { score, metric, label } = options;
 
@@ -299,9 +313,9 @@ export function renderCleanStatCard(
   y: number,
   width: number,
   height: number,
-  options: CleanStatCardOptions
+  options: CleanStatCardOptions,
 ): void {
-  const { label, value, format = 'number', icon } = options;
+  const { label, value, format = "number", icon } = options;
 
   const displayValue = formatValue(value, format);
   const displayLabel = icon ? `${icon} ${label}` : label;
@@ -309,7 +323,7 @@ export function renderCleanStatCard(
   renderCleanKPICard(pdf, x, y, width, height, {
     label: displayLabel,
     value: displayValue,
-    metric: 'neutral',
+    metric: "neutral",
     showAccent: false,
   });
 }
@@ -328,7 +342,7 @@ export function renderCleanCoverKPIGrid(
     registeredVoters: number;
     confidence?: number;
     electionsCount?: number;
-  }
+  },
 ): void {
   const cardWidth = 85;
   const cardHeight = 28;
@@ -342,27 +356,48 @@ export function renderCleanCoverKPIGrid(
     electionsCount: data.electionsCount,
   });
 
-  renderCleanScoreCard(pdf, startX + cardWidth + gapX, startY, cardWidth, cardHeight, {
-    score: data.swingPotential,
-    metric: 'swing',
-    label: 'Swing Potential',
-  });
+  renderCleanScoreCard(
+    pdf,
+    startX + cardWidth + gapX,
+    startY,
+    cardWidth,
+    cardHeight,
+    {
+      score: data.swingPotential,
+      metric: "swing",
+      label: "Swing Potential",
+    },
+  );
 
   // Row 2: Avg Turnout, Registered Voters
-  renderCleanKPICard(pdf, startX, startY + cardHeight + gapY, cardWidth, cardHeight, {
-    label: 'Avg Turnout',
-    value: `${data.avgTurnout.toFixed(1)}%`,
-    metric: 'turnout',
-    showAccent: true,
-    valueColor: CHART_COLORS.turnout,
-  });
+  renderCleanKPICard(
+    pdf,
+    startX,
+    startY + cardHeight + gapY,
+    cardWidth,
+    cardHeight,
+    {
+      label: "Avg Turnout",
+      value: `${data.avgTurnout.toFixed(1)}%`,
+      metric: "turnout",
+      showAccent: true,
+      valueColor: CHART_COLORS.turnout,
+    },
+  );
 
-  renderCleanKPICard(pdf, startX + cardWidth + gapX, startY + cardHeight + gapY, cardWidth, cardHeight, {
-    label: 'Registered Voters',
-    value: data.registeredVoters.toLocaleString(),
-    metric: 'neutral',
-    showAccent: true,
-  });
+  renderCleanKPICard(
+    pdf,
+    startX + cardWidth + gapX,
+    startY + cardHeight + gapY,
+    cardWidth,
+    cardHeight,
+    {
+      label: "Registered Voters",
+      value: data.registeredVoters.toLocaleString(),
+      metric: "neutral",
+      showAccent: true,
+    },
+  );
 }
 
 /**
@@ -375,8 +410,8 @@ export function renderCleanStatRow(
   stats: Array<{
     label: string;
     value: string | number;
-    format?: 'number' | 'currency' | 'percent' | 'plain';
-  }>
+    format?: "number" | "currency" | "percent" | "plain";
+  }>,
 ): void {
   const cardWidth = 42;
   const cardHeight = 22;
@@ -406,28 +441,30 @@ export function renderChartPlaceholder(
   y: number,
   width: number,
   height: number,
-  title: string = 'Chart'
+  title: string = "Chart",
 ): void {
   // Draw light background
   setFillColor(pdf, NEUTRAL_COLORS.muted);
-  pdf.rect(x, y, width, height, 'F');
+  pdf.rect(x, y, width, height, "F");
 
   // Draw border
   setDrawColor(pdf, NEUTRAL_COLORS.border);
   pdf.setLineWidth(0.3);
-  pdf.rect(x, y, width, height, 'S');
+  pdf.rect(x, y, width, height, "S");
 
   // Draw "No data available" message
   setTextColor(pdf, NEUTRAL_COLORS.textMuted);
   pdf.setFontSize(TYPOGRAPHY.sizes.sm);
-  pdf.setFont(TYPOGRAPHY.family, 'normal');
+  pdf.setFont(TYPOGRAPHY.family, "normal");
 
   const centerX = x + width / 2;
   const centerY = y + height / 2;
 
-  pdf.text(title, centerX, centerY - 4, { align: 'center' });
+  pdf.text(title, centerX, centerY - 4, { align: "center" });
   pdf.setFontSize(TYPOGRAPHY.sizes.xs);
-  pdf.text('Data visualization pending', centerX, centerY + 4, { align: 'center' });
+  pdf.text("Data visualization pending", centerX, centerY + 4, {
+    align: "center",
+  });
 }
 
 /**
@@ -440,14 +477,14 @@ export function renderSimpleHorizontalBars(
   width: number,
   height: number,
   data: Array<{ label: string; value: number; color?: string }>,
-  maxValue?: number
+  maxValue?: number,
 ): void {
   if (data.length === 0) {
-    renderChartPlaceholder(pdf, x, y, width, height, 'Bar Chart');
+    renderChartPlaceholder(pdf, x, y, width, height, "Bar Chart");
     return;
   }
 
-  const max = maxValue || Math.max(...data.map(d => d.value));
+  const max = maxValue || Math.max(...data.map((d) => d.value));
   const barHeight = Math.min(12, (height - 8) / data.length - 4);
   const labelWidth = 40;
   const barWidth = width - labelWidth - 8;
@@ -458,23 +495,28 @@ export function renderSimpleHorizontalBars(
     // Label
     setTextColor(pdf, NEUTRAL_COLORS.textSecondary);
     pdf.setFontSize(TYPOGRAPHY.sizes.xs);
-    pdf.setFont(TYPOGRAPHY.family, 'normal');
+    pdf.setFont(TYPOGRAPHY.family, "normal");
     pdf.text(item.label, x, barY + barHeight / 2 + 1);
 
     // Bar background
     setFillColor(pdf, NEUTRAL_COLORS.muted);
-    pdf.rect(x + labelWidth, barY, barWidth, barHeight, 'F');
+    pdf.rect(x + labelWidth, barY, barWidth, barHeight, "F");
 
     // Bar fill
     const fillWidth = (item.value / max) * barWidth;
-    const color = item.color || CHART_COLORS.series[index % CHART_COLORS.series.length];
+    const color =
+      item.color || CHART_COLORS.series[index % CHART_COLORS.series.length];
     setFillColor(pdf, color);
-    pdf.rect(x + labelWidth, barY, fillWidth, barHeight, 'F');
+    pdf.rect(x + labelWidth, barY, fillWidth, barHeight, "F");
 
     // Value label
     setTextColor(pdf, NEUTRAL_COLORS.textPrimary);
     pdf.setFontSize(TYPOGRAPHY.sizes.xs);
-    pdf.text(`${item.value.toFixed(1)}%`, x + labelWidth + barWidth + 2, barY + barHeight / 2 + 1);
+    pdf.text(
+      `${item.value.toFixed(1)}%`,
+      x + labelWidth + barWidth + 2,
+      barY + barHeight / 2 + 1,
+    );
   });
 }
 
@@ -486,10 +528,17 @@ export function renderSimpleDonut(
   centerX: number,
   centerY: number,
   radius: number,
-  data: Array<{ label: string; value: number; color?: string }>
+  data: Array<{ label: string; value: number; color?: string }>,
 ): void {
   if (data.length === 0) {
-    renderChartPlaceholder(pdf, centerX - radius, centerY - radius, radius * 2, radius * 2, 'Donut Chart');
+    renderChartPlaceholder(
+      pdf,
+      centerX - radius,
+      centerY - radius,
+      radius * 2,
+      radius * 2,
+      "Donut Chart",
+    );
     return;
   }
 
@@ -500,7 +549,8 @@ export function renderSimpleDonut(
 
   data.forEach((item, index) => {
     const sliceAngle = (item.value / total) * 2 * Math.PI;
-    const color = item.color || CHART_COLORS.series[index % CHART_COLORS.series.length];
+    const color =
+      item.color || CHART_COLORS.series[index % CHART_COLORS.series.length];
 
     // Draw arc using lines (jsPDF doesn't have native arc support)
     setFillColor(pdf, color);
@@ -534,16 +584,17 @@ export function renderSimpleDonut(
 
   // For now, draw a simple representation
   setFillColor(pdf, NEUTRAL_COLORS.muted);
-  pdf.circle(centerX, centerY, radius, 'F');
+  pdf.circle(centerX, centerY, radius, "F");
 
   // Draw legend below
   const legendY = centerY + radius + 8;
   data.forEach((item, index) => {
     const legendX = centerX - radius + index * 40;
-    const color = item.color || CHART_COLORS.series[index % CHART_COLORS.series.length];
+    const color =
+      item.color || CHART_COLORS.series[index % CHART_COLORS.series.length];
 
     setFillColor(pdf, color);
-    pdf.rect(legendX, legendY, 6, 6, 'F');
+    pdf.rect(legendX, legendY, 6, 6, "F");
 
     setTextColor(pdf, NEUTRAL_COLORS.textSecondary);
     pdf.setFontSize(TYPOGRAPHY.sizes.xs);
