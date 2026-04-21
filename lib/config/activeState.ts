@@ -17,9 +17,12 @@ const STATE_CONFIGS: Record<string, StateConfig> = {
   california: californiaConfig,
 };
 
+const ACTIVE_STATE = "california"
+
 const activeKey =
   process.env.ACTIVE_STATE?.toLowerCase() ??
-  process.env.NEXT_PUBLIC_ACTIVE_STATE?.toLowerCase();
+  process.env.NEXT_PUBLIC_ACTIVE_STATE?.toLowerCase() ??
+  ACTIVE_STATE;
 
 if (!activeKey) {
   throw new Error(
